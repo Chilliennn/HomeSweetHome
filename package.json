@@ -2,16 +2,22 @@
   "name": "home-sweet-home",
   "version": "1.0.0",
   "private": true,
+  "packageManager": "pnpm@9.14.2",
   "workspaces": [
     "apps/*",
     "packages/*"
   ],
   "scripts": {
-    "dev:mobile": "yarn workspace @home-sweet-home/mobile start",
-    "dev:web": "yarn workspace @home-sweet-home/web-admin dev",
-    "build": "yarn workspaces run build"
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "lint": "turbo lint",
+    "type-check": "turbo type-check",
+    "dev:mobile": "pnpm --filter @home-sweet-home/mobile dev",
+    "dev:web": "pnpm --filter @home-sweet-home/web-admin dev",
+    "clean": "turbo clean && rm -rf node_modules"
   },
   "devDependencies": {
-    "typescript": "^5.3.3"
+    "turbo": "^2.3.0",
+    "typescript": "~5.9.2"
   }
 }

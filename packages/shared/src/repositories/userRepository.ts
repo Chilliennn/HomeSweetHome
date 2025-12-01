@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabase';
-import type { User } from '../types';
+import type { User, Relationship } from '../types';
 
 export const userRepository = {
   async getById(id: string): Promise<User | null> {
@@ -21,6 +21,29 @@ export const userRepository = {
       .single();
     
     if (error) throw error;
+    return data;
+  },
+
+  async getByEmail(email: string): Promise<User | null> {
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('email', email)
+      .single();
+    
+    if (error && error.code !== 'PGRST116') throw error;
+    return data;
+  },
+
+  async getActiveRelationship(userId: string): Promise<Relationship | null> {
+    const { data, error } = await supabase
+      .from('relationships')
+      .select('*')
+      .or(`youth_id.eq.${userId},elderly_id.eq.${userId}`)
+      .eq('status', 'active')
+      .single();
+    
+    if (error && error.code !== 'PGRST116') throw error;
     return data;
   }
 };

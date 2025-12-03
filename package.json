@@ -3,17 +3,13 @@
   "version": "1.0.0",
   "private": true,
   "packageManager": "pnpm@9.14.2",
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ],
   "scripts": {
     "dev": "turbo dev",
     "build": "turbo build",
     "lint": "turbo lint",
     "type-check": "turbo type-check",
     "dev:mobile": "pnpm --filter @home-sweet-home/mobile dev",
-    "dev:web": "pnpm --filter @home-sweet-home/web-admin dev",
+    "dev:web": "pnpm --filter @home-sweet-home/web dev",
     "clean": "turbo clean && rm -rf node_modules"
   },
   "devDependencies": {

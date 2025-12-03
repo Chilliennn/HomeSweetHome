@@ -1,5 +1,5 @@
-import { supabase } from '../Service/supabase';
-import type { User, Relationship } from '../types';
+import { supabase } from '../../Service/APIService/supabase';
+import type { User, Relationship } from '../../types';
 
 export const userRepository = {
   async getById(id: string): Promise<User | null> {

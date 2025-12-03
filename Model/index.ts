@@ -2,8 +2,7 @@
 export * from './types';
 
 // Service
-export * from './Service/supabase';
+export * from './Service';
 
 // Repository
-export * from './Repository/userRepository';
-export * from './Repository/adminRepository';
+export * from './Repository';

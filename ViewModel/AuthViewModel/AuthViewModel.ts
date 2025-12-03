@@ -1,4 +1,5 @@
-import { supabase } from '@home-sweet-home/model';
+import { makeAutoObservable, runInAction } from 'mobx';
+import { supabase, User } from '@home-sweet-home/model';
 
 export const authService = {
   async signIn(email: string, password: string) {

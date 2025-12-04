@@ -8,10 +8,9 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 /**
  * Root Layout
  * 
- * Manages the top-level navigation structure:
- * - (auth) group: Login, Profile Setup (for unauthenticated/incomplete profile users)
- * - (main) group: Matching, Bonding, etc. (for authenticated users with complete profile)
- * - (tabs) group: Tab navigation (if needed)
+ * Manages the top-level navigation structure.
+ * Expo Router automatically handles route groups like (auth), (main), (tabs).
+ * We only need to configure screenOptions, not declare each group explicitly.
  */
 export default function RootLayout() {
   const colorScheme = useColorScheme();
@@ -23,29 +22,13 @@ export default function RootLayout() {
           headerShown: false,
         }}
       >
-        {/* Auth Group - Login & Profile Setup */}
-        <Stack.Screen 
-          name="(auth)" 
-          options={{ 
-            headerShown: false,
-          }} 
-        />
+        {/* index.tsx - Entry point that redirects */}
+        <Stack.Screen name="index" options={{ headerShown: false }} />
         
-        {/* Main Group - Authenticated screens */}
-        <Stack.Screen 
-          name="(main)" 
-          options={{ 
-            headerShown: false,
-          }} 
-        />
-        
-        {/* Tab navigation */}
-        <Stack.Screen 
-          name="(tabs)" 
-          options={{ 
-            headerShown: false,
-          }} 
-        />
+        {/* Route groups are auto-discovered by Expo Router */}
+        <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+        <Stack.Screen name="(main)" options={{ headerShown: false }} />
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         
         {/* Modal */}
         <Stack.Screen 

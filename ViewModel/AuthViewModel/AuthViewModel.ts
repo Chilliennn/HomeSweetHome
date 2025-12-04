@@ -1,7 +1,8 @@
 import { makeAutoObservable, runInAction } from 'mobx';
-import { supabase, User } from '@home-sweet-home/model';
+import { supabase } from '@home-sweet-home/model';
 
-export const authService = {
+export const AuthViewModel = {
+
   async signIn(email: string, password: string) {
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
@@ -26,4 +27,5 @@ export const authService = {
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
   }
-};
+}
+

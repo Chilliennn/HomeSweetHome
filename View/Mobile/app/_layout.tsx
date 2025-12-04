@@ -5,6 +5,13 @@ import 'react-native-reanimated';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
+/**
+ * Root Layout
+ * 
+ * Manages the top-level navigation structure.
+ * Expo Router automatically handles route groups like (auth), (main), (tabs).
+ * We only need to configure screenOptions, not declare each group explicitly.
+ */
 export default function RootLayout() {
   const colorScheme = useColorScheme();
 
@@ -13,19 +20,14 @@ export default function RootLayout() {
       <Stack
         screenOptions={{
           headerShown: false,
-        }}>
-        {/* Auth screens MUST come first */}
-        <Stack.Screen 
-          name="login" 
-          options={{ 
-            headerShown: false,
-            animation: 'none' // Prevents animation flash on initial load
-          }} 
-        />
-        <Stack.Screen name="matching" options={{ headerShown: false }} />
-        <Stack.Screen name="bonding" options={{ headerShown: false }} />
+        }}
+      >
+        {/* index.tsx - Entry point that redirects */}
+        <Stack.Screen name="index" options={{ headerShown: false }} />
         
-        {/* Tab navigation */}
+        {/* Route groups are auto-discovered by Expo Router */}
+        <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+        <Stack.Screen name="(main)" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         
         {/* Modal */}
@@ -34,10 +36,9 @@ export default function RootLayout() {
           options={{ 
             presentation: 'modal', 
             headerShown: true,
-            title: 'Modal' 
+            title: 'Modal',
           }} 
         />
-        
       </Stack>
       <StatusBar style="auto" />
     </ThemeProvider>

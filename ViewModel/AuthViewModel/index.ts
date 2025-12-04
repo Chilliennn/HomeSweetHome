@@ -1,1 +1,1 @@
-export { authService } from './AuthViewModel';
+export { AuthViewModel } from './AuthViewModel';

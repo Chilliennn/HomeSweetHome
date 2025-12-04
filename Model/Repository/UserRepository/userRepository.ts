@@ -1,5 +1,5 @@
 import { supabase } from '../../Service/APIService/supabase';
-import type { User, Relationship } from '../../types';
+import type { User, Relationship, VerificationStatus, UserProfileData } from '../../types';
 
 export const userRepository = {
   async getById(id: string): Promise<User | null> {
@@ -44,6 +44,36 @@ export const userRepository = {
       .single();
     
     if (error && error.code !== 'PGRST116') throw error;
+    return data;
+  },
+
+  async updateProfileData(userId: string, profileData: UserProfileData) {
+    const { data, error } = await supabase
+      .from('users')
+      .update({
+        profile_data: profileData,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', userId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  async updateVerificationStatus(userId: string, status: VerificationStatus) {
+    const { data, error } = await supabase
+      .from('users')
+      .update({
+        verification_status: status,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', userId)
+      .select()
+      .single();
+
+    if (error) throw error;
     return data;
   }
 };

@@ -144,7 +144,7 @@ export const AgeVerification: React.FC<AgeVerificationProps> = ({
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#FAF9F6',
+    backgroundColor: '#FFFDF5',
   },
   container: {
     flex: 1,

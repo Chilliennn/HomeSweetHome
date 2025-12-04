@@ -7,7 +7,7 @@ import {
   StepIndicator, 
   ChecklistItem, 
   IconCircle 
-} from '../ui';
+} from '../components/ui';
 
 // ============================================================================
 // PROPS INTERFACE

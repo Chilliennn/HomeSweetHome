@@ -2,20 +2,29 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 
-export default function MatchingScreen() {
+/**
+ * Bonding Screen (Route: /(main)/bonding)
+ * 
+ * Displays bonding features for users with active relationships.
+ * Users can manage their relationship, communicate, and track progress.
+ * 
+ * TODO: Move UI to FamilyViewUI/BondingScreen.tsx and re-export here
+ * TODO: Connect to FamilyViewModel for state management
+ */
+export default function BondingScreen() {
   const router = useRouter();
   const { userName } = useLocalSearchParams();
 
   const handleLogout = () => {
-    router.replace('/login');
+    router.replace('/(auth)/login');
   };
 
   return (
     <View style={styles.container}>
       <Text style={styles.greeting}>Hi, {userName}!</Text>
-      <Text style={styles.subtitle}>You&apos;re not in a relationship yet.</Text>
+      <Text style={styles.subtitle}>You&apos;re in an active relationship.</Text>
       <Text style={styles.description}>
-        Browse elderly profiles and submit an application to start your bonding journey.
+        Continue building your bond through shared activities and memories.
       </Text>
 
       <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>

@@ -5,6 +5,14 @@ import 'react-native-reanimated';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
+/**
+ * Root Layout
+ * 
+ * Manages the top-level navigation structure:
+ * - (auth) group: Login, Profile Setup (for unauthenticated/incomplete profile users)
+ * - (main) group: Matching, Bonding, etc. (for authenticated users with complete profile)
+ * - (tabs) group: Tab navigation (if needed)
+ */
 export default function RootLayout() {
   const colorScheme = useColorScheme();
 
@@ -13,20 +21,31 @@ export default function RootLayout() {
       <Stack
         screenOptions={{
           headerShown: false,
-        }}>
-        {/* Auth screens MUST come first */}
+        }}
+      >
+        {/* Auth Group - Login & Profile Setup */}
         <Stack.Screen 
-          name="login" 
+          name="(auth)" 
           options={{ 
             headerShown: false,
-            animation: 'none' // Prevents animation flash on initial load
           }} 
         />
-        <Stack.Screen name="matching" options={{ headerShown: false }} />
-        <Stack.Screen name="bonding" options={{ headerShown: false }} />
+        
+        {/* Main Group - Authenticated screens */}
+        <Stack.Screen 
+          name="(main)" 
+          options={{ 
+            headerShown: false,
+          }} 
+        />
         
         {/* Tab navigation */}
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen 
+          name="(tabs)" 
+          options={{ 
+            headerShown: false,
+          }} 
+        />
         
         {/* Modal */}
         <Stack.Screen 
@@ -34,10 +53,9 @@ export default function RootLayout() {
           options={{ 
             presentation: 'modal', 
             headerShown: true,
-            title: 'Modal' 
+            title: 'Modal',
           }} 
         />
-        
       </Stack>
       <StatusBar style="auto" />
     </ThemeProvider>

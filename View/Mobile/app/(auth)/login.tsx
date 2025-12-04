@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -12,6 +12,17 @@ import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { userRepository } from '@home-sweet-home/model';
 
+/**
+ * Login Screen (Route: /(auth)/login)
+ * 
+ * Entry point for user authentication.
+ * After login, checks profile completion status:
+ * - Incomplete profile → /(auth)/profile-setup
+ * - Complete profile → /(main)/matching or /(main)/bonding
+ * 
+ * TODO: Refactor to use AuthViewModel for state management
+ * TODO: Move UI to AuthUI/LoginScreen.tsx and re-export here
+ */
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -48,14 +59,14 @@ export default function LoginScreen() {
 
       // ============================================================================
       // UC-103: CHECK PROFILE COMPLETION STATUS
-      // If profile is not complete, redirect to onboarding flow
+      // If profile is not complete, redirect to profile-setup flow
       // Profile completion is required before accessing matching/bonding features
       // ============================================================================
       const isProfileComplete = user.profile_data?.profile_completed === true;
       const isAgeVerified = user.profile_data?.age_verified === true;
 
       if (!isProfileComplete || !isAgeVerified) {
-        // First time user or incomplete profile → Go to onboarding
+        // First time user or incomplete profile → Go to profile-setup
         router.replace({
           pathname: '/(auth)/profile-setup',
           params: { 
@@ -76,13 +87,13 @@ export default function LoginScreen() {
       if (relationship) {
         // User has active relationship → Go to bonding
         router.replace({
-          pathname: '/bonding',
+          pathname: '/(main)/bonding',
           params: { userId: user.id, userName: user.full_name },
         });
       } else {
         // No relationship yet → Go to matching
         router.replace({
-          pathname: '/matching',
+          pathname: '/(main)/matching',
           params: { userId: user.id, userName: user.full_name },
         });
       }

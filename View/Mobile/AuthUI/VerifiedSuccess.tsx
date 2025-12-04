@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Button, Card, SuccessIcon, AlertBanner } from '../ui';
+import { Button, Card, SuccessIcon, AlertBanner } from '../components/ui';
 
 // ============================================================================
 // TYPE DEFINITIONS

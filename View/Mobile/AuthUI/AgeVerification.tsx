@@ -16,14 +16,10 @@ import {
 interface AgeVerificationProps {
   /** Callback when user taps "Start Verification" button */
   onStartVerification: () => void;
-  /** Callback when user taps "I'll Do This Later" button */
-  onSkip: () => void;
   /** Callback when user taps back button */
   onBack: () => void;
   /** Loading state for verification button - controlled by ViewModel */
   isLoading?: boolean;
-  /** Whether skip option is available - controlled by ViewModel */
-  canSkip?: boolean;
 }
 
 // ============================================================================
@@ -52,10 +48,8 @@ const CURRENT_STEP = 1;
 // ============================================================================
 export const AgeVerification: React.FC<AgeVerificationProps> = ({
   onStartVerification,
-  onSkip,
   onBack,
   isLoading = false,
-  canSkip = true,
 }) => {
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
@@ -77,7 +71,7 @@ export const AgeVerification: React.FC<AgeVerificationProps> = ({
           {/* Important Notice */}
           <AlertBanner
             type="warning"
-            message="Age verification is required to access matching and adoption features."
+            message="Age verification is required to continue. This ensures a safe community for everyone."
             icon="⚠️"
             style={styles.alert}
           />
@@ -121,16 +115,6 @@ export const AgeVerification: React.FC<AgeVerificationProps> = ({
               loading={isLoading}
               disabled={isLoading}
             />
-
-            {canSkip && (
-              <Button
-                title="I'll Do This Later"
-                onPress={onSkip}
-                variant="outline"
-                style={styles.secondaryButton}
-                disabled={isLoading}
-              />
-            )}
           </View>
         </ScrollView>
       </View>
@@ -210,9 +194,6 @@ const styles = StyleSheet.create({
   },
   primaryButton: {
     marginBottom: 0,
-  },
-  secondaryButton: {
-    marginTop: 0,
   },
 });
 

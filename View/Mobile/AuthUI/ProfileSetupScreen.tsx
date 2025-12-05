@@ -59,7 +59,13 @@ const ProfileSetupScreenComponent: React.FC = () => {
     }
   }, [userId, userTypeFromDB]);
 
-  const { currentStep, isLoading, verifiedAge, userType, profileData } = authViewModel;
+  // Access observable properties directly from authViewModel in render
+  // DO NOT destructure at the top level - it breaks MobX reactivity
+  const currentStep = authViewModel.currentStep;
+  const isLoading = authViewModel.isLoading;
+  const verifiedAge = authViewModel.verifiedAge;
+  const userType = authViewModel.userType;
+  const profileData = authViewModel.profileData;
 
   // ============================================================================
   // EVENT HANDLERS
@@ -68,7 +74,6 @@ const ProfileSetupScreenComponent: React.FC = () => {
 
   /**
    * Handle "Let's Start!" button press on Welcome screen
-   * TODO: Call authViewModel.startProfileSetup() when ViewModel is ready
    */
   const handleStart = () => {
     authViewModel.setStep('age-verification');
@@ -84,34 +89,12 @@ const ProfileSetupScreenComponent: React.FC = () => {
   };
 
   /**
-   * Handle "I'll Do This Later" button press (A14: User Cancels Verification)
-   * Note: Based on UC103, age verification is REQUIRED for matching features
-   * This should show warning M16 and user cannot access matching without verification
-   * 
-   * TODO: Call authViewModel.skipAgeVerification() which will:
-   * 1. Show warning that matching features are disabled
-   * 2. Save incomplete profile state
-   * 3. Navigate but with limited access
-   */
-  const handleSkip = () => {
-    // TODO: Call authViewModel.skipAgeVerification()
-    // Based on UC103 C1: Matching and adoption features are disabled until age is verified
-    // For now, navigate to matching with limited features
-    router.replace({
-      pathname: '/(main)/matching',
-      params: { 
-        userId, 
-        userName,
-        ageVerified: 'false', // Pass verification status
-      },
-    });
-  };
-
-  /**
    * Handle back navigation based on current step
    */
   const handleBack = () => {
-    switch (currentStep) {
+    // Read directly from authViewModel to get fresh value
+    const step = authViewModel.currentStep;
+    switch (step) {
       case 'age-verification':
         authViewModel.setStep('welcome');
         break;
@@ -127,8 +110,18 @@ const ProfileSetupScreenComponent: React.FC = () => {
       case 'profile-info':
         authViewModel.setStep('display-identity');
         break;
+      case 'welcome':
+        // At welcome step, go back to login
+        router.replace('/login');
+        break;
       default:
-        router.back();
+        // For any other step, try router.back() but catch errors
+        try {
+          router.back();
+        } catch {
+          // If no screen to go back to, go to login
+          router.replace('/login');
+        }
     }
   };
 
@@ -170,7 +163,7 @@ const ProfileSetupScreenComponent: React.FC = () => {
     if (!userId) return;
     await authViewModel.saveRealIdentity(userId, {
       phoneNumber: data.phoneNumber,
-      email: data.email,
+      location: data.location,
       realPhotoUrl: data.realPhotoUri,
     });
     authViewModel.setStep('display-identity');
@@ -209,7 +202,7 @@ const ProfileSetupScreenComponent: React.FC = () => {
 
   /**
    * Handle "Start Browsing" after profile completion
-   * Navigate to matching screen
+   * Navigate to matching screen with isFirstTime flag to show walkthrough
    */
   const handleStartBrowsing = () => {
     const effectiveUserType: 'youth' | 'elderly' = userType === 'elderly' ? 'elderly' : 'youth';
@@ -221,6 +214,7 @@ const ProfileSetupScreenComponent: React.FC = () => {
         userType: effectiveUserType,
         verifiedAge: (verifiedAge ?? '').toString(),
         ageVerified: 'true',
+        isFirstTime: 'true', // Show journey walkthrough
       },
     });
   };
@@ -240,6 +234,7 @@ const ProfileSetupScreenComponent: React.FC = () => {
         userType: effectiveUserType,
         verifiedAge: (verifiedAge ?? '').toString(),
         ageVerified: 'true',
+        isFirstTime: 'true', // Show journey walkthrough
       },
     });
   };
@@ -248,132 +243,112 @@ const ProfileSetupScreenComponent: React.FC = () => {
   // RENDER
   // ============================================================================
 
-  const renderCurrentStep = () => {
-    const effectiveUserType: 'youth' | 'elderly' = userType === 'elderly' ? 'elderly' : 'youth';
-    const realIdentityInitial: RealIdentityData | undefined = profileData.realIdentity
-      ? {
-          phoneNumber: profileData.realIdentity.phoneNumber,
-          email: profileData.realIdentity.email,
-          realPhotoUri: profileData.realIdentity.realPhotoUrl,
-        }
-      : undefined;
-
-    const displayIdentityInitial: DisplayIdentityData | undefined = profileData.displayIdentity
-      ? {
-          displayName: profileData.displayIdentity.displayName,
-          avatarType: profileData.displayIdentity.avatarType,
-          selectedAvatarIndex: profileData.displayIdentity.selectedAvatarIndex,
-          customAvatarUri: profileData.displayIdentity.customAvatarUrl,
-        }
-      : undefined;
-
-    const profileInfoInitial: ProfileInfoData | undefined = profileData.profileInfo
-      ? {
-          interests: profileData.profileInfo.interests,
-          customInterest: profileData.profileInfo.customInterest,
-          selfIntroduction: profileData.profileInfo.selfIntroduction,
-          languages: profileData.profileInfo.languages,
-          customLanguage: profileData.profileInfo.customLanguage,
-        }
-      : undefined;
-
-    const verifiedAgeNumber = verifiedAge ?? 0;
-
-    switch (currentStep) {
-      case 'welcome':
-        return (
-          <ProfileWelcome
-            onStart={handleStart}
-            isLoading={isLoading}
-          />
-        );
-
-      case 'age-verification':
-        return (
-          <AgeVerification
-            onStartVerification={handleStartVerification}
-            onSkip={handleSkip}
-            onBack={handleBack}
-            isLoading={isLoading}
-            canSkip={true} // Can skip but features will be limited (C1)
-          />
-        );
-
-      case 'camera':
-        return (
-          <AgeVerificationCamera
-            onCaptured={handlePhotoCaptured}
-            onCancel={handleBack}
-          />
-        );
-
-      case 'verifying':
-        return (
-          <VerifyingLoader
-            title="Verifying..."
-            message="Please wait while we verify your identity with MyDigital ID. This usually takes a few seconds."
-            status="connecting"
-          />
-        );
-
-      case 'verified':
-        return (
-          <VerifiedSuccess
-            verifiedAge={verifiedAgeNumber}
-            userType={effectiveUserType}
-            onContinue={handleContinueAfterVerification}
-            isLoading={isLoading}
-          />
-        );
-
-      case 'real-identity':
-        return (
-          <RealIdentityForm
-            initialData={realIdentityInitial}
-            onNext={handleRealIdentitySubmit}
-            onBack={handleBack}
-            isLoading={isLoading}
-          />
-        );
-
-      case 'display-identity':
-        return (
-          <DisplayIdentityForm
-            initialData={displayIdentityInitial}
-            userType={effectiveUserType}
-            onNext={handleDisplayIdentitySubmit}
-            onBack={handleBack}
-            isLoading={isLoading}
-          />
-        );
-
-      case 'profile-info':
-        return (
-          <ProfileInfoForm
-            initialData={profileInfoInitial}
-            onSubmit={handleProfileInfoSubmit}
-            onBack={handleBack}
-            isLoading={isLoading}
-          />
-        );
-
-      case 'complete':
-        return (
-          <ProfileComplete
-            onStartBrowsing={handleStartBrowsing}
-            onViewProfile={handleViewProfile}
-            isLoading={isLoading}
-          />
-        );
-
-      default:
-        return null;
-    }
-  };
-
   return (
     <View style={styles.container}>
-      {renderCurrentStep()}
+      {(() => {
+        const effectiveUserType: 'youth' | 'elderly' = authViewModel.userType === 'elderly' ? 'elderly' : 'youth';
+        const step = authViewModel.currentStep;
+        const loading = authViewModel.isLoading;
+        const age = authViewModel.verifiedAge ?? 0;
+        const data = authViewModel.profileData;
+
+        const realIdentityInitial: RealIdentityData | undefined = data.realIdentity
+          ? {
+              phoneNumber: data.realIdentity.phoneNumber,
+              location: data.realIdentity.location,
+              realPhotoUri: data.realIdentity.realPhotoUrl,
+            }
+          : undefined;
+
+        const displayIdentityInitial: DisplayIdentityData | undefined = data.displayIdentity
+          ? {
+              displayName: data.displayIdentity.displayName,
+              avatarType: data.displayIdentity.avatarType,
+              selectedAvatarIndex: data.displayIdentity.selectedAvatarIndex,
+              customAvatarUri: data.displayIdentity.customAvatarUrl,
+            }
+          : undefined;
+
+        const profileInfoInitial: ProfileInfoData | undefined = data.profileInfo
+          ? {
+              interests: data.profileInfo.interests,
+              customInterest: data.profileInfo.customInterest,
+              selfIntroduction: data.profileInfo.selfIntroduction,
+              languages: data.profileInfo.languages,
+              customLanguage: data.profileInfo.customLanguage,
+            }
+          : undefined;
+
+        switch (step) {
+          case 'welcome':
+            return <ProfileWelcome onStart={handleStart} isLoading={loading} />;
+          case 'age-verification':
+            return (
+              <AgeVerification
+                onStartVerification={handleStartVerification}
+                onBack={handleBack}
+                isLoading={loading}
+              />
+            );
+          case 'camera':
+            return <AgeVerificationCamera onCaptured={handlePhotoCaptured} onCancel={handleBack} />;
+          case 'verifying':
+            return (
+              <VerifyingLoader
+                title="Verifying..."
+                message="Please wait while we verify your identity with MyDigital ID."
+                status="connecting"
+              />
+            );
+          case 'verified':
+            return (
+              <VerifiedSuccess
+                verifiedAge={age}
+                userType={effectiveUserType}
+                onContinue={handleContinueAfterVerification}
+                isLoading={loading}
+              />
+            );
+          case 'real-identity':
+            return (
+              <RealIdentityForm
+                initialData={realIdentityInitial}
+                onNext={handleRealIdentitySubmit}
+                onBack={handleBack}
+                isLoading={loading}
+              />
+            );
+          case 'display-identity':
+            return (
+              <DisplayIdentityForm
+                initialData={displayIdentityInitial}
+                userType={effectiveUserType}
+                onNext={handleDisplayIdentitySubmit}
+                onBack={handleBack}
+                isLoading={loading}
+              />
+            );
+          case 'profile-info':
+            return (
+              <ProfileInfoForm
+                initialData={profileInfoInitial}
+                onSubmit={handleProfileInfoSubmit}
+                onBack={handleBack}
+                isLoading={loading}
+              />
+            );
+          case 'complete':
+            return (
+              <ProfileComplete
+                onStartBrowsing={handleStartBrowsing}
+                onViewProfile={handleViewProfile}
+                isLoading={loading}
+              />
+            );
+          default:
+            return null;
+        }
+      })()}
     </View>
   );
 };

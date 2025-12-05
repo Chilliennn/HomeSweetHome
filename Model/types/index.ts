@@ -24,7 +24,7 @@ export interface User {
 }
 
 export interface UserProfileData {
-  // Display Identity
+  // Display Identity (stored in profile_data)
   display_name?: string;
   avatar_url?: string;
   avatar_meta?: {
@@ -32,25 +32,16 @@ export interface UserProfileData {
     selected_avatar_index?: number | null;
   };
   
-  // Real Identity (private)
-  real_photo_url?: string;
-  ic_number?: string;
+  // Real Identity - only private photo stored here
+  // (phone & location are stored in users table directly)
   real_identity?: {
-    phone_number?: string;
-    email?: string;
     real_photo_url?: string | null;
   };
   
-  // Profile Info
+  // Profile Info - only user-type specific data
+  // (languages stored in users table directly)
   interests?: string[];
   self_introduction?: string;
-  communication_styles?: CommunicationStyle[];
-  languages?: string[];
-  profile_info?: {
-    interests?: string[];
-    self_introduction?: string;
-    languages?: string[];
-  };
   
   // Verification
   age_verified?: boolean;
@@ -58,13 +49,14 @@ export interface UserProfileData {
   verification_reference?: string;
   verified_at?: string;
   
-  // Profile Completion
+  // Profile Completion tracking
   profile_completed?: boolean;
   profile_completed_at?: string;
   profile_completion?: {
     real_identity_completed?: boolean;
     display_identity_completed?: boolean;
     profile_info_completed?: boolean;
+    profile_completed?: boolean;
   };
 }
 
@@ -242,7 +234,7 @@ export interface AgeVerificationResult {
 
 export interface RealIdentityPayload {
   phoneNumber: string;
-  email: string;
+  location: string;
   realPhotoUrl: string | null;
 }
 

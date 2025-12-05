@@ -62,6 +62,54 @@ export const userRepository = {
     return data;
   },
 
+  /**
+   * Update user's common fields (shared between youth and elderly)
+   * These are stored directly in the users table, not in profile_data
+   */
+  async updateUserFields(userId: string, fields: {
+    phone?: string;
+    location?: string;
+    languages?: string[];
+    profile_photo_url?: string;
+  }) {
+    const { data, error } = await supabase
+      .from('users')
+      .update({
+        ...fields,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', userId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  /**
+   * Update both common fields and profile_data in a single call
+   */
+  async updateUser(userId: string, update: {
+    phone?: string;
+    location?: string;
+    languages?: string[];
+    profile_photo_url?: string;
+    profile_data?: UserProfileData;
+  }) {
+    const { data, error } = await supabase
+      .from('users')
+      .update({
+        ...update,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', userId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
   async updateVerificationStatus(userId: string, status: VerificationStatus) {
     const { data, error } = await supabase
       .from('users')

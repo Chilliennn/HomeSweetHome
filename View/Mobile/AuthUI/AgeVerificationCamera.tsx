@@ -74,7 +74,7 @@ export const AgeVerificationCamera: React.FC<AgeVerificationCameraProps> = ({
       <Header title="Scan Your IC" onBack={onCancel} />
       <View style={styles.container}>
         <CameraView
-          ref={(ref) => (cameraRef.current = ref)}
+          ref={cameraRef}
           style={styles.camera}
           facing="back"
           onCameraReady={() => setIsReady(true)}

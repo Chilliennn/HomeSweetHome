@@ -16,5 +16,6 @@ export { NotificationBell } from './NotificationBell';
 export { ProfileCard } from './ProfileCard';
 export { ProfileInfoRow } from './ProfileInfoRow';
 export { JourneyStageIndicator } from './JourneyStageIndicator';
+export { JourneyProgressDropdown } from './JourneyProgressDropdown';
 export { BottomTabBar, DEFAULT_TABS } from './BottomTabBar';
 export type { TabItem } from './BottomTabBar';

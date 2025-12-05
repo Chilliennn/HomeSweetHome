@@ -24,6 +24,8 @@ interface BottomTabBarProps {
   activeColor?: string;
   /** Color for inactive tabs */
   inactiveColor?: string;
+  /** Array of tab keys that should be disabled */
+  disabledTabs?: string[];
   /** Custom container style */
   style?: ViewStyle;
 }
@@ -51,6 +53,7 @@ export const DEFAULT_TABS: TabItem[] = [
  *   tabs={DEFAULT_TABS}
  *   activeTab="matching"
  *   onTabPress={(key) => navigate(key)}
+ *   disabledTabs={['journey', 'gallery']}
  * />
  * ```
  */
@@ -60,6 +63,7 @@ export const BottomTabBar: React.FC<BottomTabBarProps> = ({
   onTabPress,
   activeColor = '#EB8F80',
   inactiveColor = '#999999',
+  disabledTabs = [],
   style,
 }) => {
   return (
@@ -67,6 +71,7 @@ export const BottomTabBar: React.FC<BottomTabBarProps> = ({
       <View style={styles.tabsWrapper}>
         {tabs.map((tab) => {
           const isActive = tab.key === activeTab;
+          const isDisabled = disabledTabs.includes(tab.key);
 
           return (
             <TouchableOpacity
@@ -74,14 +79,17 @@ export const BottomTabBar: React.FC<BottomTabBarProps> = ({
               style={[
                 styles.tab,
                 isActive && [styles.activeTab, { backgroundColor: activeColor }],
+                isDisabled && styles.disabledTab,
               ]}
-              onPress={() => onTabPress(tab.key)}
-              activeOpacity={0.7}
+              onPress={() => !isDisabled && onTabPress(tab.key)}
+              activeOpacity={isDisabled ? 1 : 0.7}
+              disabled={isDisabled}
             >
               <Text
                 style={[
                   styles.icon,
                   { color: isActive ? '#FFFFFF' : inactiveColor },
+                  isDisabled && styles.disabledIcon,
                 ]}
               >
                 {tab.icon}
@@ -120,8 +128,14 @@ const styles = StyleSheet.create({
   activeTab: {
     // backgroundColor set dynamically
   },
+  disabledTab: {
+    opacity: 0.4,
+  },
   icon: {
     fontSize: 24,
+  },
+  disabledIcon: {
+    color: '#CCCCCC',
   },
 });
 

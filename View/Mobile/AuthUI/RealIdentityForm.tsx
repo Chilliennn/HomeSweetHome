@@ -21,15 +21,13 @@ import {
 // ============================================================================
 export interface RealIdentityData {
   phoneNumber: string;
-  email: string;
+  location: string;
   realPhotoUri: string | null;
 }
 
 interface RealIdentityFormProps {
   /** Initial data (from ViewModel) */
   initialData?: Partial<RealIdentityData>;
-  /** User's email from login (pre-filled) */
-  userEmail?: string;
   /** Callback when form is submitted */
   onNext: (data: RealIdentityData) => void;
   /** Callback for back navigation */
@@ -51,19 +49,18 @@ const CURRENT_STEP = 2; // Step 1 of 3 profile steps (after age verification)
  * Real Identity Form (UC103_5, UC103_6)
  * Step 1 of 3: Collects private information for verification
  * - Phone Number
- * - Email (pre-filled from login)
+ * - Location
  * - Real Photo upload
  */
 export const RealIdentityForm: React.FC<RealIdentityFormProps> = ({
   initialData,
-  userEmail = '',
   onNext,
   onBack,
   isLoading = false,
 }) => {
   // Form state
   const [phoneNumber, setPhoneNumber] = useState(initialData?.phoneNumber || '');
-  const [email, setEmail] = useState(initialData?.email || userEmail);
+  const [location, setLocation] = useState(initialData?.location || '');
   const [realPhotoUri, setRealPhotoUri] = useState<string | null>(
     initialData?.realPhotoUri || null
   );
@@ -113,11 +110,11 @@ export const RealIdentityForm: React.FC<RealIdentityFormProps> = ({
       newErrors.phone = 'Please enter a valid phone number';
     }
 
-    // Validate email
-    if (!email.trim()) {
-      newErrors.email = 'Email is required';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      newErrors.email = 'Please enter a valid email address';
+    // Validate location
+    if (!location.trim()) {
+      newErrors.location = 'Location is required';
+    } else if (location.trim().length < 3) {
+      newErrors.location = 'Please enter a valid location';
     }
 
     // Validate photo - UC103_5
@@ -133,7 +130,7 @@ export const RealIdentityForm: React.FC<RealIdentityFormProps> = ({
     if (validateForm()) {
       onNext({
         phoneNumber,
-        email,
+        location,
         realPhotoUri,
       });
     }
@@ -187,22 +184,21 @@ export const RealIdentityForm: React.FC<RealIdentityFormProps> = ({
             {errors.phone && <Text style={styles.errorText}>{errors.phone}</Text>}
           </View>
 
-          {/* Email Field */}
+          {/* Location Field */}
           <View style={styles.fieldContainer}>
             <Text style={styles.label}>
-              Email <Text style={styles.required}>*</Text>
+              Location <Text style={styles.required}>*</Text>
             </Text>
             <TextInput
-              style={[styles.input, errors.email && styles.inputError]}
-              placeholder="ahmad.faiz@email.com"
+              style={[styles.input, errors.location && styles.inputError]}
+              placeholder="e.g. Kuala Lumpur, Malaysia"
               placeholderTextColor="#A0A0A0"
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
+              value={location}
+              onChangeText={setLocation}
+              autoCapitalize="words"
               editable={!isLoading}
             />
-            {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
+            {errors.location && <Text style={styles.errorText}>{errors.location}</Text>}
           </View>
 
           {/* Real Photo Upload - UC103_5, UC103_6 */}

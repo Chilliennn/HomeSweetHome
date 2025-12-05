@@ -1,5 +1,5 @@
 export * from './AuthViewModel';
+export * from './MatchingViewModel';
 // Add more ViewModels here as you create them
-// export * from './MatchingViewModel';
 // export * from './StageViewModel';
 // etc.

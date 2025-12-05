@@ -19,3 +19,13 @@ export { JourneyStageIndicator } from './JourneyStageIndicator';
 export { JourneyProgressDropdown } from './JourneyProgressDropdown';
 export { BottomTabBar, DEFAULT_TABS } from './BottomTabBar';
 export type { TabItem } from './BottomTabBar';
+
+// Communication components
+export { NotificationItem } from './NotificationItem';
+export { PreMatchCard } from './PreMatchCard';
+export { ChatBubble } from './ChatBubble';
+
+// Form components
+export { FormField } from './FormField';
+export { TimelineItem } from './TimelineItem';
+export { FeatureCheckItem } from './FeatureCheckItem';

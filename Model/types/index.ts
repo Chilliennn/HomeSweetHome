@@ -1,3 +1,5 @@
+import { ReactNode } from 'react';
+
 // ============================================
 // USER TYPES
 // ============================================
@@ -127,6 +129,52 @@ export interface Relationship {
   end_admin_notes: string | null;
   created_at: string;
   ended_at: string | null;
+}
+
+
+export interface StageFeatureFlags {
+  text: boolean;
+  diary: boolean;
+  scheduling: boolean;
+  video_call: boolean;
+  photo_share: boolean;
+}
+
+export interface StageRequirement {
+  id: string;
+  title: string;
+  description: string;
+  is_completed: boolean;
+  required_value?: number;
+  current_value?: number;
+}
+
+export interface StageInfo {
+  stage: RelationshipStage;
+  display_name: string;
+  order: number;
+  is_current: boolean;
+  is_completed: boolean;
+  start_date?: string;
+  completion_date?: string;
+}
+
+export interface LockedStageDetail {
+  stage_order: number;
+  stage: RelationshipStage;
+  title: string;
+  description: string;
+  unlock_message: string;
+  preview_requirements: string[];
+}
+
+export interface Feature {
+  key: string;
+  name: string;
+  description: string;
+  is_unlocked: boolean;
+  unlock_stage?: RelationshipStage;
+  unlock_message?: string;
 }
 
 // ============================================

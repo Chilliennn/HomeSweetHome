@@ -63,6 +63,17 @@ export default function LoginScreen() {
         return;
       }
 
+      const relationship = await userRepository.getActiveRelationship(user.id);
+      console.log('userRepository.getActiveRelationship result:', relationship);
+
+      if (relationship) {
+        // User has active relationship → Go to bonding
+        router.replace({
+          pathname: '/(main)/bonding',
+          params: { userId: user.id, userName: user.full_name },
+        });
+      } 
+
       // ============================================================================
       // UC-103: CHECK PROFILE COMPLETION STATUS
       // If profile is not complete, redirect to profile-setup flow
@@ -84,25 +95,6 @@ export default function LoginScreen() {
         return;
       }
 
-      // ============================================================================
-      // PROFILE COMPLETE: Check relationship status and navigate accordingly
-      // ============================================================================
-      const relationship = await userRepository.getActiveRelationship(user.id);
-      console.log('userRepository.getActiveRelationship result:', relationship);
-
-      if (relationship) {
-        // User has active relationship → Go to bonding
-        router.replace({
-          pathname: '/(main)/bonding',
-          params: { userId: user.id, userName: user.full_name },
-        });
-      } else {
-        // No relationship yet → Go to matching
-        router.replace({
-          pathname: '/(main)/matching',
-          params: { userId: user.id, userName: user.full_name },
-        });
-      }
     } catch (error) {
       setLoading(false);
       console.error('Login error:', error);

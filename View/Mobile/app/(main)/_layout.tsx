@@ -17,6 +17,13 @@ export default function MainLayout() {
     >
       <Stack.Screen name="matching" />
       <Stack.Screen name="bonding" />
+      <Stack.Screen name="stageRequirements" />
+      <Stack.Screen name="availableFeatures" />
+      <Stack.Screen name="diary" />
+      <Stack.Screen name="album" />
+      <Stack.Screen name="chat" />
+      <Stack.Screen name="settings" />
+      <Stack.Screen name="notification" />
     </Stack>
   );
 }

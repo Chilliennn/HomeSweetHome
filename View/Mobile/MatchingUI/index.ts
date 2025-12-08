@@ -7,3 +7,6 @@ export { PreMatchStarted } from './PreMatchStarted';
 export { FormalApplication } from './FormalApplication';
 export { ApplicationSubmitted } from './ApplicationSubmitted';
 export { MatchApproved } from './MatchApproved';
+
+// elderly side 
+export { ElderlyHome } from './ElderlyHome';

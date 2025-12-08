@@ -75,7 +75,7 @@ export const JourneyProgressDropdown: React.FC<JourneyProgressDropdownProps> = (
   onLearnMore,
   style,
 }) => {
-  const [isExpanded, setIsExpanded] = useState(true);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   const toggleExpand = () => {
     setIsExpanded(!isExpanded);

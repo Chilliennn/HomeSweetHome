@@ -12,16 +12,16 @@ export class MatchingViewModel {
   // =============================================================
   // Observable State
   // =============================================================
-  
+
   /** Whether the user has seen the journey walkthrough */
   hasSeenWalkthrough = false;
-  
+
   /** Whether walkthrough is currently being shown */
   showWalkthrough = false;
-  
+
   /** Loading state */
   isLoading = false;
-  
+
   /** Error message */
   errorMessage: string | null = null;
 
@@ -37,8 +37,14 @@ export class MatchingViewModel {
    * Check if walkthrough should be shown (first time user)
    * Called when entering matching screen after profile completion
    */
-  checkWalkthroughStatus(isFirstTimeUser: boolean = true) {
-    if (isFirstTimeUser && !this.hasSeenWalkthrough) {
+  /**
+   * Check if walkthrough should be shown (first time user)
+   * Called when entering matching screen after profile completion
+   * @param isFirstTimeUser - Whether user is newly registered (triggers check)
+   * @param force - Force show walkthrough (e.g. "Learn More" button)
+   */
+  checkWalkthroughStatus(isFirstTimeUser: boolean = true, force: boolean = false) {
+    if (force || (isFirstTimeUser && !this.hasSeenWalkthrough)) {
       this.showWalkthrough = true;
     }
   }

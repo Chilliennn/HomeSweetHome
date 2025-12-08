@@ -14,7 +14,7 @@ import {
   ProfileCard,
   JourneyProgressDropdown,
   BottomTabBar,
-  TabItem,
+  DEFAULT_TABS, 
 } from '@/components/ui';
 
 // ============================================================================
@@ -119,17 +119,9 @@ const MOCK_ELDERLY_PROFILES: ElderlyProfile[] = [
   },
 ];
 
-// Default tabs for bottom navigation
-const TABS: TabItem[] = [
-  { key: 'matching', icon: '👥', label: 'Matching' },
-  { key: 'journey', icon: '📖', label: 'Journey' },
-  { key: 'gallery', icon: '🖼️', label: 'Gallery' },
-  { key: 'chat', icon: '💬', label: 'Chat' },
-  { key: 'settings', icon: '⚙️', label: 'Settings' },
-];
 
 // Tabs that are disabled (no function yet)
-const DISABLED_TABS = ['journey', 'gallery'];
+const DISABLED_TABS = ['diary', 'memory'];
 
 // ============================================================================
 // COMPONENT
@@ -190,7 +182,7 @@ export const BrowseElderly: React.FC<BrowseElderlyProps> = ({
   );
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       {/* Header Section */}
       <View style={styles.header}>
         <NotificationBell
@@ -237,7 +229,7 @@ export const BrowseElderly: React.FC<BrowseElderlyProps> = ({
 
       {/* Bottom Tab Bar */}
       <BottomTabBar
-        tabs={TABS}
+        tabs={DEFAULT_TABS}
         activeTab={activeTab}
         onTabPress={handleTabPress}
         disabledTabs={DISABLED_TABS}

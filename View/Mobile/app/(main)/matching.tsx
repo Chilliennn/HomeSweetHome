@@ -3,11 +3,12 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { observer } from 'mobx-react-lite';
 import { matchingViewModel } from '@home-sweet-home/viewmodel';
-import { 
-  JourneyWalkthrough, 
-  BrowseElderly, 
-  ElderlyProfileDetail, 
-  InterestSent 
+import {
+  JourneyWalkthrough,
+  BrowseElderly,
+  ElderlyProfileDetail,
+  InterestSent,
+  ElderlyHome
 } from '../../MatchingUI';
 
 // ============================================================================
@@ -176,8 +177,8 @@ function MatchingScreenComponent() {
   };
 
   const handleLearnMorePress = () => {
-    // Show walkthrough again
-    matchingViewModel.checkWalkthroughStatus(true);
+    // Show walkthrough again (force = true)
+    matchingViewModel.checkWalkthroughStatus(true, true);
   };
 
   const handleTabPress = (tabKey: string) => {
@@ -192,6 +193,8 @@ function MatchingScreenComponent() {
 
   const handleNotificationPress = () => {
     // Future: navigate to notifications screen
+    // For now we might want to just show an alert or navigate to a placeholder
+    // router.push('/(main)/notifications');
   };
 
   const handleFilterPress = () => {
@@ -209,8 +212,8 @@ function MatchingScreenComponent() {
   }
 
   // Get selected profile data
-  const selectedProfile = selectedProfileId 
-    ? MOCK_ELDERLY_PROFILES.find(p => p.id === selectedProfileId) 
+  const selectedProfile = selectedProfileId
+    ? MOCK_ELDERLY_PROFILES.find(p => p.id === selectedProfileId)
     : undefined;
 
   // Render based on current screen
@@ -236,6 +239,19 @@ function MatchingScreenComponent() {
 
     case 'browse':
     default:
+      // If Elderly, show ElderlyHome
+      if (userType === 'elderly') {
+        return (
+          <ElderlyHome
+            displayName={userName}
+            notificationCount={1}
+            onNotificationPress={handleNotificationPress}
+            onLearnMore={handleLearnMorePress}
+          />
+        );
+      }
+
+      // If Youth (default), show BrowseElderly
       return (
         <BrowseElderly
           notificationCount={1}

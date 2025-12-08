@@ -28,9 +28,10 @@ import { relationshipService } from '@home-sweet-home/model';
  * - ViewModel: authViewModel handles authentication state and logic
  * - Uses observer() for automatic re-renders when ViewModel state changes
  * 
- * After login, checks profile completion status:
- * - Incomplete profile → /(auth)/profile-setup
- * - Complete profile → /(main)/matching or /(main)/bonding
+ * After login:
+ * 1. Check Relationship -> Bonding
+ * 2. Check Profile -> Profile Setup
+ * 3. Default -> Matching (Browse/ElderlyHome)
  */
 const LoginScreen = observer(function LoginScreen() {
   const [email, setEmail] = React.useState('');
@@ -57,7 +58,7 @@ const LoginScreen = observer(function LoginScreen() {
   const handleLogin = async () => {
     // Basic validation in View (presentation logic)
     const trimmedEmail = email.trim();
-    
+
     if (!trimmedEmail) {
       Alert.alert('Error', 'Please enter your email');
       return;
@@ -73,7 +74,7 @@ const LoginScreen = observer(function LoginScreen() {
       console.log('Calling signIn with email:', trimmedEmail.toLowerCase());
       const result = await authViewModel.signIn(trimmedEmail.toLowerCase(), password);
       console.log('SignIn result:', result);
-      
+
       if (!result.appUser) {
         Alert.alert('Error', 'No account found with this email');
         return;
@@ -82,28 +83,8 @@ const LoginScreen = observer(function LoginScreen() {
       const user = result.appUser;
 
       // ============================================================================
-      // UC-103: CHECK PROFILE COMPLETION STATUS
-      // Use computed properties from ViewModel when available
-      // ============================================================================
-      const isProfileComplete = user.profile_data?.profile_completed === true;
-      const isAgeVerified = user.profile_data?.age_verified === true;
-
-      if (!isProfileComplete || !isAgeVerified) {
-        // First time user or incomplete profile → Go to profile-setup
-        router.replace({
-          pathname: '/(auth)/profile-setup',
-          params: { 
-            userId: user.id, 
-            userName: user.full_name,
-            userType: user.user_type,
-          },
-        });
-        return;
-      }
-
-      // ============================================================================
-      // PROFILE COMPLETE: Check relationship status and navigate accordingly
-      // Delegate to RelationshipService for business logic
+      // 1. CHECK RELATIONSHIP STATUS
+      // Prioritize active relationship
       // ============================================================================
       const hasRelationship = await relationshipService.hasActiveRelationship(user.id);
 
@@ -113,13 +94,41 @@ const LoginScreen = observer(function LoginScreen() {
           pathname: '/(main)/bonding',
           params: { userId: user.id, userName: user.full_name },
         });
-      } else {
-        // No relationship yet → Go to matching
-        router.replace({
-          pathname: '/(main)/matching',
-          params: { userId: user.id, userName: user.full_name },
-        });
+        return;
       }
+
+      // ============================================================================
+      // 2. CHECK PROFILE COMPLETION STATUS
+      // ============================================================================
+      const isProfileComplete = user.profile_data?.profile_completed === true;
+      const isAgeVerified = user.profile_data?.age_verified === true;
+
+      if (!isProfileComplete || !isAgeVerified) {
+        // First time user or incomplete profile → Go to profile-setup
+        router.replace({
+          pathname: '/(auth)/profile-setup',
+          params: {
+            userId: user.id,
+            userName: user.full_name,
+            userType: user.user_type,
+          },
+        });
+        return;
+      }
+
+      // ============================================================================
+      // 3. NO RELATIONSHIP & PROFILE COMPLETE -> GO TO MATCHING
+      // ============================================================================
+      router.replace({
+        pathname: '/(main)/matching',
+        params: {
+          userId: user.id,
+          userName: user.full_name,
+          userType: user.user_type,
+          isFirstTime: 'true', // Trigger walkthrough check if needed
+        },
+      });
+
     } catch (error: any) {
       // Error is already set in ViewModel, show it in Alert
       const message = authViewModel.errorMessage || 'An error occurred during login. Please try again.';
@@ -131,10 +140,10 @@ const LoginScreen = observer(function LoginScreen() {
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <KeyboardAvoidingView
-          style={{flex:1}}
+          style={{ flex: 1 }}
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          keyboardVerticalOffset={Platform.OS === 'ios' ? 0:20}
-        >  
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+        >
           <View style={styles.container}>
             <ScrollView
               contentContainerStyle={styles.scrollContent}
@@ -190,7 +199,7 @@ const LoginScreen = observer(function LoginScreen() {
 
             <Text style={styles.footer}>© 2025 HomeSweetHome All rights reserved.</Text>
           </View>
-        </KeyboardAvoidingView>  
+        </KeyboardAvoidingView>
       </TouchableWithoutFeedback>
     </SafeAreaView>
   );

@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, TouchableOpacity, Text, StyleSheet, ViewStyle } from 'react-native';
+import { View, TouchableOpacity, Text, StyleSheet, ViewStyle, Image, ImageSourcePropType } from 'react-native';
 
 // ============================================================================
 // TYPES
@@ -8,7 +8,8 @@ export interface TabItem {
   /** Unique key for the tab */
   key: string;
   /** Icon emoji or character */
-  icon: string;
+  iconActive: ImageSourcePropType;
+  iconInactive: ImageSourcePropType;
   /** Optional label (not shown in current design) */
   label?: string;
 }
@@ -34,11 +35,33 @@ interface BottomTabBarProps {
 // DEFAULT TABS
 // ============================================================================
 export const DEFAULT_TABS: TabItem[] = [
-  { key: 'matching', icon: '👥', label: 'Matching' },
-  { key: 'journey', icon: '📖', label: 'Journey' },
-  { key: 'gallery', icon: '🖼️', label: 'Gallery' },
-  { key: 'chat', icon: '💬', label: 'Chat' },
-  { key: 'settings', icon: '⚙️', label: 'Settings' },
+  {
+    key: 'matching',
+    iconActive: require('../../assets/images/nav-home-active.png'),
+    iconInactive: require('../../assets/images/nav-home.png'),
+    label: 'Matching'
+  },
+  {
+    key: 'diary',
+    iconActive: require('../../assets/images/nav-diary-active.png'),
+    iconInactive: require('../../assets/images/nav-diary.png'),
+    label: 'diary'
+  },
+  { key: 'memory',
+    iconActive: require('../../assets/images/nav-memory-active.png'), 
+    iconInactive: require('../../assets/images/nav-memory.png'),
+    label: 'memory'
+  },
+  { key: 'chat',
+    iconActive: require('../../assets/images/nav-chat-active.png'), 
+    iconInactive: require('../../assets/images/nav-chat.png'),
+    label: 'chat'
+  },
+  { key: 'settings',
+    iconActive: require('../../assets/images/nav-settings-active.png'), 
+    iconInactive: require('../../assets/images/nav-settings.png'),
+    label: 'settings'
+  },
 ];
 
 // ============================================================================
@@ -78,22 +101,18 @@ export const BottomTabBar: React.FC<BottomTabBarProps> = ({
               key={tab.key}
               style={[
                 styles.tab,
-                isActive && [styles.activeTab, { backgroundColor: activeColor }],
+                isActive && { backgroundColor: activeColor },
                 isDisabled && styles.disabledTab,
               ]}
               onPress={() => !isDisabled && onTabPress(tab.key)}
               activeOpacity={isDisabled ? 1 : 0.7}
               disabled={isDisabled}
             >
-              <Text
-                style={[
-                  styles.icon,
-                  { color: isActive ? '#FFFFFF' : inactiveColor },
-                  isDisabled && styles.disabledIcon,
-                ]}
-              >
-                {tab.icon}
-              </Text>
+              <Image
+                source={isActive ? tab.iconActive : tab.iconInactive}
+                style={[styles.iconImage, isDisabled && styles.disabledIcon]}
+                resizeMode="contain"
+              />
             </TouchableOpacity>
           );
         })}
@@ -106,8 +125,15 @@ export const BottomTabBar: React.FC<BottomTabBarProps> = ({
 // STYLES
 // ============================================================================
 const styles = StyleSheet.create({
+  iconImage: {
+    width: 24,
+    height: 24,
+  },
+  disabledIcon: {
+    opacity: 0.4,
+  },
   container: {
-    backgroundColor: '#F5F5F0',
+    backgroundColor: '#FFFFFF',
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderTopLeftRadius: 24,
@@ -117,6 +143,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-around',
     alignItems: 'center',
+
   },
   tab: {
     width: 56,
@@ -124,6 +151,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#F5F5F5',
   },
   activeTab: {
     // backgroundColor set dynamically
@@ -133,9 +161,6 @@ const styles = StyleSheet.create({
   },
   icon: {
     fontSize: 24,
-  },
-  disabledIcon: {
-    color: '#CCCCCC',
   },
 });
 

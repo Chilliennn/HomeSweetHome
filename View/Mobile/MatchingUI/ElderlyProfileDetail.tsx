@@ -14,7 +14,7 @@ import {
   ProfileInfoRow,
   Button,
   BottomTabBar,
-  TabItem,
+  DEFAULT_TABS
 } from '@/components/ui';
 
 // ============================================================================
@@ -70,15 +70,6 @@ const MOCK_PROFILE: ElderlyDetailData = {
   availability: 'Daily, mornings preferred',
 };
 
-// Default tabs for bottom navigation
-const TABS: TabItem[] = [
-  { key: 'matching', icon: '👥', label: 'Matching' },
-  { key: 'journey', icon: '📖', label: 'Journey' },
-  { key: 'gallery', icon: '🖼️', label: 'Gallery' },
-  { key: 'chat', icon: '💬', label: 'Chat' },
-  { key: 'settings', icon: '⚙️', label: 'Settings' },
-];
-
 // Tabs that are disabled (no function yet)
 const DISABLED_TABS = ['journey', 'gallery'];
 
@@ -121,7 +112,7 @@ export const ElderlyProfileDetail: React.FC<ElderlyProfileDetailProps> = ({
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity
@@ -228,7 +219,7 @@ export const ElderlyProfileDetail: React.FC<ElderlyProfileDetailProps> = ({
 
       {/* Bottom Tab Bar */}
       <BottomTabBar
-        tabs={TABS}
+        tabs={DEFAULT_TABS}
         activeTab={activeTab}
         onTabPress={handleTabPress}
         disabledTabs={DISABLED_TABS}
@@ -256,13 +247,13 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#333',
+    backgroundColor: '#9DE2D0',
     justifyContent: 'center',
     alignItems: 'center',
   },
   backIcon: {
     fontSize: 20,
-    color: '#FFF',
+    color: '#000000',
   },
   headerTitle: {
     fontSize: 18,

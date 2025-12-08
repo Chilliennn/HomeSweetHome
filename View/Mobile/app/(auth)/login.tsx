@@ -97,6 +97,17 @@ const LoginScreen = observer(function LoginScreen() {
         return;
       }
 
+      const relationship = await userRepository.getActiveRelationship(user.id);
+      console.log('userRepository.getActiveRelationship result:', relationship);
+
+      if (relationship) {
+        // User has active relationship → Go to bonding
+        router.replace({
+          pathname: '/(main)/bonding',
+          params: { userId: user.id, userName: user.full_name },
+        });
+      } 
+
       // ============================================================================
       // 2. CHECK PROFILE COMPLETION STATUS
       // ============================================================================

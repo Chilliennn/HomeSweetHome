@@ -1,14 +1,14 @@
 import { supabase } from '../../Service/APIService/supabase';
-import type { 
-  User, 
-  Relationship, 
-  RelationshipStage, 
-  StageMetrics, 
-  StageFeatureFlags, 
+import type {
+  User,
+  Relationship,
+  RelationshipStage,
+  StageMetrics,
+  StageFeatureFlags,
   StageRequirement,
   LockedStageDetail,
   Feature,
-  VerificationStatus, 
+  VerificationStatus,
   UserProfileData
 } from '../../types';
 
@@ -19,7 +19,7 @@ export const userRepository = {
       .select('*')
       .eq('id', id)
       .single();
-    
+
     if (error) throw error;
     return data;
   },
@@ -30,7 +30,7 @@ export const userRepository = {
       .insert(user)
       .select()
       .single();
-    
+
     if (error) throw error;
     return data;
   },
@@ -41,7 +41,7 @@ export const userRepository = {
       .select('*')
       .eq('email', email)
       .single();
-    
+
     if (error && error.code !== 'PGRST116') throw error;
     return data;
   },
@@ -53,7 +53,7 @@ export const userRepository = {
       .or(`youth_id.eq.${userId},elderly_id.eq.${userId}`)
       .eq('status', 'active')
       .single();
-    
+
     if (error && error.code !== 'PGRST116') throw error;
     return data;
   },
@@ -134,7 +134,7 @@ export const userRepository = {
     if (error) throw error;
     return data;
   },
-    async getRelationshipStage(userId: string) {
+  async getRelationshipStage(userId: string) {
     const { data, error } = await supabase
       .from('relationships')
       .select('id, current_stage, stage_start_date, stage_metrics, feature_flags, status')
@@ -168,7 +168,7 @@ export const userRepository = {
     return activities || [];
   },
 
-async getStageFeatures(stage: RelationshipStage): Promise<StageFeatureFlags> {
+  async getStageFeatures(stage: RelationshipStage): Promise<StageFeatureFlags> {
     const { data, error } = await supabase
       .from('stage_features')
       .select('feature_flags')
@@ -204,7 +204,7 @@ async getStageFeatures(stage: RelationshipStage): Promise<StageFeatureFlags> {
     return count || 0;
   },
 
-async markNotificationsRead(userId: string) {
+  async markNotificationsRead(userId: string) {
     const { error } = await supabase
       .from('notifications')
       .update({ is_read: true })
@@ -224,7 +224,7 @@ async markNotificationsRead(userId: string) {
       .single();
 
     if (error) throw error;
-    
+
     const stageNames: Record<RelationshipStage, string> = {
       getting_to_know: 'Getting Acquainted',
       trial_period: 'Building Trust',
@@ -282,7 +282,7 @@ async markNotificationsRead(userId: string) {
     return featureDefinitions.map(feature => {
       const unlockStageIndex = stageOrder.indexOf(feature.unlockStage);
       const isUnlocked = unlockStageIndex <= currentStageIndex;
-      
+
       return {
         key: feature.key,
         name: feature.name,

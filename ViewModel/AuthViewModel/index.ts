@@ -1,1 +1,1 @@
-export { AuthViewModel } from './AuthViewModel';
+export { AuthViewModel, authViewModel, ProfileSetupStep } from './AuthViewModel';

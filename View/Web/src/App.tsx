@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useEffect } from 'react'
-import { supabase } from '@home-sweet-home/shared'
+import { supabase } from '@home-sweet-home/model'
 import './App.css'
 
 function App() {

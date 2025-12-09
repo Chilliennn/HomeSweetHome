@@ -26,26 +26,40 @@ export interface User {
 }
 
 export interface UserProfileData {
-  // Display Identity
+  // Display Identity (stored in profile_data)
   display_name?: string;
   avatar_url?: string;
+  avatar_meta?: {
+    type?: 'default' | 'custom';
+    selected_avatar_index?: number | null;
+  };
   
-  // Real Identity (private)
-  real_photo_url?: string;
-  ic_number?: string;
+  // Real Identity - only private photo stored here
+  // (phone & location are stored in users table directly)
+  real_identity?: {
+    real_photo_url?: string | null;
+  };
   
-  // Profile Info
+  // Profile Info - only user-type specific data
+  // (languages stored in users table directly)
   interests?: string[];
   self_introduction?: string;
-  communication_styles?: CommunicationStyle[];
   
   // Verification
   age_verified?: boolean;
   verified_age?: number;
+  verification_reference?: string;
+  verified_at?: string;
   
-  // Profile Completion
+  // Profile Completion tracking
   profile_completed?: boolean;
   profile_completed_at?: string;
+  profile_completion?: {
+    real_identity_completed?: boolean;
+    display_identity_completed?: boolean;
+    profile_info_completed?: boolean;
+    profile_completed?: boolean;
+  };
 }
 
 export type CommunicationStyle = 
@@ -246,4 +260,51 @@ export interface Notification {
   message: string;
   is_read: boolean;
   created_at: string;
+}
+
+// ============================================
+// PROFILE SETUP / UC103 TYPES
+// ============================================
+export interface AgeVerificationPayload {
+  userId: string;
+  userType: UserType;
+  photoUri: string;
+}
+
+export interface AgeVerificationResult {
+  ageVerified: boolean;
+  verifiedAge: number;
+  status: VerificationStatus;
+  referenceId: string;
+  verifiedAt: string;
+  notes?: string;
+}
+
+export interface RealIdentityPayload {
+  phoneNumber: string;
+  location: string;
+  realPhotoUrl: string | null;
+}
+
+export interface DisplayIdentityPayload {
+  displayName: string;
+  avatarType: 'default' | 'custom';
+  selectedAvatarIndex: number | null;
+  customAvatarUrl: string | null;
+}
+
+export interface ProfileInfoPayload {
+  interests: string[];
+  customInterest?: string;
+  selfIntroduction: string;
+  languages: string[];
+  customLanguage?: string;
+}
+
+export interface ProfileCompletionState {
+  ageVerified: boolean;
+  realIdentityCompleted: boolean;
+  displayIdentityCompleted: boolean;
+  profileInfoCompleted: boolean;
+  profileCompleted: boolean;
 }

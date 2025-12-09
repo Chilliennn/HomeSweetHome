@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, ViewStyle } from 'react-native';
+import { View, Text, StyleSheet, ViewStyle, TouchableOpacity } from 'react-native';
 
 type AlertType = 'warning' | 'info' | 'success' | 'error';
 
@@ -8,6 +8,7 @@ interface AlertBannerProps {
     message: string;
     icon?: string;
     style?: ViewStyle;
+  onDismiss?: () => void;
 }
 
 const ALERT_COLORS = {
@@ -22,6 +23,7 @@ export const AlertBanner: React.FC<AlertBannerProps> = ({
   message,
   icon,
   style,
+  onDismiss,
 }) => {
   const colors = ALERT_COLORS[type];
 
@@ -33,6 +35,15 @@ export const AlertBanner: React.FC<AlertBannerProps> = ({
         {type === 'info' && !icon && '🔒 '}
         {message}
       </Text>
+      {onDismiss && (
+        <TouchableOpacity
+          onPress={onDismiss}
+          style={styles.closeButton}
+          accessibilityRole="button"
+        >
+          <Text style={[styles.closeIcon, { color: colors.text }]}>×</Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 };
@@ -52,6 +63,14 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 14,
     lineHeight: 20,
+  },
+  closeButton: {
+    paddingLeft: 12,
+    paddingVertical: 4,
+  },
+  closeIcon: {
+    fontSize: 18,
+    fontWeight: '600',
   },
 });
 

@@ -17,7 +17,7 @@ import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { observer } from 'mobx-react-lite';
-import { authViewModel } from '@home-sweet-home/viewmodel';
+import { authViewModel, familyViewModel } from '@home-sweet-home/viewmodel';
 import { relationshipService } from '@home-sweet-home/model';
 
 /**
@@ -89,6 +89,12 @@ const LoginScreen = observer(function LoginScreen() {
       const hasRelationship = await relationshipService.hasActiveRelationship(user.id);
 
       if (hasRelationship) {
+        // Initialize FamilyViewModel with relationship data (non-blocking)
+        familyViewModel.initialize(user.id).catch((err) => {
+          console.warn('Warning: Failed to initialize FamilyViewModel:', err.message);
+          // Continue anyway - family features will initialize on demand
+        });
+        
         // User has active relationship → Go to bonding
         router.replace({
           pathname: '/(main)/bonding',

@@ -1,5 +1,5 @@
 import { userRepository } from '../../Repository/UserRepository';
-import type { Relationship, User } from '../../types';
+import type { Relationship } from '../../types';
 
 /**
  * RelationshipService - Business logic for relationship management

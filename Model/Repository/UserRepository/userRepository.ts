@@ -3,7 +3,6 @@ import type {
   User,
   Relationship,
   RelationshipStage,
-  StageMetrics,
   StageFeatureFlags,
   StageRequirement,
   LockedStageDetail,
@@ -39,7 +38,7 @@ export const userRepository = {
     const { data, error } = await supabase
       .from('users')
       .select('*')
-      .eq('email', email)
+      .eq('email', email.toLowerCase())
       .single();
 
     if (error && error.code !== 'PGRST116') throw error;
@@ -217,7 +216,7 @@ export const userRepository = {
   async getLockedStageDetails(targetStage: RelationshipStage): Promise<LockedStageDetail | null> {
     // This would typically come from a stage_info table
     // For now, we'll construct it from stage_features
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('stage_features')
       .select('stage, feature_flags')
       .eq('stage', targetStage)
@@ -260,7 +259,7 @@ export const userRepository = {
    * Get all features with unlock status
    */
   async getAllFeatures(currentStage: RelationshipStage): Promise<Feature[]> {
-    const { data: stageFeatures, error } = await supabase
+    const { error } = await supabase
       .from('stage_features')
       .select('stage, feature_flags')
       .order('stage');

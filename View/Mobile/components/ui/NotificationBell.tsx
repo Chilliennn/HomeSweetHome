@@ -1,48 +1,88 @@
 import React from 'react';
-import { TouchableOpacity, Text, StyleSheet, View } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ViewStyle } from 'react-native';
 
+// ============================================================================
+// TYPES
+// ============================================================================
 interface NotificationBellProps {
-  count: number;
-  onPress: () => void;
+  /** Number of unread notifications */
+  count?: number;
+  /** Callback when bell is pressed */
+  onPress?: () => void;
+  /** Size of the bell container */
+  size?: number;
+  /** Custom container style */
+  style?: ViewStyle;
 }
 
-export const NotificationBell: React.FC<NotificationBellProps> = ({ count, onPress }) => {
+// ============================================================================
+// COMPONENT
+// ============================================================================
+/**
+ * NotificationBell - A bell icon with notification badge
+ * 
+ * Usage:
+ * ```tsx
+ * <NotificationBell count={3} onPress={() => openNotifications()} />
+ * ```
+ */
+export const NotificationBell: React.FC<NotificationBellProps> = ({
+  count = 0,
+  onPress,
+  size = 48,
+  style,
+}) => {
+  const showBadge = count > 0;
+  const displayCount = count > 99 ? '99+' : count.toString();
+
   return (
-    <TouchableOpacity style={styles.container} onPress={onPress}>
-      <Text style={styles.bell}>🔔</Text>
-      {count > 0 && (
+    <TouchableOpacity
+      style={[
+        styles.container,
+        { width: size, height: size, borderRadius: size / 2 },
+        style,
+      ]}
+      onPress={onPress}
+      activeOpacity={0.7}
+      disabled={!onPress}
+    >
+      <Text style={[styles.bellIcon, { fontSize: size * 0.5 }]}>🔔</Text>
+      
+      {showBadge && (
         <View style={styles.badge}>
-          <Text style={styles.badgeText}>{count > 99 ? '99+' : count}</Text>
+          <Text style={styles.badgeText}>{displayCount}</Text>
         </View>
       )}
     </TouchableOpacity>
   );
 };
 
+// ============================================================================
+// STYLES
+// ============================================================================
 const styles = StyleSheet.create({
   container: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
     backgroundColor: '#9DE2D0',
     justifyContent: 'center',
     alignItems: 'center',
     position: 'relative',
   },
-  bell: {
-    fontSize: 24,
+  bellIcon: {
+    textAlign: 'center',
   },
   badge: {
     position: 'absolute',
-    top: -4,
-    right: -4,
+    top: 0,
+    right: 0,
     backgroundColor: '#EB8F80',
-    borderRadius: 10,
     minWidth: 20,
     height: 20,
+    borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 4,
+    borderWidth: 2,
+    borderColor: '#FFFDF5',
   },
   badgeText: {
     color: '#FFFFFF',
@@ -50,3 +90,5 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 });
+
+export default NotificationBell;

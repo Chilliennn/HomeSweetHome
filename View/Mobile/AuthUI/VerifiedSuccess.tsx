@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Button, Card, SuccessIcon, AlertBanner } from '../components/ui';
+import { Button, Card, IconCircle, AlertBanner } from '../components/ui';
 
 // ============================================================================
 // TYPE DEFINITIONS
@@ -59,7 +59,7 @@ export const VerifiedSuccess: React.FC<VerifiedSuccessProps> = ({
         showsVerticalScrollIndicator={false}
       >
         {/* Success Icon */}
-        <SuccessIcon size={120} style={styles.icon} />
+        <IconCircle icon="✓" size={120} backgroundColor="#7ECEC5" contentScale={0.5} style={styles.icon} />
 
         {/* Success Title */}
         <Text style={styles.title}>{title}</Text>

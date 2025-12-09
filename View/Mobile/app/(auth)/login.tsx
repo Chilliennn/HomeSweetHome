@@ -46,7 +46,7 @@ const LoginScreen = observer(function LoginScreen() {
     if (errorMessage) {
       authViewModel.clearError();
     }
-  }, [email, password]);
+  }, [email, errorMessage, password]);
 
   const validateEmail = (emailToValidate: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;

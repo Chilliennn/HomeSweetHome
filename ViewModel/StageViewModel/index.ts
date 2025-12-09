@@ -30,6 +30,28 @@ export class StageViewModel {
   error: string | null = null;
   showWithdrawModal: boolean = false;
   withdrawalReason: string = "";
+
+  // Milestone observables
+  milestoneReached: number | null = null;
+  milestoneDaysTogether: number = 0;
+  milestoneVideoCallCount: number = 0;
+  milestoneAchievements: string[] = [];
+
+  // Cooling period observables
+  isInCoolingPeriod: boolean = false;
+  coolingPeriodEndsAt: Date | null = null;
+  coolingRemainingSeconds: number = 0;
+  coolingProgressFrozenAt: number = 0;
+  coolingStageDisplayName: string = "";
+  private coolingIntervalId: ReturnType<typeof setInterval> | null = null;
+
+  // Stage completion observables
+  stageJustCompleted: RelationshipStage | null = null;
+  stageJustCompletedName: string = "";
+  currentStageDisplayName: string = "";
+  newlyUnlockedFeatures: string[] = [];
+  completedStageOrder: number = 0;
+
   private relationshipSubscription: any = null;
   private activitiesSubscription: any = null;
 
@@ -412,10 +434,14 @@ export class StageViewModel {
   /**
    * Submit withdrawal request
    */
-  async submitWithdrawal() {
+  /**
+   * Submit withdrawal request
+   * Returns true if successful
+   */
+  async submitWithdrawal(): Promise<boolean> {
     if (!this.withdrawalReason.trim()) {
       this.error = "Please provide a reason for withdrawal";
-      return;
+      return false;
     }
 
     this.isLoading = true;
@@ -433,12 +459,22 @@ export class StageViewModel {
         this.isLoading = false;
       });
 
-      // Could navigate or show success message
+      return true;
     } catch (err: any) {
       runInAction(() => {
         this.error = err.message;
         this.isLoading = false;
       });
+      return false;
+    }
+  }
+
+  /**
+   * Refresh all stage data
+   */
+  async refresh() {
+    if (this.userId) {
+      await this.loadStageProgression(this.userId);
     }
   }
 
@@ -454,6 +490,185 @@ export class StageViewModel {
    */
   get daysTogether(): number {
     return this.metrics?.active_days || 0;
+  }
+
+  // ============================================================================
+  // MILESTONE METHODS
+  // ============================================================================
+
+  /**
+   * Load milestone info for display on milestone reached page
+   */
+  async loadMilestoneInfo() {
+    if (!this.userId) return;
+    this.isLoading = true;
+
+    try {
+      const info = await stageService.getMilestoneInfo(this.userId);
+
+      runInAction(() => {
+        if (info) {
+          this.milestoneReached = info.milestoneReached;
+          this.milestoneDaysTogether = info.daysTogether;
+          this.milestoneVideoCallCount = info.videoCallCount;
+          this.milestoneAchievements = info.achievements;
+        }
+        this.isLoading = false;
+      });
+    } catch (err: any) {
+      runInAction(() => {
+        this.error = err.message;
+        this.isLoading = false;
+      });
+    }
+  }
+
+  /**
+   * Get milestone display message based on days
+   */
+  get milestoneMessage(): string {
+    const days = this.milestoneDaysTogether;
+    if (days >= 365)
+      return `Congratulations! You've completed ${days} days together. A full year of wonderful connection!`;
+    if (days >= 180)
+      return `Congratulations! You've completed ${days} days together. Half a year of beautiful memories!`;
+    if (days >= 90)
+      return `Congratulations! You've completed ${days} days together. Keep up the wonderful connection!`;
+    if (days >= 60)
+      return `Congratulations! You've completed ${days} days together. Two months of precious moments!`;
+    if (days >= 30)
+      return `Congratulations! You've completed ${days} days together. Keep up the wonderful connection!`;
+    if (days >= 14)
+      return `Congratulations! You've completed ${days} days together. Two weeks of bonding!`;
+    if (days >= 7)
+      return `Congratulations! You've completed ${days} days together. Your first week milestone!`;
+    return `You've been together for ${days} days!`;
+  }
+
+  // ============================================================================
+  // COOLING PERIOD METHODS
+  // ============================================================================
+
+  /**
+   * Load cooling period info for journey pause page
+   */
+  async loadCoolingPeriodInfo() {
+    if (!this.userId) return;
+    this.isLoading = true;
+
+    try {
+      const info = await stageService.getCoolingPeriodInfo(this.userId);
+
+      runInAction(() => {
+        if (info) {
+          this.isInCoolingPeriod = info.isInCoolingPeriod;
+          this.coolingPeriodEndsAt = info.coolingEndsAt;
+          this.coolingRemainingSeconds = info.remainingSeconds;
+          this.coolingProgressFrozenAt = info.progressFrozenAt;
+          this.currentStage = info.currentStage;
+          this.coolingStageDisplayName = info.stageDisplayName;
+
+          // Start countdown if in cooling period
+          if (info.isInCoolingPeriod) {
+            this.startCoolingCountdown();
+          }
+        }
+        this.isLoading = false;
+      });
+    } catch (err: any) {
+      runInAction(() => {
+        this.error = err.message;
+        this.isLoading = false;
+      });
+    }
+  }
+
+  /**
+   * Start the real-time countdown timer for cooling period
+   */
+  startCoolingCountdown() {
+    // Clear any existing interval
+    this.stopCoolingCountdown();
+
+    this.coolingIntervalId = setInterval(() => {
+      runInAction(() => {
+        if (this.coolingRemainingSeconds > 0) {
+          this.coolingRemainingSeconds -= 1;
+        } else {
+          this.stopCoolingCountdown();
+          this.isInCoolingPeriod = false;
+        }
+      });
+    }, 1000);
+  }
+
+  /**
+   * Stop the countdown timer
+   */
+  stopCoolingCountdown() {
+    if (this.coolingIntervalId) {
+      clearInterval(this.coolingIntervalId);
+      this.coolingIntervalId = null;
+    }
+  }
+
+  /**
+   * Get formatted countdown time (HH:MM:SS)
+   */
+  get formattedCoolingTime(): string {
+    const hours = Math.floor(this.coolingRemainingSeconds / 3600);
+    const minutes = Math.floor((this.coolingRemainingSeconds % 3600) / 60);
+    const seconds = this.coolingRemainingSeconds % 60;
+    return `${hours.toString().padStart(2, "0")}:${minutes
+      .toString()
+      .padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
+  }
+
+  // ============================================================================
+  // STAGE COMPLETION METHODS
+  // ============================================================================
+
+  /**
+   * Load stage completion info for completed page
+   */
+  async loadStageCompletionInfo() {
+    if (!this.userId) return;
+    this.isLoading = true;
+
+    try {
+      const info = await stageService.getStageCompletionInfo(this.userId);
+
+      runInAction(() => {
+        if (info) {
+          this.stageJustCompleted = info.completedStage;
+          this.stageJustCompletedName = info.completedStageDisplayName;
+          this.currentStage = info.currentStage;
+          this.currentStageDisplayName = info.currentStageDisplayName;
+          this.newlyUnlockedFeatures = info.newlyUnlockedFeatures;
+          this.completedStageOrder = info.stageOrder - 1; // The completed stage order
+        }
+        this.isLoading = false;
+      });
+    } catch (err: any) {
+      runInAction(() => {
+        this.error = err.message;
+        this.isLoading = false;
+      });
+    }
+  }
+
+  /**
+   * Get completion message for stage
+   */
+  get stageCompletionMessage(): string {
+    if (!this.stageJustCompletedName || !this.currentStageDisplayName) {
+      return "Congratulations on your progress!";
+    }
+    return `Congratulations! You've successfully completed "${
+      this.stageJustCompletedName
+    }" and moved to Stage ${this.completedStageOrder + 1}: ${
+      this.currentStageDisplayName
+    }.`;
   }
 }
 

@@ -5,6 +5,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
+  RefreshControl,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { observer } from "mobx-react-lite";
@@ -14,6 +15,7 @@ import { StageCircle } from "../components/ui/StageCircle";
 import { NotificationBell } from "../components/ui/NotificationBell";
 import { WithdrawButton } from "../components/ui/WithdrawButton";
 import { LoadingSpinner } from "../components/ui/LoadingSpinner";
+import { BottomTabBar, DEFAULT_TABS } from "../components/ui/BottomTabBar";
 
 interface StageProgressionScreenProps {
   userId: string;
@@ -35,11 +37,35 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
 
     const handleStagePress = async (stage: any) => {
       await vm.handleStageClick(stage);
-    }; 
+    };
 
     const handleNotificationPress = () => {
       vm.markNotificationsRead();
       router.push("/(main)/notification");
+    };
+
+    const handleRefresh = async () => {
+      await vm.refresh();
+    };
+
+    const handleTabPress = (key: string) => {
+      switch (key) {
+        case "matching":
+          // Already on home/stage progression
+          break;
+        case "diary":
+          router.push("/(main)/diary");
+          break;
+        case "memory":
+          router.push("/(main)/album");
+          break;
+        case "chat":
+          router.push("/(main)/chat");
+          break;
+        case "settings":
+          router.push("/(main)/settings");
+          break;
+      }
     };
 
     if (vm.isLoading && !vm.stages.length) {
@@ -68,25 +94,35 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
           <ScrollView
             contentContainerStyle={styles.content}
             showsVerticalScrollIndicator={false}
+            refreshControl={
+              <RefreshControl
+                refreshing={vm.isLoading}
+                onRefresh={handleRefresh}
+                colors={["#EB8F80"]}
+                tintColor={"#EB8F80"}
+              />
+            }
           >
             {/* Title */}
             <Text style={styles.title}>Your Journey Together</Text>
 
             {/* Stage Progress */}
             <View style={styles.stageRow}>
-            {vm.stages.map((stage, index) => (
-              <React.Fragment key={stage.stage}>
-                <StageCircle
-                  order={stage.order}
-                  displayName={stage.display_name}
-                  isCurrent={stage.is_current}
-                  isCompleted={stage.is_completed}
-                  onPress={() => handleStagePress(stage.stage)}
-                />
-                {index < vm.stages.length - 1 && <View style={styles.connector} />}
-              </React.Fragment>
-            ))}
-          </View>
+              {vm.stages.map((stage, index) => (
+                <React.Fragment key={stage.stage}>
+                  <StageCircle
+                    order={stage.order}
+                    displayName={stage.display_name}
+                    isCurrent={stage.is_current}
+                    isCompleted={stage.is_completed}
+                    onPress={() => handleStagePress(stage.stage)}
+                  />
+                  {index < vm.stages.length - 1 && (
+                    <View style={styles.connector} />
+                  )}
+                </React.Fragment>
+              ))}
+            </View>
 
             {/* Inline locked-stage preview OR current stage card */}
             {vm.showLockedStageDetail && vm.lockedStageDetails ? (
@@ -96,7 +132,8 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
                 </View>
 
                 <Text style={styles.lockedTitle}>
-                  Stage {vm.lockedStageDetails.stage_order}: {vm.lockedStageDetails.title}
+                  Stage {vm.lockedStageDetails.stage_order}:{" "}
+                  {vm.lockedStageDetails.title}
                 </Text>
                 <Text style={styles.lockedDescription}>
                   {vm.lockedStageDetails.unlock_message}
@@ -104,7 +141,8 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
 
                 <View style={styles.previewCard}>
                   <Text style={styles.previewHeading}>
-                    What&apos;s Next in Stage {vm.lockedStageDetails.stage_order}:
+                    What&apos;s Next in Stage{" "}
+                    {vm.lockedStageDetails.stage_order}:
                   </Text>
                   {vm.lockedStageDetails.preview_requirements.map((req, i) => (
                     <View key={i} style={styles.previewRow}>
@@ -119,7 +157,8 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
             ) : (
               <View style={styles.currentStageCard}>
                 <Text style={styles.cardTitle}>
-                  Current Stage: {vm.stages.find((s) => s.is_current)?.display_name}
+                  Current Stage:{" "}
+                  {vm.stages.find((s) => s.is_current)?.display_name}
                 </Text>
 
                 <View style={styles.progressBar}>
@@ -132,7 +171,8 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
                 </View>
 
                 <Text style={styles.progressText}>
-                  {vm.daysTogether} days together • {vm.progressPercentage}% complete
+                  {vm.daysTogether} days together • {vm.progressPercentage}%
+                  complete
                 </Text>
 
                 <Text style={styles.goalsTitle}>Stage Goals:</Text>
@@ -164,42 +204,26 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
           </ScrollView>
 
           {/* Bottom Navigation */}
-          <View style={styles.bottomNav}>
-            <TouchableOpacity style={styles.navButton} onPress={() => {}}>
-              <Text style={styles.navIcon}>🏠</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.navButton}
-              onPress={() => router.push("/(main)/diary")}
-            >
-              <Text style={styles.navIcon}>📓</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.navButton}
-              onPress={() => router.push("/(main)/album")}
-            >
-              <Text style={styles.navIcon}>📷</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.navButton}
-              onPress={() => router.push("/(main)/chat")}
-            >
-              <Text style={styles.navIcon}>💬</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.navButton}
-              onPress={() => router.push("/(main)/settings")}
-            >
-              <Text style={styles.navIcon}>⚙️</Text>
-            </TouchableOpacity>
-          </View>
+          <BottomTabBar
+            tabs={DEFAULT_TABS}
+            activeTab="matching"
+            onTabPress={handleTabPress}
+          />
 
           <WithdrawButton
             visible={vm.showWithdrawModal}
             reason={vm.withdrawalReason}
             onReasonChange={(text) => vm.setWithdrawalReason(text)}
             onCancel={() => vm.closeWithdrawModal()}
-            onConfirm={() => vm.submitWithdrawal()}
+            onConfirm={async () => {
+              const success = await vm.submitWithdrawal();
+              if (success) {
+                router.push({
+                  pathname: "/(main)/journey-pause",
+                  params: { userId },
+                });
+              }
+            }}
             isLoading={vm.isLoading}
           />
         </View>
@@ -255,21 +279,21 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     marginBottom: 40,
-    width: '100%',
+    width: "100%",
   },
-    stageScrollView: {
+  stageScrollView: {
     marginBottom: 32,
   },
   stageScrollContent: {
     paddingHorizontal: 20,
-    alignItems: 'center',
+    alignItems: "center",
   },
   connector: {
-    width: 28, 
+    width: 28,
     height: 3,
-    backgroundColor: '#DDEDE6',
+    backgroundColor: "#DDEDE6",
     marginHorizontal: 6,
-    alignSelf: 'center',
+    alignSelf: "center",
     borderRadius: 1.5,
     marginTop: -25,
   },
@@ -320,7 +344,6 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
 
-
   actionButton: {
     paddingVertical: 16,
     borderRadius: 12,
@@ -363,12 +386,12 @@ const styles = StyleSheet.create({
   },
 
   lockedDetailContainer: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     borderRadius: 16,
     padding: 24,
     marginBottom: 16,
-    alignItems: 'center',
-    shadowColor: '#000',
+    alignItems: "center",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
     shadowRadius: 8,
@@ -405,13 +428,18 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 16,
   },
-  previewHeading: { fontWeight: "700", marginBottom: 12, color: "#333" , fontSize: 16},
+  previewHeading: {
+    fontWeight: "700",
+    marginBottom: 12,
+    color: "#333",
+    fontSize: 16,
+  },
   previewRow: {
     flexDirection: "row",
     alignItems: "flex-start",
     marginBottom: 10,
   },
-  previewBullet: { 
+  previewBullet: {
     fontSize: 18,
     color: "#9DE2D0",
     fontWeight: "600",
@@ -420,7 +448,7 @@ const styles = StyleSheet.create({
     width: 20,
     alignItems: "center",
   },
-  previewText: { 
+  previewText: {
     color: "#666",
     flex: 1,
     fontSize: 14,

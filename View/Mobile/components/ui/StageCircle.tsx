@@ -56,15 +56,18 @@ export const StageCircle: React.FC<StageCircleProps> = ({
   );
 };
 
+const CIRCLE_SIZE = 54;
+
 const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
     width: 58, 
+    paddingTop: 0,
   },
   circle: {
-    width: 54,
-    height: 54,
-    borderRadius: 28,
+    width: CIRCLE_SIZE,
+    height: CIRCLE_SIZE,
+    borderRadius: CIRCLE_SIZE / 2,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 8,
@@ -88,3 +91,4 @@ const styles = StyleSheet.create({
     maxWidth: 58,
   },
 });
+export default StageCircle;

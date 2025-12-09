@@ -271,6 +271,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 6,
     alignSelf: 'center',
     borderRadius: 1.5,
+    marginTop: -25,
   },
   currentStageCard: {
     backgroundColor: "#FFFFFF",

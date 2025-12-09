@@ -147,6 +147,27 @@ export class StageViewModel {
         this.isLoading = false;
       });
 
+      if (this.relationshipId) {
+        this.setupRealtimeSubscription(this.relationshipId);
+      }
+
+      try {
+        if (this.relationshipId && this.currentStage) {
+          const pct = await stageService.computeProgressPercent(
+            this.relationshipId,
+            this.currentStage
+          );
+          runInAction(() => {
+            this.metrics = {
+              ...(this.metrics || {}),
+              progress_percentage: pct,
+            };
+          });
+        }
+      } catch (e) {
+        console.error("Error computing initial progress percent", e);
+      }
+
       // Load requirements for current stage
       await this.loadCurrentStageRequirements();
       await this.loadStageFeatures();
@@ -173,6 +194,21 @@ export class StageViewModel {
       runInAction(() => {
         this.requirements = reqs;
       });
+
+      try {
+        const pct = await stageService.computeProgressPercent(
+          this.relationshipId,
+          this.currentStage
+        );
+        runInAction(() => {
+          this.metrics = { ...(this.metrics || {}), progress_percentage: pct };
+        });
+      } catch (e) {
+        console.error(
+          "Error updating progress percent after requirements load",
+          e
+        );
+      }
     } catch (err: any) {
       console.error("Error loading requirements:", err);
     }

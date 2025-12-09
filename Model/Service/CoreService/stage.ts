@@ -25,7 +25,7 @@ export class StageService {
     const stageNames = {
       getting_to_know: 'Getting Acquainted',
       trial_period: 'Building Trust',
-      official_ceremony: 'Family Bond',
+      official_ceremony: 'Family    Bond',
       family_life: 'Full Adoption',
     };
 

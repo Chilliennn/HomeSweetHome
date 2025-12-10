@@ -50,29 +50,19 @@ export const JourneyPauseScreen: React.FC<JourneyPauseScreenProps> = observer(
     useEffect(() => {
       let isRedirecting = false;
 
-      // Check if loading is finished AND (not in cooling period OR timer reached 0)
+      // Check if (not in cooling period OR timer reached 0)
       if (
-        !vm.isLoading &&
-        (!vm.isInCoolingPeriod ||
-          (typeof vm.coolingRemainingSeconds === "number" &&
-            vm.coolingRemainingSeconds <= 0))
+        !vm.isInCoolingPeriod ||
+        (typeof vm.coolingRemainingSeconds === "number" &&
+          vm.coolingRemainingSeconds <= 0)
       ) {
         if (!isRedirecting) {
           isRedirecting = true;
-          // Prevent crash if no history
-          if (router.canGoBack()) {
-            router.back();
-          } else {
-            router.replace("/(main)/bonding");
-          }
+          // Use replace to prevent "GO_BACK" errors if stack is empty/weird
+          router.replace("/(main)/bonding");
         }
       }
-    }, [
-      vm.isInCoolingPeriod,
-      vm.coolingRemainingSeconds,
-      vm.isLoading,
-      router,
-    ]);
+    }, [vm.isInCoolingPeriod, vm.coolingRemainingSeconds, router]);
 
     const handleNotificationPress = () => {
       vm.markNotificationsRead();
@@ -93,7 +83,8 @@ export const JourneyPauseScreen: React.FC<JourneyPauseScreenProps> = observer(
           vm.coolingRemainingSeconds <= 0)
       ) {
         setRefreshing(false);
-        router.back();
+        setRefreshing(false);
+        router.replace("/(main)/bonding");
         return;
       }
 

@@ -93,6 +93,12 @@ export class StageViewModel {
       )
       .subscribe((status) => {
         console.log("[Realtime] Relationship subscription status:", status);
+        if (status === "CHANNEL_ERROR") {
+          console.warn(
+            "[Realtime] Relationship channel error. Attempting to resubscribe..."
+          );
+          // Simple retry logic could be added here or just rely on manual refresh
+        }
       });
 
     // Subscribe to activities changes (completion, new activities)
@@ -123,8 +129,8 @@ export class StageViewModel {
     payloadNew: any
   ) {
     try {
-      // Call service that returns cooling info (logged earlier as getCoolingPeriodInfo)
-      const cooling = await stageService.getCoolingPeriodInfo(relationshipId);
+      // Call service that returns cooling info. Must use userId, not relationshipId!
+      const cooling = await stageService.getCoolingPeriodInfo(this.userId);
 
       // cooling may look like { isInCoolingPeriod: boolean, remainingSeconds: number, ... }
       const active = !!(
@@ -134,16 +140,14 @@ export class StageViewModel {
         cooling.remainingSeconds > 0
       );
 
-      if (active) {
-        runInAction(() => {
+      runInAction(() => {
+        if (active) {
           this.shouldNavigateToJourneyPause = true;
-        });
-      } else {
-        // If cooling expired (remainingSeconds <= 0) or not in cooling, ensure we do NOT navigate
-        runInAction(() => {
+        } else {
+          // If cooling expired (remainingSeconds <= 0) or not in cooling, ensure we do NOT navigate
           this.shouldNavigateToJourneyPause = false;
-        });
-      }
+        }
+      });
     } catch (err) {
       console.error("[StageViewModel] evaluateJourneyPauseIfNeeded error", err);
     }
@@ -228,6 +232,13 @@ export class StageViewModel {
         this.shouldNavigateToMilestone = true;
         this.shownMilestones.push(days);
       });
+    } else {
+      // Debug log to understand why milestone isn't triggering
+      if (milestones.includes(days) && this.shownMilestones.includes(days)) {
+        console.log(`[Realtime] Milestone ${days} already shown, skipping.`);
+      } else if (!milestones.includes(days)) {
+        // console.log(`[Realtime] Days ${days} is not a milestone.`);
+      }
     }
   }
 
@@ -503,9 +514,11 @@ export class StageViewModel {
    * Close locked stage detail view
    */
   closeLockedStageDetail() {
-    this.showLockedStageDetail = false;
-    this.selectedLockedStage = null;
-    this.lockedStageDetails = null;
+    runInAction(() => {
+      this.showLockedStageDetail = false;
+      this.selectedLockedStage = null;
+      this.lockedStageDetails = null;
+    });
   }
 
   /**

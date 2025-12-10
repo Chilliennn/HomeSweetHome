@@ -1,10 +1,11 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
   TouchableOpacity,
   StyleSheet,
   ScrollView,
+  RefreshControl,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { observer } from "mobx-react-lite";
@@ -29,17 +30,34 @@ export const JourneyPauseScreen: React.FC<JourneyPauseScreenProps> = observer(
   ({ userId }) => {
     const router = useRouter();
     const vm = stageViewModel;
+    const [refreshing, setRefreshing] = useState(false);
 
     useEffect(() => {
-      if (userId) {
+      let cancelled = false;
+      const init = async () => {
+        if (!userId) return;
         vm.userId = userId;
-        vm.loadCoolingPeriodInfo();
-      }
+        await vm.loadCoolingPeriodInfo();
+
+        // If cooling isn't active or timer reached 0, return user to previous screen
+        if (!cancelled) {
+          if (
+            !vm.isInCoolingPeriod ||
+            (typeof vm.coolingRemainingSeconds === "number" &&
+              vm.coolingRemainingSeconds <= 0)
+          ) {
+            router.back();
+          }
+        }
+      };
+
+      init();
 
       return () => {
+        cancelled = true;
         vm.stopCoolingCountdown();
       };
-    }, [userId, vm]);
+    }, [userId, vm, router]);
 
     const handleNotificationPress = () => {
       vm.markNotificationsRead();
@@ -50,11 +68,28 @@ export const JourneyPauseScreen: React.FC<JourneyPauseScreenProps> = observer(
       router.push("/(main)/chat");
     };
 
+    const handleRefresh = async () => {
+      setRefreshing(true);
+      await vm.loadCoolingPeriodInfo();
+
+      if (
+        !vm.isInCoolingPeriod ||
+        (typeof vm.coolingRemainingSeconds === "number" &&
+          vm.coolingRemainingSeconds <= 0)
+      ) {
+        setRefreshing(false);
+        router.back();
+        return;
+      }
+
+      setRefreshing(false);
+    };
+
     const getCurrentStageIndex = () => {
       return stageOrder.findIndex((s) => s.stage === vm.currentStage);
     };
 
-    if (vm.isLoading) {
+    if (vm.isLoading && !refreshing) {
       return <LoadingSpinner />;
     }
 
@@ -87,6 +122,14 @@ export const JourneyPauseScreen: React.FC<JourneyPauseScreenProps> = observer(
           <ScrollView
             contentContainerStyle={styles.content}
             showsVerticalScrollIndicator={false}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={handleRefresh}
+                colors={["#EB8F80"]}
+                tintColor={"#EB8F80"}
+              />
+            }
           >
             {/* Title */}
             <Text style={styles.title}>Journey Paused</Text>

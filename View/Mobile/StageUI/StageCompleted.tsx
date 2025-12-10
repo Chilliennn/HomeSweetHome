@@ -13,6 +13,7 @@ import { stageViewModel } from "../../../ViewModel/StageViewModel";
 import { NotificationBell } from "../components/ui/NotificationBell";
 import { LoadingSpinner } from "../components/ui/LoadingSpinner";
 import { StageCircle } from "../components/ui/StageCircle";
+import { BottomTabBar, DEFAULT_TABS } from "../components/ui/BottomTabBar";
 
 interface StageCompletedScreenProps {
   userId: string;
@@ -50,6 +51,22 @@ export const StageCompletedScreen: React.FC<StageCompletedScreenProps> =
       router.push("/(main)/availableFeatures");
     };
 
+    const handleStageClick = async (targetStage: string) => {
+      try {
+        // Force open stage details in ViewModel
+        await vm.handleStageClick(targetStage as any, { forceOpen: true });
+        // Navigate to bonding screen which will show the selected stage detail
+        router.push({
+          pathname: "/(main)/bonding",
+          params: { userId },
+        });
+      } catch (err) {
+        console.error("Error navigating to stage:", err);
+        // Fallback to bonding screen
+        router.replace("/(main)/bonding");
+      }
+    };
+
     const getCurrentStageIndex = () => {
       return stageOrder.findIndex((s) => s.stage === vm.currentStage);
     };
@@ -85,7 +102,7 @@ export const StageCompletedScreen: React.FC<StageCompletedScreenProps> =
             {/* Title */}
             <Text style={styles.title}>Your Journey Together</Text>
 
-            {/* Stage Progress Indicator */}
+            {/* Stage Progress - matching StageProgression layout */}
             <View style={styles.stageRow}>
               {stageOrder.map((stage, index) => (
                 <React.Fragment key={stage.stage}>
@@ -94,7 +111,7 @@ export const StageCompletedScreen: React.FC<StageCompletedScreenProps> =
                     displayName={stage.displayName}
                     isCurrent={index === currentStageIndex}
                     isCompleted={index < currentStageIndex}
-                    onPress={() => {}}
+                    onPress={() => handleStageClick(stage.stage)}
                   />
                   {index < stageOrder.length - 1 && (
                     <View style={styles.connector} />
@@ -121,56 +138,61 @@ export const StageCompletedScreen: React.FC<StageCompletedScreenProps> =
               style={styles.newFeaturesButton}
               onPress={handleViewFeatures}
             >
-              <Text style={styles.newFeaturesText}>New Features Unlocked</Text>
+              <Text style={styles.newFeaturesText}>
+                ✨ New Features Unlocked
+              </Text>
             </TouchableOpacity>
 
             {/* Feature List Preview */}
-            {vm.newlyUnlockedFeatures.length > 0 && (
-              <View style={styles.featurePreview}>
-                <Text style={styles.featurePreviewTitle}>Now Available:</Text>
-                {vm.newlyUnlockedFeatures.map((feature, index) => (
-                  <View key={index} style={styles.featureItem}>
-                    <Text style={styles.featureBullet}>✓</Text>
-                    <Text style={styles.featureText}>{feature}</Text>
-                  </View>
-                ))}
-              </View>
-            )}
+            <View style={styles.featureList}>
+              {vm.newlyUnlockedFeatures.map((feature, index) => (
+                <View key={index} style={styles.featureItem}>
+                  <Text style={styles.featureBullet}>✓</Text>
+                  <Text style={styles.featureText}>{feature}</Text>
+                </View>
+              ))}
+            </View>
+
+            {/* Continue Button */}
+            <TouchableOpacity
+              style={styles.continueButton}
+              onPress={() =>
+                router.push({
+                  pathname: "/(main)/bonding",
+                  params: { userId },
+                })
+              }
+            >
+              <Text style={styles.continueButtonText}>
+                Continue Your Journey
+              </Text>
+            </TouchableOpacity>
           </ScrollView>
 
-          {/* Bottom Navigation */}
-          <View style={styles.bottomNav}>
-            <TouchableOpacity
-              style={styles.navButton}
-              onPress={() => router.push("/(main)/bonding")}
-            >
-              <Text style={[styles.navIcon, styles.navIconActive]}>👥</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.navButton}
-              onPress={() => router.push("/(main)/diary")}
-            >
-              <Text style={styles.navIcon}>📓</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.navButton}
-              onPress={() => router.push("/(main)/album")}
-            >
-              <Text style={styles.navIcon}>📷</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.navButton}
-              onPress={() => router.push("/(main)/chat")}
-            >
-              <Text style={styles.navIcon}>💬</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.navButton}
-              onPress={() => router.push("/(main)/settings")}
-            >
-              <Text style={styles.navIcon}>⚙️</Text>
-            </TouchableOpacity>
-          </View>
+          {/* Bottom Navigation - matching StageProgression */}
+          <BottomTabBar
+            tabs={DEFAULT_TABS}
+            activeTab="bonding"
+            onTabPress={(tabId) => {
+              if (tabId === "bonding") {
+                router.push({
+                  pathname: "/(main)/bonding",
+                  params: { userId },
+                });
+              } else if (tabId === "communication") {
+                router.push({ pathname: "/(main)/chat", params: { userId } });
+              } else if (tabId === "gallery") {
+                router.push({ pathname: "/(main)/album", params: { userId } });
+              } else if (tabId === "diary") {
+                router.push({ pathname: "/(main)/diary", params: { userId } });
+              } else if (tabId === "settings") {
+                router.push({
+                  pathname: "/(main)/settings",
+                  params: { userId },
+                });
+              }
+            }}
+          />
         </View>
       </SafeAreaView>
     );
@@ -211,29 +233,30 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 20,
-    paddingBottom: 100,
+    paddingBottom: 100, // space for bottom nav
   },
   title: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: "700",
     color: "#333",
-    marginBottom: 24,
+    marginBottom: 32,
   },
+  // Stage row - matching StageProgression exactly
   stageRow: {
     flexDirection: "row",
-    alignItems: "center",
     justifyContent: "space-between",
+    alignItems: "flex-start", // align tops
     marginBottom: 40,
-    width: "100%",
+    paddingHorizontal: 8,
   },
   connector: {
     width: 28,
-    height: 3,
-    backgroundColor: "#DDEDE6",
+    height: 6,
+    backgroundColor: "#FADE9F",
+    borderRadius: 3,
     marginHorizontal: 6,
     alignSelf: "center",
-    borderRadius: 1.5,
-    marginTop: -25,
+    marginTop: 20, // align with circle center (CIRCLE_SIZE=54, so 54/2 - 6/2 ≈ 24, adjust visually)
   },
   celebrationSection: {
     alignItems: "center",
@@ -268,72 +291,46 @@ const styles = StyleSheet.create({
   newFeaturesButton: {
     backgroundColor: "#FADE9F",
     paddingVertical: 14,
-    paddingHorizontal: 24,
-    borderRadius: 24,
-    alignSelf: "center",
+    borderRadius: 12,
+    alignItems: "center",
     marginBottom: 24,
   },
   newFeaturesText: {
     fontSize: 16,
-    fontWeight: "700",
-    color: "#333",
-  },
-  featurePreview: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 16,
-    padding: 20,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  featurePreviewTitle: {
-    fontSize: 16,
     fontWeight: "600",
     color: "#333",
-    marginBottom: 12,
+  },
+  featureList: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 24,
   },
   featureItem: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 8,
+    marginBottom: 12,
   },
   featureBullet: {
-    fontSize: 16,
+    fontSize: 18,
     color: "#9DE2D0",
+    marginRight: 12,
     fontWeight: "600",
-    marginRight: 10,
   },
   featureText: {
     fontSize: 14,
     color: "#666",
-  },
-  bottomNav: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    flexDirection: "row",
-    backgroundColor: "#FFFFFF",
-    borderTopWidth: 1,
-    borderTopColor: "#F0F0F0",
-    paddingBottom: 20,
-    paddingTop: 12,
-  },
-  navButton: {
     flex: 1,
+  },
+  continueButton: {
+    backgroundColor: "#EB8F80",
+    paddingVertical: 16,
+    borderRadius: 12,
     alignItems: "center",
-    paddingVertical: 8,
   },
-  navIcon: {
-    fontSize: 28,
-  },
-  navIconActive: {
-    backgroundColor: "#9DE2D0",
-    borderRadius: 20,
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    overflow: "hidden",
+  continueButtonText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#FFFFFF",
   },
 });

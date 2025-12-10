@@ -35,6 +35,33 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
       };
     }, [userId, vm]);
 
+    // Watch for auto-navigation to Stage Completed page
+    useEffect(() => {
+      if (vm.shouldNavigateToStageCompleted) {
+        vm.shouldNavigateToStageCompleted = false;
+        router.push({
+          pathname: "/(main)/stage-completed",
+          params: { userId },
+        });
+      }
+    }, [vm.shouldNavigateToStageCompleted, router, userId, vm]);
+
+    // Watch for auto-navigation to Milestone page
+    useEffect(() => {
+      if (vm.shouldNavigateToMilestone) {
+        vm.shouldNavigateToMilestone = false;
+        router.push({ pathname: "/(main)/milestone", params: { userId } });
+      }
+    }, [vm.shouldNavigateToMilestone, router, userId, vm]);
+
+    // Watch for auto-navigation to Journey Pause page
+    useEffect(() => {
+      if (vm.shouldNavigateToJourneyPause) {
+        vm.shouldNavigateToJourneyPause = false;
+        router.push({ pathname: "/(main)/journey-pause", params: { userId } });
+      }
+    }, [vm.shouldNavigateToJourneyPause, router, userId, vm]);
+
     const handleStagePress = async (stage: any) => {
       await vm.handleStageClick(stage);
     };

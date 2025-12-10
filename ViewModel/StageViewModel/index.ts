@@ -50,7 +50,16 @@ export class StageViewModel {
   stageJustCompletedName: string = "";
   currentStageDisplayName: string = "";
   newlyUnlockedFeatures: string[] = [];
-  completedStageOrder: number = 0;
+  completedStageOrder: number = 1;
+
+  // Navigation triggers
+  shouldNavigateToStageCompleted: boolean = false;
+  shouldNavigateToMilestone: boolean = false;
+  shouldNavigateToJourneyPause: boolean = false;
+
+  // Tracking state for realtime detection
+  private previousStage: RelationshipStage | null = null;
+  private shownMilestones: number[] = [];
 
   private relationshipSubscription: any = null;
   private activitiesSubscription: any = null;
@@ -79,11 +88,7 @@ export class StageViewModel {
         },
         (payload) => {
           console.log("[Realtime] Relationship changed:", payload);
-
-          // Reload stage progression when relationship changes
-          if (this.userId) {
-            this.loadStageProgression(this.userId);
-          }
+          this.handleRealtimeRelationshipChange(payload);
         }
       )
       .subscribe((status) => {
@@ -113,6 +118,37 @@ export class StageViewModel {
       });
   }
 
+  private async evaluateJourneyPauseIfNeeded(
+    relationshipId: string,
+    payloadNew: any
+  ) {
+    try {
+      // Call service that returns cooling info (logged earlier as getCoolingPeriodInfo)
+      const cooling = await stageService.getCoolingPeriodInfo(relationshipId);
+
+      // cooling may look like { isInCoolingPeriod: boolean, remainingSeconds: number, ... }
+      const active = !!(
+        cooling &&
+        cooling.isInCoolingPeriod &&
+        typeof cooling.remainingSeconds === "number" &&
+        cooling.remainingSeconds > 0
+      );
+
+      if (active) {
+        runInAction(() => {
+          this.shouldNavigateToJourneyPause = true;
+        });
+      } else {
+        // If cooling expired (remainingSeconds <= 0) or not in cooling, ensure we do NOT navigate
+        runInAction(() => {
+          this.shouldNavigateToJourneyPause = false;
+        });
+      }
+    } catch (err) {
+      console.error("[StageViewModel] evaluateJourneyPauseIfNeeded error", err);
+    }
+  }
+
   private cleanupSubscriptions() {
     if (this.relationshipSubscription) {
       supabase.removeChannel(this.relationshipSubscription);
@@ -124,11 +160,85 @@ export class StageViewModel {
     }
   }
 
+  /**
+   * Handle realtime relationship changes - detect stage transitions, cooling periods, milestones
+   */
+  private async handleRealtimeRelationshipChange(payload: any) {
+    const newData = payload.new;
+
+    const stageOrder: RelationshipStage[] = [
+      "getting_to_know",
+      "trial_period",
+      "official_ceremony",
+      "family_life",
+    ];
+
+    // Detect stage completion
+    if (this.previousStage && newData.current_stage !== this.previousStage) {
+      const prevIndex = stageOrder.indexOf(this.previousStage);
+      const newIndex = stageOrder.indexOf(newData.current_stage);
+
+      if (prevIndex !== -1 && newIndex !== -1 && newIndex > prevIndex) {
+        console.log(
+          `[Realtime] Stage completed: ${this.previousStage} → ${newData.current_stage}`
+        );
+        runInAction(() => {
+          this.shouldNavigateToStageCompleted = true;
+        });
+
+        // Also load full stage completion info
+        this.loadStageCompletionInfo();
+      } else if (prevIndex !== -1 && newIndex !== -1 && newIndex < prevIndex) {
+        // Moving backward - do NOT show completion page
+        console.log(
+          "[Realtime] Stage moved backward - skipping completion page"
+        );
+      }
+
+      this.previousStage = newData.current_stage;
+    }
+
+    // Detect cooling period (withdraw initiated)
+    if (
+      newData.status === "paused" &&
+      newData.end_request_status === "pending_cooldown"
+    ) {
+      console.log("[Realtime] Cooling period detected");
+      await this.evaluateJourneyPauseIfNeeded(newData.id, newData);
+    }
+
+    // Reload data without showing loading spinner
+    if (this.userId) {
+      this.loadStageProgression(this.userId, true);
+      this.loadMilestoneInfo();
+      this.checkMilestoneReached();
+    }
+  }
+
+  /**
+   * Check if a milestone has been reached and trigger navigation
+   */
+  private checkMilestoneReached() {
+    const milestones = [7, 14, 30, 60, 90, 180, 365];
+    const days = this.milestoneDaysTogether;
+
+    if (milestones.includes(days) && !this.shownMilestones.includes(days)) {
+      console.log("[Realtime] Milestone reached:", days);
+      runInAction(() => {
+        this.shouldNavigateToMilestone = true;
+        this.shownMilestones.push(days);
+      });
+    }
+  }
+
   dispose() {
     this.cleanupSubscriptions();
   }
   /**
    * Initialize with user ID and load all data
+   */
+  /**
+   * Initialize with user ID and load all data streams
    */
   async initialize(userId: string) {
     this.userId = userId;
@@ -136,8 +246,15 @@ export class StageViewModel {
     this.error = null;
 
     try {
+      // Load core stage progression (sets relationshipId)
       await this.loadStageProgression(userId);
 
+      // Load supplementary streams
+      await this.loadMilestoneInfo();
+      await this.loadCoolingPeriodInfo();
+      await this.loadStageCompletionInfo();
+
+      // Setup realtime subscription if we have a relationship ID
       if (this.relationshipId) {
         this.setupRealtimeSubscription(this.relationshipId);
       }
@@ -153,9 +270,14 @@ export class StageViewModel {
   }
   /**
    * Load stage progression data
+   * @param userId - User ID
+   * @param isRealtimeUpdate - If true, skip setting isLoading to prevent UI flash
    */
-  async loadStageProgression(p0: string) {
-    this.isLoading = true;
+  async loadStageProgression(userId: string, isRealtimeUpdate = false) {
+    // Only show loading spinner on initial load, not realtime updates
+    if (!isRealtimeUpdate) {
+      this.isLoading = true;
+    }
     this.error = null;
 
     try {
@@ -166,10 +288,17 @@ export class StageViewModel {
         this.currentStage = data.currentStage;
         this.relationshipId = data.relationshipId;
         this.metrics = data.metrics;
-        this.isLoading = false;
+        // Track previous stage for transition detection
+        if (!this.previousStage) {
+          this.previousStage = data.currentStage;
+        }
+        if (!isRealtimeUpdate) {
+          this.isLoading = false;
+        }
       });
 
-      if (this.relationshipId) {
+      // Only setup subscription on initial load, not realtime updates
+      if (!isRealtimeUpdate && this.relationshipId) {
         this.setupRealtimeSubscription(this.relationshipId);
       }
 
@@ -196,7 +325,9 @@ export class StageViewModel {
     } catch (err: any) {
       runInAction(() => {
         this.error = err.message;
-        this.isLoading = false;
+        if (!isRealtimeUpdate) {
+          this.isLoading = false;
+        }
       });
     }
   }
@@ -288,23 +419,34 @@ export class StageViewModel {
   /**
    * Handle stage click
    */
-  async handleStageClick(targetStage: RelationshipStage) {
+  async handleStageClick(
+    targetStage: RelationshipStage,
+    options?: { forceOpen?: boolean }
+  ) {
     if (!this.currentStage) return;
 
     const targetStageInfo = this.stages.find((s) => s.stage === targetStage);
 
+    // If user taps the current stage while viewing a locked detail, close it
     if (targetStageInfo?.is_current && this.showLockedStageDetail) {
       this.closeLockedStageDetail();
       return;
     }
 
-    if (targetStageInfo?.is_current || targetStageInfo?.is_completed) {
-      return; // Allow navigation or do nothing
+    // If tapping the current stage and not forcing open, do nothing
+    if (targetStageInfo?.is_current && !options?.forceOpen) {
+      return;
     }
 
-    // Locked stage - load details page
+    // If tapping a completed stage and not forcing open, do nothing
+    if (targetStageInfo?.is_completed && !options?.forceOpen) {
+      return;
+    }
+
+    // For locked OR completed stages (or when forced), load locked-stage details
     this.selectedLockedStage = targetStage;
     await this.loadLockedStageDetails(targetStage);
+    this.showLockedStageDetail = true;
   }
 
   async loadRequirementsByEmail(userEmail: string, stage: RelationshipStage) {
@@ -439,18 +581,13 @@ export class StageViewModel {
    * Returns true if successful
    */
   async submitWithdrawal(): Promise<boolean> {
-    if (!this.withdrawalReason.trim()) {
-      this.error = "Please provide a reason for withdrawal";
-      return false;
-    }
-
     this.isLoading = true;
 
     try {
       await stageService.requestWithdrawal(
         this.relationshipId,
         this.userId,
-        this.withdrawalReason
+        this.withdrawalReason.trim() || "No reason provided"
       );
 
       runInAction(() => {
@@ -501,7 +638,7 @@ export class StageViewModel {
    */
   async loadMilestoneInfo() {
     if (!this.userId) return;
-    this.isLoading = true;
+    // Don't set isLoading = true here to prevent UI flash during realtime updates
 
     try {
       const info = await stageService.getMilestoneInfo(this.userId);
@@ -513,12 +650,10 @@ export class StageViewModel {
           this.milestoneVideoCallCount = info.videoCallCount;
           this.milestoneAchievements = info.achievements;
         }
-        this.isLoading = false;
       });
     } catch (err: any) {
       runInAction(() => {
         this.error = err.message;
-        this.isLoading = false;
       });
     }
   }

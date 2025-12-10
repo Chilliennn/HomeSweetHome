@@ -231,7 +231,10 @@ export class StageService {
 
     const getMilestoneDataFn = (userRepository as any).getMilestoneData;
     if (typeof getMilestoneDataFn !== "function") return null;
-    const milestoneData = await getMilestoneDataFn.call(userRepository, relationship.id);
+    const milestoneData = await getMilestoneDataFn.call(
+      userRepository,
+      relationship.id
+    );
     if (!milestoneData) return null;
 
     const milestones = [7, 14, 30, 60, 90, 180, 365];
@@ -262,7 +265,6 @@ export class StageService {
       currentStage: milestoneData.currentStage,
     };
   }
-
   /**
    * Get cooling period info - calculates remaining time for 24-hour window
    */
@@ -274,27 +276,44 @@ export class StageService {
     currentStage: RelationshipStage;
     stageDisplayName: string;
   } | null> {
-    const relationship = await userRepository.getActiveRelationship(userId);
+    // Use getAnyRelationship to find paused relationships
+    const relationship = await userRepository.getAnyRelationship(userId);
     if (!relationship) {
-      // No active relationship found
+      console.log(
+        "[getCoolingPeriodInfo] No relationship found for user:",
+        userId
+      );
       return null;
     }
 
-    const relationshipId = relationship?.id;
-    if (!relationshipId) return null;
+    console.log("[getCoolingPeriodInfo] Found relationship:", {
+      id: relationship.id,
+      status: relationship.status,
+      end_request_status: relationship.end_request_status,
+      end_request_at: relationship.end_request_at,
+    });
 
-    const coolingInfo = await (userRepository as any).getCoolingPeriodInfo(
-      relationshipId
-    );
-    if (!coolingInfo) return null;
+    // Check if in cooling period
+    const isInCoolingPeriod =
+      relationship.status === "paused" &&
+      relationship.end_request_status === "pending_cooldown";
 
+    // Calculate cooling end time (24 hours from end_request_at)
+    let coolingEndsAt: Date | null = null;
     let remainingSeconds = 0;
-    if (coolingInfo.coolingEndsAt) {
+
+    if (isInCoolingPeriod && relationship.end_request_at) {
+      const requestTime = new Date(relationship.end_request_at);
+      coolingEndsAt = new Date(requestTime.getTime() + 24 * 60 * 60 * 1000); // Add 24 hours
       remainingSeconds = Math.max(
         0,
-        Math.floor((coolingInfo.coolingEndsAt.getTime() - Date.now()) / 1000)
+        Math.floor((coolingEndsAt.getTime() - Date.now()) / 1000)
       );
     }
+
+    // Get progress percentage from metrics
+    const progressFrozenAt =
+      relationship.stage_metrics?.progress_percentage || 0;
 
     const stageNames: Record<RelationshipStage, string> = {
       getting_to_know: "Getting Acquainted",
@@ -303,14 +322,22 @@ export class StageService {
       family_life: "Full Adoption",
     };
 
-    const currentStageKey = coolingInfo.currentStage as RelationshipStage;
-    return {
-      isInCoolingPeriod: coolingInfo.isInCoolingPeriod,
-      coolingEndsAt: coolingInfo.coolingEndsAt,
+    const currentStage = relationship.current_stage as RelationshipStage;
+
+    console.log("[getCoolingPeriodInfo] Returning:", {
+      isInCoolingPeriod,
+      coolingEndsAt,
       remainingSeconds,
-      progressFrozenAt: coolingInfo.progressFrozenAt,
-      currentStage: currentStageKey,
-      stageDisplayName: stageNames[currentStageKey] || "",
+      currentStage,
+    });
+
+    return {
+      isInCoolingPeriod,
+      coolingEndsAt,
+      remainingSeconds,
+      progressFrozenAt,
+      currentStage,
+      stageDisplayName: stageNames[currentStage] || "",
     };
   }
 
@@ -325,7 +352,7 @@ export class StageService {
     newlyUnlockedFeatures: string[];
     stageOrder: number;
   } | null> {
-    const relationship = await userRepository.getActiveRelationship(userId);
+    const relationship = await userRepository.getAnyRelationship(userId);
     if (!relationship) return null;
 
     const completionData = await (userRepository as any).getStageCompletionData(
@@ -349,7 +376,8 @@ export class StageService {
 
     // cast completionData fields to typed locals to avoid implicit any when indexing
     const currentStage = completionData.currentStage as RelationshipStage;
-    const previousStage = completionData.previousStage as RelationshipStage | null;
+    const previousStage =
+      completionData.previousStage as RelationshipStage | null;
 
     const currentIndex = stageOrder.indexOf(currentStage);
 
@@ -365,9 +393,7 @@ export class StageService {
 
     return {
       completedStage: previousStage,
-      completedStageDisplayName: previousStage
-        ? stageNames[previousStage]
-        : "",
+      completedStageDisplayName: previousStage ? stageNames[previousStage] : "",
       currentStage: currentStage,
       currentStageDisplayName: stageNames[currentStage],
       newlyUnlockedFeatures,

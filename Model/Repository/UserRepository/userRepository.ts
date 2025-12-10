@@ -56,6 +56,24 @@ export const userRepository = {
     if (error && error.code !== "PGRST116") throw error;
     return data;
   },
+
+  /**
+   * Get any relationship for user regardless of status (active, paused, ended)
+   * Used to check if user is in a cooling period
+   */
+  async getAnyRelationship(userId: string): Promise<Relationship | null> {
+    const { data, error } = await supabase
+      .from("relationships")
+      .select("*")
+      .or(`youth_id.eq.${userId},elderly_id.eq.${userId}`)
+      .in("status", ["active", "paused"])
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .single();
+
+    if (error && error.code !== "PGRST116") throw error;
+    return data;
+  },
   async updateProfileData(userId: string, profileData: UserProfileData) {
     const { data, error } = await supabase
       .from("users")
@@ -146,7 +164,7 @@ export const userRepository = {
         "id, current_stage, stage_start_date, stage_metrics, feature_flags, status"
       )
       .or(`youth_id.eq.${userId},elderly_id.eq.${userId}`)
-      .eq("status", "active")
+      .in("status", ["active", "paused"])
       .single();
 
     if (error) throw error;
@@ -197,6 +215,7 @@ export const userRepository = {
     const { error } = await supabase
       .from("relationships")
       .update({
+        status: "paused",
         end_request_status: "pending_cooldown",
         end_request_by: userId,
         end_request_reason: reason,

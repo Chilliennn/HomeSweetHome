@@ -33,31 +33,46 @@ export const JourneyPauseScreen: React.FC<JourneyPauseScreenProps> = observer(
     const [refreshing, setRefreshing] = useState(false);
 
     useEffect(() => {
-      let cancelled = false;
       const init = async () => {
         if (!userId) return;
         vm.userId = userId;
         await vm.loadCoolingPeriodInfo();
-
-        // If cooling isn't active or timer reached 0, return user to previous screen
-        if (!cancelled) {
-          if (
-            !vm.isInCoolingPeriod ||
-            (typeof vm.coolingRemainingSeconds === "number" &&
-              vm.coolingRemainingSeconds <= 0)
-          ) {
-            router.back();
-          }
-        }
       };
 
       init();
 
       return () => {
-        cancelled = true;
         vm.stopCoolingCountdown();
       };
-    }, [userId, vm, router]);
+    }, [userId, vm]); // Removed router to avoid unnecessary re-runs
+
+    // Reactive redirect when cooling period ends
+    useEffect(() => {
+      let isRedirecting = false;
+
+      // Check if loading is finished AND (not in cooling period OR timer reached 0)
+      if (
+        !vm.isLoading &&
+        (!vm.isInCoolingPeriod ||
+          (typeof vm.coolingRemainingSeconds === "number" &&
+            vm.coolingRemainingSeconds <= 0))
+      ) {
+        if (!isRedirecting) {
+          isRedirecting = true;
+          // Prevent crash if no history
+          if (router.canGoBack()) {
+            router.back();
+          } else {
+            router.replace("/(main)/bonding");
+          }
+        }
+      }
+    }, [
+      vm.isInCoolingPeriod,
+      vm.coolingRemainingSeconds,
+      vm.isLoading,
+      router,
+    ]);
 
     const handleNotificationPress = () => {
       vm.markNotificationsRead();

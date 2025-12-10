@@ -1,0 +1,114 @@
+Follow the UC500.png UI design 
+- It can be separate into two part
+    1. SideBar
+        - Filter By status
+            1. ALl Applications
+            2. Pending Review
+            3. Info Requested
+            4. Locked By Others
+        - Sort By
+            1. Oldest First
+            2. Newest First
+
+    2. Application Review queue [ UC500_1.png & UC500_2.png ]
+        - Show out a the total number of application
+            1. Pending review
+            2. Locked Application
+            3. Approved Today 
+            4. Avg Waiting Time ( When avg.hours >= 3days Show alert icons )
+        - Display User Profile
+            1. Youth Profile 
+                - Picture 
+                - Application ID
+                - Real name
+                - Submitted by : Date n time
+                - Youth Age : 
+                - APllication Waiting Time 
+            2. ( Right Side ) Button
+                - status
+                - More Details 
+
+After Cicking the More Details Button
+- Jump into the review(1).png
+1. Rewiew Application : Youth name
+2. Application Details
+    a. Youth Profile 
+    b. Elderly Profile 
+    - Full Name 
+    - User ID 
+    - Age 
+    - Occupation 
+    - Education 
+    - Location 
+    - Age Verification 
+    - Account Created ( When )
+3. Motivation letter
+4. Application Details
+    - Availability 
+    - Commitment Level (Use Star Rate to Represent(Longer get more star)and show the choice at the star below)
+    - What can Youth Offer?
+5. Application Information
+    - Submission Date
+    - Waiting Time
+    - Previous Application
+    - Profile Completeness
+
+After Reviewing all the detail, 
+- Four Button to Choice ( review(1).png )
+    1. Reject Application
+    2. Request More Info
+    3. Approve Application 
+    4. Back to queue 
+
+IF Reject Application
+{
+    Show reject.png
+    Pop Out : Reject Application
+        1. Rejection Reason 
+        2. Additional feedback
+        3. Important notes
+    {
+        Button
+        1. Cancel 
+            - Back to Review
+        2. Confirm Rejection
+    }
+}
+IF Request More Info
+{
+    Show request.png
+    Pop Out : Request Additional Information
+        1. What Information do you Need?
+        2. Detailed Request 
+        3. Important notes
+    {
+        Button 
+        1. Cancel 
+            - Back to Review
+        2. Send request
+            - User receive the notification about this
+    }
+}
+IF Approve Application
+{
+    Show approve.png
+    Successful status
+    1. Approval Summary
+        - Application ID
+        - Youth applicant
+        - ELderly Application
+        - Approved By
+        - Approved Time
+        - status
+    2. What Happens Next
+        - Show the Step they will be going on
+
+    System Send notification to both user to said that they are been approved
+    {
+        Button
+        1. Back to queue
+            - Back to UC500_1.png
+        2. Review Next Application
+            - Jump to next party
+    }
+}

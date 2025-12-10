@@ -1,41 +1,27 @@
-import { useState } from 'react'
-import { useEffect } from 'react'
-import { supabase } from '@home-sweet-home/model'
-import './App.css'
+import React, { Suspense } from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import AdminLogin from './AdminUI/AdminLogin';
+const AdminPage = React.lazy(() => import('./AdminUI/AdminPage'));
+const ReportPage = React.lazy(() => import('./AdminUI/ReportPage'));
+
+function RequireAuth({ children }: { children: React.ReactElement }) {
+  const loggedIn = typeof window !== 'undefined' && !!localStorage.getItem('adminLoggedIn');
+  if (!loggedIn) return <Navigate to="/" replace />;
+  return children;
+}
 
 function App() {
-  const [status, setStatus] = useState<string>('Testing supabase')
-
-  useEffect(() => {
-    async function testSupabase(){
-      try{
-        const { data, error } = await supabase.auth.getSession();
-
-        if(error){
-          setStatus(`error: ${error.message}`);
-        }else{
-          const{error: dbError} = await supabase.from('users').select('*').limit(1);
-          if(dbError && dbError.code !== '42P01'){
-            console.log('DB test:', dbError);
-          }
-
-          setStatus(`Connected, Session: ${data.session ? 'Logged in' : 'Not logged in'}`);
-        }
-      } catch (err:any){
-        setStatus(`connection error : ${err.message}`);
-      }
-    }
-
-    testSupabase();
-  }, []);
-
-  return(
-    <div>
-      <h1>Home Sweet Home</h1>
-      <h2>Supabase connection test</h2>
-      <p>{status}</p>
-    </div>
+  return (
+    <BrowserRouter>
+      <Suspense fallback={<div>Loading...</div>}>
+        <Routes>
+          <Route path="/" element={<AdminLogin />} />
+          <Route path="/admin" element={<RequireAuth><AdminPage /></RequireAuth>} />
+          <Route path="/admin/reports" element={<RequireAuth><ReportPage /></RequireAuth>} />
+        </Routes>
+      </Suspense>
+    </BrowserRouter>
   );
 }
 
-export default App
+export default App;

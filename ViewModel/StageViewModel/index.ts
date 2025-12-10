@@ -246,8 +246,12 @@ export class StageViewModel {
     this.error = null;
 
     try {
+      // Clear shown milestones on init so we re-check fresh state
+      this.shownMilestones = [];
+
       // Load core stage progression (sets relationshipId)
-      await this.loadStageProgression(userId);
+      // Pass keepLoading=true so isLoading stays true until finally block
+      await this.loadStageProgression(userId, false, true);
 
       // Load supplementary streams
       await this.loadMilestoneInfo();
@@ -272,8 +276,13 @@ export class StageViewModel {
    * Load stage progression data
    * @param userId - User ID
    * @param isRealtimeUpdate - If true, skip setting isLoading to prevent UI flash
+   * @param keepLoading - If true, do not set isLoading to false (used during initialization)
    */
-  async loadStageProgression(userId: string, isRealtimeUpdate = false) {
+  async loadStageProgression(
+    userId: string,
+    isRealtimeUpdate = false,
+    keepLoading = false
+  ) {
     // Only show loading spinner on initial load, not realtime updates
     if (!isRealtimeUpdate) {
       this.isLoading = true;
@@ -292,7 +301,7 @@ export class StageViewModel {
         if (!this.previousStage) {
           this.previousStage = data.currentStage;
         }
-        if (!isRealtimeUpdate) {
+        if (!isRealtimeUpdate && !keepLoading) {
           this.isLoading = false;
         }
       });
@@ -438,15 +447,21 @@ export class StageViewModel {
       return;
     }
 
-    // If tapping a completed stage and not forcing open, do nothing
-    if (targetStageInfo?.is_completed && !options?.forceOpen) {
+    // If tapping a completed stage, navigate to the completion page for that stage
+    if (targetStageInfo?.is_completed) {
+      runInAction(() => {
+        this.stageJustCompleted = targetStage;
+        this.stageJustCompletedName = targetStageInfo.display_name;
+        // We can optionally set historical data here if needed by the view
+        this.shouldNavigateToStageCompleted = true;
+      });
       return;
     }
 
     // For locked OR completed stages (or when forced), load locked-stage details
     this.selectedLockedStage = targetStage;
     await this.loadLockedStageDetails(targetStage);
-    this.showLockedStageDetail = true;
+    // this.showLockedStageDetail = true; // Handled in loadLockedStageDetails
   }
 
   async loadRequirementsByEmail(userEmail: string, stage: RelationshipStage) {
@@ -611,7 +626,24 @@ export class StageViewModel {
    */
   async refresh() {
     if (this.userId) {
-      await this.loadStageProgression(this.userId);
+      this.isLoading = true;
+      try {
+        await Promise.all([
+          this.loadStageProgression(this.userId, true),
+          this.loadMilestoneInfo().then(() => {
+            this.checkMilestoneReached();
+          }),
+          this.loadCoolingPeriodInfo(),
+          this.loadStageCompletionInfo(),
+          this.loadUnreadNotifications(),
+        ]);
+      } catch (e) {
+        console.error("Error refreshing stage data", e);
+      } finally {
+        runInAction(() => {
+          this.isLoading = false;
+        });
+      }
     }
   }
 
@@ -766,12 +798,15 @@ export class StageViewModel {
   /**
    * Load stage completion info for completed page
    */
-  async loadStageCompletionInfo() {
+  async loadStageCompletionInfo(targetStage?: RelationshipStage) {
     if (!this.userId) return;
     this.isLoading = true;
 
     try {
-      const info = await stageService.getStageCompletionInfo(this.userId);
+      const info = await stageService.getStageCompletionInfo(
+        this.userId,
+        targetStage
+      );
 
       runInAction(() => {
         if (info) {

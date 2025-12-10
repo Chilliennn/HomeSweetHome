@@ -17,6 +17,7 @@ import { BottomTabBar, DEFAULT_TABS } from "../components/ui/BottomTabBar";
 
 interface StageCompletedScreenProps {
   userId: string;
+  stage?: string;
 }
 
 const stageOrder = [
@@ -27,16 +28,16 @@ const stageOrder = [
 ];
 
 export const StageCompletedScreen: React.FC<StageCompletedScreenProps> =
-  observer(({ userId }) => {
+  observer(({ userId, stage }) => {
     const router = useRouter();
     const vm = stageViewModel;
 
     useEffect(() => {
       if (userId) {
         vm.userId = userId;
-        vm.loadStageCompletionInfo();
+        vm.loadStageCompletionInfo(stage as any);
       }
-    }, [userId, vm]);
+    }, [userId, stage, vm]);
 
     const handleNotificationPress = () => {
       vm.markNotificationsRead();

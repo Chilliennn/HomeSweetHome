@@ -219,6 +219,9 @@ export class StageService {
   /**
    * Get milestone info for a user - checks if days together matches milestone thresholds
    */
+  /**
+   * Get milestone info for a user - checks if days together matches milestone thresholds
+   */
   async getMilestoneInfo(userId: string): Promise<{
     milestoneReached: number | null;
     daysTogether: number;
@@ -226,19 +229,21 @@ export class StageService {
     achievements: string[];
     currentStage: RelationshipStage;
   } | null> {
-    const relationship = await userRepository.getActiveRelationship(userId);
+    // Use getAnyRelationship to support paused users checking milestones/history
+    const relationship = await userRepository.getAnyRelationship(userId);
     if (!relationship) return null;
 
-    const getMilestoneDataFn = (userRepository as any).getMilestoneData;
-    if (typeof getMilestoneDataFn !== "function") return null;
-    const milestoneData = await getMilestoneDataFn.call(
-      userRepository,
-      relationship.id
-    );
-    if (!milestoneData) return null;
+    // Calculate days together from created_at
+    const startDate = new Date(relationship.created_at);
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - startDate.getTime());
+    const daysTogether = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    // Get video call count from metrics (safely access jsonb)
+    const metrics = relationship.stage_metrics as any;
+    const videoCallCount = metrics?.video_calls || 0;
 
     const milestones = [7, 14, 30, 60, 90, 180, 365];
-    const daysTogether = milestoneData.daysTogether;
 
     // Find the highest milestone reached
     let milestoneReached: number | null = null;
@@ -254,15 +259,15 @@ export class StageService {
     if (daysTogether >= 30) achievements.push("First Month");
     if (daysTogether >= 90) achievements.push("Quarterly Bond");
     if (daysTogether >= 365) achievements.push("Anniversary");
-    if (milestoneData.videoCallCount >= 10) achievements.push("Video Pro");
-    if (milestoneData.videoCallCount >= 5) achievements.push("Story Shared");
+    if (videoCallCount >= 10) achievements.push("Video Pro");
+    if (videoCallCount >= 5) achievements.push("Story Shared");
 
     return {
       milestoneReached,
       daysTogether,
-      videoCallCount: milestoneData.videoCallCount,
+      videoCallCount,
       achievements,
-      currentStage: milestoneData.currentStage,
+      currentStage: relationship.current_stage as RelationshipStage,
     };
   }
   /**
@@ -344,7 +349,10 @@ export class StageService {
   /**
    * Get stage completion info - returns details about the just-completed stage
    */
-  async getStageCompletionInfo(userId: string): Promise<{
+  async getStageCompletionInfo(
+    userId: string,
+    targetStage?: RelationshipStage
+  ): Promise<{
     completedStage: RelationshipStage | null;
     completedStageDisplayName: string;
     currentStage: RelationshipStage;
@@ -354,11 +362,6 @@ export class StageService {
   } | null> {
     const relationship = await userRepository.getAnyRelationship(userId);
     if (!relationship) return null;
-
-    const completionData = await (userRepository as any).getStageCompletionData(
-      relationship.id
-    );
-    if (!completionData) return null;
 
     const stageNames: Record<RelationshipStage, string> = {
       getting_to_know: "Getting Acquainted",
@@ -374,13 +377,6 @@ export class StageService {
       "family_life",
     ];
 
-    // cast completionData fields to typed locals to avoid implicit any when indexing
-    const currentStage = completionData.currentStage as RelationshipStage;
-    const previousStage =
-      completionData.previousStage as RelationshipStage | null;
-
-    const currentIndex = stageOrder.indexOf(currentStage);
-
     // Determine newly unlocked features based on current stage
     const featuresByStage: Record<RelationshipStage, string[]> = {
       getting_to_know: ["Text Messaging", "Photo Sharing"],
@@ -389,15 +385,53 @@ export class StageService {
       family_life: ["Full Family Access", "Official Certificate"],
     };
 
-    const newlyUnlockedFeatures = featuresByStage[currentStage] || [];
+    let completedStage: RelationshipStage | null;
+    let stageOrdVal: number;
+    let unlockedFeatures: string[];
+    const currentStageRel = relationship.current_stage as RelationshipStage;
+
+    if (targetStage) {
+      // Viewing historical completion
+      completedStage = targetStage;
+      const index = stageOrder.indexOf(targetStage);
+      stageOrdVal = index + 1; // 1-based index
+      unlockedFeatures = featuresByStage[targetStage] || [];
+    } else {
+      // Viewing latest completion based on current relationship state
+      const completionData = await (
+        userRepository as any
+      ).getStageCompletionData(relationship.id);
+
+      if (completionData) {
+        // Use completion data if available (most accurate for just-finished)
+        completedStage =
+          completionData.previousStage as RelationshipStage | null;
+        const currentStage = completionData.currentStage as RelationshipStage;
+        const index = stageOrder.indexOf(currentStage);
+        stageOrdVal = index + 1;
+        unlockedFeatures = featuresByStage[currentStage] || [];
+      } else {
+        // Fallback: assume we completed the stage before current
+        const index = stageOrder.indexOf(currentStageRel);
+        if (index > 0) {
+          completedStage = stageOrder[index - 1];
+          stageOrdVal = index;
+          unlockedFeatures = featuresByStage[currentStageRel] || [];
+        } else {
+          return null; // No previous stage
+        }
+      }
+    }
 
     return {
-      completedStage: previousStage,
-      completedStageDisplayName: previousStage ? stageNames[previousStage] : "",
-      currentStage: currentStage,
-      currentStageDisplayName: stageNames[currentStage],
-      newlyUnlockedFeatures,
-      stageOrder: currentIndex + 1,
+      completedStage: completedStage,
+      completedStageDisplayName: completedStage
+        ? stageNames[completedStage]
+        : "",
+      currentStage: currentStageRel,
+      currentStageDisplayName: stageNames[currentStageRel],
+      newlyUnlockedFeatures: unlockedFeatures,
+      stageOrder: stageOrdVal,
     };
   }
 }

@@ -41,7 +41,7 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
         vm.shouldNavigateToStageCompleted = false;
         router.push({
           pathname: "/(main)/stage-completed",
-          params: { userId },
+          params: { userId, stage: vm.stageJustCompleted },
         });
       }
     }, [vm.shouldNavigateToStageCompleted, router, userId, vm]);
@@ -150,6 +150,19 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
                 </React.Fragment>
               ))}
             </View>
+
+            {/* Error Display */}
+            {vm.error && (
+              <View style={styles.errorContainer}>
+                <Text style={styles.errorText}>Error: {vm.error}</Text>
+                <TouchableOpacity
+                  onPress={handleRefresh}
+                  style={styles.retryButton}
+                >
+                  <Text style={styles.retryText}>Retry</Text>
+                </TouchableOpacity>
+              </View>
+            )}
 
             {/* Inline locked-stage preview OR current stage card */}
             {vm.showLockedStageDetail && vm.lockedStageDetails ? (
@@ -489,5 +502,27 @@ const styles = StyleSheet.create({
     color: "#999",
     fontSize: 13,
     fontStyle: "italic",
+  },
+  errorContainer: {
+    backgroundColor: "#FFEBEE",
+    padding: 16,
+    borderRadius: 8,
+    marginHorizontal: 20,
+    marginBottom: 20,
+    alignItems: "center",
+  },
+  errorText: {
+    color: "#D32F2F",
+    marginBottom: 8,
+  },
+  retryButton: {
+    backgroundColor: "#FFCDD2",
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    borderRadius: 4,
+  },
+  retryText: {
+    color: "#B71C1C",
+    fontWeight: "600",
   },
 });

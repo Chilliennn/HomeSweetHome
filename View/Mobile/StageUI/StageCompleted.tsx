@@ -122,10 +122,17 @@ export const StageCompletedScreen: React.FC<StageCompletedScreenProps> =
             </View>
 
             {/* Celebration Section */}
+            {/* Celebration Section */}
             <View style={styles.celebrationSection}>
-              <View style={styles.celebrationCircle}>
-                <Text style={styles.celebrationEmoji}>🎉</Text>
-              </View>
+              {/* Use the exact same StageCircle component for consistency */}
+              <StageCircle
+                order={vm.completedStageOrder}
+                displayName={""} // No label needed here inside the big circle
+                isCurrent={false}
+                isCompleted={true}
+                onPress={() => {}}
+                size={100} // Override size to be bigger
+              />
               <Text style={styles.completedTitle}>
                 Stage {vm.completedStageOrder} Complete!
               </Text>

@@ -224,23 +224,33 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
               </View>
             )}
             {/* Action Buttons */}
-            <TouchableOpacity
-              style={[styles.actionButton, styles.primaryButton]}
-              onPress={() => router.push("/(main)/stageRequirements")}
-            >
-              <Text style={styles.actionButtonText}>View All Requirements</Text>
-            </TouchableOpacity>
+            {/* Action Buttons - Only show if NOT viewing a locked stage detail */}
+            {!vm.showLockedStageDetail && (
+              <>
+                <TouchableOpacity
+                  style={[styles.actionButton, styles.primaryButton]}
+                  onPress={() => router.push("/(main)/stageRequirements")}
+                >
+                  <Text style={styles.actionButtonText}>
+                    View All Requirements
+                  </Text>
+                </TouchableOpacity>
 
-            <TouchableOpacity
-              style={[styles.actionButton, styles.secondaryButton]}
-              onPress={() => router.push("/(main)/availableFeatures")}
-            >
-              <Text
-                style={[styles.actionButtonText, styles.secondaryButtonText]}
-              >
-                View Available Features
-              </Text>
-            </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.actionButton, styles.secondaryButton]}
+                  onPress={() => router.push("/(main)/availableFeatures")}
+                >
+                  <Text
+                    style={[
+                      styles.actionButtonText,
+                      styles.secondaryButtonText,
+                    ]}
+                  >
+                    View Available Features
+                  </Text>
+                </TouchableOpacity>
+              </>
+            )}
           </ScrollView>
 
           {/* Bottom Navigation */}

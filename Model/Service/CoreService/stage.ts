@@ -398,28 +398,19 @@ export class StageService {
       unlockedFeatures = featuresByStage[targetStage] || [];
     } else {
       // Viewing latest completion based on current relationship state
-      const completionData = await (
-        userRepository as any
-      ).getStageCompletionData(relationship.id);
 
-      if (completionData) {
-        // Use completion data if available (most accurate for just-finished)
-        completedStage =
-          completionData.previousStage as RelationshipStage | null;
-        const currentStage = completionData.currentStage as RelationshipStage;
-        const index = stageOrder.indexOf(currentStage);
-        stageOrdVal = index + 1;
-        unlockedFeatures = featuresByStage[currentStage] || [];
+      // Fallback: assume we completed the stage before current
+      const index = stageOrder.indexOf(currentStageRel);
+      if (index > 0) {
+        completedStage = stageOrder[index - 1];
+        stageOrdVal = index;
+        unlockedFeatures = featuresByStage[currentStageRel] || [];
+        console.log(
+          "[StageService] Calculated completion data via fallback for stage:",
+          completedStage
+        );
       } else {
-        // Fallback: assume we completed the stage before current
-        const index = stageOrder.indexOf(currentStageRel);
-        if (index > 0) {
-          completedStage = stageOrder[index - 1];
-          stageOrdVal = index;
-          unlockedFeatures = featuresByStage[currentStageRel] || [];
-        } else {
-          return null; // No previous stage
-        }
+        return null; // No previous stage
       }
     }
 

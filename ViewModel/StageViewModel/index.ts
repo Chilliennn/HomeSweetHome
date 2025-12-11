@@ -115,8 +115,11 @@ export class StageViewModel {
         (payload) => {
           console.log("[Realtime] Activity changed:", payload);
 
-          // Reload requirements when activities change
-          this.loadCurrentStageRequirements();
+          if (this.userId) {
+            this.loadStageProgression(this.userId, true);
+            this.loadMilestoneInfo();
+            this.checkMilestoneReached();
+          }
         }
       )
       .subscribe((status) => {
@@ -151,13 +154,17 @@ export class StageViewModel {
   }
 
   private cleanupSubscriptions() {
-    if (this.relationshipSubscription) {
-      supabase.removeChannel(this.relationshipSubscription);
-      this.relationshipSubscription = null;
-    }
-    if (this.activitiesSubscription) {
-      supabase.removeChannel(this.activitiesSubscription);
-      this.activitiesSubscription = null;
+try {
+      if (this.activitiesSubscription) {
+        supabase.removeChannel(this.activitiesSubscription);
+        this.activitiesSubscription = null;
+      }
+      if (this.relationshipSubscription) {
+        supabase.removeChannel(this.relationshipSubscription);
+        this.relationshipSubscription = null;
+      }
+    } catch (e) {
+      console.warn("cleanupSubscriptions error", e);
     }
   }
 
@@ -273,9 +280,6 @@ export class StageViewModel {
   }
   /**
    * Load stage progression data
-   * @param userId - User ID
-   * @param isRealtimeUpdate - If true, skip setting isLoading to prevent UI flash
-   * @param keepLoading - If true, do not set isLoading to false (used during initialization)
    */
   async loadStageProgression(
     userId: string,
@@ -669,7 +673,6 @@ export class StageViewModel {
    */
   async loadMilestoneInfo() {
     if (!this.userId) return;
-    // Don't set isLoading = true here to prevent UI flash during realtime updates
 
     try {
       const info = await stageService.getMilestoneInfo(this.userId);
@@ -682,6 +685,7 @@ export class StageViewModel {
           this.milestoneAchievements = info.achievements;
         }
       });
+      this.checkMilestoneReached();
     } catch (err: any) {
       runInAction(() => {
         this.error = err.message;

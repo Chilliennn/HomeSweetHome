@@ -219,9 +219,6 @@ export class StageService {
   /**
    * Get milestone info for a user - checks if days together matches milestone thresholds
    */
-  /**
-   * Get milestone info for a user - checks if days together matches milestone thresholds
-   */
   async getMilestoneInfo(userId: string): Promise<{
     milestoneReached: number | null;
     daysTogether: number;
@@ -233,13 +230,22 @@ export class StageService {
     const relationship = await userRepository.getAnyRelationship(userId);
     if (!relationship) return null;
 
+    console.debug("[StageService] getMilestoneInfo relationship:", {
+      id: relationship.id,
+      created_at: relationship.created_at,
+      current_stage: relationship.current_stage,
+      status: relationship.status,
+    });
+
     // Calculate days together from created_at
     const startDate = new Date(relationship.created_at);
     const now = new Date();
     const diffTime = Math.abs(now.getTime() - startDate.getTime());
     const daysTogether = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-    // Get video call count from metrics (safely access jsonb)
+    console.debug(`[StageService] daysTogether computed=${daysTogether} for relationship ${relationship.id}`);
+
+    // Get video call count from metrics 
     const metrics = relationship.stage_metrics as any;
     const videoCallCount = metrics?.video_calls || 0;
 
@@ -270,6 +276,7 @@ export class StageService {
       currentStage: relationship.current_stage as RelationshipStage,
     };
   }
+  
   /**
    * Get cooling period info - calculates remaining time for 24-hour window
    */

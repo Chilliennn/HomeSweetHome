@@ -16,7 +16,6 @@ import { NotificationBell } from "../components/ui/NotificationBell";
 import { WithdrawButton } from "../components/ui/WithdrawButton";
 import { LoadingSpinner } from "../components/ui/LoadingSpinner";
 import { BottomTabBar, DEFAULT_TABS } from "../components/ui/BottomTabBar";
-
 interface StageProgressionScreenProps {
   userId: string;
 }
@@ -40,9 +39,9 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
       if (!vm.shouldNavigateToStageCompleted) return;
       vm.shouldNavigateToStageCompleted = false;
 
-      vm
-        .loadStageCompletionInfo(vm.stageJustCompleted ?? undefined)
-        .catch((err) => console.error("Failed to load stage completion info:", err));
+      vm.loadStageCompletionInfo(vm.stageJustCompleted ?? undefined).catch(
+        (err) => console.error("Failed to load stage completion info:", err)
+      );
     }, [vm, vm.shouldNavigateToStageCompleted]);
 
     // Watch for auto-navigation to Milestone page
@@ -207,7 +206,8 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
 
                 {/* show completed stage number */}
                 <Text style={styles.lockedTitle}>
-                  Stage {vm.completedStageOrder + 1}: {vm.stageJustCompletedName}
+                  Stage {vm.completedStageOrder + 1}:{" "}
+                  {vm.stageJustCompletedName}
                 </Text>
 
                 <Text style={styles.lockedDescription}>
@@ -215,7 +215,9 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
                 </Text>
 
                 <View style={styles.previewCard}>
-                  <Text style={styles.previewHeading}>New features unlocked:</Text>
+                  <Text style={styles.previewHeading}>
+                    New features unlocked:
+                  </Text>
                   {vm.newlyUnlockedFeatures.length === 0 ? (
                     <Text style={styles.previewText}>No new features</Text>
                   ) : (
@@ -229,35 +231,64 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
                     ))
                   )}
                 </View>
-              </View> ):(
-                <View style={styles.currentStageCard}>
-                  <Text style={styles.cardTitle}>
-                    Current Stage:{" "}
-                    {vm.stages.find((s) => s.is_current)?.display_name}
-                  </Text>
+              </View>
+            ) : (
+              <View style={styles.currentStageCard}>
+                <Text style={styles.cardTitle}>
+                  Current Stage:{" "}
+                  {vm.stages.find((s) => s.is_current)?.display_name}
+                </Text>
 
-                  <View style={styles.progressBar}>
-                    <View
-                      style={[
-                        styles.progressFill,
-                        { width: `${vm.progressPercentage}%` },
-                      ]}
-                    />
-                  </View>
-
-                  <Text style={styles.progressText}>
-                    {vm.daysTogether} days together • {vm.progressPercentage}%
-                    complete
-                  </Text>
-
-                  <Text style={styles.goalsTitle}>Stage Goals:</Text>
-                  {vm.requirements.slice(0, 3).map((req) => (
-                    <Text key={req.id} style={styles.goalItem}>
-                      • {req.title}
-                    </Text>
-                  ))}
+                <View style={styles.progressBar}>
+                  <View
+                    style={[
+                      styles.progressFill,
+                      { width: `${vm.progressPercentage}%` },
+                    ]}
+                  />
                 </View>
+
+                <Text style={styles.progressText}>
+                  {vm.daysTogether} days together • {vm.progressPercentage}%
+                  complete
+                </Text>
+
+                <Text style={styles.goalsTitle}>Stage Goals:</Text>
+                {vm.requirements.slice(0, 3).map((req) => (
+                  <Text key={req.id} style={styles.goalItem}>
+                    • {req.title}
+                  </Text>
+                ))}
+              </View>
             )}
+            {!vm.showLockedStageDetail &&
+              !vm.showStageCompleted &&
+              vm.stages.some((s) => s.is_current) && (
+                <>
+                <TouchableOpacity
+                  style={[styles.actionButton, styles.primaryButton]}
+                  onPress={() => router.push("/(main)/stageRequirements")}
+                >
+                  <Text style={styles.actionButtonText}>
+                    View All Requirements
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.actionButton, styles.secondaryButton]}
+                  onPress={() => router.push("/(main)/availableFeatures")}
+                >
+                  <Text
+                    style={[
+                      styles.actionButtonText,
+                      styles.secondaryButtonText,
+                    ]}
+                  >
+                    View Available Features
+                  </Text>
+                </TouchableOpacity>
+                </>
+              )}
           </ScrollView>
 
           {/* Bottom Navigation */}
@@ -400,13 +431,6 @@ const styles = StyleSheet.create({
     marginBottom: 6,
     lineHeight: 20,
   },
-
-  actionButton: {
-    paddingVertical: 16,
-    borderRadius: 12,
-    alignItems: "center",
-    marginBottom: 12,
-  },
   primaryButton: {
     backgroundColor: "#EB8F80",
   },
@@ -541,5 +565,37 @@ const styles = StyleSheet.create({
   retryText: {
     color: "#B71C1C",
     fontWeight: "600",
+  },
+  actionButtonsRow: {
+    marginTop: 16,
+    paddingHorizontal: 20,
+    flexDirection: "column",
+    gap: 12,
+  },
+  viewRequirementsButton: {
+    backgroundColor: "#EA8A7F",
+    paddingVertical: 14,
+    borderRadius: 10,
+    alignItems: "center",
+  },
+  viewRequirementsText: {
+    color: "#fff",
+    fontWeight: "700",
+  },
+  viewFeaturesButton: {
+    backgroundColor: "#9DE2D0",
+    paddingVertical: 14,
+    borderRadius: 10,
+    alignItems: "center",
+  },
+  viewFeaturesText: {
+    color: "#1d2b24",
+    fontWeight: "700",
+  },
+    actionButton: {
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: "center",
+    marginBottom: 12,
   },
 });

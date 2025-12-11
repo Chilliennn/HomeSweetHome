@@ -1,12 +1,19 @@
+// Youth side components
 export { JourneyWalkthrough } from './JourneyWalkthrough';
 export { BrowseElderly } from './BrowseElderly';
 export { ElderlyProfileDetail } from './ElderlyProfileDetail';
 export { InterestSent } from './InterestSent';
-export { NotificationsScreen } from './NotificationsScreen';
 export { PreMatchStarted } from './PreMatchStarted';
 export { FormalApplication } from './FormalApplication';
 export { ApplicationSubmitted } from './ApplicationSubmitted';
 export { MatchApproved } from './MatchApproved';
 
-// elderly side 
+// Elderly side components
 export { ElderlyHome } from './ElderlyHome';
+export { YouthProfileDetail } from './YouthProfileDetail';
+
+// Shared components
+export { NotificationScreen } from './NotificationScreen';
+
+// Screen components (with ViewModel logic)
+export { MatchingScreenComponent } from './MatchingScreen';

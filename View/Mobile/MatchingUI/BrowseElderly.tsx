@@ -1,38 +1,30 @@
-import React, { useState } from 'react';
+import React, { useEffect } from 'react';
 import {
   View,
   Text,
-  ScrollView,
   TouchableOpacity,
   StyleSheet,
   FlatList,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { observer } from 'mobx-react-lite';
+import { youthMatchingViewModel } from '@home-sweet-home/viewmodel';
+import { authViewModel } from '@home-sweet-home/viewmodel';
+import { User } from '@home-sweet-home/model';
+import { useTabNavigation } from '../hooks/use-tab-navigation';
 import {
   NotificationBell,
-  Button,
-  ProfileCard,
   JourneyProgressDropdown,
   BottomTabBar,
-  DEFAULT_TABS, 
+  DEFAULT_TABS,
+  Card,
+  IconCircle,
+  Chip,
+  LoadingSpinner,
 } from '@/components/ui';
-
-// ============================================================================
-// TYPES
-// ============================================================================
-interface ElderlyProfile {
-  id: string;
-  name: string;
-  age: number;
-  location: string;
-  avatarEmoji?: string;
-  avatarColor?: string;
-  interests: Array<{ label: string; color?: string }>;
-}
+import { Colors } from '@/constants/theme';
 
 interface BrowseElderlyProps {
-  /** Notification count */
-  notificationCount?: number;
   /** Called when notification bell is pressed */
   onNotificationPress?: () => void;
   /** Called when filter button is pressed */
@@ -47,139 +39,138 @@ interface BrowseElderlyProps {
   activeTab?: string;
   /** Current journey step (1-4) */
   currentJourneyStep?: number;
-  /** List of elderly profiles to display */
-  elderlyProfiles?: ElderlyProfile[];
-  /** Total count of available elders */
-  totalElderCount?: number;
+  /** Optional fallback count if not loading from VM */
+  notificationCount?: number;
 }
-
-// ============================================================================
-// MOCK DATA - For UI demonstration
-// ============================================================================
-const MOCK_ELDERLY_PROFILES: ElderlyProfile[] = [
-  {
-    id: '1',
-    name: 'Ah Ma Mei',
-    age: 68,
-    location: 'Penang',
-    avatarEmoji: '👵',
-    avatarColor: '#C8ADD6',
-    interests: [
-      { label: 'Cooking', color: '#9DE2D0' },
-      { label: 'Gardening', color: '#D4E5AE' },
-    ],
-  },
-  {
-    id: '2',
-    name: 'Uncle Tan',
-    age: 72,
-    location: 'Kuala Lumpur',
-    avatarEmoji: '👴',
-    avatarColor: '#9DE2D0',
-    interests: [
-      { label: 'Chess', color: '#9DE2D0' },
-      { label: 'Tai Chi', color: '#EB8F80' },
-    ],
-  },
-  {
-    id: '3',
-    name: 'Puan Fatimah',
-    age: 65,
-    location: 'Johor Bahru',
-    avatarEmoji: '👵',
-    avatarColor: '#FADE9F',
-    interests: [
-      { label: 'Baking', color: '#EB8F80' },
-      { label: 'Stories', color: '#E0E0E0' },
-    ],
-  },
-  {
-    id: '4',
-    name: 'Harrison Wong',
-    age: 90,
-    location: 'Kuala Lumpur',
-    avatarEmoji: '👳',
-    avatarColor: '#D4E5AE',
-    interests: [
-      { label: 'Music', color: '#FADE9F' },
-      { label: 'Stories', color: '#E0E0E0' },
-    ],
-  },
-  {
-    id: '5',
-    name: 'Marion',
-    age: 80,
-    location: 'Johor Bahru',
-    avatarEmoji: '👵',
-    avatarColor: '#FADE9F',
-    interests: [
-      { label: 'Planting', color: '#EB8F80' },
-      { label: 'Stories', color: '#E0E0E0' },
-    ],
-  },
-];
-
 
 // Tabs that are disabled (no function yet)
 const DISABLED_TABS = ['diary', 'memory'];
 
-// ============================================================================
-// COMPONENT
-// ============================================================================
-/**
- * BrowseElderly - Main screen for youth to browse available elderly profiles
- * 
- * Features:
- * - Notification bell with badge
- * - Filter button
- * - Collapsible journey progress dropdown
- * - Scrollable list of elderly profile cards
- * - Bottom tab navigation bar
- * 
- * Usage:
- * ```tsx
- * <BrowseElderly
- *   notificationCount={3}
- *   onProfilePress={(id) => navigateToProfile(id)}
- *   onFilterPress={() => openFilterModal()}
- * />
- * ```
- */
-export const BrowseElderly: React.FC<BrowseElderlyProps> = ({
-  notificationCount = 1,
+// Helper to map User -> Display Data
+const mapUserToProfile = (user: User) => {
+  return {
+    id: user.id,
+    name: user.full_name || user.profile_data?.display_name || 'Anonymous',
+    age: user.profile_data?.verified_age || '60+', // Default or calculated
+    location: user.location || 'Unknown',
+    avatarEmoji: user.profile_data?.avatar_meta?.type === 'default' ? '👵' : undefined, // Simplification
+    avatarColor: Colors.light.tertiary,
+    interests: (user.profile_data?.interests || []).map(i => ({ label: i, color: Colors.light.secondary })),
+  };
+};
+
+export const BrowseElderly: React.FC<BrowseElderlyProps> = observer(({
   onNotificationPress,
   onFilterPress,
   onProfilePress,
   onLearnMorePress,
   onTabPress,
-  activeTab = 'matching',
+  activeTab: propActiveTab,
   currentJourneyStep = 1,
-  elderlyProfiles = MOCK_ELDERLY_PROFILES,
-  totalElderCount,
+  notificationCount: propNotificationCount,
 }) => {
-  const displayCount = totalElderCount ?? elderlyProfiles.length;
+  const vm = youthMatchingViewModel;
+  const authVM = authViewModel;
+  const currentUserId = authVM.authState.currentUserId;
+  
+  // Use activeTab from prop or default to 'matching'
+  const activeTab = propActiveTab || 'matching';
+  
+  // Use tab navigation hook
+  const { handleTabPress: hookHandleTabPress } = useTabNavigation(activeTab);
+
+  useEffect(() => {
+    vm.loadProfiles();
+    // Load notifications for the youth user
+    if (currentUserId) {
+      vm.loadNotifications(currentUserId);
+    }
+    return () =>{
+      vm.dispose();
+    }
+  }, [currentUserId]);
 
   const handleTabPress = (key: string) => {
-    // Ignore press on disabled tabs
     if (DISABLED_TABS.includes(key)) {
       return;
     }
-    onTabPress?.(key);
+    // Use custom handler if provided, otherwise use hook
+    if (onTabPress) {
+      onTabPress(key);
+    } else {
+      hookHandleTabPress(key);
+    }
   };
 
-  const renderProfileCard = ({ item }: { item: ElderlyProfile }) => (
-    <ProfileCard
-      key={item.id}
-      name={item.name}
-      age={item.age}
-      location={item.location}
-      avatarEmoji={item.avatarEmoji}
-      avatarColor={item.avatarColor}
-      interests={item.interests}
-      onPress={() => onProfilePress?.(item.id)}
-      style={styles.profileCard}
-    />
-  );
+  const notificationCount = propNotificationCount ?? vm.activeMatches.length;
+
+  const renderProfileCard = ({ item }: { item: User }) => {
+    const profile = mapUserToProfile(item);
+    const hasExpressed = vm.hasExpressedInterest(item.id);
+
+    return (
+      <TouchableOpacity
+        key={item.id}
+        style={styles.profileCardWrapper}
+        activeOpacity={hasExpressed ? 1 : 0.7}
+        onPress={() => !hasExpressed && onProfilePress?.(item.id)}
+        disabled={hasExpressed}
+      >
+        <Card style={[styles.cardContainer, hasExpressed && styles.cardDisabled]}>
+          {/* Avatar */}
+          <IconCircle
+            icon={profile.avatarEmoji || '👤'}
+            size={64}
+            backgroundColor={profile.avatarColor}
+            contentScale={0.65}
+          />
+
+          {/* Info */}
+          <View style={styles.cardInfoContainer}>
+            <Text style={[styles.cardName, hasExpressed && styles.textDisabled]}>{profile.name}
+                          {hasExpressed && (
+              <View style={styles.expressedBadge}>
+                <Text style={styles.expressedText}>✓ Interest Sent</Text>
+              </View>
+            )}
+            </Text>
+                        {/* Expressed Badge */}
+            <Text style={[styles.cardDetails, hasExpressed && styles.textDisabled]}>
+              {profile.age} years • {profile.location}
+            </Text>
+
+            {/* Interest Tags */}
+            {profile.interests.length > 0 && (
+              <View style={styles.tagsContainer}>
+                {profile.interests.slice(0, 3).map((interest, index) => (
+                  <Chip
+                    key={index}
+                    label={interest.label}
+                    color={interest.color}
+                    size="small"
+                  />
+                ))}
+              </View>
+            )}
+      
+          </View>
+
+          {/* Arrow or Check */}
+          <Text style={[styles.arrow, hasExpressed && styles.textDisabled]}>
+            {hasExpressed ? '✓' : '›'}
+          </Text>
+        </Card>
+      </TouchableOpacity>
+    );
+  };
+
+  if (vm.isLoading && vm.profiles.length === 0) {
+    return (
+      <View style={styles.centerContainer}>
+        <LoadingSpinner size="large" />
+      </View>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
@@ -203,7 +194,7 @@ export const BrowseElderly: React.FC<BrowseElderlyProps> = ({
       <View style={styles.titleSection}>
         <Text style={styles.title}>Find Your Grandparent</Text>
         <Text style={styles.subtitle}>
-          {displayCount} elders available near you
+          {vm.profiles.length} elders available near you
         </Text>
       </View>
 
@@ -219,7 +210,7 @@ export const BrowseElderly: React.FC<BrowseElderlyProps> = ({
 
       {/* Profile List */}
       <FlatList
-        data={elderlyProfiles}
+        data={vm.profiles}
         renderItem={renderProfileCard}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
@@ -236,7 +227,7 @@ export const BrowseElderly: React.FC<BrowseElderlyProps> = ({
       />
     </SafeAreaView>
   );
-};
+});
 
 // ============================================================================
 // STYLES
@@ -244,6 +235,12 @@ export const BrowseElderly: React.FC<BrowseElderlyProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#FFFDF5',
+  },
+  centerContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
     backgroundColor: '#FFFDF5',
   },
   header: {
@@ -288,11 +285,63 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: 16,
   },
-  profileCard: {
+  profileCardWrapper: {
     marginBottom: 0,
   },
   separator: {
     height: 12,
+  },
+  // Inlined ProfileCard Styles
+  cardContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+  },
+  cardInfoContainer: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  cardName: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: Colors.light.text,
+    marginBottom: 2,
+  },
+  cardDetails: {
+    fontSize: 14,
+    color: Colors.light.textLight,
+    marginBottom: 8,
+  },
+  tagsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  arrow: {
+    fontSize: 28,
+    color: '#999',
+    marginLeft: 8,
+  },
+  cardDisabled: {
+    opacity: 0.6,
+    backgroundColor: '#F5F5F5',
+  },
+  textDisabled: {
+    color: '#999',
+  },
+  expressedBadge: {
+    backgroundColor: '#D4E5AE',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 12,
+    alignSelf: 'flex-start',
+    marginTop: 8,
+    marginLeft: 1,
+  },
+  expressedText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#4A7C23',
   },
 });
 

@@ -1,9 +1,9 @@
 import React from 'react';
-import { View, StyleSheet, ViewStyle } from 'react-native';
+import { View, StyleSheet, ViewStyle, StyleProp } from 'react-native';
 
 interface CardProps {
-    children : React. ReactNode;
-    style?: ViewStyle;
+    children: React.ReactNode;
+    style?: StyleProp<ViewStyle>;
     padding?: number;
 }
 
@@ -13,7 +13,7 @@ export const Card: React.FC<CardProps> = ({
     padding = 20,
 }) => {
     return (
-        <View style={[styles.card, {padding}, style]}>
+        <View style={[styles.card, { padding }, style]}>
             {children}
         </View>
     );
@@ -24,7 +24,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#FFFFFF',
         borderRadius: 16,
         shadowColor: '#000',
-        shadowOffset: {width: 0, height:2},
+        shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.05,
         shadowRadius: 8,
         elevation: 2,

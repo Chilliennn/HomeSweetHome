@@ -7,7 +7,7 @@ import {
   Header,
   StepIndicator,
   AlertBanner,
-  InfoCard,
+  IconCircle,
 } from '../components/ui';
 
 // ============================================================================
@@ -56,16 +56,16 @@ export const AgeVerification: React.FC<AgeVerificationProps> = ({
       <View style={styles.container}>
         {/* Header with Back Button */}
         <Header title="Age Verification" onBack={onBack} />
-        
-        <ScrollView 
+
+        <ScrollView
           contentContainerStyle={styles.content}
           showsVerticalScrollIndicator={false}
         >
           {/* Step Indicator */}
-          <StepIndicator 
-            totalSteps={TOTAL_ONBOARDING_STEPS} 
-            currentStep={CURRENT_STEP} 
-            style={styles.steps} 
+          <StepIndicator
+            totalSteps={TOTAL_ONBOARDING_STEPS}
+            currentStep={CURRENT_STEP}
+            style={styles.steps}
           />
 
           {/* Important Notice */}
@@ -76,13 +76,18 @@ export const AgeVerification: React.FC<AgeVerificationProps> = ({
             style={styles.alert}
           />
 
-          {/* MyDigital ID Info Card */}
-          <InfoCard
-            icon="🪪"
-            title="Verify with MyDigital ID"
-            description="We use Malaysia's official digital identity system to verify your age securely."
-            style={styles.infoCard}
-          />
+          {/* MyDigital ID Info Card - Refactored from InfoCard */}
+          <Card style={[styles.infoCard, styles.infoCardContent]}>
+            <IconCircle
+              icon="🪪"
+              size={60}
+              backgroundColor="#9DE2D0" // Colors.light.secondary
+            />
+            <Text style={styles.infoTitle}>Verify with MyDigital ID</Text>
+            <Text style={styles.infoDesc}>
+              We use Malaysia's official digital identity system to verify your age securely.
+            </Text>
+          </Card>
 
           {/* Age Requirements Card */}
           <Card style={styles.requirementsCard}>
@@ -145,6 +150,25 @@ const styles = StyleSheet.create({
   },
   infoCard: {
     marginBottom: 24,
+  },
+  infoCardContent: {
+    alignItems: 'center',
+    padding: 24,
+    backgroundColor: '#F5F5F5', // Colors.light.surface
+  },
+  infoTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333',
+    marginTop: 16,
+    textAlign: 'center',
+  },
+  infoDesc: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 8,
+    textAlign: 'center',
+    lineHeight: 20,
   },
   requirementsCard: {
     marginBottom: 24,

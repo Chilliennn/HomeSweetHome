@@ -436,6 +436,39 @@ export class StageService {
       stageOrder: stageOrdVal,
     };
   }
+
+  /**
+   * Set up realtime subscriptions for relationship and activities
+   * Delegates to Repository layer which handles Supabase channels
+   */
+  setupRealtimeSubscriptions(
+    relationshipId: string,
+    callbacks: {
+      onRelationshipChange: (payload: any) => void;
+      onActivityChange: (payload: any) => void;
+    }
+  ) {
+    return userRepository.setupRealtimeSubscriptions(relationshipId, callbacks);
+  }
+
+  /**
+   * Clean up realtime subscriptions
+   * Delegates to Repository layer
+   */
+  cleanupRealtimeSubscriptions(subscriptions: {
+    relationshipSubscription: any;
+    activitiesSubscription: any;
+  }) {
+    userRepository.cleanupRealtimeSubscriptions(subscriptions);
+  }
+
+  /**
+   * Mark notifications as read for a user
+   * Delegates to Repository layer
+   */
+  async markNotificationsAsRead(userId: string): Promise<void> {
+    await userRepository.markNotificationsRead(userId);
+  }
 }
 
 export const stageService = new StageService();

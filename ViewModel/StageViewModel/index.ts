@@ -66,6 +66,7 @@ export class StageViewModel {
   constructor() {
     makeAutoObservable(this);
   }
+
   private setupRealtimeSubscription(relationshipId: string) {
     this.cleanupSubscriptions();
 
@@ -74,55 +75,24 @@ export class StageViewModel {
       relationshipId
     );
 
-    // Subscribe to relationship changes 
-    this.relationshipSubscription = supabase
-      .channel(`relationship:${relationshipId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*", // Listen to all events 
-          schema: "public",
-          table: "relationships",
-          filter: `id=eq.${relationshipId}`,
-        },
-        (payload) => {
-          console.log("[Realtime] Relationship changed:", payload);
-          this.handleRealtimeRelationshipChange(payload);
-        }
-      )
-      .subscribe((status) => {
-        console.log("[Realtime] Relationship subscription status:", status);
-        if (status === "CHANNEL_ERROR") {
-          console.warn(
-            "[Realtime] Relationship channel error. Attempting to resubscribe..."
-          );
-        }
-      });
-
-    // Subscribe to activities changes 
-    this.activitiesSubscription = supabase
-      .channel(`activities:${relationshipId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "activities",
-          filter: `relationship_id=eq.${relationshipId}`,
-        },
-        (payload) => {
+    // Delegate subscription setup to the service layer
+    const subscriptions = stageService.setupRealtimeSubscriptions(
+      relationshipId,
+      {
+        onRelationshipChange: (payload: any) => this.handleRealtimeRelationshipChange(payload),
+        onActivityChange: (payload: any) => {
           console.log("[Realtime] Activity changed:", payload);
-
           if (this.userId) {
             this.loadStageProgression(this.userId, true);
             this.loadMilestoneInfo();
             this.checkMilestoneReached();
           }
         }
-      )
-      .subscribe((status) => {
-        console.log("[Realtime] Activities subscription status:", status);
-      });
+      }
+    );
+
+    this.relationshipSubscription = subscriptions.relationshipSubscription;
+    this.activitiesSubscription = subscriptions.activitiesSubscription;
   }
 
   private async evaluateJourneyPauseIfNeeded(
@@ -152,17 +122,13 @@ export class StageViewModel {
   }
 
   private cleanupSubscriptions() {
-try {
-      if (this.activitiesSubscription) {
-        supabase.removeChannel(this.activitiesSubscription);
-        this.activitiesSubscription = null;
-      }
-      if (this.relationshipSubscription) {
-        supabase.removeChannel(this.relationshipSubscription);
-        this.relationshipSubscription = null;
-      }
-    } catch (e) {
-      console.warn("cleanupSubscriptions error", e);
+    if (this.relationshipSubscription || this.activitiesSubscription) {
+      stageService.cleanupRealtimeSubscriptions({
+        relationshipSubscription: this.relationshipSubscription,
+        activitiesSubscription: this.activitiesSubscription
+      });
+      this.relationshipSubscription = null;
+      this.activitiesSubscription = null;
     }
   }
 
@@ -416,7 +382,7 @@ try {
    */
   async markNotificationsRead() {
     try {
-      await userRepository.markNotificationsRead(this.userId);
+      await stageService.markNotificationsAsRead(this.userId);
 
       runInAction(() => {
         this.unreadNotificationCount = 0;

@@ -11,6 +11,7 @@ import type {
   UserProfileData,
   VerificationStatus,
 } from "../../types";
+
 export const userRepository = {
   async getById(id: string): Promise<User | null> {
     const { data, error } = await supabase
@@ -390,5 +391,92 @@ export const userRepository = {
       family_life: "Full Adoption",
     };
     return names[stage];
+  },
+
+  /**
+   * Set up realtime subscriptions for relationship and activities changes
+   * Returns subscription objects that can be cleaned up later
+   */
+  setupRealtimeSubscriptions(
+    relationshipId: string,
+    callbacks: {
+      onRelationshipChange: (payload: any) => void;
+      onActivityChange: (payload: any) => void;
+    }
+  ) {
+    console.log(
+      "[UserRepository] Setting up realtime subscriptions for:",
+      relationshipId
+    );
+
+    // Subscribe to relationship changes
+    const relationshipSubscription = supabase
+      .channel(`relationship:${relationshipId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "relationships",
+          filter: `id=eq.${relationshipId}`,
+        },
+        (payload: any) => {
+          console.log("[Realtime] Relationship changed:", payload);
+          callbacks.onRelationshipChange(payload);
+        }
+      )
+      .subscribe((status: string) => {
+        console.log("[Realtime] Relationship subscription status:", status);
+        if (status === "CHANNEL_ERROR") {
+          console.warn(
+            "[Realtime] Relationship channel error. Attempting to resubscribe..."
+          );
+        }
+      });
+
+    // Subscribe to activities changes
+    const activitiesSubscription = supabase
+      .channel(`activities:${relationshipId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "activities",
+          filter: `relationship_id=eq.${relationshipId}`,
+        },
+        (payload: any) => {
+          console.log("[Realtime] Activity changed:", payload);
+          callbacks.onActivityChange(payload);
+        }
+      )
+      .subscribe((status: string) => {
+        console.log("[Realtime] Activities subscription status:", status);
+      });
+
+    return {
+      relationshipSubscription,
+      activitiesSubscription,
+    };
+  },
+
+  /**
+   * Clean up realtime subscriptions
+   */
+  cleanupRealtimeSubscriptions(subscriptions: {
+    relationshipSubscription: any;
+    activitiesSubscription: any;
+  }) {
+    try {
+      if (subscriptions.activitiesSubscription) {
+        supabase.removeChannel(subscriptions.activitiesSubscription);
+      }
+      if (subscriptions.relationshipSubscription) {
+        supabase.removeChannel(subscriptions.relationshipSubscription);
+      }
+      console.log("[UserRepository] Cleaned up realtime subscriptions");
+    } catch (e) {
+      console.warn("[UserRepository] Error cleaning up subscriptions:", e);
+    }
   },
 };

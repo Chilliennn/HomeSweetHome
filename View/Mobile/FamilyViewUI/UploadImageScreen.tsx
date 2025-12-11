@@ -31,9 +31,23 @@ export const UploadImageScreen = observer(() => {
   const router = useRouter();
   const { isUploading, errorMessage, successMessage } = familyViewModel;
 
-  const [selectedFile, setSelectedFile] = useState<any>(null);
+  const [selectedFiles, setSelectedFiles] = useState<any[]>([]);
   const [caption, setCaption] = useState('');
   const [uploadProgress, setUploadProgress] = useState(0);
+
+  const addSelectedAssets = (assets: any[]) => {
+    if (!assets || assets.length === 0) return;
+    setSelectedFiles((prev) => {
+      const existing = new Set(prev.map(p => p.uri));
+      const merged: any[] = [...prev];
+      for (const a of assets) {
+        if (!existing.has(a.uri)) merged.push(a);
+        if (merged.length >= 5) break;
+      }
+      return merged.slice(0, 5);
+    });
+    setUploadProgress(0);
+  };
 
   const handlePickFromLibrary = async () => {
     try {
@@ -50,13 +64,14 @@ export const UploadImageScreen = observer(() => {
         aspect: [4, 3],
         quality: 0.8,
         allowsEditing: true,
+        allowsMultipleSelection: true as any,
+        selectionLimit: 5 as any,
       });
 
       console.log('[ImagePicker] Library result:', result);
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
-        setSelectedFile(result.assets[0]);
-        setUploadProgress(0);
+        addSelectedAssets(result.assets);
       }
     } catch (error: any) {
       console.error('[ImagePicker] Library error:', error);
@@ -84,8 +99,7 @@ export const UploadImageScreen = observer(() => {
       console.log('[ImagePicker] Camera result:', result);
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
-        setSelectedFile(result.assets[0]);
-        setUploadProgress(0);
+        addSelectedAssets(result.assets);
       }
     } catch (error: any) {
       console.error('[ImagePicker] Camera error:', error);
@@ -94,7 +108,7 @@ export const UploadImageScreen = observer(() => {
   };
 
   const handleUpload = async () => {
-    if (!selectedFile) {
+    if (!selectedFiles || selectedFiles.length === 0) {
       Alert.alert('Error', 'Please select a file first');
       return;
     }
@@ -105,60 +119,37 @@ export const UploadImageScreen = observer(() => {
     }
 
     // Determine MIME type from file extension if type is missing or incomplete
-    let mimeType = selectedFile.type;
-    const fileName = (selectedFile.fileName || selectedFile.uri || '').toLowerCase();
-    
-    console.log('[Upload] File info:', {
-      fileName: selectedFile.fileName,
-      uri: selectedFile.uri,
-      originalType: selectedFile.type,
-      size: selectedFile.size
-    });
-    
-    // Check if MIME type is incomplete (e.g., "image" instead of "image/png")
-    if (!mimeType || mimeType === 'application/octet-stream' || !mimeType.includes('/')) {
-      // Try to infer from fileName
-      if (fileName.endsWith('.png')) {
-        mimeType = 'image/png';
-      } else if (fileName.endsWith('.jpg') || fileName.endsWith('.jpeg')) {
-        mimeType = 'image/jpeg';
-      } else if (fileName.endsWith('.mp4')) {
-        mimeType = 'video/mp4';
-      } else {
-        // Extract extension from URI if fileName not available
-        const uriExt = selectedFile.uri.split('.').pop()?.toLowerCase();
-        console.log('[Upload] Extracted extension from URI:', uriExt);
-        if (uriExt === 'png') {
-          mimeType = 'image/png';
-        } else if (uriExt === 'jpg' || uriExt === 'jpeg') {
-          mimeType = 'image/jpeg';
-        } else if (uriExt === 'mp4') {
-          mimeType = 'video/mp4';
-        } else {
-          // Default based on type prefix if available
-          if (mimeType && mimeType.startsWith('image')) {
-            mimeType = 'image/jpeg'; // default to jpeg for generic image type
-          } else if (mimeType && mimeType.startsWith('video')) {
-            mimeType = 'video/mp4'; // default to mp4 for generic video type
-          } else {
-            mimeType = 'image/jpeg'; // ultimate fallback
-          }
+    // Prepare all files
+    const normalized = selectedFiles.slice(0, 5).map((sf) => {
+      let type: string | undefined = sf.type;
+      const fileName = (sf.fileName || sf.uri || '').toLowerCase();
+      if (!type || type === 'application/octet-stream' || !type.includes('/')) {
+        if (fileName.endsWith('.png')) type = 'image/png';
+        else if (fileName.endsWith('.jpg') || fileName.endsWith('.jpeg')) type = 'image/jpeg';
+        else if (fileName.endsWith('.mp4')) type = 'video/mp4';
+        else {
+          const uriExt = sf.uri.split('.').pop()?.toLowerCase();
+          if (uriExt === 'png') type = 'image/png';
+          else if (uriExt === 'jpg' || uriExt === 'jpeg') type = 'image/jpeg';
+          else if (uriExt === 'mp4') type = 'video/mp4';
+          else if (type?.startsWith('image')) type = 'image/jpeg';
+          else if (type?.startsWith('video')) type = 'video/mp4';
+          else type = 'image/jpeg';
         }
       }
-    }
+      return {
+        size: sf.size || 0,
+        type: type!,
+        name: sf.fileName || 'upload',
+        uri: sf.uri,
+      };
+    });
     
-    console.log('[Upload] Determined MIME type:', mimeType);
-
-    // Simulate file upload
+    // Upload files as memory - groups multiple files under one memory entry
     setUploadProgress(50);
 
-    await familyViewModel.uploadMedia(
-      {
-        size: selectedFile.size || 0,
-        type: mimeType,
-        name: selectedFile.fileName || 'upload',
-      },
-      selectedFile.uri,
+    await familyViewModel.uploadMultipleMediaAsMemory(
+      normalized,
       caption || undefined
     );
 
@@ -195,7 +186,7 @@ export const UploadImageScreen = observer(() => {
       )}
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {!selectedFile ? (
+        {selectedFiles.length === 0 ? (
           <View style={styles.uploadOptions}>
             <ThemedText style={styles.instruction}>
               Select photos or videos to add to your family album
@@ -235,23 +226,18 @@ export const UploadImageScreen = observer(() => {
               <ThemedText style={styles.infoBullet}>
                 • Max size: 10MB for photos, 50MB for videos
               </ThemedText>
-              <ThemedText style={styles.infoBullet}>
-                • Max 100 files per upload
-              </ThemedText>
+              <ThemedText style={styles.infoBullet}>• Max 5 files per upload</ThemedText>
             </View>
           </View>
         ) : (
           <View style={styles.previewSection}>
-            <ThemedText type="subtitle">Preview</ThemedText>
+            <ThemedText type="subtitle">Preview ({selectedFiles.length}/5)</ThemedText>
 
-            <Image
-              source={{ uri: selectedFile.uri }}
-              style={styles.previewImage}
-            />
-
-            <ThemedText style={styles.fileName}>
-              {selectedFile.fileName || 'Selected file'}
-            </ThemedText>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginVertical: 16 }}>
+              {selectedFiles.map((f, idx) => (
+                <Image key={f.uri + idx} source={{ uri: f.uri }} style={styles.previewThumb} />
+              ))}
+            </ScrollView>
 
             <View style={styles.captionSection}>
               <ThemedText style={styles.label}>Add Caption (Optional)</ThemedText>
@@ -271,12 +257,12 @@ export const UploadImageScreen = observer(() => {
 
             <View style={styles.buttonGroup}>
               <Button
-                title="Change File"
-                onPress={() => setSelectedFile(null)}
+                title="Clear Selection"
+                onPress={() => setSelectedFiles([])}
                 variant="outline"
               />
               <Button
-                title={isUploading ? 'Uploading...' : 'Upload'}
+                title={isUploading ? 'Uploading...' : `Upload ${selectedFiles.length} file(s)`}
                 onPress={handleUpload}
                 disabled={isUploading}
                 loading={isUploading}
@@ -371,6 +357,13 @@ const styles = StyleSheet.create({
     height: 300,
     borderRadius: 8,
     marginVertical: 16,
+  },
+  previewThumb: {
+    width: 120,
+    height: 120,
+    borderRadius: 8,
+    marginRight: 12,
+    backgroundColor: '#F5F5F5',
   },
   fileName: {
     fontSize: 14,

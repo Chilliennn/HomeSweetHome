@@ -1,10 +1,13 @@
 import { makeAutoObservable, runInAction } from 'mobx';
+import * as FileSystem from 'expo-file-system';
+import * as MediaLibrary from 'expo-media-library';
 import { familyService, familyAIService, relationshipService } from '@home-sweet-home/model';
 import type {
   MediaItem,
   DiaryEntry,
   CalendarEvent,
   AISuggestion,
+  Memory,
   MoodType,
   EventType,
   Relationship
@@ -37,7 +40,9 @@ export class FamilyViewModel {
 
   // Family Album state
   mediaItems: MediaItem[] = [];
+  memories: Memory[] = [];
   selectedMedia: MediaItem | null = null;
+  selectedMemory: Memory | null = null;
   uploadProgress = 0;
   isUploading = false;
 
@@ -158,8 +163,7 @@ export class FamilyViewModel {
    * FR 3.1.1, 3.1.5, 3.1.6, 3.1.8, 3.1.9, 3.1.10
    */
   async uploadMedia(
-    file: { size: number; type: string; name: string },
-    file_url: string,
+    file: { size: number; type: string; name: string; uri: string },
     caption?: string
   ) {
     if (!this.currentRelationship) {
@@ -179,11 +183,25 @@ export class FamilyViewModel {
     });
 
     try {
+      // Read file as base64 in ViewModel (platform-specific code)
+      console.log('[FamilyViewModel] Reading file as base64:', file.uri);
+      const base64Data = await FileSystem.readAsStringAsync(file.uri, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+      console.log('[FamilyViewModel] Base64 read, length:', base64Data.length);
+
+      // Pass base64 data to service instead of file URI
+      const fileData = {
+        base64: base64Data,
+        name: file.name,
+        type: file.type,
+        size: file.size, // Include size for validation
+      };
+
       const media = await familyService.uploadMedia(
         this.currentUserId,
         this.currentRelationship.id,
-        file,
-        file_url,
+        fileData,
         caption
       );
 
@@ -203,6 +221,90 @@ export class FamilyViewModel {
         this.errorMessage = error.message || 'Failed to upload media';
         this.isUploading = false;
         this.uploadProgress = 0;
+      });
+    }
+  }
+
+  /**
+   * Upload up to 5 media files at once
+   * Processes sequentially to avoid device/network overload
+   */
+  async uploadMultipleMedia(
+    files: Array<{ size: number; type: string; name: string; uri: string }>,
+    caption?: string
+  ) {
+    if (!this.currentRelationship) {
+      this.errorMessage = 'No active relationship';
+      return;
+    }
+
+    if (!this.currentUserId) {
+      this.errorMessage = 'User not authenticated';
+      return;
+    }
+
+    const limited = files.slice(0, 5);
+
+    runInAction(() => {
+      this.isUploading = true;
+      this.uploadProgress = 0;
+      this.errorMessage = null;
+      this.successMessage = null;
+    });
+
+    const total = limited.length;
+    const successes: number[] = [];
+    const failures: { name: string; error: string }[] = [];
+
+    for (let i = 0; i < total; i++) {
+      const file = limited[i];
+      try {
+        // Read file as base64 in ViewModel (platform-specific code)
+        const base64Data = await FileSystem.readAsStringAsync(file.uri, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+
+        const fileData = {
+          base64: base64Data,
+          name: file.name,
+          type: file.type,
+          size: file.size,
+        };
+
+        const media = await familyService.uploadMedia(
+          this.currentUserId!,
+          this.currentRelationship!.id,
+          fileData,
+          caption
+        );
+
+        runInAction(() => {
+          this.mediaItems.unshift(media);
+        });
+        successes.push(i);
+      } catch (err: any) {
+        failures.push({ name: file.name, error: err?.message || 'Upload failed' });
+      } finally {
+        runInAction(() => {
+          this.uploadProgress = Math.round(((i + 1) / total) * 100);
+        });
+      }
+    }
+
+    runInAction(() => {
+      this.isUploading = false;
+    });
+
+    if (failures.length === 0) {
+      runInAction(() => {
+        this.successMessage = `${successes.length} file(s) uploaded successfully`;
+      });
+      setTimeout(() => runInAction(() => (this.successMessage = null)), 3000);
+    } else {
+      const msg = `Uploaded ${successes.length}/${total}.` +
+        (failures.length > 0 ? ` Failed: ${failures.map(f => f.name).join(', ')}` : '');
+      runInAction(() => {
+        this.errorMessage = msg;
       });
     }
   }
@@ -264,6 +366,304 @@ export class FamilyViewModel {
     } catch (error: any) {
       runInAction(() => {
         this.errorMessage = error.message || 'Failed to remove media';
+        this.isLoading = false;
+      });
+    }
+  }
+
+  // =============================================================
+  // MEMORY ACTIONS (grouped media)
+  // =============================================================
+
+  /**
+   * Upload multiple media files as a single memory
+   * Reads base64 data from files, delegates grouping to service
+   */
+  async uploadMultipleMediaAsMemory(
+    files: Array<{ size: number; type: string; name: string; uri: string }>,
+    caption?: string
+  ) {
+    if (!this.currentRelationship) {
+      this.errorMessage = 'No active relationship';
+      return;
+    }
+
+    if (!this.currentUserId) {
+      this.errorMessage = 'User not authenticated';
+      return;
+    }
+
+    const limited = files.slice(0, 5);
+
+    runInAction(() => {
+      this.isUploading = true;
+      this.uploadProgress = 0;
+      this.errorMessage = null;
+      this.successMessage = null;
+    });
+
+    const total = limited.length;
+    const failures: { name: string; error: string }[] = [];
+    const filesData: Array<{
+      base64: string;
+      type: string;
+      name: string;
+      size: number;
+    }> = [];
+
+    // Read all files as base64 first
+    try {
+      for (let i = 0; i < total; i++) {
+        const file = limited[i];
+        const base64Data = await FileSystem.readAsStringAsync(file.uri, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+
+        filesData.push({
+          base64: base64Data,
+          name: file.name,
+          type: file.type,
+          size: file.size,
+        });
+
+        runInAction(() => {
+          this.uploadProgress = Math.round(((i + 1) / total) * 50);
+        });
+      }
+
+      // All files read, now upload as memory
+      const result = await familyService.uploadMultipleMediaAsMemory(
+        this.currentUserId!,
+        this.currentRelationship!.id,
+        filesData,
+        caption
+      );
+
+      runInAction(() => {
+        // Add to memories list
+        this.memories.unshift(result.memory);
+        // Also add individual media items for backward compatibility
+        this.mediaItems.unshift(...result.mediaItems.reverse());
+        this.isUploading = false;
+        this.uploadProgress = 100;
+        this.successMessage = `${total} file(s) uploaded as memory successfully`;
+      });
+
+      setTimeout(() => {
+        runInAction(() => this.successMessage = null);
+      }, 3000);
+    } catch (err: any) {
+      runInAction(() => {
+        this.errorMessage = err?.message || 'Failed to upload as memory';
+        this.isUploading = false;
+      });
+    }
+  }
+
+  /**
+   * Load memories for the current relationship
+   */
+  async loadMemories() {
+    if (!this.currentRelationship) {
+      this.errorMessage = 'No active relationship';
+      return;
+    }
+
+    runInAction(() => {
+      this.isLoading = true;
+      this.errorMessage = null;
+    });
+
+    try {
+      const memories = await familyService.getMemoriesByRelationship(
+        this.currentRelationship!.id
+      );
+      runInAction(() => {
+        this.memories = memories;
+        this.isLoading = false;
+      });
+    } catch (error: any) {
+      runInAction(() => {
+        this.errorMessage = error.message || 'Failed to load memories';
+        this.isLoading = false;
+      });
+    }
+  }
+
+  /**
+   * Select a memory for detail view
+   */
+  async selectMemory(memoryId: string) {
+    runInAction(() => {
+      this.isLoading = true;
+      this.errorMessage = null;
+    });
+
+    try {
+      const memory = await familyService.getMemoryById(memoryId);
+      runInAction(() => {
+        this.selectedMemory = memory;
+        this.isLoading = false;
+      });
+    } catch (error: any) {
+      runInAction(() => {
+        this.errorMessage = error.message || 'Failed to load memory';
+        this.isLoading = false;
+      });
+    }
+  }
+
+  /**
+   * Update memory caption
+   */
+  async updateMemoryCaption(memoryId: string, caption: string) {
+    runInAction(() => {
+      this.isLoading = true;
+      this.errorMessage = null;
+    });
+
+    try {
+      const updated = await familyService.updateMemoryCaption(memoryId, caption);
+      runInAction(() => {
+        const index = this.memories.findIndex(m => m.id === memoryId);
+        if (index !== -1) {
+          this.memories[index] = updated;
+        }
+        if (this.selectedMemory?.id === memoryId) {
+          this.selectedMemory = updated;
+        }
+        this.isLoading = false;
+      });
+    } catch (error: any) {
+      runInAction(() => {
+        this.errorMessage = error.message || 'Failed to update caption';
+        this.isLoading = false;
+      });
+    }
+  }
+
+  /**
+   * Remove a memory and all associated media
+   */
+  async removeMemory(memoryId: string) {
+    runInAction(() => {
+      this.isLoading = true;
+      this.errorMessage = null;
+    });
+
+    try {
+      await familyService.removeMemory(memoryId);
+      runInAction(() => {
+        this.memories = this.memories.filter(m => m.id !== memoryId);
+        if (this.selectedMemory?.id === memoryId) {
+          this.selectedMemory = null;
+        }
+        this.isLoading = false;
+        this.successMessage = 'Memory removed successfully';
+      });
+
+      setTimeout(() => {
+        runInAction(() => this.successMessage = null);
+      }, 3000);
+    } catch (error: any) {
+      runInAction(() => {
+        this.errorMessage = error.message || 'Failed to remove memory';
+        this.isLoading = false;
+      });
+    }
+  }
+
+  /**
+   * Download all media in a memory to device gallery
+   */
+  async downloadMemory(memoryId: string) {
+    if (!this.selectedMemory || !this.selectedMemory.media) {
+      this.errorMessage = 'No memory selected';
+      return;
+    }
+
+    const media = this.selectedMemory.media;
+    runInAction(() => {
+      this.isLoading = true;
+      this.uploadProgress = 0;
+      this.errorMessage = null;
+    });
+
+    const total = media.length;
+    let successCount = 0;
+    const failures: string[] = [];
+
+    try {
+      for (let i = 0; i < total; i++) {
+        const item = media[i];
+        try {
+          // Determine file extension
+          const url = item.file_url || '';
+          const urlExt = (url.split('?')[0].split('.').pop() || '').toLowerCase();
+          let ext = urlExt;
+          if (!ext) {
+            ext = item.media_type === 'video' ? 'mp4' : 'jpg';
+          }
+
+          const filename = `HomeSweetHome_${item.id}.${ext}`;
+          const dest = FileSystem.documentDirectory + filename;
+
+          // Download file
+          const result = await FileSystem.downloadAsync(
+            item.file_url,
+            dest,
+            {
+              headers: { Accept: '*/*' },
+            } as any
+          );
+
+          if (!result || result.status !== 200) {
+            failures.push(filename);
+            continue;
+          }
+
+          // Verify file exists
+          const fileInfo = await FileSystem.getInfoAsync(dest);
+          if (!fileInfo.exists) {
+            failures.push(filename);
+            continue;
+          }
+
+          // Register with gallery (silently)
+          try {
+            await MediaLibrary.createAssetAsync(dest);
+          } catch (err) {
+            // Continue even if gallery registration fails
+          }
+
+          successCount++;
+        } catch (err) {
+          failures.push(item.id);
+        }
+
+        runInAction(() => {
+          this.uploadProgress = Math.round(((i + 1) / total) * 100);
+        });
+      }
+
+      runInAction(() => {
+        this.isLoading = false;
+        if (failures.length === 0) {
+          this.successMessage = `Downloaded ${successCount}/${total} file(s) successfully`;
+        } else {
+          this.errorMessage = `Downloaded ${successCount}/${total}. Failed: ${failures.join(', ')}`;
+        }
+      });
+
+      setTimeout(() => {
+        runInAction(() => {
+          this.successMessage = null;
+          this.errorMessage = null;
+        });
+      }, 5000);
+    } catch (error: any) {
+      runInAction(() => {
+        this.errorMessage = error.message || 'Failed to download memory';
         this.isLoading = false;
       });
     }

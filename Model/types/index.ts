@@ -330,7 +330,20 @@ export interface MediaItem {
   file_url: string;
   caption: string | null;
   tags: string[] | null;
+  memory_id: string | null;
   uploaded_at: string;
+}
+
+export interface Memory {
+  id: string;
+  relationship_id: string;
+  uploader_id: string;
+  caption: string | null;
+  thumbnail_url: string;
+  media_count: number;
+  uploaded_at: string;
+  // Optional: populated when fetching with joined media
+  media?: MediaItem[];
 }
 
 export interface DiaryEntry {

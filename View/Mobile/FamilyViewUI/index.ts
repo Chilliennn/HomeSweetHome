@@ -2,6 +2,7 @@
 export { AlbumScreen } from './AlbumScreen';
 export { UploadImageScreen } from './UploadImageScreen';
 export { ImageDetailScreen } from './ImageDetailScreen';
+export { MemoryDetailScreen } from './MemoryDetailScreen';
 
 // Diary
 export { DiaryScreen } from './DiaryScreen';

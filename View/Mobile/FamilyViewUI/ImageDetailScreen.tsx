@@ -7,6 +7,7 @@ import {
   TextInput,
   Alert,
   TouchableOpacity,
+  Platform,
 } from 'react-native';
 import { observer } from 'mobx-react-lite';
 import * as FileSystem from 'expo-file-system';
@@ -60,31 +61,62 @@ export const ImageDetailScreen = observer(() => {
       Alert.alert('Error', 'Failed to save caption');
     }
   };
-
   const handleDownload = async () => {
     setIsDownloading(true);
     try {
-      // Request media library permissions
-      const permission = await MediaLibrary.requestPermissionsAsync();
-      if (!permission.granted) {
-        Alert.alert('Error', 'Permission denied to access media library');
-        setIsDownloading(false);
-        return;
+      // Determine file extension from URL or media type
+      const url = selectedMedia.file_url || '';
+      const urlExt = (url.split('?')[0].split('.').pop() || '').toLowerCase();
+      let ext = urlExt;
+      if (!ext) {
+        ext = selectedMedia.media_type === 'video' ? 'mp4' : 'jpg';
+      } else if (selectedMedia.media_type !== 'video' && (ext === 'jpeg' || ext === 'jpg' || ext === 'png')) {
+        // keep as is
+      } else if (selectedMedia.media_type === 'video' && ext !== 'mp4') {
+        ext = 'mp4';
       }
 
-      // Download the file
-      const filename = `${selectedMedia.id}.${selectedMedia.media_type === 'video' ? 'mp4' : 'jpg'}`;
+      const filename = `HomeSweetHome_${selectedMedia.id}.${ext}`;
+      
+      // Download to app's document directory
+      const dest = FileSystem.documentDirectory + filename;
+      console.log('[Download] Destination:', dest);
+      
       const result = await FileSystem.downloadAsync(
         selectedMedia.file_url,
-        FileSystem.documentDirectory + filename
+        dest,
+        {
+          headers: {
+            Accept: '*/*',
+          },
+        } as any
       );
 
-      // Save to media library
-      await MediaLibrary.saveToLibraryAsync(result.uri);
+      console.log('[Download] Download result status:', result.status);
 
-      Alert.alert('Success', 'Download Completed!');
-    } catch (error) {
-      Alert.alert('Error', 'Failed to download file');
+      if (!result || result.status !== 200) {
+        throw new Error(`Download failed with status ${result?.status}`);
+      }
+
+      // Verify file exists
+      const fileInfo = await FileSystem.getInfoAsync(dest);
+      if (!fileInfo.exists) {
+        throw new Error('File was not saved');
+      }
+
+      // Register with gallery (silently ignore if it fails)
+      MediaLibrary.createAssetAsync(dest).catch((err) => {
+        console.log('[Download] Gallery registration note:', err.message);
+      });
+
+      Alert.alert(
+        'Download Complete',
+        `${filename}\n\nThe file has been saved to your device.`
+      );
+    } catch (error: any) {
+      console.error('[Download] Error occurred:', error);
+      const msg = error?.message || 'Unknown error';
+      Alert.alert('Error', `Failed to download: ${msg}`);
     } finally {
       setIsDownloading(false);
     }

@@ -1,9 +1,11 @@
 import { supabase } from '../../Service/APIService/supabase';
+import { storageService } from '../../Service/APIService/storageService';
 import type {
   MediaItem,
   DiaryEntry,
   CalendarEvent,
   AISuggestion,
+  Memory,
   MoodType,
   EventType,
   MediaType,
@@ -24,33 +26,61 @@ export const familyRepository = {
   // ===========================
 
   /**
-   * Upload media to family album
+   * Upload media to family album with file storage
    * FR 3.1.1, 3.1.9
+   * 
+   * Uploads the actual file to Supabase Storage and stores the public URL
    */
   async uploadMedia(
     uploader_id: string,
     relationship_id: string,
     media_type: MediaType,
-    file_url: string,
+    fileData: {
+      base64: string;
+      name: string;
+      type: string;
+    },
     caption?: string,
     tags?: string[]
   ): Promise<MediaItem> {
-    const { data, error } = await supabase
-      .from('media')
-      .insert({
-        uploader_id,
-        relationship_id,
-        media_type,
-        media_category: 'family_album',
-        file_url,
-        caption: caption || null,
-        tags: tags || null,
-      })
-      .select()
-      .single();
+    try {
+      // Upload file to Supabase Storage with base64 data
+      console.log('[familyRepository] Starting file upload to storage...');
+      
+      const folderPath = `relationships/${relationship_id}/media`;
+      const bucket = storageService.getMediaBucket();
+      
+      const publicUrl = await storageService.uploadMediaFileWithRetry(
+        bucket,
+        fileData,
+        folderPath
+      );
 
-    if (error) throw error;
-    return data;
+      console.log('[familyRepository] File uploaded, storing metadata in database...');
+
+      // Store media metadata with public URL in database
+      const { data, error } = await supabase
+        .from('media')
+        .insert({
+          uploader_id,
+          relationship_id,
+          media_type,
+          media_category: 'family_album',
+          file_url: publicUrl, // Store the public URL instead of local path
+          caption: caption || null,
+          tags: tags || null,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      
+      console.log('[familyRepository] Media metadata saved successfully');
+      return data;
+    } catch (error: any) {
+      console.error('[familyRepository] Media upload failed:', error);
+      throw error;
+    }
   },
 
   /**
@@ -121,6 +151,204 @@ export const familyRepository = {
       .eq('id', id);
 
     if (error) throw error;
+  },
+
+  // ===========================
+  // MEMORIES (grouped media)
+  // ===========================
+
+  /**
+   * Create a new memory (groups multiple media files)
+   * Associates multiple media items under one memory with shared metadata
+   */
+  async createMemory(
+    relationship_id: string,
+    uploader_id: string,
+    thumbnail_url: string,
+    caption?: string
+  ): Promise<Memory> {
+    try {
+      const { data, error } = await supabase
+        .from('memories')
+        .insert({
+          relationship_id,
+          uploader_id,
+          caption: caption || null,
+          thumbnail_url,
+          media_count: 1, // Will be updated when media is added
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    } catch (error: any) {
+      console.error('[familyRepository] Failed to create memory:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Get all memories for a relationship, ordered by date
+   * Returns memory timeline for album view
+   */
+  async getMemoriesByRelationship(
+    relationship_id: string
+  ): Promise<Memory[]> {
+    try {
+      const { data, error } = await supabase
+        .from('memories')
+        .select('*')
+        .eq('relationship_id', relationship_id)
+        .order('uploaded_at', { ascending: false });
+
+      if (error) throw error;
+      return data || [];
+    } catch (error: any) {
+      console.error('[familyRepository] Failed to fetch memories:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Get a single memory by ID with all associated media
+   * Used for detail view of a grouped memory
+   */
+  async getMemoryById(id: string): Promise<Memory | null> {
+    try {
+      const { data: memory, error: memoryError } = await supabase
+        .from('memories')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (memoryError && memoryError.code !== 'PGRST116') throw memoryError;
+      if (!memory) return null;
+
+      // Fetch all media in this memory
+      const { data: media, error: mediaError } = await supabase
+        .from('media')
+        .select('*')
+        .eq('memory_id', id)
+        .order('uploaded_at', { ascending: true });
+
+      if (mediaError) throw mediaError;
+
+      return {
+        ...memory,
+        media: media || [],
+      };
+    } catch (error: any) {
+      console.error('[familyRepository] Failed to fetch memory:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Get all media items in a memory
+   */
+  async getMediaByMemory(memory_id: string): Promise<MediaItem[]> {
+    try {
+      const { data, error } = await supabase
+        .from('media')
+        .select('*')
+        .eq('memory_id', memory_id)
+        .order('uploaded_at', { ascending: true });
+
+      if (error) throw error;
+      return data || [];
+    } catch (error: any) {
+      console.error('[familyRepository] Failed to fetch media by memory:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Update memory metadata (caption)
+   */
+  async updateMemory(
+    id: string,
+    updates: {
+      caption?: string;
+      thumbnail_url?: string;
+    }
+  ): Promise<Memory> {
+    try {
+      const { data, error } = await supabase
+        .from('memories')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    } catch (error: any) {
+      console.error('[familyRepository] Failed to update memory:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Update media_count for a memory
+   * Called when adding/removing media from a memory
+   */
+  async updateMemoryMediaCount(
+    id: string,
+    media_count: number
+  ): Promise<Memory> {
+    try {
+      const { data, error } = await supabase
+        .from('memories')
+        .update({ media_count })
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    } catch (error: any) {
+      console.error('[familyRepository] Failed to update memory count:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Delete a memory and all associated media (cascaded via DB constraint)
+   * FR 3.1.2 (batch delete)
+   */
+  async deleteMemory(id: string): Promise<void> {
+    try {
+      const { error } = await supabase
+        .from('memories')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+    } catch (error: any) {
+      console.error('[familyRepository] Failed to delete memory:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Link existing media to a memory (for batch operations)
+   */
+  async linkMediaToMemory(
+    memory_id: string,
+    media_ids: string[]
+  ): Promise<void> {
+    try {
+      const { error } = await supabase
+        .from('media')
+        .update({ memory_id })
+        .in('id', media_ids);
+
+      if (error) throw error;
+    } catch (error: any) {
+      console.error('[familyRepository] Failed to link media to memory:', error);
+      throw error;
+    }
   },
 
   // ===========================

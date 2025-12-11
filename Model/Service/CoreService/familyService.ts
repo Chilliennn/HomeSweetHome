@@ -4,6 +4,7 @@ import type {
   DiaryEntry,
   CalendarEvent,
   AISuggestion,
+  Memory,
   MoodType,
   EventType,
   Relationship
@@ -124,16 +125,22 @@ export const familyService = {
   /**
    * Upload media with validation
    * FR 3.1.1, 3.1.2, 3.1.8, 3.1.9
+   * 
+   * Accepts file data with base64 content for upload to storage
    */
   async uploadMedia(
     uploader_id: string,
     relationship_id: string,
-    file: { size: number; type: string; name: string },
-    file_url: string,
+    fileData: {
+      base64: string;
+      type: string;
+      name: string;
+      size: number;
+    },
     caption?: string
   ): Promise<MediaItem> {
     // Validate file
-    const fileValidation = this.validateMediaFile(file);
+    const fileValidation = this.validateMediaFile(fileData);
     if (!fileValidation.valid) {
       throw new Error(fileValidation.error);
     }
@@ -147,14 +154,18 @@ export const familyService = {
     }
 
     // Determine media type
-    const mediaType = file.type.startsWith('video') ? 'video' : 'photo';
+    const mediaType = fileData.type.startsWith('video') ? 'video' : 'photo';
 
-    // Upload to repository
+    // Upload to repository with base64 data
     return familyRepository.uploadMedia(
       uploader_id,
       relationship_id,
       mediaType,
-      file_url,
+      {
+        base64: fileData.base64,
+        name: fileData.name,
+        type: fileData.type,
+      },
       caption
     );
   },
@@ -192,6 +203,152 @@ export const familyService = {
     }
 
     return familyRepository.updateMediaCaption(id, caption);
+  },
+
+  /**
+   * Upload multiple media files as a single memory
+   * Groups multiple files under one memory entry with shared metadata
+   * FR 3.1.1, 3.1.9 (batch upload support)
+   */
+  async uploadMultipleMediaAsMemory(
+    uploader_id: string,
+    relationship_id: string,
+    filesData: Array<{
+      base64: string;
+      type: string;
+      name: string;
+      size: number;
+    }>,
+    caption?: string
+  ): Promise<{
+    memory: Memory;
+    mediaItems: MediaItem[];
+  }> {
+    if (!filesData || filesData.length === 0) {
+      throw new Error('At least one file is required');
+    }
+
+    if (filesData.length > 5) {
+      throw new Error('Maximum 5 files per upload');
+    }
+
+    // Validate all files before processing
+    const validationErrors: string[] = [];
+    filesData.forEach((file, index) => {
+      const validation = this.validateMediaFile(file);
+      if (!validation.valid) {
+        validationErrors.push(`File ${index + 1}: ${validation.error}`);
+      }
+    });
+
+    if (validationErrors.length > 0) {
+      throw new Error(validationErrors.join('; '));
+    }
+
+    // Validate caption if provided
+    if (caption) {
+      const captionValidation = this.validateCaption(caption);
+      if (!captionValidation.valid) {
+        throw new Error(captionValidation.error);
+      }
+    }
+
+    // Create memory first (will be updated with media count)
+    const thumbnailUrl = ''; // Will be set to first uploaded file's URL
+    const memory = await familyRepository.createMemory(
+      relationship_id,
+      uploader_id,
+      thumbnailUrl,
+      caption
+    );
+
+    // Upload each media file and link to memory
+    const mediaItems: MediaItem[] = [];
+    try {
+      for (let i = 0; i < filesData.length; i++) {
+        const fileData = filesData[i];
+        const mediaType = fileData.type.startsWith('video') ? 'video' : 'photo';
+
+        // Upload to repository
+        const mediaItem = await familyRepository.uploadMedia(
+          uploader_id,
+          relationship_id,
+          mediaType,
+          {
+            base64: fileData.base64,
+            name: fileData.name,
+            type: fileData.type,
+          },
+          i === 0 ? caption : undefined // Only attach caption to first item
+        );
+
+        // Link media to memory
+        await familyRepository.linkMediaToMemory(memory.id, [mediaItem.id]);
+        
+        // Set thumbnail from first file
+        if (i === 0) {
+          await familyRepository.updateMemory(memory.id, {
+            thumbnail_url: mediaItem.file_url
+          });
+        }
+
+        mediaItems.push(mediaItem);
+      }
+
+      // Update memory media count
+      await familyRepository.updateMemoryMediaCount(memory.id, mediaItems.length);
+
+      return {
+        memory: {
+          ...memory,
+          thumbnail_url: mediaItems[0]?.file_url || memory.thumbnail_url,
+          media_count: mediaItems.length,
+          media: mediaItems,
+        },
+        mediaItems,
+      };
+    } catch (error: any) {
+      // If upload fails, delete the memory (cascade will delete orphaned media)
+      await familyRepository.deleteMemory(memory.id);
+      throw error;
+    }
+  },
+
+  /**
+   * Get all memories for a relationship
+   * FR 3.1.3 (organized by date)
+   */
+  async getMemoriesByRelationship(
+    relationship_id: string
+  ): Promise<Memory[]> {
+    return familyRepository.getMemoriesByRelationship(relationship_id);
+  },
+
+  /**
+   * Get a single memory with all associated media
+   */
+  async getMemoryById(memory_id: string): Promise<Memory | null> {
+    return familyRepository.getMemoryById(memory_id);
+  },
+
+  /**
+   * Remove a memory and all associated media
+   * FR 3.1.2 (batch delete)
+   */
+  async removeMemory(memory_id: string): Promise<void> {
+    return familyRepository.deleteMemory(memory_id);
+  },
+
+  /**
+   * Update memory caption
+   */
+  async updateMemoryCaption(memory_id: string, caption: string): Promise<Memory> {
+    const captionValidation = this.validateCaption(caption);
+    if (!captionValidation.valid) {
+      throw new Error(captionValidation.error);
+    }
+
+    return familyRepository.updateMemory(memory_id, { caption });
   },
 
   // ===========================

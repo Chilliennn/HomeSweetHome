@@ -21,14 +21,15 @@ import { useRouter } from 'expo-router';
  * AlbumScreen - Main Family Photo Album interface
  * 
  * UC-300: MANAGE FAMILY MEMORIES
- * Displays family photos/videos organized by date
- * Allows upload, download, remove, and caption management
+ * Displays family memories (grouped media) organized by date
+ * One card per memory showing thumbnail + media count
+ * Allows upload, view details, and batch operations
  * 
  * FR 3.1.1 - 3.1.12
  */
 export const AlbumScreen = observer(() => {
   const router = useRouter();
-  const { mediaItems, isLoading, errorMessage, successMessage, canAccessFamilyAlbum } = familyViewModel;
+  const { memories, isLoading, errorMessage, successMessage, canAccessFamilyAlbum } = familyViewModel;
 
   useEffect(() => {
     // Initialize if needed (fallback if not initialized from login)
@@ -40,9 +41,9 @@ export const AlbumScreen = observer(() => {
           await familyViewModel.initialize(userId);
         }
       }
-      // Load media when relationship is available
+      // Load memories when relationship is available
       if (familyViewModel.currentRelationship) {
-        familyViewModel.loadMedia(familyViewModel.currentRelationship.id);
+        familyViewModel.loadMemories();
       }
     };
     initializeIfNeeded();
@@ -69,25 +70,32 @@ export const AlbumScreen = observer(() => {
     router.push('/family/album/upload');
   };
 
-  const handleMediaSelect = (media: any) => {
-    familyViewModel.selectMedia(media);
+  const handleMemorySelect = (memory: any) => {
+    familyViewModel.selectMemory(memory.id);
     router.push({
-      pathname: '/family/album/image-detail',
-      params: { mediaId: media.id },
+      pathname: '/family/album/memory-detail',
+      params: { memoryId: memory.id },
     });
   };
 
-  const renderMediaItem = ({ item }: { item: any }) => (
+  const renderMemoryCard = ({ item }: { item: any }) => (
     <TouchableOpacity
-      style={styles.mediaCard}
-      onPress={() => handleMediaSelect(item)}
+      style={styles.memoryCard}
+      onPress={() => handleMemorySelect(item)}
     >
       <Image
-        source={{ uri: item.file_url }}
-        style={styles.mediaThumbnail}
+        source={{ uri: item.thumbnail_url }}
+        style={styles.memoryThumbnail}
       />
-      <View style={styles.mediaOverlay}>
-        <ThemedText style={styles.mediaDate}>
+      {item.media_count > 1 && (
+        <View style={styles.mediaCountBadge}>
+          <ThemedText style={styles.mediaCountText}>
+            +{item.media_count - 1}
+          </ThemedText>
+        </View>
+      )}
+      <View style={styles.memoryOverlay}>
+        <ThemedText style={styles.memoryDate}>
           {new Date(item.uploaded_at).toLocaleDateString()}
         </ThemedText>
       </View>
@@ -146,7 +154,7 @@ export const AlbumScreen = observer(() => {
           />
         </View>
 
-        {mediaItems.length === 0 ? (
+        {memories.length === 0 ? (
           <View style={styles.emptyState}>
             <ThemedText style={styles.emptyText}>
               No memories yet. Start by uploading your first photo or video!
@@ -158,8 +166,8 @@ export const AlbumScreen = observer(() => {
               Timeline
             </ThemedText>
             <FlatList
-              data={mediaItems}
-              renderItem={renderMediaItem}
+              data={memories}
+              renderItem={renderMemoryCard}
               keyExtractor={(item) => item.id}
               numColumns={2}
               scrollEnabled={false}
@@ -242,18 +250,32 @@ const styles = StyleSheet.create({
   listContent: {
     paddingBottom: 16,
   },
-  mediaCard: {
+  memoryCard: {
     width: '48%',
     aspectRatio: 1,
     borderRadius: 8,
     overflow: 'hidden',
     backgroundColor: '#f5f5f5',
   },
-  mediaThumbnail: {
+  memoryThumbnail: {
     width: '100%',
     height: '100%',
   },
-  mediaOverlay: {
+  mediaCountBadge: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    borderRadius: 16,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  mediaCountText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  memoryOverlay: {
     position: 'absolute',
     bottom: 0,
     left: 0,
@@ -262,7 +284,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 6,
   },
-  mediaDate: {
+  memoryDate: {
     color: '#fff',
     fontSize: 12,
   },

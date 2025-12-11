@@ -37,14 +37,13 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
 
     // Watch for auto-navigation to Stage Completed page
     useEffect(() => {
-      if (vm.shouldNavigateToStageCompleted) {
-        vm.shouldNavigateToStageCompleted = false;
-        router.push({
-          pathname: "/(main)/stage-completed",
-          params: { userId, stage: vm.stageJustCompleted },
-        });
-      }
-    }, [vm.shouldNavigateToStageCompleted, router, userId, vm]);
+      if (!vm.shouldNavigateToStageCompleted) return;
+      vm.shouldNavigateToStageCompleted = false;
+
+      vm
+        .loadStageCompletionInfo(vm.stageJustCompleted ?? undefined)
+        .catch((err) => console.error("Failed to load stage completion info:", err));
+    }, [vm, vm.shouldNavigateToStageCompleted]);
 
     // Watch for auto-navigation to Milestone page
     useEffect(() => {
@@ -63,6 +62,12 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
     }, [vm.shouldNavigateToJourneyPause, router, userId, vm]);
 
     const handleStagePress = async (stage: any) => {
+      if (vm.showStageCompleted) {
+        vm.closeStageCompleted();
+      }
+      if (vm.showLockedStageDetail) {
+        vm.closeLockedStageDetail();
+      }
       await vm.handleStageClick(stage);
     };
 
@@ -78,7 +83,6 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
     const handleTabPress = (key: string) => {
       switch (key) {
         case "matching":
-          // Already on home/stage progression
           break;
         case "diary":
           router.push("/(main)/diary");
@@ -194,62 +198,65 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
                   ))}
                 </View>
               </View>
-            ) : (
-              <View style={styles.currentStageCard}>
-                <Text style={styles.cardTitle}>
-                  Current Stage:{" "}
-                  {vm.stages.find((s) => s.is_current)?.display_name}
-                </Text>
-
-                <View style={styles.progressBar}>
-                  <View
-                    style={[
-                      styles.progressFill,
-                      { width: `${vm.progressPercentage}%` },
-                    ]}
-                  />
+            ) : vm.showStageCompleted ? (
+              <View style={styles.lockedDetailContainer}>
+                {/* Inline completion card */}
+                <View style={styles.lockIconWrapper}>
+                  <Text style={styles.lockIcon}>🎉</Text>
                 </View>
 
-                <Text style={styles.progressText}>
-                  {vm.daysTogether} days together • {vm.progressPercentage}%
-                  complete
+                {/* show completed stage number */}
+                <Text style={styles.lockedTitle}>
+                  Stage {vm.completedStageOrder + 1}: {vm.stageJustCompletedName}
                 </Text>
 
-                <Text style={styles.goalsTitle}>Stage Goals:</Text>
-                {vm.requirements.slice(0, 3).map((req) => (
-                  <Text key={req.id} style={styles.goalItem}>
-                    • {req.title}
-                  </Text>
-                ))}
-              </View>
-            )}
-            {/* Action Buttons */}
-            {/* Action Buttons - Only show if NOT viewing a locked stage detail */}
-            {!vm.showLockedStageDetail && (
-              <>
-                <TouchableOpacity
-                  style={[styles.actionButton, styles.primaryButton]}
-                  onPress={() => router.push("/(main)/stageRequirements")}
-                >
-                  <Text style={styles.actionButtonText}>
-                    View All Requirements
-                  </Text>
-                </TouchableOpacity>
+                <Text style={styles.lockedDescription}>
+                  {vm.stageCompletionMessage}
+                </Text>
 
-                <TouchableOpacity
-                  style={[styles.actionButton, styles.secondaryButton]}
-                  onPress={() => router.push("/(main)/availableFeatures")}
-                >
-                  <Text
-                    style={[
-                      styles.actionButtonText,
-                      styles.secondaryButtonText,
-                    ]}
-                  >
-                    View Available Features
+                <View style={styles.previewCard}>
+                  <Text style={styles.previewHeading}>New features unlocked:</Text>
+                  {vm.newlyUnlockedFeatures.length === 0 ? (
+                    <Text style={styles.previewText}>No new features</Text>
+                  ) : (
+                    vm.newlyUnlockedFeatures.map((f, i) => (
+                      <View key={i} style={styles.previewRow}>
+                        <View style={styles.previewBulletWrapper}>
+                          <Text style={styles.previewBullet}>✓</Text>
+                        </View>
+                        <Text style={styles.previewText}>{f}</Text>
+                      </View>
+                    ))
+                  )}
+                </View>
+              </View> ):(
+                <View style={styles.currentStageCard}>
+                  <Text style={styles.cardTitle}>
+                    Current Stage:{" "}
+                    {vm.stages.find((s) => s.is_current)?.display_name}
                   </Text>
-                </TouchableOpacity>
-              </>
+
+                  <View style={styles.progressBar}>
+                    <View
+                      style={[
+                        styles.progressFill,
+                        { width: `${vm.progressPercentage}%` },
+                      ]}
+                    />
+                  </View>
+
+                  <Text style={styles.progressText}>
+                    {vm.daysTogether} days together • {vm.progressPercentage}%
+                    complete
+                  </Text>
+
+                  <Text style={styles.goalsTitle}>Stage Goals:</Text>
+                  {vm.requirements.slice(0, 3).map((req) => (
+                    <Text key={req.id} style={styles.goalItem}>
+                      • {req.title}
+                    </Text>
+                  ))}
+                </View>
             )}
           </ScrollView>
 

@@ -30,6 +30,7 @@ export class StageViewModel {
   error: string | null = null;
   showWithdrawModal: boolean = false;
   withdrawalReason: string = "";
+  showStageCompleted: boolean = false;
 
   // Milestone observables
   milestoneReached: number | null = null;
@@ -75,13 +76,13 @@ export class StageViewModel {
       relationshipId
     );
 
-    // Subscribe to relationship changes (stage transitions, metrics updates)
+    // Subscribe to relationship changes 
     this.relationshipSubscription = supabase
       .channel(`relationship:${relationshipId}`)
       .on(
         "postgres_changes",
         {
-          event: "*", // Listen to all events (INSERT, UPDATE, DELETE)
+          event: "*", // Listen to all events 
           schema: "public",
           table: "relationships",
           filter: `id=eq.${relationshipId}`,
@@ -97,11 +98,10 @@ export class StageViewModel {
           console.warn(
             "[Realtime] Relationship channel error. Attempting to resubscribe..."
           );
-          // Simple retry logic could be added here or just rely on manual refresh
         }
       });
 
-    // Subscribe to activities changes (completion, new activities)
+    // Subscribe to activities changes 
     this.activitiesSubscription = supabase
       .channel(`activities:${relationshipId}`)
       .on(
@@ -129,10 +129,8 @@ export class StageViewModel {
     payloadNew: any
   ) {
     try {
-      // Call service that returns cooling info. Must use userId, not relationshipId!
       const cooling = await stageService.getCoolingPeriodInfo(this.userId);
 
-      // cooling may look like { isInCoolingPeriod: boolean, remainingSeconds: number, ... }
       const active = !!(
         cooling &&
         cooling.isInCoolingPeriod &&
@@ -144,7 +142,6 @@ export class StageViewModel {
         if (active) {
           this.shouldNavigateToJourneyPause = true;
         } else {
-          // If cooling expired (remainingSeconds <= 0) or not in cooling, ensure we do NOT navigate
           this.shouldNavigateToJourneyPause = false;
         }
       });
@@ -165,7 +162,7 @@ export class StageViewModel {
   }
 
   /**
-   * Handle realtime relationship changes - detect stage transitions, cooling periods, milestones
+   * Handle realtime relationship changes 
    */
   private async handleRealtimeRelationshipChange(payload: any) {
     const newData = payload.new;
@@ -193,7 +190,6 @@ export class StageViewModel {
         // Also load full stage completion info
         this.loadStageCompletionInfo();
       } else if (prevIndex !== -1 && newIndex !== -1 && newIndex < prevIndex) {
-        // Moving backward - do NOT show completion page
         console.log(
           "[Realtime] Stage moved backward - skipping completion page"
         );
@@ -202,7 +198,7 @@ export class StageViewModel {
       this.previousStage = newData.current_stage;
     }
 
-    // Detect cooling period (withdraw initiated)
+    // Detect cooling period 
     if (
       newData.status === "paused" &&
       newData.end_request_status === "pending_cooldown"
@@ -233,11 +229,10 @@ export class StageViewModel {
         this.shownMilestones.push(days);
       });
     } else {
-      // Debug log to understand why milestone isn't triggering
+      // Debug log 
       if (milestones.includes(days) && this.shownMilestones.includes(days)) {
         console.log(`[Realtime] Milestone ${days} already shown, skipping.`);
       } else if (!milestones.includes(days)) {
-        // console.log(`[Realtime] Days ${days} is not a milestone.`);
       }
     }
   }
@@ -248,20 +243,14 @@ export class StageViewModel {
   /**
    * Initialize with user ID and load all data
    */
-  /**
-   * Initialize with user ID and load all data streams
-   */
   async initialize(userId: string) {
     this.userId = userId;
     this.isLoading = true;
     this.error = null;
 
     try {
-      // Clear shown milestones on init so we re-check fresh state
       this.shownMilestones = [];
 
-      // Load core stage progression (sets relationshipId)
-      // Pass keepLoading=true so isLoading stays true until finally block
       await this.loadStageProgression(userId, false, true);
 
       // Load supplementary streams
@@ -269,7 +258,6 @@ export class StageViewModel {
       await this.loadCoolingPeriodInfo();
       await this.loadStageCompletionInfo();
 
-      // Setup realtime subscription if we have a relationship ID
       if (this.relationshipId) {
         this.setupRealtimeSubscription(this.relationshipId);
       }
@@ -458,21 +446,19 @@ export class StageViewModel {
       return;
     }
 
-    // If tapping a completed stage, navigate to the completion page for that stage
     if (targetStageInfo?.is_completed) {
+      await this.loadStageCompletionInfo(targetStage);
       runInAction(() => {
         this.stageJustCompleted = targetStage;
         this.stageJustCompletedName = targetStageInfo.display_name;
-        // We can optionally set historical data here if needed by the view
-        this.shouldNavigateToStageCompleted = true;
+        this.showStageCompleted = true;
       });
       return;
     }
 
-    // For locked OR completed stages (or when forced), load locked-stage details
     this.selectedLockedStage = targetStage;
     await this.loadLockedStageDetails(targetStage);
-    // this.showLockedStageDetail = true; // Handled in loadLockedStageDetails
+    this.showLockedStageDetail = true;
   }
 
   async loadRequirementsByEmail(userEmail: string, stage: RelationshipStage) {
@@ -828,7 +814,11 @@ export class StageViewModel {
           this.currentStage = info.currentStage;
           this.currentStageDisplayName = info.currentStageDisplayName;
           this.newlyUnlockedFeatures = info.newlyUnlockedFeatures;
-          this.completedStageOrder = info.stageOrder - 1; // The completed stage order
+          this.completedStageOrder = info.stageOrder - 1;
+          this.showStageCompleted = true;
+          this.showLockedStageDetail = false;
+          this.selectedLockedStage = null;
+          this.showStageCompleted = true;
         }
         this.isLoading = false;
       });
@@ -840,6 +830,14 @@ export class StageViewModel {
     }
   }
 
+  closeStageCompleted() {
+    runInAction(() => {
+      this.showStageCompleted = false;
+      this.stageJustCompleted = null;
+      this.stageJustCompletedName = "";
+      this.newlyUnlockedFeatures = [];
+    });
+  }
   /**
    * Get completion message for stage
    */

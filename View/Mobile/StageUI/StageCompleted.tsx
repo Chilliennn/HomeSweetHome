@@ -54,9 +54,7 @@ export const StageCompletedScreen: React.FC<StageCompletedScreenProps> =
 
     const handleStageClick = async (targetStage: string) => {
       try {
-        // Force open stage details in ViewModel
         await vm.handleStageClick(targetStage as any, { forceOpen: true });
-        // Navigate to bonding screen which will show the selected stage detail
         router.push({
           pathname: "/(main)/bonding",
           params: { userId },
@@ -103,7 +101,6 @@ export const StageCompletedScreen: React.FC<StageCompletedScreenProps> =
             {/* Title */}
             <Text style={styles.title}>Your Journey Together</Text>
 
-            {/* Stage Progress - matching StageProgression layout */}
             <View style={styles.stageRow}>
               {stageOrder.map((stage, index) => (
                 <React.Fragment key={stage.stage}>
@@ -122,19 +119,17 @@ export const StageCompletedScreen: React.FC<StageCompletedScreenProps> =
             </View>
 
             {/* Celebration Section */}
-            {/* Celebration Section */}
             <View style={styles.celebrationSection}>
-              {/* Use the exact same StageCircle component for consistency */}
               <StageCircle
                 order={vm.completedStageOrder}
-                displayName={""} // No label needed here inside the big circle
+                displayName={""} 
                 isCurrent={false}
                 isCompleted={true}
                 onPress={() => {}}
-                size={100} // Override size to be bigger
+                size={100} 
               />
               <Text style={styles.completedTitle}>
-                Stage {vm.completedStageOrder} Complete!
+                Stage {vm.completedStageOrder + 1} Complete!
               </Text>
               <Text style={styles.completedMessage}>
                 {vm.stageCompletionMessage}
@@ -160,24 +155,9 @@ export const StageCompletedScreen: React.FC<StageCompletedScreenProps> =
                 </View>
               ))}
             </View>
-
-            {/* Continue Button */}
-            <TouchableOpacity
-              style={styles.continueButton}
-              onPress={() =>
-                router.push({
-                  pathname: "/(main)/bonding",
-                  params: { userId },
-                })
-              }
-            >
-              <Text style={styles.continueButtonText}>
-                Continue Your Journey
-              </Text>
-            </TouchableOpacity>
           </ScrollView>
 
-          {/* Bottom Navigation - matching StageProgression */}
+          {/* Bottom Navigation */}
           <BottomTabBar
             tabs={DEFAULT_TABS}
             activeTab="bonding"
@@ -249,7 +229,7 @@ const styles = StyleSheet.create({
     color: "#333",
     marginBottom: 32,
   },
-  // Stage row - matching StageProgression exactly
+
   stageRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -264,7 +244,7 @@ const styles = StyleSheet.create({
     borderRadius: 3,
     marginHorizontal: 6,
     alignSelf: "center",
-    marginTop: 20, // align with circle center (CIRCLE_SIZE=54, so 54/2 - 6/2 ≈ 24, adjust visually)
+    marginTop: 20, 
   },
   celebrationSection: {
     alignItems: "center",

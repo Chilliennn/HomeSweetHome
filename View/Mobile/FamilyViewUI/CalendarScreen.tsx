@@ -74,7 +74,9 @@ export const CalendarScreen = observer(() => {
 
   const renderEventItem = ({ item }: { item: any }) => {
     const eventDate = new Date(item.event_date);
-    const isUpcoming = eventDate >= new Date();
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const isUpcoming = eventDate >= today;
 
     return (
       <TouchableOpacity
@@ -110,22 +112,17 @@ export const CalendarScreen = observer(() => {
     );
   };
 
-  // Group events by date
-  const groupedEvents = calendarEvents.reduce((acc: any, event: any) => {
-    const dateKey = new Date(event.event_date).toLocaleDateString();
-    if (!acc[dateKey]) {
-      acc[dateKey] = [];
-    }
-    acc[dateKey].push(event);
-    return acc;
-  }, {});
-
-  const sections = Object.entries(groupedEvents)
-    .sort((a, b) => new Date(b[0]).getTime() - new Date(a[0]).getTime())
-    .map(([date, events]: [string, any]) => ({
-      title: date,
-      data: events,
-    }));
+  // Separate upcoming and past events
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
+  const upcomingEvents = calendarEvents
+    .filter((event: any) => new Date(event.event_date) >= today)
+    .sort((a: any, b: any) => new Date(a.event_date).getTime() - new Date(b.event_date).getTime());
+  
+  const pastEvents = calendarEvents
+    .filter((event: any) => new Date(event.event_date) < today)
+    .sort((a: any, b: any) => new Date(b.event_date).getTime() - new Date(a.event_date).getTime());
 
   return (
     <View style={styles.container}>
@@ -170,13 +167,35 @@ export const CalendarScreen = observer(() => {
             </ThemedText>
           </View>
         ) : (
-          <FlatList
-            data={calendarEvents}
-            renderItem={renderEventItem}
-            keyExtractor={(item) => item.id}
-            scrollEnabled={false}
-            contentContainerStyle={styles.listContent}
-          />
+          <View>
+            {/* Upcoming Events Section */}
+            {upcomingEvents.length > 0 && (
+              <View style={styles.eventsSection}>
+                <ThemedText style={styles.sectionHeader}>Upcoming Events</ThemedText>
+                <FlatList
+                  data={upcomingEvents}
+                  renderItem={renderEventItem}
+                  keyExtractor={(item) => item.id}
+                  scrollEnabled={false}
+                  contentContainerStyle={styles.listContent}
+                />
+              </View>
+            )}
+
+            {/* Past Events Section */}
+            {pastEvents.length > 0 && (
+              <View style={styles.eventsSection}>
+                <ThemedText style={styles.sectionHeader}>Past Events</ThemedText>
+                <FlatList
+                  data={pastEvents}
+                  renderItem={renderEventItem}
+                  keyExtractor={(item) => item.id}
+                  scrollEnabled={false}
+                  contentContainerStyle={styles.listContent}
+                />
+              </View>
+            )}
+          </View>
         )}
       </ScrollView>
     </View>
@@ -279,5 +298,14 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: '#687076',
     fontSize: 18,
+  },
+  eventsSection: {
+    marginBottom: 24,
+  },
+  sectionHeader: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#11181C',
+    marginBottom: 12,
   },
 });

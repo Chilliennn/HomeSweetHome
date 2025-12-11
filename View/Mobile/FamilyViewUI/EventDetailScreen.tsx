@@ -39,6 +39,7 @@ export const EventDetailScreen = observer(() => {
   const { selectedEvent, isLoading, errorMessage, successMessage } = familyViewModel;
 
   const [isEditing, setIsEditing] = useState(false);
+  const [isRescheduling, setIsRescheduling] = useState(false);
   const [editTitle, setEditTitle] = useState('');
   const [editDescription, setEditDescription] = useState('');
   const [editEventType, setEditEventType] = useState<EventType>('meetup');
@@ -47,6 +48,11 @@ export const EventDetailScreen = observer(() => {
   const [editLocation, setEditLocation] = useState('');
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
+
+  // Check if event is in the past
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const isPastEvent = selectedEvent ? new Date(selectedEvent.event_date) < today : false;
 
   useEffect(() => {
     // Load event by ID when component mounts
@@ -121,6 +127,28 @@ export const EventDetailScreen = observer(() => {
       event_time: timeString,
       location: editLocation || undefined,
     });
+
+    setIsEditing(false);
+    setIsRescheduling(false);
+  };
+
+  const handleReschedule = async () => {
+    const timeString = editEventTime.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    });
+
+    await familyViewModel.updateCalendarEvent(selectedEvent.id, {
+      title: selectedEvent.title,
+      description: selectedEvent.description,
+      event_type: selectedEvent.event_type,
+      event_date: editEventDate.toISOString().split('T')[0],
+      event_time: timeString,
+      location: selectedEvent.location,
+    });
+
+    setIsRescheduling(false);
   };
 
   const handleDelete = () => {
@@ -146,7 +174,7 @@ export const EventDetailScreen = observer(() => {
   return (
     <View style={styles.container}>
       <Header
-        title={isEditing ? 'Edit Event' : 'Event Details'}
+        title={isRescheduling ? 'Reschedule Event' : isEditing ? 'Edit Event' : 'Event Details'}
         showBackButton={true}
       />
 
@@ -167,9 +195,18 @@ export const EventDetailScreen = observer(() => {
       )}
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        {/* Past Event Banner */}
+        {isPastEvent && !isRescheduling && (
+          <View style={styles.pastEventBanner}>
+            <ThemedText style={styles.pastEventText}>
+              ⏰ This is a past event
+            </ThemedText>
+          </View>
+        )}
+
         {/* Event Header */}
         <View style={styles.headerSection}>
-          {isEditing ? (
+          {isEditing && !isPastEvent ? (
             <View style={styles.typeEditContainer}>
               {EVENT_TYPES.map((type) => (
                 <TouchableOpacity
@@ -195,7 +232,7 @@ export const EventDetailScreen = observer(() => {
         {/* Title */}
         <View style={styles.section}>
           <ThemedText style={styles.label}>Title</ThemedText>
-          {isEditing ? (
+          {isEditing && !isPastEvent ? (
             <TextInput
               style={styles.input}
               value={editTitle}
@@ -210,7 +247,7 @@ export const EventDetailScreen = observer(() => {
         {/* Date */}
         <View style={styles.section}>
           <ThemedText style={styles.label}>Date</ThemedText>
-          {isEditing ? (
+          {(isEditing || isRescheduling) ? (
             <TouchableOpacity
               style={styles.dateTimeButton}
               onPress={() => setShowDatePicker(true)}
@@ -238,7 +275,7 @@ export const EventDetailScreen = observer(() => {
         {/* Time */}
         <View style={styles.section}>
           <ThemedText style={styles.label}>Time</ThemedText>
-          {isEditing ? (
+          {(isEditing || isRescheduling) ? (
             <TouchableOpacity
               style={styles.dateTimeButton}
               onPress={() => setShowTimePicker(true)}
@@ -268,7 +305,7 @@ export const EventDetailScreen = observer(() => {
         {/* Location */}
         <View style={styles.section}>
           <ThemedText style={styles.label}>Location</ThemedText>
-          {isEditing ? (
+          {isEditing && !isPastEvent ? (
             <TextInput
               style={styles.input}
               value={editLocation}
@@ -285,7 +322,7 @@ export const EventDetailScreen = observer(() => {
         {/* Description */}
         <View style={styles.section}>
           <ThemedText style={styles.label}>Description</ThemedText>
-          {isEditing ? (
+          {isEditing && !isPastEvent ? (
             <View>
               <TextInput
                 style={[styles.input, styles.descriptionInput]}
@@ -307,7 +344,21 @@ export const EventDetailScreen = observer(() => {
 
         {/* Action Buttons */}
         <View style={styles.actionButtons}>
-          {isEditing ? (
+          {isRescheduling ? (
+            <>
+              <Button
+                title="Cancel"
+                onPress={() => setIsRescheduling(false)}
+                variant="outline"
+              />
+              <Button
+                title="Save New Date"
+                onPress={handleReschedule}
+                loading={isLoading}
+                variant="primary"
+              />
+            </>
+          ) : isEditing ? (
             <>
               <Button
                 title="Cancel"
@@ -319,6 +370,19 @@ export const EventDetailScreen = observer(() => {
                 onPress={handleSaveEdit}
                 loading={isLoading}
                 variant="primary"
+              />
+            </>
+          ) : isPastEvent ? (
+            <>
+              <Button
+                title="Reschedule"
+                onPress={() => setIsRescheduling(true)}
+                variant="primary"
+              />
+              <Button
+                title="Delete"
+                onPress={handleDelete}
+                variant="outline"
               />
             </>
           ) : (
@@ -354,6 +418,20 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  pastEventBanner: {
+    backgroundColor: '#FFF3CD',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#FFC107',
+  },
+  pastEventText: {
+    fontSize: 14,
+    color: '#856404',
+    textAlign: 'center',
+    fontWeight: '500',
   },
   headerSection: {
     marginBottom: 24,

@@ -13,7 +13,8 @@
       "infoPlist": {
         "NSCameraUsageDescription": "This app needs access to your camera to take photos",
         "NSPhotoLibraryUsageDescription": "This app needs access to your photo library to select images",
-        "NSPhotoLibraryAddUsageDescription": "This app needs permission to save photos"
+        "NSPhotoLibraryAddUsageDescription": "This app needs permission to save photos",
+        "NSMicrophoneUsageDescription": "This app needs access to your microphone to record voice diaries"
       }
     },
     "android": {
@@ -28,7 +29,8 @@
       "permissions": [
         "android.permission.CAMERA",
         "android.permission.READ_EXTERNAL_STORAGE",
-        "android.permission.WRITE_EXTERNAL_STORAGE"
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.RECORD_AUDIO"
       ]
     },
     "web": {

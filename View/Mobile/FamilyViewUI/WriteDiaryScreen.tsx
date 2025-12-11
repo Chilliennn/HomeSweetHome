@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   StyleSheet,
@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { observer } from 'mobx-react-lite';
 import * as Speech from 'expo-speech';
-import * as Permissions from 'expo-permissions';
+import { Audio } from 'expo-av';
 import { familyViewModel, authViewModel } from '@home-sweet-home/viewmodel';
 import { ThemedText } from '@/components/themed-text';
 import { Button } from '@/components/ui/Button';
@@ -40,6 +40,7 @@ const MOOD_OPTIONS: { value: MoodType; label: string; emoji: string }[] = [
 export const WriteDiaryScreen = observer(() => {
   const router = useRouter();
   const { currentRelationship, isLoading, errorMessage } = familyViewModel;
+  const recordingRef = useRef<Audio.Recording | null>(null);
 
   const [content, setContent] = useState('');
   const [selectedMood, setSelectedMood] = useState<MoodType>('happy');
@@ -91,19 +92,57 @@ export const WriteDiaryScreen = observer(() => {
 
   const handleStartVoiceInput = async () => {
     try {
-      // Request permissions
-      const { status } = await Permissions.askAsync(Permissions.AUDIO_RECORDING);
+      // Request audio recording permissions
+      const { status } = await Audio.requestPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert('Error', 'Permission denied to access microphone');
+        Alert.alert('Error', 'Permission denied to access microphone. Please enable microphone access in settings.');
         return;
       }
 
+      // Configure audio mode for recording
+      await Audio.setAudioModeAsync({
+        allowsRecordingIOS: true,
+        playsInSilentModeIOS: true,
+        staysActiveInBackground: false,
+        shouldDuckAndroid: true,
+        playThroughEarpiece: false,
+      });
+
+      // Create and start recording
+      const { recording } = await Audio.Recording.createAsync(
+        Audio.RecordingOptionsPresets.HIGH_QUALITY
+      );
+      recordingRef.current = recording;
       setIsRecording(true);
-      // Voice recording UI would be shown here
-      // This is a simplified version - actual implementation would use
-      // expo-av or expo-audio for full voice recording capability
     } catch (error) {
-      Alert.alert('Error', 'Failed to start voice recording');
+      console.error('Error starting voice recording:', error);
+      Alert.alert('Error', 'Failed to start voice recording. Please try again.');
+      setIsRecording(false);
+    }
+  };
+
+  const handleStopVoiceInput = async () => {
+    try {
+      if (!recordingRef.current) {
+        return;
+      }
+
+      setIsTranscribing(true);
+      await recordingRef.current.stopAndUnloadAsync();
+      const uri = recordingRef.current.getURI();
+      recordingRef.current = null;
+      setIsRecording(false);
+
+      if (uri) {
+        // For now, we'll add a placeholder message
+        // In a real implementation, you would send this to a speech-to-text service
+        setContent(content + '\n[Voice note recorded - speech-to-text integration coming soon]');
+      }
+    } catch (error) {
+      console.error('Error stopping voice recording:', error);
+      Alert.alert('Error', 'Failed to process voice recording. Please try again.');
+    } finally {
+      setIsTranscribing(false);
     }
   };
 
@@ -156,11 +195,21 @@ export const WriteDiaryScreen = observer(() => {
               onPress={() => {}}
               variant="primary"
             />
-            <Button
-              title="🎤 Voice Input"
-              onPress={handleStartVoiceInput}
-              variant="outline"
-            />
+            {!isRecording ? (
+              <Button
+                title="🎤 Voice Input"
+                onPress={handleStartVoiceInput}
+                variant="outline"
+                disabled={isTranscribing}
+              />
+            ) : (
+              <Button
+                title="⏹️ Stop Recording"
+                onPress={handleStopVoiceInput}
+                variant="primary"
+                disabled={isTranscribing}
+              />
+            )}
           </View>
         </View>
 
@@ -186,6 +235,14 @@ export const WriteDiaryScreen = observer(() => {
           <View style={styles.recordingStatus}>
             <ActivityIndicator size="small" color="#9DE2D0" />
             <ThemedText style={styles.recordingText}>Recording audio...</ThemedText>
+          </View>
+        )}
+
+        {/* Transcribing Status */}
+        {isTranscribing && (
+          <View style={styles.recordingStatus}>
+            <ActivityIndicator size="small" color="#9DE2D0" />
+            <ThemedText style={styles.recordingText}>Processing recording...</ThemedText>
           </View>
         )}
 

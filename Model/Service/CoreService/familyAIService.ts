@@ -1,5 +1,6 @@
 import { familyRepository } from '../../Repository/UserRepository';
 import type { Relationship as RelationshipType } from '../../types';
+import Constants from 'expo-constants';
 
 /**
  * FamilyAIService - AI integration for activity recommendations
@@ -66,21 +67,23 @@ export const familyAIService = {
 
     const stageDescription = (stageContext as any)[stage] || 'Building relationship';
 
-    return `You are an activity recommendation expert for intergenerational relationships.
-Generate 3 unique activity recommendations for a couple in the "${stage}" stage of their relationship.
+    return `Generate 3 activity recommendations for intergenerational relationship (youth + elderly).
+Stage: ${stageDescription}
+Mood: ${mood}
+Location: ${location}
 
-Context:
-- Relationship Stage: ${stageDescription}
-- Current Mood: ${mood}
-- Location: ${location}
+Return ONLY valid JSON array with NO extra text:
+[
+  {
+    "activity_title": "short title",
+    "activity_description": "brief description (max 100 chars)",
+    "duration": "time estimate",
+    "cost": "cost estimate",
+    "required_materials": "items needed"
+  }
+]
 
-Requirements:
-1. Activities should be appropriate for intergenerational relationships (youth and elderly)
-2. Consider the mood and current location
-3. Each activity should include: title, description, estimated duration, estimated cost, and any required materials
-4. Format each recommendation as JSON object with fields: activity_title, activity_description, duration, cost, required_materials
-
-Provide exactly 3 recommendations as a JSON array. Make them practical and engaging.`;
+Keep descriptions concise. Return only the JSON array, nothing else.`;
   },
 
   /**
@@ -90,20 +93,51 @@ Provide exactly 3 recommendations as a JSON array. Make them practical and engag
    * This should be set in the backend environment
    */
   async callGeminiAPI(prompt: string): Promise<AIActivityRecommendation[]> {
-    const apiKey = process.env.GEMINI_API_KEY;
+    // Get API key from Expo Constants (configured in app.config.js)
+    const apiKey = Constants.expoConfig?.extra?.GEMINI_API_KEY;
+    // Allow overriding the model and API version; defaults are v1beta + gemini-pro (which work together)
+    const model = Constants.expoConfig?.extra?.GEMINI_MODEL || 'gemini-pro';
+    const apiVersion = Constants.expoConfig?.extra?.GEMINI_API_VERSION || 'v1beta';
+
+    console.warn(`[Gemini Debug] API Key present: ${!!apiKey}, starts: ${apiKey?.substring(0, 15)}`);
+    console.warn(`[Gemini Debug] Model: ${model}, Version: ${apiVersion}`);
 
     if (!apiKey) {
       throw new Error('GEMINI_API_KEY not configured');
     }
 
-    try {
-      const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-goog-api-key': apiKey
-        },
-        body: JSON.stringify({
+    // Build a broader attempt list to cover available public models across v1/v1beta
+    const versions = [apiVersion, 'v1', 'v1beta'];
+    const baseModels = [
+      model,
+      model.endsWith('-latest') ? model.replace(/-latest$/, '') : `${model}-latest`,
+      'gemini-1.5-flash',
+      'gemini-1.5-flash-latest',
+      'gemini-1.5-pro',
+      'gemini-1.5-pro-latest',
+      'gemini-1.0-pro',
+      'gemini-pro',
+    ];
+
+    // Deduplicate attempts
+    const attemptSet = new Set<string>();
+    const attempts: Array<{ version: string; model: string }> = [];
+    for (const v of versions) {
+      for (const m of baseModels) {
+        if (!v || !m) continue;
+        const key = `${v}/${m}`;
+        if (attemptSet.has(key)) continue;
+        attemptSet.add(key);
+        attempts.push({ version: v, model: m });
+      }
+    }
+
+    const errors: string[] = [];
+
+    for (const attempt of attempts) {
+      try {
+        const url = `https://generativelanguage.googleapis.com/${attempt.version}/models/${attempt.model}:generateContent`;
+        const requestBody = {
           contents: [{
             parts: [{
               text: prompt
@@ -114,32 +148,112 @@ Provide exactly 3 recommendations as a JSON array. Make them practical and engag
             topP: 0.9,
             maxOutputTokens: 1024,
           }
-        })
-      });
+        };
+        
+        console.log(`[Gemini] Attempting ${attempt.version}/${attempt.model}...`);
+        console.log(`[Gemini] URL: ${url}`);
+        console.log(`[Gemini] Has API Key: ${!!apiKey}, Key starts with: ${apiKey?.substring(0, 10)}`);
 
-      if (!response.ok) {
-        throw new Error(`Gemini API error: ${response.statusText}`);
+        const requestWithHigherTokens = {
+          ...requestBody,
+          generationConfig: {
+            ...requestBody.generationConfig,
+            maxOutputTokens: 4096, // Higher limit for complex responses
+            temperature: 0.5, // Lower temperature for more focused output
+          }
+        };
+
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-goog-api-key': apiKey
+          },
+          body: JSON.stringify(requestWithHigherTokens)
+        });
+
+        if (!response.ok) {
+          let errorDetails = '';
+          try {
+            const errJson = await response.json();
+            errorDetails = JSON.stringify(errJson);
+          } catch (_jsonErr) {
+            const errText = await response.text();
+            errorDetails = errText;
+          }
+          errors.push(`[${attempt.version}/${attempt.model}] ${response.status}: ${errorDetails || response.statusText || 'unknown error'}`);
+          console.log(`[Gemini] Failed ${attempt.version}/${attempt.model}: ${response.status}, details: ${errorDetails}`);
+          continue;
+        }
+
+        const data = await response.json();
+        console.log(`[Gemini] Success with ${attempt.version}/${attempt.model}`);
+        console.log(`[Gemini] Response data:`, JSON.stringify(data).substring(0, 500));
+        
+        const firstCandidate = data.candidates?.[0];
+        
+        // Check for truncation or blocked content
+        if (firstCandidate?.finishReason === 'MAX_TOKENS') {
+          console.log(`[Gemini] Response truncated (MAX_TOKENS), trying next model`);
+          errors.push(`[${attempt.version}/${attempt.model}] Response truncated (MAX_TOKENS)`);
+          continue;
+        }
+        
+        if (!firstCandidate?.content?.parts || firstCandidate.content.parts.length === 0) {
+          console.log(`[Gemini] No parts in response. Candidate:`, JSON.stringify(firstCandidate));
+          errors.push(`[${attempt.version}/${attempt.model}] No content parts in response (finishReason: ${firstCandidate?.finishReason})`);
+          continue;
+        }
+        
+        const responseText = firstCandidate.content.parts
+          .map((p: { text?: string }) => p.text)
+          .filter(Boolean)
+          .join('\n');
+
+        if (!responseText) {
+          console.log(`[Gemini] Empty responseText after joining parts`);
+          errors.push(`[${attempt.version}/${attempt.model}] Empty response text`);
+          continue;
+        }
+
+        console.log(`[Gemini] Response text:`, responseText.substring(0, 300));
+
+        // Parse JSON from response - look for JSON array
+        const jsonMatch = responseText.match(/\[[\s\S]*\]/);
+        if (!jsonMatch) {
+          console.log(`[Gemini] Could not find JSON array in response`);
+          errors.push(`[${attempt.version}/${attempt.model}] Could not parse recommendations from response: ${responseText.substring(0, 100)}`);
+          continue;
+        }
+
+        try {
+          const recommendations = JSON.parse(jsonMatch[0]);
+          console.log(`[Gemini] Parsed ${recommendations.length} recommendations`);
+          return recommendations;
+        } catch (parseError) {
+          console.log(`[Gemini] JSON parse error:`, parseError);
+          errors.push(`[${attempt.version}/${attempt.model}] JSON parse failed: ${String(parseError)}`);
+          continue;
+        }
+      } catch (error) {
+        errors.push(`[${attempt.version}/${attempt.model}] ${String(error)}`);
+        continue;
       }
-
-      const data = await response.json();
-      const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-
-      if (!responseText) {
-        throw new Error('No content in Gemini response');
-      }
-
-      // Parse JSON from response
-      const jsonMatch = responseText.match(/\[[\s\S]*\]/);
-      if (!jsonMatch) {
-        throw new Error('Could not parse recommendations from response');
-      }
-
-      const recommendations = JSON.parse(jsonMatch[0]);
-      return recommendations;
-    } catch (error) {
-      console.error('Gemini API call failed:', error);
-      throw error;
     }
+
+    console.error('Gemini API call failed, attempts:', errors);
+    
+    // Check if it's a quota/rate limit error (429)
+    if (errors.some(e => e.includes('429'))) {
+      throw new Error('Gemini API quota exceeded. Please try again later or upgrade your API plan.');
+    }
+    
+    // Check if it's a configuration error (all 404s)
+    if (errors.every(e => e.includes('404'))) {
+      throw new Error('No Gemini models available for this API key. Please check your Google Cloud project configuration.');
+    }
+    
+    throw new Error(`Gemini API call failed. Attempts: ${errors.join(' | ')}`);
   },
 
   /**
@@ -171,6 +285,7 @@ Provide exactly 3 recommendations as a JSON array. Make them practical and engag
     } catch (error) {
       console.error('Error saving recommendations:', error);
       // Don't throw - graceful degradation if AI fails
+      // The error message is already logged and will be visible to the user via the ViewModel
     }
   },
 

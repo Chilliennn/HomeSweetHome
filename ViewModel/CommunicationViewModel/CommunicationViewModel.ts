@@ -304,18 +304,24 @@ export class CommunicationViewModel {
   private subscribeToChat(
     context: { type: 'preMatch'; applicationId: string } | { type: 'relationship'; relationshipId: string }
   ): void {
+    console.log('[CommunicationViewModel] Subscribing to chat', context);
     this.messageSubscription = communicationService.subscribeToMessages(
       context,
       (newMessage) => {
+        console.log('[CommunicationViewModel] Received realtime message:', newMessage);
         runInAction(() => {
           // Add new message if it doesn't exist
           const exists = this.currentChatMessages.some(m => m.id === newMessage.id);
           if (!exists) {
+            console.log('[CommunicationViewModel] Adding message to UI');
             this.currentChatMessages.push(newMessage);
+          } else {
+            console.log('[CommunicationViewModel] Message already exists');
           }
         });
       }
     );
+    console.log('[CommunicationViewModel] Subscription created');
   }
 
   // =============================================================

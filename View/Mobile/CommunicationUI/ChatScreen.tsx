@@ -354,6 +354,7 @@ export const ChatScreen = observer(function ChatScreen() {
         {/* Messages List */}
         <FlatList
           data={messages}
+          extraData={messages.length}
           renderItem={renderMessage}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.messagesList}

@@ -156,12 +156,20 @@ export const messageRepository = {
    * UC101_6: Real-time message updates during pre-match chat
    */
   subscribeToMessages(
-    context: {type:'preMatch';applicationId:string} | {type:'relationship';relationshipId:string},
+    context: { type: 'preMatch'; applicationId: string } | { type: 'relationship'; relationshipId: string },
     onInsert: (message: Message) => void
   ): RealtimeChannel {
     const filter = context.type === 'preMatch' ? `application_id=eq.${context.applicationId}` : `relationship_id=eq.${context.relationshipId}`;
+    const channelName = `messages-${context.type}-${context.type === 'preMatch' ? context.applicationId : context.relationshipId}`;
+
+    console.log('[messageRepository] Creating realtime subscription', {
+      channelName,
+      filter,
+      context,
+    });
+
     const channel = supabase
-      .channel(`messages-${context.type}-${context.type === 'preMatch' ? context.applicationId : context.relationshipId}`)
+      .channel(channelName)
       .on(
         'postgres_changes',
         {
@@ -171,11 +179,15 @@ export const messageRepository = {
           filter: filter,
         },
         (payload) => {
+          console.log('[messageRepository] Realtime INSERT event received:', payload);
           onInsert(payload.new as Message);
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('[messageRepository] Subscription status:', status);
+      });
 
+    console.log('[messageRepository] Channel created:', channel);
     return channel;
   },
 

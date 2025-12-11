@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert } from 'react
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { observer } from 'mobx-react-lite';
 import { useRouter } from 'expo-router';
+import { useFocusEffect } from '@react-navigation/native';
 import { communicationViewModel, authViewModel } from '@home-sweet-home/viewmodel';
 import { useTabNavigation } from '@/hooks/use-tab-navigation';
 import { Card, IconCircle, NotificationBell, ProgressBar, Button } from '@/components/ui';
@@ -48,6 +49,16 @@ export const PreMatchChatList = observer(function PreMatchChatList() {
     // Load active chats
     vm.loadActiveChats(currentUserId, currentUserType);
   }, [currentUserId, currentUserType]);
+
+  // Refresh chats when screen comes into focus (for realtime updates)
+  useFocusEffect(
+    React.useCallback(() => {
+      if (currentUserId && currentUserType && currentUserType !== 'admin') {
+        console.log('[PreMatchChatList] Screen focused, refreshing chats');
+        vm.refreshChats(currentUserId, currentUserType);
+      }
+    }, [currentUserId, currentUserType])
+  );
 
   // Handler: Open chat
   const handleChat = (applicationId: string) => {

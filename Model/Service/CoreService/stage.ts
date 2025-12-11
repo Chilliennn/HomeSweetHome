@@ -187,6 +187,10 @@ export class StageService {
     return Math.round((completed / activities.length) * 100);
   }
 
+    async getUnreadNotificationCount(userId: string): Promise<number> {
+    return await userRepository.getUnreadNotificationCount(userId);
+  }
+
   getLockedStageMessage(
     targetStage: RelationshipStage,
     currentStage: RelationshipStage
@@ -276,7 +280,7 @@ export class StageService {
       currentStage: relationship.current_stage as RelationshipStage,
     };
   }
-  
+
   /**
    * Get cooling period info - calculates remaining time for 24-hour window
    */

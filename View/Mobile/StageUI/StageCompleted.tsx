@@ -57,7 +57,7 @@ export const StageCompletedScreen: React.FC<StageCompletedScreenProps> =
         await vm.handleStageClick(targetStage as any, { forceOpen: true });
         router.push({
           pathname: "/(main)/bonding",
-          params: { userId },
+          params: { userId, openStage: targetStage },
         });
       } catch (err) {
         console.error("Error navigating to stage:", err);
@@ -132,7 +132,7 @@ export const StageCompletedScreen: React.FC<StageCompletedScreenProps> =
                 Stage {vm.completedStageOrder + 1} Complete!
               </Text>
               <Text style={styles.completedMessage}>
-                {vm.stageCompletionMessage}
+                {vm.stageCompletionMessage + 1}
               </Text>
             </View>
 

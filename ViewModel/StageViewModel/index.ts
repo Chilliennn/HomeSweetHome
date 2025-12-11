@@ -1,6 +1,5 @@
 import { makeAutoObservable, runInAction } from "mobx";
 import { stageService } from "../../Model/Service/CoreService/stage";
-import { userRepository } from "../../Model/Repository/UserRepository/userRepository";
 import type {
   Feature,
   LockedStageDetail,
@@ -8,7 +7,6 @@ import type {
   StageInfo,
   StageRequirement,
 } from "../../Model/types/index";
-import { supabase } from "../../Model/Service/APIService/supabase";
 
 export class StageViewModel {
   // Observable state
@@ -401,7 +399,7 @@ try {
    */
   async loadUnreadNotifications() {
     try {
-      const count = await userRepository.getUnreadNotificationCount(
+      const count = await stageService.getUnreadNotificationCount(
         this.userId
       );
 

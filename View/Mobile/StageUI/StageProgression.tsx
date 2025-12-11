@@ -18,10 +18,11 @@ import { LoadingSpinner } from "../components/ui/LoadingSpinner";
 import { BottomTabBar, DEFAULT_TABS } from "../components/ui/BottomTabBar";
 interface StageProgressionScreenProps {
   userId: string;
+  initialOpenStage?: string;
 }
 
 export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
-  observer(({ userId }) => {
+  observer(({ userId, initialOpenStage }) => {
     const router = useRouter();
     const vm = stageViewModel;
 
@@ -33,6 +34,16 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
         vm.dispose();
       };
     }, [userId, vm]);
+
+    useEffect(() => {
+      if (!initialOpenStage) return;
+      // close any inline previews before opening target
+      if (vm.showStageCompleted) vm.closeStageCompleted();
+      if (vm.showLockedStageDetail) vm.closeLockedStageDetail();
+      vm.handleStageClick(initialOpenStage as any, { forceOpen: true }).catch(
+        (e) => console.error("Failed to open initial stage:", e)
+      );
+    }, [initialOpenStage, vm]);
 
     // Watch for auto-navigation to Stage Completed page
     useEffect(() => {
@@ -265,28 +276,28 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
               !vm.showStageCompleted &&
               vm.stages.some((s) => s.is_current) && (
                 <>
-                <TouchableOpacity
-                  style={[styles.actionButton, styles.primaryButton]}
-                  onPress={() => router.push("/(main)/stageRequirements")}
-                >
-                  <Text style={styles.actionButtonText}>
-                    View All Requirements
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[styles.actionButton, styles.secondaryButton]}
-                  onPress={() => router.push("/(main)/availableFeatures")}
-                >
-                  <Text
-                    style={[
-                      styles.actionButtonText,
-                      styles.secondaryButtonText,
-                    ]}
+                  <TouchableOpacity
+                    style={[styles.actionButton, styles.primaryButton]}
+                    onPress={() => router.push("/(main)/stageRequirements")}
                   >
-                    View Available Features
-                  </Text>
-                </TouchableOpacity>
+                    <Text style={styles.actionButtonText}>
+                      View All Requirements
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[styles.actionButton, styles.secondaryButton]}
+                    onPress={() => router.push("/(main)/availableFeatures")}
+                  >
+                    <Text
+                      style={[
+                        styles.actionButtonText,
+                        styles.secondaryButtonText,
+                      ]}
+                    >
+                      View Available Features
+                    </Text>
+                  </TouchableOpacity>
                 </>
               )}
           </ScrollView>
@@ -592,7 +603,7 @@ const styles = StyleSheet.create({
     color: "#1d2b24",
     fontWeight: "700",
   },
-    actionButton: {
+  actionButton: {
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: "center",

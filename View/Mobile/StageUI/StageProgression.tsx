@@ -5,6 +5,8 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
+  Modal,
+  TextInput,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { observer } from "mobx-react-lite";
@@ -12,8 +14,9 @@ import { useRouter } from "expo-router";
 import { stageViewModel } from "../../../ViewModel/StageViewModel";
 import { StageCircle } from "../components/ui/StageCircle";
 import { NotificationBell } from "../components/ui/NotificationBell";
-import { WithdrawButton } from "../components/ui/WithdrawButton";
 import { LoadingSpinner } from "../components/ui/LoadingSpinner";
+import { Button, Card } from "../components/ui"; // Added
+import { Colors } from "@/constants/theme"; // Added for theme colors
 
 interface StageProgressionScreenProps {
   userId: string;
@@ -35,7 +38,7 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
 
     const handleStagePress = async (stage: any) => {
       await vm.handleStageClick(stage);
-    }; 
+    };
 
     const handleNotificationPress = () => {
       vm.markNotificationsRead();
@@ -57,7 +60,7 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
             />
 
             <TouchableOpacity
-              style={styles.withdrawButton}
+              style={styles.withdrawButtonHeader}
               onPress={() => vm.openWithdrawModal()}
             >
               <Text style={styles.withdrawIcon}>⚠️</Text>
@@ -74,19 +77,19 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
 
             {/* Stage Progress */}
             <View style={styles.stageRow}>
-            {vm.stages.map((stage, index) => (
-              <React.Fragment key={stage.stage}>
-                <StageCircle
-                  order={stage.order}
-                  displayName={stage.display_name}
-                  isCurrent={stage.is_current}
-                  isCompleted={stage.is_completed}
-                  onPress={() => handleStagePress(stage.stage)}
-                />
-                {index < vm.stages.length - 1 && <View style={styles.connector} />}
-              </React.Fragment>
-            ))}
-          </View>
+              {vm.stages.map((stage, index) => (
+                <React.Fragment key={stage.stage}>
+                  <StageCircle
+                    order={stage.order}
+                    displayName={stage.display_name}
+                    isCurrent={stage.is_current}
+                    isCompleted={stage.is_completed}
+                    onPress={() => handleStagePress(stage.stage)}
+                  />
+                  {index < vm.stages.length - 1 && <View style={styles.connector} />}
+                </React.Fragment>
+              ))}
+            </View>
 
             {/* Inline locked-stage preview OR current stage card */}
             {vm.showLockedStageDetail && vm.lockedStageDetails ? (
@@ -165,7 +168,7 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
 
           {/* Bottom Navigation */}
           <View style={styles.bottomNav}>
-            <TouchableOpacity style={styles.navButton} onPress={() => {}}>
+            <TouchableOpacity style={styles.navButton} onPress={() => { }}>
               <Text style={styles.navIcon}>🏠</Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -194,14 +197,59 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
             </TouchableOpacity>
           </View>
 
-          <WithdrawButton
+          {/* Withdraw Modal - Inlined */}
+          <Modal
             visible={vm.showWithdrawModal}
-            reason={vm.withdrawalReason}
-            onReasonChange={(text) => vm.setWithdrawalReason(text)}
-            onCancel={() => vm.closeWithdrawModal()}
-            onConfirm={() => vm.submitWithdrawal()}
-            isLoading={vm.isLoading}
-          />
+            transparent
+            animationType="fade"
+            onRequestClose={() => vm.closeWithdrawModal()}
+          >
+            <View style={styles.modalOverlay}>
+              <Card style={styles.modalCard} padding={24}>
+                <Text style={styles.modalIcon}>⚠️</Text>
+                <Text style={styles.modalTitle}>Withdraw from Match?</Text>
+                <Text style={styles.modalMessage}>
+                  Are you sure you want to withdraw from this match? This action cannot be undone.
+                </Text>
+
+                <View style={styles.warningBox}>
+                  <Text style={styles.warningIcon}>⏱️</Text>
+                  <Text style={styles.warningText}>
+                    A 24-hour cooling period will begin after withdrawal.
+                  </Text>
+                </View>
+
+                <TextInput
+                  style={styles.input}
+                  placeholder="Please provide a reason (optional)"
+                  placeholderTextColor="#A0A0A0"
+                  value={vm.withdrawalReason}
+                  onChangeText={(text) => vm.setWithdrawalReason(text)}
+                  multiline
+                  numberOfLines={3}
+                  textAlignVertical="top"
+                />
+
+                <View style={styles.buttonRow}>
+                  <Button
+                    title="Cancel"
+                    onPress={() => vm.closeWithdrawModal()}
+                    variant="secondary"
+                    disabled={vm.isLoading}
+                    style={{ flex: 1 }}
+                  />
+
+                  <Button
+                    title={vm.isLoading ? 'Processing...' : 'Withdraw'}
+                    onPress={() => vm.submitWithdrawal()}
+                    variant="destructive"
+                    loading={vm.isLoading}
+                    style={{ flex: 1 }}
+                  />
+                </View>
+              </Card>
+            </View>
+          </Modal>
         </View>
       </SafeAreaView>
     );
@@ -222,7 +270,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
   },
-  withdrawButton: {
+  withdrawButtonHeader: {
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 16,
@@ -257,7 +305,7 @@ const styles = StyleSheet.create({
     marginBottom: 40,
     width: '100%',
   },
-    stageScrollView: {
+  stageScrollView: {
     marginBottom: 32,
   },
   stageScrollContent: {
@@ -265,7 +313,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   connector: {
-    width: 28, 
+    width: 28,
     height: 3,
     backgroundColor: '#DDEDE6',
     marginHorizontal: 6,
@@ -404,13 +452,13 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 16,
   },
-  previewHeading: { fontWeight: "700", marginBottom: 12, color: "#333" , fontSize: 16},
+  previewHeading: { fontWeight: "700", marginBottom: 12, color: "#333", fontSize: 16 },
   previewRow: {
     flexDirection: "row",
     alignItems: "flex-start",
     marginBottom: 10,
   },
-  previewBullet: { 
+  previewBullet: {
     fontSize: 18,
     color: "#9DE2D0",
     fontWeight: "600",
@@ -419,7 +467,7 @@ const styles = StyleSheet.create({
     width: 20,
     alignItems: "center",
   },
-  previewText: { 
+  previewText: {
     color: "#666",
     flex: 1,
     fontSize: 14,
@@ -433,5 +481,66 @@ const styles = StyleSheet.create({
     color: "#999",
     fontSize: 13,
     fontStyle: "italic",
+  },
+  // Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  modalCard: {
+    width: '100%',
+    maxWidth: 400,
+  },
+  modalIcon: {
+    fontSize: 48,
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: Colors.light.text,
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  modalMessage: {
+    fontSize: 14,
+    color: Colors.light.textLight,
+    textAlign: 'center',
+    marginBottom: 16,
+    lineHeight: 20,
+  },
+  warningBox: {
+    backgroundColor: Colors.light.warning,
+    borderRadius: 8,
+    padding: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  warningIcon: {
+    fontSize: 20,
+    marginRight: 8,
+  },
+  warningText: {
+    flex: 1,
+    fontSize: 13,
+    color: Colors.light.text,
+  },
+  input: {
+    backgroundColor: Colors.light.border,
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 14,
+    color: Colors.light.text,
+    marginBottom: 20,
+    minHeight: 80,
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    gap: 12,
   },
 });

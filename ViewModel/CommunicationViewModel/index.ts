@@ -1,0 +1,1 @@
+export { CommunicationViewModel, communicationViewModel } from './CommunicationViewModel';

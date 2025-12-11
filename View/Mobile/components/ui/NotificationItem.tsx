@@ -7,6 +7,8 @@ import {
   ViewStyle,
 } from 'react-native';
 import { IconCircle } from './IconCircle';
+import { Card } from './Card';
+import { Colors } from '@/constants/theme';
 
 // ============================================================================
 // TYPES
@@ -36,11 +38,11 @@ interface NotificationItemProps {
 // NOTIFICATION CONFIG
 // ============================================================================
 const NOTIFICATION_CONFIG: Record<NotificationType, { icon: string; color: string }> = {
-  interest_sent: { icon: '💕', color: '#9DE2D0' },
+  interest_sent: { icon: '💕', color: Colors.light.secondary }, // #9DE2D0
   interest_declined: { icon: '✕', color: '#C8ADD6' },
-  interest_accepted: { icon: '✓', color: '#9DE2D0' },
-  message: { icon: '💬', color: '#9DE2D0' },
-  reminder: { icon: '⏰', color: '#FADE9F' },
+  interest_accepted: { icon: '✓', color: Colors.light.secondary },
+  message: { icon: '💬', color: Colors.light.secondary },
+  reminder: { icon: '⏰', color: Colors.light.warning }, // #FADE9F
   system: { icon: 'ℹ️', color: '#E0E0E0' },
 };
 
@@ -93,30 +95,32 @@ export const NotificationItem: React.FC<NotificationItemProps> = ({
 
   return (
     <TouchableOpacity
-      style={[styles.container, style]}
       onPress={onPress}
       activeOpacity={onPress ? 0.7 : 1}
       disabled={!onPress}
+      style={style}
     >
-      {/* Icon */}
-      <IconCircle
-        icon={config.icon}
-        size={56}
-        backgroundColor={config.color}
-        contentScale={0.45}
-      />
+      <Card style={styles.container}>
+        {/* Icon */}
+        <IconCircle
+          icon={config.icon}
+          size={56}
+          backgroundColor={config.color}
+          contentScale={0.45}
+        />
 
-      {/* Content */}
-      <View style={styles.content}>
-        <Text style={styles.title}>{title}</Text>
-        {renderMessage()}
-        <Text style={styles.timestamp}>{timestamp}</Text>
-      </View>
+        {/* Content */}
+        <View style={styles.content}>
+          <Text style={styles.title}>{title}</Text>
+          {renderMessage()}
+          <Text style={styles.timestamp}>{timestamp}</Text>
+        </View>
 
-      {/* Arrow (optional) */}
-      {showArrow && (
-        <Text style={styles.arrow}>›</Text>
-      )}
+        {/* Arrow (optional) */}
+        {showArrow && (
+          <Text style={styles.arrow}>›</Text>
+        )}
+      </Card>
     </TouchableOpacity>
   );
 };
@@ -128,9 +132,8 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 16,
+    // backgroundColor, borderRadius, shadow handled by Card
+    padding: 16, // Matches Card default padding, but explicit here for flex layout if needed
   },
   content: {
     flex: 1,
@@ -139,18 +142,18 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
+    color: Colors.light.text,
     marginBottom: 4,
   },
   message: {
     fontSize: 14,
-    color: '#666',
+    color: Colors.light.textLight,
     lineHeight: 20,
     marginBottom: 4,
   },
   highlightName: {
     fontWeight: '700',
-    color: '#333',
+    color: Colors.light.text,
   },
   timestamp: {
     fontSize: 12,

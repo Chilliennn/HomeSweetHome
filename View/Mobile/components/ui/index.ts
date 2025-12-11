@@ -6,14 +6,12 @@ export { ChecklistItem } from './ChecklistItem';
 export { Header } from './Header';
 export { LoadingSpinner } from './LoadingSpinner';
 export { IconCircle } from './IconCircle';
-export { InfoCard } from './InfoCard';
 export { ImageUploader } from './ImageUploader';
 
 // New components for matching/bonding screens
 export { Chip } from './Chip';
 export { ProgressBar } from './ProgressBar';
 export { NotificationBell } from './NotificationBell';
-export { ProfileCard } from './ProfileCard';
 export { ProfileInfoRow } from './ProfileInfoRow';
 export { JourneyStageIndicator } from './JourneyStageIndicator';
 export { JourneyProgressDropdown } from './JourneyProgressDropdown';
@@ -22,10 +20,13 @@ export type { TabItem } from './BottomTabBar';
 
 // Communication components
 export { NotificationItem } from './NotificationItem';
-export { PreMatchCard } from './PreMatchCard';
 export { ChatBubble } from './ChatBubble';
 
 // Form components
 export { FormField } from './FormField';
 export { TimelineItem } from './TimelineItem';
 export { FeatureCheckItem } from './FeatureCheckItem';
+
+// Settings components
+export { SettingItem } from './SettingItem';
+export { ToggleSettingItem } from './ToggleSettingItem';

@@ -7,6 +7,7 @@ export { RealIdentityForm } from './RealIdentityForm';
 export { DisplayIdentityForm } from './DisplayIdentityForm';
 export { ProfileInfoForm } from './ProfileInfoForm';
 export { ProfileComplete } from './ProfileComplete';
+export { SettingsScreen } from './SettingsScreen';
 export type { UserType } from './VerifiedSuccess';
 export type { RealIdentityData } from './RealIdentityForm';
 export type { DisplayIdentityData } from './DisplayIdentityForm';

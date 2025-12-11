@@ -1,32 +1,31 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, ImageSourcePropType } from 'react-native';
+import React, { useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, ImageSourcePropType, TouchableOpacity } from 'react-native';
+import { useRouter } from 'expo-router';
+import { observer } from 'mobx-react-lite';
+import { elderMatchingViewModel } from '@home-sweet-home/viewmodel';
+import { authViewModel } from '@home-sweet-home/viewmodel';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTabNavigation } from '@/hooks/use-tab-navigation';
 import {
   Card,
   NotificationBell,
   IconCircle,
   JourneyProgressDropdown,
-} from '../components/ui';
+  Button,
+  BottomTabBar,
+  DEFAULT_TABS,
+} from '@/components/ui';
 
 // ============================================================================
 // TYPES
 // ============================================================================
 interface ElderlyHomeProps {
-  /** Elderly's display name */
   displayName?: string;
-  /** Avatar image source */
   avatarSource?: ImageSourcePropType;
-  /** Avatar emoji fallback */
-  avatarEmoji?: string;
-  /** Notification count */
-  notificationCount?: number;
-  /** Profile completeness percentage (0-100) */
   profileCompleteness?: number;
-  /** Current journey step (1-4) */
   currentStep?: number;
-  /** Callback when notification bell is pressed */
-  onNotificationPress?: () => void;
-  /** Callback when "Learn more" about process is pressed */
-  onLearnMore?: () => void;
+  onTabPress?: (tabKey: string) => void;
+  activeTab?: string;
 }
 
 // ============================================================================
@@ -39,39 +38,53 @@ const ELDERLY_JOURNEY_STEPS = [
   { number: 4, label: 'Match' },
 ];
 
-// ============================================================================
-// COMPONENT
-// ============================================================================
 /**
- * ElderlyHome - Home screen for elderly users after completing profile setup
+ * ElderlyHome - Home screen for elderly users.
  * 
- * Shows welcome message, how it works, profile completeness, safety info,
- * and journey progress dropdown.
- * 
- * ViewModel bindings needed:
- * - displayName: string (from AuthViewModel.currentUser.displayName)
- * - avatarSource: ImageSource (from AuthViewModel.currentUser.avatarUrl)
- * - notificationCount: number (from CommunicationViewModel.unreadCount)
- * - profileCompleteness: number (from AuthViewModel.profileCompleteness)
- * - currentStep: number (from StageViewModel.currentJourneyStep)
- * - onNotificationPress: () => void (navigation to notifications)
- * - onLearnMore: () => void (navigation to journey walkthrough)
- */
-export const ElderlyHome: React.FC<ElderlyHomeProps> = ({
-  displayName = 'Rose',
+ * */
+export const ElderlyHome: React.FC<ElderlyHomeProps> = observer(({
+  displayName: propDisplayName,
   avatarSource,
-  avatarEmoji,
-  notificationCount = 1,
   profileCompleteness = 100,
   currentStep = 1,
-  onNotificationPress,
-  onLearnMore,
+  onTabPress,
+  activeTab: propActiveTab,
 }) => {
-  // TODO: Replace with ViewModel bindings
-  // const { currentUser, profileCompleteness } = authViewModel;
-  // const { unreadCount } = communicationViewModel;
-  // const { currentJourneyStep } = stageViewModel;
+  const router = useRouter();
+  const vm = elderMatchingViewModel;
+  
+  // Use activeTab from prop or default to 'matching'
+  const activeTab = propActiveTab || 'matching';
+  
+  // Use tab navigation hook
+  const { handleTabPress: hookHandleTabPress } = useTabNavigation(activeTab);
+  const handleTabPress = onTabPress || hookHandleTabPress;
 
+  // Use real user ID from AuthViewModel
+  const currentElderlyId = authViewModel.authState.currentUserId;
+  // Use real name if not passed as prop
+  const displayName = propDisplayName || authViewModel.profileData.displayIdentity?.displayName || 'Elderly User';
+
+  // Poll for requests or load on mount
+  useEffect(() => {
+    console.log('Mounting');
+    if (currentElderlyId) {
+      vm.loadRequests(currentElderlyId);
+    }
+    return () => {
+      console.log('Mounting');
+      vm.dispose();
+    };
+  }, [currentElderlyId]);
+
+  const handleNotificationPress = () => {
+    console.log('🔔 [ElderlyHome] Notification bell pressed, pendingCount:', pendingCount);
+    // Navigate to the centralized Notification Screen
+    router.push('/(main)/notification');
+  };
+
+  const pendingCount = vm.incomingRequests.length;
+  console.log('🔵 [ElderlyHome] Rendering - pendingCount:', pendingCount, 'requests:', vm.incomingRequests.map(r => r.id));
   // How it works items
   const howItWorksItems = [
     'Youth browse profiles and express interest in connecting',
@@ -81,55 +94,19 @@ export const ElderlyHome: React.FC<ElderlyHomeProps> = ({
     'Decide if you want to become official companions!',
   ];
 
-  // Get profile status message
   const getProfileStatusMessage = () => {
-    if (profileCompleteness >= 100) {
-      return 'Looking Great! ✨';
-    } else if (profileCompleteness >= 70) {
-      return 'Almost There!';
-    } else {
-      return 'Needs Attention';
-    }
-  };
-
-  // Get journey descriptions for elderly
-  const getCurrentDescription = () => {
-    switch (currentStep) {
-      case 1:
-        return 'Waiting for youth to express interest';
-      case 2:
-        return 'Chatting anonymously with interested youth';
-      case 3:
-        return 'Reviewing formal application';
-      case 4:
-        return 'Confirming your match';
-      default:
-        return 'Waiting for youth to express interest';
-    }
-  };
-
-  const getNextDescription = () => {
-    switch (currentStep) {
-      case 1:
-        return 'Review & decide on connection requests';
-      case 2:
-        return 'Youth submits formal application after 7+ days';
-      case 3:
-        return 'Approve or decline the application';
-      case 4:
-        return 'Begin your companionship journey!';
-      default:
-        return 'Review & decide on connection requests';
-    }
+    if (profileCompleteness >= 100) return 'Looking Great! ✨';
+    if (profileCompleteness >= 70) return 'Almost There!';
+    return 'Needs Attention';
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       {/* Header */}
       <View style={styles.header}>
         <NotificationBell
-          count={notificationCount}
-          onPress={onNotificationPress}
+          count={pendingCount}
+          onPress={handleNotificationPress}
         />
         <Text style={styles.greeting}>
           Hello, {displayName} 👋
@@ -141,6 +118,24 @@ export const ElderlyHome: React.FC<ElderlyHomeProps> = ({
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
+        {/* PENDING REQUESTS ALERT (New Section) */}
+        {pendingCount > 0 && (
+          <Card style={styles.alertCard}>
+            <View style={styles.alertHeader}>
+              <Text style={styles.alertTitle}>New Interest Received! 🎉</Text>
+            </View>
+            <Text style={styles.alertText}>
+              {pendingCount} youth student{pendingCount > 1 ? 's are' : ' is'} interested in connecting with you.
+            </Text>
+            <Button
+              title="View Requests"
+              onPress={handleNotificationPress}
+              variant="primary"
+              style={styles.alertButton}
+            />
+          </Card>
+        )}
+
         {/* Welcome Icon */}
         <View style={styles.welcomeIconContainer}>
           <IconCircle
@@ -163,9 +158,9 @@ export const ElderlyHome: React.FC<ElderlyHomeProps> = ({
         <JourneyProgressDropdown
           currentStep={currentStep}
           steps={ELDERLY_JOURNEY_STEPS}
-          currentDescription={getCurrentDescription()}
-          nextDescription={getNextDescription()}
-          onLearnMore={onLearnMore}
+          currentDescription="Waiting for youth to express interest"
+          nextDescription="Review & decide to connect"
+          onLearnMore={() => { }}
           style={styles.journeyDropdown}
         />
 
@@ -191,30 +186,29 @@ export const ElderlyHome: React.FC<ElderlyHomeProps> = ({
               <Text style={styles.profileStatus}>{getProfileStatusMessage()}</Text>
             </View>
           </View>
-
-          {/* Tip Card */}
-          <Card style={styles.tipCard}>
-            <Text style={styles.tipIcon}>💡 Tip:</Text>
-            <Text style={styles.tipText}>
-              Complete profiles with clear photos and detailed interests receive
-              3x more connection requests. Keep your information updated!
-            </Text>
-          </Card>
-        </View>
-
+        </View>  
         {/* Safety Card */}
         <Card style={styles.safetyCard}>
           <Text style={styles.safetyTitle}>🛡️ Your Safety</Text>
           <Text style={styles.safetyText}>
             Your real identity remains private during pre-match. Only your
-            display name and avatar are shown. Real names are revealed only
-            after official match confirmation.
+            display name and avatar are shown.
           </Text>
         </Card>
+
+        {/* Bottom spacing for tab bar */}
+        <View style={{ height: 80 }} />
       </ScrollView>
-    </View>
-  );
-};
+
+      {/* Bottom Tab Bar */}
+      <BottomTabBar
+        tabs={DEFAULT_TABS}
+        activeTab={activeTab}
+        onTabPress={onTabPress || (() => {})}
+      />
+    </SafeAreaView>
+  )
+})
 
 // ============================================================================
 // STYLES
@@ -263,6 +257,29 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     marginBottom: 24,
     paddingHorizontal: 8,
+  },
+  alertCard: {
+    width: '100%',
+    backgroundColor: '#E8F5E9',
+    borderColor: '#C8E6C9',
+    marginBottom: 20,
+    padding: 16,
+  },
+  alertHeader: {
+    marginBottom: 8,
+  },
+  alertTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#2E7D32',
+  },
+  alertText: {
+    fontSize: 14,
+    color: '#388E3C',
+    marginBottom: 12,
+  },
+  alertButton: {
+    width: '100%',
   },
   journeyDropdown: {
     width: '100%',
@@ -331,21 +348,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#4A7C23',
-  },
-  tipCard: {
-    padding: 16,
-    backgroundColor: '#FAFFF5',
-  },
-  tipIcon: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 4,
-  },
-  tipText: {
-    fontSize: 14,
-    color: '#666',
-    lineHeight: 20,
   },
   safetyCard: {
     width: '100%',

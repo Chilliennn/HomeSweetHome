@@ -247,7 +247,7 @@ export class CommunicationViewModel {
 
   /**
    * Send a text message
-   * UC101_6: Send text message in pre-match chat
+   * UC101_6: Send text message in pre-match or relationship chat
    */
   async sendTextMessage(
     senderId: string,
@@ -269,21 +269,12 @@ export class CommunicationViewModel {
         throw new Error('No active chat');
       }
 
-      let message: Message;
+      let context: { applicationId: string } | { relationshipId: string };
 
       if (this.currentChatContext === 'preMatch' && this.currentApplicationId) {
-        console.log('[CommunicationViewModel] Sending pre-match message');
-        message = await communicationService.sendTextMessage(
-          senderId,
-          receiverId,
-          this.currentApplicationId,
-          content
-        );
-        console.log('[CommunicationViewModel] Message sent successfully', message);
+        context = { applicationId: this.currentApplicationId };
       } else if (this.currentChatContext === 'relationship' && this.currentRelationshipId) {
-        // TODO: Implement relationship text message when relationship chat is added
-        console.error('[CommunicationViewModel] Relationship chat not implemented');
-        throw new Error('Relationship chat not yet implemented');
+        context = { relationshipId: this.currentRelationshipId };
       } else {
         console.error('[CommunicationViewModel] Invalid chat context', {
           context: this.currentChatContext,
@@ -293,10 +284,17 @@ export class CommunicationViewModel {
         throw new Error('Invalid chat context');
       }
 
+      // ✅ Always use Service layer (MVVM compliance)
+      const message = await communicationService.sendTextMessage(
+        senderId,
+        receiverId,
+        context,
+        content
+      );
+
       // Message will be added via real-time subscription
       // But add it immediately for optimistic UI update
       runInAction(() => {
-        // Check if message already exists (from subscription)
         const exists = this.currentChatMessages.some(m => m.id === message.id);
         if (!exists) {
           this.currentChatMessages.push(message);
@@ -329,22 +327,24 @@ export class CommunicationViewModel {
         throw new Error('No active chat');
       }
 
-      let message: Message;
+      let context: { applicationId: string } | { relationshipId: string };
 
       if (this.currentChatContext === 'preMatch' && this.currentApplicationId) {
-        message = await communicationService.sendVoiceMessage(
-          senderId,
-          receiverId,
-          this.currentApplicationId,
-          mediaUrl,
-          durationSeconds
-        );
+        context = { applicationId: this.currentApplicationId };
       } else if (this.currentChatContext === 'relationship' && this.currentRelationshipId) {
-        // TODO: Implement relationship voice message when relationship chat is added
-        throw new Error('Relationship chat not yet implemented');
+        context = { relationshipId: this.currentRelationshipId };
       } else {
         throw new Error('Invalid chat context');
       }
+
+      // ✅ Always use Service layer (MVVM compliance)
+      const message = await communicationService.sendVoiceMessage(
+        senderId,
+        receiverId,
+        context,
+        mediaUrl,
+        durationSeconds
+      );
 
       // Message will be added via real-time subscription
       runInAction(() => {

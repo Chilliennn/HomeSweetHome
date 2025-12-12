@@ -295,19 +295,19 @@ export const communicationService = {
   },
 
   /**
-   * Send a text message in pre-match chat
+   * Send a text message (pre-match or relationship)
    * UC101_6 + Safety: Send text message with validation and moderation
    */
   async sendTextMessage(
     senderId: string,
     receiverId: string,
-    applicationId: string,
+    context: { applicationId: string } | { relationshipId: string },
     content: string
   ): Promise<Message> {
     console.log('[communicationService] sendTextMessage called', {
       senderId,
       receiverId,
-      applicationId,
+      context,
       content,
     });
 
@@ -318,77 +318,72 @@ export const communicationService = {
     }
 
     if (content.length > MESSAGE_MAX_LENGTH) {
-      console.error('[communicationService] Message too long:', content.length);
+      console.error('[communicationService] Message too long');
       throw new Error(`Message too long (max ${MESSAGE_MAX_LENGTH} characters)`);
     }
 
-    console.log('[communicationService] Verifying active pre-match');
-    // Verify application exists and is in pre_chat_active status
-    const application = await this.verifyActivePreMatch(applicationId, senderId);
-    console.log('[communicationService] Pre-match verified', application);
+    // Only moderate pre-match messages
+    if ('applicationId' in context) {
+      // Verify application exists and is active
+      await this.verifyActivePreMatch(context.applicationId, senderId);
 
-    // Determine receiver (the other party in the application)
-    const expectedReceiverId = application.youth_id === senderId
-      ? application.elderly_id
-      : application.youth_id;
-
-    if (receiverId !== expectedReceiverId) {
-      console.error('[communicationService] Invalid receiver', {
-        provided: receiverId,
-        expected: expectedReceiverId,
-      });
-      throw new Error('Invalid receiver for this pre-match chat');
-    }
-
-    console.log('[communicationService] Moderating message');
-    // Moderate message content
-    const moderationResult = await moderationService.moderateMessage(
-      content,
-      senderId,
-      receiverId,
-      applicationId
-    );
-    console.log('[communicationService] Moderation result:', moderationResult);
-
-    // Handle blocked messages
-    if (!moderationResult.isAllowed) {
-      console.error('[communicationService] Message blocked by moderation');
-      // TODO: Create safety incident for admin review
-      throw new Error(moderationResult.suggestedAction || 'Message blocked by moderation');
-    }
-
-    console.log('[communicationService] Sending message to repository');
-    // Send message
-    const message = await messageRepository.sendMessage({
-      senderId,
-      receiverId,
-      applicationId,
-      messageType: 'text',
-      content: content.trim(),
-    });
-    console.log('[communicationService] Message sent successfully', message);
-
-    // If warning level, log for tracking but allow message
-    if (moderationResult.severity === 'warning') {
-      // TODO: Create low-severity safety incident for tracking
-      console.warn('Message sent with warning:', {
-        applicationId,
+      // Moderate message content (Safety requirement)
+      const moderationResult = await moderationService.moderateMessage(
+        content,
         senderId,
-        detectedIssues: moderationResult.detectedIssues,
+        receiverId,
+        context.applicationId
+      );
+
+      // Block if severity is 'blocked'
+      if (moderationResult.severity === 'blocked') {
+        console.error('[communicationService] Message blocked by moderation', {
+          detectedIssues: moderationResult.detectedIssues,
+        });
+        throw new Error(
+          `Message cannot be sent: ${moderationResult.detectedIssues?.join(', ') || moderationResult.reason || 'Content violated community guidelines'}`
+        );
+      }
+
+      // Send pre-match message
+      const message = await messageRepository.sendMessage({
+        senderId,
+        receiverId,
+        applicationId: context.applicationId,
+        messageType: 'text',
+        content: content.trim(),
+      });
+
+      // If warning level, log for tracking
+      if (moderationResult.severity === 'warning') {
+        console.warn('Message sent with warning:', {
+          applicationId: context.applicationId,
+          senderId,
+          detectedIssues: moderationResult.detectedIssues,
+        });
+      }
+
+      return message;
+    } else {
+      // Relationship message - no moderation needed
+      return await messageRepository.sendMessage({
+        senderId,
+        receiverId,
+        relationshipId: context.relationshipId,
+        messageType: 'text',
+        content: content.trim(),
       });
     }
-
-    return message;
   },
 
   /**
-   * Send a voice message in pre-match chat
+   * Send a voice message (pre-match or relationship)
    * UC101_6: Send voice message (max 2 minutes)
    */
   async sendVoiceMessage(
     senderId: string,
     receiverId: string,
-    applicationId: string,
+    context: { applicationId: string } | { relationshipId: string },
     mediaUrl: string,
     durationSeconds: number
   ): Promise<Message> {
@@ -397,17 +392,27 @@ export const communicationService = {
       throw new Error(`Voice message too long (max ${VOICE_MAX_DURATION_SECONDS / 60} minutes)`);
     }
 
-    // Verify application exists and is active
-    await this.verifyActivePreMatch(applicationId, senderId);
+    // Verify pre-match application if applicable
+    if ('applicationId' in context) {
+      await this.verifyActivePreMatch(context.applicationId, senderId);
 
-    // Send voice message
-    return await messageRepository.sendMessage({
-      senderId,
-      receiverId,
-      applicationId,
-      messageType: 'voice',
-      mediaUrl,
-    });
+      return await messageRepository.sendMessage({
+        senderId,
+        receiverId,
+        applicationId: context.applicationId,
+        messageType: 'voice',
+        mediaUrl,
+      });
+    } else {
+      // Relationship voice message
+      return await messageRepository.sendMessage({
+        senderId,
+        receiverId,
+        relationshipId: context.relationshipId,
+        messageType: 'voice',
+        mediaUrl,
+      });
+    }
   },
 
   /**

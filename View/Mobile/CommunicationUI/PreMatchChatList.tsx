@@ -1,10 +1,9 @@
-import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { observer } from 'mobx-react-lite';
 import { useRouter } from 'expo-router';
-import { useFocusEffect } from '@react-navigation/native';
-import { communicationViewModel, authViewModel } from '@home-sweet-home/viewmodel';
+import { communicationViewModel } from '@home-sweet-home/viewmodel';
 import { useTabNavigation } from '@/hooks/use-tab-navigation';
 import { Card, IconCircle, NotificationBell, ProgressBar, Button } from '@/components/ui';
 import { BottomTabBar, DEFAULT_TABS } from '@/components/ui/BottomTabBar';
@@ -26,39 +25,42 @@ import { Colors } from '@/constants/theme';
 export const PreMatchChatList = observer(function PreMatchChatList() {
   const router = useRouter();
   const vm = communicationViewModel;
-  const authVM = authViewModel;
 
-  const currentUserId = authVM.authState.currentUserId;
-  const currentUserType = authVM.userType;
+  const currentUserId = vm.currentUser;
+  const currentUserType = vm.currentUserType;
 
   // Tab navigation hook
   const { handleTabPress } = useTabNavigation('chat');
 
-  // Load chats on mount
+  // Pull-to-refresh state
+  const [refreshing, setRefreshing] = useState(false);
+
+  // Load chats on mount (only once)
   useEffect(() => {
     if (!currentUserId || !currentUserType) {
       Alert.alert('Error', 'User not logged in');
       return;
     }
 
-    // Admin users don't have pre-match chats
-    if (currentUserType === 'admin') {
+    // Load active chats (ViewModel uses internal currentUser)
+    vm.loadActiveChats();
+  }, [currentUserId, currentUserType]);
+
+  // Manual refresh handler
+  const handleRefresh = async () => {
+    if (!currentUserId || !currentUserType) {
       return;
     }
 
-    // Load active chats
-    vm.loadActiveChats(currentUserId, currentUserType);
-  }, [currentUserId, currentUserType]);
-
-  // Refresh chats when screen comes into focus (for realtime updates)
-  useFocusEffect(
-    React.useCallback(() => {
-      if (currentUserId && currentUserType && currentUserType !== 'admin') {
-        console.log('[PreMatchChatList] Screen focused, refreshing chats');
-        vm.refreshChats(currentUserId, currentUserType);
-      }
-    }, [currentUserId, currentUserType])
-  );
+    setRefreshing(true);
+    try {
+      await vm.refreshChats();
+    } catch (error) {
+      console.error('[PreMatchChatList] Refresh error:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   // Handler: Open chat
   const handleChat = (applicationId: string) => {
@@ -192,28 +194,20 @@ export const PreMatchChatList = observer(function PreMatchChatList() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.headerSpacer} />
-        <Text style={styles.headerTitle}>Pre-Match Chats</Text>
-        <NotificationBell
-          count={vm.unreadCount}
-          onPress={handleNotificationPress}
-        />
-      </View>
-
-      <View style={styles.headerDivider} />
-
-      {/* Chat List */}
-      {vm.activePreMatchChats.length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>No Active Chats</Text>
-          <Text style={styles.emptySubtext}>
-            Your pre-match conversations will appear here
-          </Text>
+      <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+        {/* Header */}
+        <View style={styles.header}>
+          <View style={styles.headerSpacer} />
+          <Text style={styles.headerTitle}>Pre-Match Chats</Text>
+          <NotificationBell
+            count={vm.unreadCount}
+            onPress={handleNotificationPress}
+          />
         </View>
-      ) : (
+
+        <View style={styles.headerDivider} />
+
+        {/* Chat List */}
         <FlatList
           data={vm.activePreMatchChats}
           renderItem={renderPreMatchCard}
@@ -221,19 +215,34 @@ export const PreMatchChatList = observer(function PreMatchChatList() {
           contentContainerStyle={styles.listContent}
           ItemSeparatorComponent={() => <View style={styles.separator} />}
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              colors={['#9DE2D0']}
+              tintColor="#9DE2D0"
+            />
+          }
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>No active chats yet</Text>
+              <Text style={styles.emptySubtext}>
+                When elderly users accept your interest, your chat will appear here
+              </Text>
+            </View>
+          }
         />
-      )}
 
-      {/* Bottom Tab Bar */}
-      <BottomTabBar
-        tabs={DEFAULT_TABS}
-        activeTab="chat"
-        onTabPress={handleTabPress}
-        disabledTabs={['diary', 'memory']}
-      />
-    </SafeAreaView>
-  );
-});
+        {/* Bottom Tab Bar */}
+        <BottomTabBar
+          tabs={DEFAULT_TABS}
+          activeTab="chat"
+          onTabPress={handleTabPress}
+          disabledTabs={['diary', 'memory']}
+        />
+      </SafeAreaView>
+    );
+  });
 
 
 const styles = StyleSheet.create({

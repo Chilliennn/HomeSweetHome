@@ -15,68 +15,62 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { observer } from 'mobx-react-lite';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { communicationViewModel, authViewModel } from '@home-sweet-home/viewmodel';
+import { communicationViewModel } from '@home-sweet-home/viewmodel';
 import { IconCircle, ChatBubble } from '@/components/ui';
 import { Colors } from '@/constants/theme';
-
-// TODO: This will come from StageViewModel in the future
-interface FeatureUnlock {
-  name: string;
-  isUnlocked: boolean;
-  stage: number;
-}
 
 /**
  * ChatScreen - UC104: Pre-match and relationship chat interface
  * 
  * Features (104_3 design):
- * - Video call and voice call buttons in header
+ * - Video call and voice call buttons in header (stage-locked)
  * - Warning/report button in header
- * - Image and voice message buttons in input area
- * - Stage-based feature unlocks
+ * - Image and voice message buttons in input area (stage-locked photo sharing)
+ * - Stage-based feature unlocks for relationship chats
  * 
  * Architecture:
  * - Observer component (reactive to ViewModel state)
  * - Uses reusable UI components from components/ui
  * - Follows MVVM pattern
+ * - Supports both pre-match (applicationId) and relationship (relationshipId) contexts
  */
 export const ChatScreen = observer(function ChatScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const vm = communicationViewModel;
-  const authVM = authViewModel;
 
   const applicationId = params.applicationId as string | undefined;
-  const currentUserId = authVM.authState.currentUserId;
-  const currentUserType = authVM.userType;
+  const relationshipId = params.relationshipId as string | undefined;
+  const currentUserId = vm.currentUser;
+  const currentUserType = vm.currentUserType;
 
   const [messageInput, setMessageInput] = useState('');
   const keyboardHeight = useRef(new Animated.Value(0)).current;
 
-  // TODO: Get current stage from StageViewModel
-  // For now, we'll use mock data based on days passed
-  const [currentStage, setCurrentStage] = useState(1);
-
-  // Load chat on mount
+  // Load chat on mount (pre-match or relationship)
   useEffect(() => {
-    if (!applicationId) {
-      Alert.alert('Error', 'No chat ID provided');
-      router.back();
-      return;
-    }
-
     if (!currentUserId) {
       Alert.alert('Error', 'User not logged in');
       router.back();
       return;
     }
 
-    vm.openChat(applicationId, currentUserId);
+    if (relationshipId) {
+      // Load relationship chat
+      vm.openRelationshipChat(relationshipId);
+    } else if (applicationId) {
+      // Load pre-match chat
+      vm.openChat(applicationId);
+    } else {
+      Alert.alert('Error', 'No chat ID provided');
+      router.back();
+      return;
+    }
 
     return () => {
       vm.closeChat();
     };
-  }, [applicationId, currentUserId]);
+  }, [applicationId, relationshipId, currentUserId]);
 
   // Keyboard event listeners
   useEffect(() => {
@@ -118,7 +112,7 @@ export const ChatScreen = observer(function ChatScreen() {
   }
 
   // Show error state
-  if (!vm.currentChat || vm.errorMessage) {
+  if ((!vm.currentChat && !vm.currentRelationship) || vm.errorMessage) {
     return (
       <View style={styles.centerContainer}>
         <Text style={styles.errorIcon}>💬</Text>
@@ -135,46 +129,90 @@ export const ChatScreen = observer(function ChatScreen() {
     );
   }
 
+  // Get chat context (pre-match or relationship)
   const chat = vm.currentChat;
-  const partnerUser = chat.partnerUser;
+  const relationship = vm.currentRelationship;
+  const isRelationshipChat = vm.currentChatContext === 'relationship';
+
+  // Get partner based on context
+  const partnerUser = isRelationshipChat
+    ? (relationship?.youth_id === currentUserId ? relationship?.elderly : relationship?.youth)
+    : chat?.partnerUser;
+
   const messages = vm.currentChatMessages;
 
-  // Calculate day label
-  const applicationDate = new Date(chat.application.applied_at);
-  const now = new Date();
-  const daysPassed = Math.floor((now.getTime() - applicationDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-  const dayLabel = `Day ${daysPassed} of 14`;
+  // Calculate day label or stage info
+  let headerInfo = '';
+  if (isRelationshipChat && relationship) {
+    // Show relationship stage
+    const stageNames = {
+      getting_to_know: 'Stage 1: Getting Acquainted',
+      trial_period: 'Stage 2: Building Trust',
+      official_ceremony: 'Stage 3: Official Ceremony',
+      family_life: 'Stage 4: Family Life',
+    };
+    headerInfo = stageNames[relationship.current_stage] || relationship.current_stage;
+  } else if (chat) {
+    // Show pre-match day count
+    const applicationDate = new Date(chat.application.applied_at);
+    const now = new Date();
+    const daysPassed = Math.floor((now.getTime() - applicationDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+    headerInfo = `Day ${daysPassed} of 14`;
+  }
 
-  // TODO: Replace with actual feature flags from StageViewModel/RelationshipViewModel
-  // This is mock data for demonstration
-  const features: FeatureUnlock[] = [
-    { name: 'Voice', isUnlocked: currentStage >= 1, stage: 1 },
-    { name: 'VideoCall', isUnlocked: currentStage >= 2, stage: 2 },
-    { name: 'Photo', isUnlocked: currentStage >= 3, stage: 3 },
-  ];
+  // ✅ Real stage-based feature unlocking
+  const getFeatureUnlocks = (stage: string | null): Record<string, boolean> => {
+    if (!stage) {
+      // Pre-match: only text and voice messages, no calls or photo sharing
+      return {
+        voiceCall: false,
+        videoCall: false,
+        photoSharing: false,
+      };
+    }
 
-  const isVoiceUnlocked = features.find(f => f.name === 'Voice')?.isUnlocked ?? false;
-  const isVideoCallUnlocked = features.find(f => f.name === 'VideoCall')?.isUnlocked ?? false;
-  const isPhotoUnlocked = features.find(f => f.name === 'Photo')?.isUnlocked ?? false;
+    switch (stage) {
+      case 'getting_to_know':
+        // Stage 1: Voice Call unlocked
+        return {
+          voiceCall: true,
+          videoCall: false,
+          photoSharing: false,
+        };
+      case 'trial_period':
+        // Stage 2: + Video Call
+        return {
+          voiceCall: true,
+          videoCall: true,
+          photoSharing: false,
+        };
+      case 'official_ceremony':
+      case 'family_life':
+        // Stage 3+: + Photo Sharing (All features)
+        return {
+          voiceCall: true,
+          videoCall: true,
+          photoSharing: true,
+        };
+      default:
+        return {
+          voiceCall: false,
+          videoCall: false,
+          photoSharing: false,
+        };
+    }
+  };
+
+  const features = getFeatureUnlocks(relationship?.current_stage || null);
 
   // Handler: Send message
   const handleSendMessage = async () => {
-    if (!messageInput.trim() || !currentUserId) return;
+    if (!messageInput.trim() || !currentUserId || !partnerUser) return;
 
     const content = messageInput.trim();
-    setMessageInput(''); // Clear input immediately for better UX
+    setMessageInput(''); // Clear input immediately
 
-    const receiverId = currentUserType === 'youth'
-      ? chat.application.elderly_id
-      : chat.application.youth_id;
-
-    console.log('[ChatScreen] Sending message:', {
-      currentUserId,
-      receiverId,
-      content,
-      chatContext: vm.currentChatContext,
-      applicationId: vm.currentApplicationId,
-    });
+    const receiverId = partnerUser.id;
 
     const success = await vm.sendTextMessage(
       currentUserId,
@@ -182,54 +220,58 @@ export const ChatScreen = observer(function ChatScreen() {
       content
     );
 
-    console.log('[ChatScreen] Send result:', success, 'Error:', vm.errorMessage);
-
     if (!success) {
-      const errorMsg = vm.errorMessage || 'Failed to send message - unknown error';
-      Alert.alert('Error', errorMsg);
-      vm.clearError();
-      setMessageInput(content); // Restore message on error
+      Alert.alert('Error', 'Failed to send message');
+      setMessageInput(content);
     }
   };
 
-  // Handler: Voice call (placeholder)
+  // Handler: Voice call
   const handleVoiceCall = () => {
-    if (!isVoiceUnlocked) {
-      Alert.alert('Feature Locked', 'Voice calls will be unlocked in Stage 1');
+    if (!features.voiceCall) {
+      handleLockedFeature('Voice Call', 'getting_to_know');
       return;
     }
-    // TODO: Implement voice call
     Alert.alert('Voice Call', 'Voice call feature coming soon!');
   };
 
-  // Handler: Video call (placeholder)
+  // Handler: Video call
   const handleVideoCall = () => {
-    if (!isVideoCallUnlocked) {
-      Alert.alert('Feature Locked', 'Video calls will be unlocked in Stage 2');
+    if (!features.videoCall) {
+      handleLockedFeature('Video Call', 'trial_period');
       return;
     }
-    // TODO: Implement video call
     Alert.alert('Video Call', 'Video call feature coming soon!');
   };
 
-  // Handler: Voice message (placeholder)
+  // Handler: Voice message
   const handleVoiceMessage = () => {
-    if (!isVoiceUnlocked) {
-      Alert.alert('Feature Locked', 'Voice messages will be unlocked in Stage 1');
-      return;
-    }
-    // TODO: Implement voice recording
     Alert.alert('Voice Message', 'Voice message feature coming soon!');
   };
 
-  // Handler: Photo sharing (placeholder)
+  // Handler: Photo sharing
   const handlePhotoShare = () => {
-    if (!isPhotoUnlocked) {
-      Alert.alert('Feature Locked', 'Photo sharing will be unlocked in Stage 3');
+    if (!features.photoSharing) {
+      handleLockedFeature('Photo Sharing', 'official_ceremony');
       return;
     }
-    // TODO: Implement photo sharing
     Alert.alert('Photo Share', 'Photo sharing feature coming soon!');
+  };
+
+  // Handler: Locked feature alert
+  const handleLockedFeature = (featureName: string, requiredStage: string) => {
+    const stageNames: Record<string, string> = {
+      getting_to_know: 'Stage 1: Getting Acquainted',
+      trial_period: 'Stage 2: Building Trust',
+      official_ceremony: 'Stage 3: Official Ceremony',
+      family_life: 'Stage 4: Family Life',
+    };
+
+    Alert.alert(
+      `${featureName} Locked 🔒`,
+      `This feature will be unlocked in ${stageNames[requiredStage]}.`,
+      [{ text: 'OK' }]
+    );
   };
 
   // Handler: Report/Warning
@@ -296,14 +338,14 @@ export const ChatScreen = observer(function ChatScreen() {
           <View style={styles.headerInfo}>
             <View style={styles.headerRow}>
               <IconCircle
-                icon={partnerUser.profile_data?.avatar_meta?.type === 'default' ? '👵' : '👤'}
+                icon={partnerUser?.profile_data?.avatar_meta?.type === 'default' ? '👵' : '👤'}
                 size={40}
                 backgroundColor="#C8ADD6"
                 contentScale={0.6}
               />
               <View style={styles.headerText}>
-                <Text style={styles.partnerName}>{partnerUser.full_name || 'Partner'}</Text>
-                <Text style={styles.dayLabel}>{dayLabel}</Text>
+                <Text style={styles.partnerName}>{partnerUser?.full_name || 'Partner'}</Text>
+                <Text style={styles.dayLabel}>{headerInfo}</Text>
               </View>
             </View>
           </View>
@@ -312,13 +354,13 @@ export const ChatScreen = observer(function ChatScreen() {
           <View style={styles.headerActions}>
             <TouchableOpacity
               onPress={handleVoiceCall}
-              style={[styles.headerButton, !isVoiceUnlocked && styles.headerButtonLocked]}
+              style={[styles.headerButton, !features.voiceCall && styles.headerButtonLocked]}
             >
               <Image
                 source={require('@/assets/images/icon-voiceCall.png')}
                 style={styles.headerIcon}
               />
-              {!isVoiceUnlocked && (
+              {!features.voiceCall && (
                 <Image
                   source={require('@/assets/images/icon-lock.png')}
                   style={styles.miniLockIcon}
@@ -328,13 +370,13 @@ export const ChatScreen = observer(function ChatScreen() {
 
             <TouchableOpacity
               onPress={handleVideoCall}
-              style={[styles.headerButton, !isVideoCallUnlocked && styles.headerButtonLocked]}
+              style={[styles.headerButton, !features.videoCall && styles.headerButtonLocked]}
             >
               <Image
                 source={require('@/assets/images/icon-videoCall.png')}
                 style={styles.headerIcon}
               />
-              {!isVideoCallUnlocked && (
+              {!features.videoCall && (
                 <Image
                   source={require('@/assets/images/icon-lock.png')}
                   style={styles.miniLockIcon}
@@ -369,13 +411,13 @@ export const ChatScreen = observer(function ChatScreen() {
             {/* Voice Message Button */}
             <TouchableOpacity
               onPress={handleVoiceMessage}
-              style={[styles.inputActionButton, !isVoiceUnlocked && styles.inputActionButtonLocked]}
+              style={[styles.inputActionButton, !features.voiceCall && styles.inputActionButtonLocked]}
             >
               <Image
                 source={require('@/assets/images/icon-voice.png')}
                 style={styles.inputActionIcon}
               />
-              {!isVoiceUnlocked && (
+              {!features.voiceCall && (
                 <Image
                   source={require('@/assets/images/icon-lock.png')}
                   style={styles.miniLockIconInput}
@@ -386,13 +428,13 @@ export const ChatScreen = observer(function ChatScreen() {
             {/* Photo/Image Button */}
             <TouchableOpacity
               onPress={handlePhotoShare}
-              style={[styles.inputActionButton, !isPhotoUnlocked && styles.inputActionButtonLocked]}
+              style={[styles.inputActionButton, !features.photoSharing && styles.inputActionButtonLocked]}
             >
               <Image
                 source={require('@/assets/images/icon-image.png')}
                 style={styles.inputActionIcon}
               />
-              {!isPhotoUnlocked && (
+              {!features.photoSharing && (
                 <Image
                   source={require('@/assets/images/icon-lock.png')}
                   style={styles.miniLockIconInput}

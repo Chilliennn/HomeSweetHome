@@ -96,15 +96,15 @@ export const matchingService = {
     /**
      * Elderly responds to an interest (Accept/Decline).
      * If accepting, it verifies limits again to ensure creating the active pre-match is safe.
-     * UC101_9: Creates notification for youth when elderly accepts
+     * UC101_9: Creates notification AND welcome message for youth when elderly accepts
      */
     async respondToInterest(interestId: string, youthId: string, elderlyId: string, accept: boolean) {
-        console.log('🔵 [Service] respondToInterest called', { interestId, youthId, elderlyId, accept });
+        console.log('[Service] respondToInterest called', { interestId, youthId, elderlyId, accept });
         if (accept) {
             // If accepting, we must ensure BOTH parties still have space.
             // (The youth might have started other chats since sending this interest)
             const check = await this.canStartPreMatch(youthId, elderlyId);
-            console.log('🔵 [Service] canStartPreMatch result', check);
+            console.log('[Service] canStartPreMatch result', check);
             if (!check.allowed) {
                 if (check.reason === 'youth_limit_reached') {
                     throw new Error('This youth student has reached their active chat limit.');
@@ -114,23 +114,20 @@ export const matchingService = {
             }
         }
 
-        // Get application details before updating (for notification)
-        // Use Repository instead of direct Supabase call (MVVM compliance)
-        const application = await matchingRepository.getApplicationById(interestId);
-        console.log('🔵 [Service] fetched application', application);
+        // Update status in Repository (Repository only does DB operations)
+        const updatedApplication = await matchingRepository.updateInterestStatus(
+            interestId,
+            accept ? 'accept' : 'decline',
+            accept ? 'pre_chat_active' : 'rejected'
+        );
+        console.log('[Service] Repository update complete', updatedApplication);
 
-        if (!application) {
-            console.log('🛑 [Service] Application not found');
-            throw new Error('Application not found');
-        }
-
-        // Update status in repo
-        await matchingRepository.updateInterestStatus(interestId, accept ? 'accepted' : 'declined');
-        console.log('✅ [Service] updateInterestStatus done');
-        // UC101_9: Create notification for youth
+        // UC101_9: Service layer handles business logic (notifications + welcome message)
         if (accept) {
-            const elderlyName = application.elderly?.full_name || 'An Elderly';
-            console.log('🔵 [Service] Creating notification for youth:', youthId);
+            const elderlyName = updatedApplication.elderly?.full_name || 'An Elderly';
+
+            // Create notification for youth
+            console.log('[Service] Creating notification for youth:', youthId);
             await notificationRepository.createNotification({
                 user_id: youthId,
                 type: 'interest_accepted',
@@ -139,11 +136,21 @@ export const matchingService = {
                 reference_id: interestId,
                 reference_table: 'applications',
             });
-            console.log('✅ [Service] Notification created');
+            console.log('[Service] Notification created');
+
+            // Create welcome message (business rule: send welcome on acceptance)
+            console.log('[Service] Creating welcome message');
+            const { communicationService } = await import('./communicationService');
+            await communicationService.createWelcomeMessage(
+                interestId,
+                updatedApplication.youth_id,
+                updatedApplication.elderly_id
+            );
+            console.log('[Service] Welcome message created');
         } else {
-            // Optional: Notify rejection (can be removed if not desired)
-            const elderlyName = application.elderly?.full_name || 'An Elderly';
-            console.log('🔵 [Service] Creating rejection notification for youth:', youthId);
+            // Optional: Notify rejection
+            const elderlyName = updatedApplication.elderly?.full_name || 'An Elderly';
+            console.log('[Service] Creating rejection notification for youth:', youthId);
             await notificationRepository.createNotification({
                 user_id: youthId,
                 type: 'interest_rejected',
@@ -152,7 +159,7 @@ export const matchingService = {
                 reference_id: interestId,
                 reference_table: 'applications',
             });
-            console.log('✅ [Service] Rejection notification created');
+            console.log('[Service] Rejection notification created');
         }
     },
     /**

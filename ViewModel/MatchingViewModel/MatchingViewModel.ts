@@ -25,9 +25,44 @@ export class MatchingViewModel {
   /** Error message */
   errorMessage: string | null = null;
 
+  /** Current authenticated user ID (sync'd from AuthViewModel) */
+  currentUserId: string | null = null;
+
+  /** Current user type (sync'd from AuthViewModel) */
+  currentUserType: 'youth' | 'elderly' | null = null;
+
   constructor() {
     makeAutoObservable(this, {}, { autoBind: true });
   }
+
+  // =============================================================
+  // User Context Management
+  // =============================================================
+
+  /**
+   * Set current user context
+   * Called by root layout when auth state changes
+   */
+  setCurrentUser(userId: string | null, userType: 'youth' | 'elderly' | null): void {
+    runInAction(() => {
+      this.currentUserId = userId;
+      this.currentUserType = userType;
+    });
+  }
+
+  /**
+   * Clear user context (on logout)
+   */
+  clearUser(): void {
+    runInAction(() => {
+      this.currentUserId = null;
+      this.currentUserType = null;
+    });
+  }
+
+  // =============================================================
+  // Placeholder Methods
+  // =============================================================
 
   // =============================================================
   // Walkthrough Actions

@@ -53,6 +53,10 @@ export class CommunicationViewModel {
   /** Error message */
   errorMessage: string | null = null;
 
+  /**get current user and user type*/
+  currentUser: string | null = null;
+  currentUserType: 'youth' | 'elderly' | null = null;
+
   /** Real-time subscription channel */
   private messageSubscription: ChannelType | null = null;
 
@@ -68,12 +72,12 @@ export class CommunicationViewModel {
    * Load all active pre-match chats for a user
    * UC101_6: Display list of active conversations
    */
-  async loadActiveChats(userId: string, userType: 'youth' | 'elderly'): Promise<void> {
+  async loadActiveChats(): Promise<void> {
     this.isLoading = true;
     this.errorMessage = null;
 
     try {
-      const chats = await communicationService.getActivePreMatchChats(userId, userType);
+      const chats = await communicationService.getActivePreMatchChats(this.currentUser!, this.currentUserType!);
 
       runInAction(() => {
         this.activePreMatchChats = chats;
@@ -91,8 +95,8 @@ export class CommunicationViewModel {
   /**
    * Refresh chat list (for pull-to-refresh)
    */
-  async refreshChats(userId: string, userType: 'youth' | 'elderly'): Promise<void> {
-    await this.loadActiveChats(userId, userType);
+  async refreshChats(): Promise<void> {
+    await this.loadActiveChats();
   }
 
   // =============================================================
@@ -103,7 +107,7 @@ export class CommunicationViewModel {
    * Open a specific chat and load messages
    * UC101_6: Enter chat screen
    */
-  async openChat(applicationId: string, userId: string): Promise<void> {
+  async openChat(applicationId: string): Promise<void> {
     // Unsubscribe from previous chat if any
     if (this.messageSubscription) {
       communicationService.unsubscribe(this.messageSubscription);
@@ -125,7 +129,7 @@ export class CommunicationViewModel {
         });
       } else {
         // Fetch chat info if not in activePreMatchChats
-        const chatInfo = await communicationService.getChatInfo(applicationId, userId);
+        const chatInfo = await communicationService.getChatInfo(applicationId, this.currentUser!);
         runInAction(() => {
           this.currentChat = chatInfo;
         });
@@ -140,7 +144,7 @@ export class CommunicationViewModel {
       });
 
       // Mark messages as read
-      await communicationService.markMessagesAsRead(userId, applicationId);
+      await communicationService.markMessagesAsRead(this.currentUser!, applicationId);
 
       // Set context
       runInAction(() => {
@@ -328,6 +332,10 @@ export class CommunicationViewModel {
   // Helpers
   // =============================================================
 
+  setCurrentUser(userId: string, userType: 'youth' | 'elderly' | null): void {
+    this.currentUser = userId;
+    this.currentUserType = userType;
+  }
   /**
    * Get chat by application ID
    */

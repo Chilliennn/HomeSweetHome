@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Alert } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { observer } from 'mobx-react-lite';
-import { matchingViewModel, youthMatchingViewModel, authViewModel } from '@home-sweet-home/viewmodel';
+import { matchingViewModel, youthMatchingViewModel } from '@home-sweet-home/viewmodel';
 import { useTabNavigation } from '@/hooks/use-tab-navigation';
 import {
   JourneyWalkthrough,
@@ -80,7 +80,7 @@ export const MatchingScreenComponent = observer(function MatchingScreenComponent
   const [currentScreen, setCurrentScreen] = useState<MatchingScreen>('browse');
   const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
   const [activeTab] = useState('matching'); // Always 'matching' for this screen
-  
+
   // Tab navigation hook
   const { handleTabPress } = useTabNavigation(activeTab);
 
@@ -108,7 +108,7 @@ export const MatchingScreenComponent = observer(function MatchingScreenComponent
   };
 
   const handleExpressInterest = async () => {
-    const youthId = authViewModel.authState.currentUserId;
+    const youthId = matchingViewModel.currentUserId;
     if (!youthId) {
       Alert.alert("Error", "You must be logged in to express interest.");
       return;

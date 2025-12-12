@@ -15,7 +15,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { observer } from 'mobx-react-lite';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { communicationViewModel, authViewModel } from '@home-sweet-home/viewmodel';
+import { communicationViewModel } from '@home-sweet-home/viewmodel';
 import { IconCircle, ChatBubble } from '@/components/ui';
 import { Colors } from '@/constants/theme';
 
@@ -44,11 +44,10 @@ export const ChatScreen = observer(function ChatScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const vm = communicationViewModel;
-  const authVM = authViewModel;
 
   const applicationId = params.applicationId as string | undefined;
-  const currentUserId = authVM.authState.currentUserId;
-  const currentUserType = authVM.userType;
+  const currentUserId = vm.currentUser;
+  const currentUserType = vm.currentUserType;
 
   const [messageInput, setMessageInput] = useState('');
   const keyboardHeight = useRef(new Animated.Value(0)).current;
@@ -71,7 +70,7 @@ export const ChatScreen = observer(function ChatScreen() {
       return;
     }
 
-    vm.openChat(applicationId, currentUserId);
+    vm.openChat(applicationId);
 
     return () => {
       vm.closeChat();

@@ -68,6 +68,13 @@ export class StageViewModel {
   }
 
   private setupRealtimeSubscription(relationshipId: string) {
+    if (this.relationshipSubscription || this.activitiesSubscription) {
+      console.log(
+        "[StageViewModel] Realtime subscriptions already active, skipping setup."
+      );
+      return;
+    }
+
     this.cleanupSubscriptions();
 
     console.log(
@@ -79,7 +86,8 @@ export class StageViewModel {
     const subscriptions = stageService.setupRealtimeSubscriptions(
       relationshipId,
       {
-        onRelationshipChange: (payload: any) => this.handleRealtimeRelationshipChange(payload),
+        onRelationshipChange: (payload: any) =>
+          this.handleRealtimeRelationshipChange(payload),
         onActivityChange: (payload: any) => {
           console.log("[Realtime] Activity changed:", payload);
           if (this.userId) {
@@ -87,7 +95,7 @@ export class StageViewModel {
             this.loadMilestoneInfo();
             this.checkMilestoneReached();
           }
-        }
+        },
       }
     );
 
@@ -125,7 +133,7 @@ export class StageViewModel {
     if (this.relationshipSubscription || this.activitiesSubscription) {
       stageService.cleanupRealtimeSubscriptions({
         relationshipSubscription: this.relationshipSubscription,
-        activitiesSubscription: this.activitiesSubscription
+        activitiesSubscription: this.activitiesSubscription,
       });
       this.relationshipSubscription = null;
       this.activitiesSubscription = null;
@@ -133,7 +141,7 @@ export class StageViewModel {
   }
 
   /**
-   * Handle realtime relationship changes 
+   * Handle realtime relationship changes
    */
   private async handleRealtimeRelationshipChange(payload: any) {
     const newData = payload.new;
@@ -169,7 +177,7 @@ export class StageViewModel {
       this.previousStage = newData.current_stage;
     }
 
-    // Detect cooling period 
+    // Detect cooling period
     if (
       newData.status === "paused" &&
       newData.end_request_status === "pending_cooldown"
@@ -200,12 +208,22 @@ export class StageViewModel {
         this.shownMilestones.push(days);
       });
     } else {
-      // Debug log 
+      // Debug log
       if (milestones.includes(days) && this.shownMilestones.includes(days)) {
         console.log(`[Realtime] Milestone ${days} already shown, skipping.`);
       } else if (!milestones.includes(days)) {
       }
     }
+  }
+
+  consumeMilestoneNavigation(): boolean {
+    const pending = this.shouldNavigateToMilestone;
+    if (pending) {
+      runInAction(() => {
+        this.shouldNavigateToMilestone = false;
+      });
+    }
+    return pending;
   }
 
   dispose() {
@@ -365,9 +383,7 @@ export class StageViewModel {
    */
   async loadUnreadNotifications() {
     try {
-      const count = await stageService.getUnreadNotificationCount(
-        this.userId
-      );
+      const count = await stageService.getUnreadNotificationCount(this.userId);
 
       runInAction(() => {
         this.unreadNotificationCount = count;
@@ -392,9 +408,6 @@ export class StageViewModel {
     }
   }
 
-  /**
-   * Handle stage click
-   */
   async handleStageClick(
     targetStage: RelationshipStage,
     options?: { forceOpen?: boolean }
@@ -415,18 +428,28 @@ export class StageViewModel {
     }
 
     if (targetStageInfo?.is_completed) {
-      await this.loadStageCompletionInfo(targetStage);
       runInAction(() => {
         this.stageJustCompleted = targetStage;
         this.stageJustCompletedName = targetStageInfo.display_name;
         this.showStageCompleted = true;
+        this.showLockedStageDetail = false;
+        this.selectedLockedStage = null;
       });
+      void this.loadStageCompletionInfo(targetStage).catch((e) =>
+        console.error("loadStageCompletionInfo failed", e)
+      );
       return;
     }
 
-    this.selectedLockedStage = targetStage;
-    await this.loadLockedStageDetails(targetStage);
-    this.showLockedStageDetail = true;
+    runInAction(() => {
+      this.selectedLockedStage = targetStage;
+      this.lockedStageDetails = null; // show loading state
+      this.showLockedStageDetail = true;
+      this.showStageCompleted = false;
+    });
+    void this.loadLockedStageDetails(targetStage).catch((e) =>
+      console.error("loadLockedStageDetails failed", e)
+    );
   }
 
   async loadRequirementsByEmail(userEmail: string, stage: RelationshipStage) {

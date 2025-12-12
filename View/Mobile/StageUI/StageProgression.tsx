@@ -57,8 +57,7 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
 
     // Watch for auto-navigation to Milestone page
     useEffect(() => {
-      if (vm.shouldNavigateToMilestone) {
-        vm.shouldNavigateToMilestone = false;
+      if (vm.consumeMilestoneNavigation()) {
         router.push({ pathname: "/(main)/milestone", params: { userId } });
       }
     }, [vm.shouldNavigateToMilestone, router, userId, vm]);

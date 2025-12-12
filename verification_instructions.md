@@ -1,6 +1,6 @@
 # Verification Instructions
 
-Follow these steps before you begin coding.
+Follow these steps before you begin coding, don't create any unnecessary files.
 
 Here is the SQL code, colour scheme and MVVM architecture rules for your reference. 
 /component is for reusable UI components

@@ -159,6 +159,11 @@ export const communicationService = {
   /**
    * Get all active pre-match chats for a user
    * UC101_6: Display list of active pre-match conversations
+   * 
+   * Business Rule: Users can chat during all pre-match phases:
+   * - pending_ngo_review: After youth sends application
+   * - ngo_approved: After NGO approves, before elderly decision
+   * - pre_chat_active: After elderly accepts interest
    */
   async getActivePreMatchChats(userId: string, userType: 'youth' | 'elderly'): Promise<PreMatchChat[]> {
     try {
@@ -167,8 +172,12 @@ export const communicationService = {
         ? await matchingRepository.getYouthApplications(userId)
         : await matchingRepository.getElderlyApplications(userId);
 
-      // Filter for active pre-match chats (status='pre_chat_active')
-      const activeChats = applications.filter(app => app.status === 'pre_chat_active');
+      // ✅ Filter for chat-accessible statuses (include pending, approved, and active)
+      // Exclude only 'rejected', 'withdrawn', and 'both_accepted' (which becomes relationship)
+      const chatAccessibleStatuses = ['pending_ngo_review', 'ngo_approved', 'pre_chat_active'];
+      const activeChats = applications.filter(app =>
+        chatAccessibleStatuses.includes(app.status)
+      );
 
       // Get messages and partner info for each chat
       const chats = await Promise.all(

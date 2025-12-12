@@ -18,6 +18,9 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { communicationViewModel } from '@home-sweet-home/viewmodel';
 import { IconCircle, ChatBubble } from '@/components/ui';
 import { Colors } from '@/constants/theme';
+import { useVoiceRecording } from '@/hooks/useVoiceRecording';
+import { useAudioPlayer } from '@/hooks/useAudioPlayer';
+import { uploadVoiceMessage } from '@home-sweet-home/model';
 
 /**
  * ChatScreen - UC104: Pre-match and relationship chat interface
@@ -45,7 +48,12 @@ export const ChatScreen = observer(function ChatScreen() {
   const currentUserType = vm.currentUserType;
 
   const [messageInput, setMessageInput] = useState('');
+  const [isSendingVoice, setIsSendingVoice] = useState(false);
   const keyboardHeight = useRef(new Animated.Value(0)).current;
+
+  // Voice recording and playback hooks
+  const { isRecording, duration: recordingDuration, startRecording, stopRecording, cancelRecording } = useVoiceRecording();
+  const audioPlayer = useAudioPlayer();
 
   // Load chat on mount (pre-match or relationship)
   useEffect(() => {
@@ -101,6 +109,21 @@ export const ChatScreen = observer(function ChatScreen() {
       keyboardWillHide.remove();
     };
   }, []);
+
+  // Auto-send when recording hits 2 minute limit (must be before early returns)
+  useEffect(() => {
+    const sendVoiceMessage = async () => {
+      if (isRecording && recordingDuration >= 120) {
+        await handleVoiceSend();
+        Alert.alert(
+          'Recording Limit',
+          'Voice messages are limited to 2 minutes. Your message has been sent.',
+          [{ text: 'OK' }]
+        );
+      }
+    };
+    sendVoiceMessage();
+  }, [isRecording, recordingDuration]);
 
   // Show loading state
   if (vm.isLoading) {
@@ -244,9 +267,56 @@ export const ChatScreen = observer(function ChatScreen() {
     Alert.alert('Video Call', 'Video call feature coming soon!');
   };
 
-  // Handler: Voice message
-  const handleVoiceMessage = () => {
-    Alert.alert('Voice Message', 'Voice message feature coming soon!');
+  // Handle voice message send
+  const handleVoiceSend = async () => {
+    if (isSendingVoice) return;
+    setIsSendingVoice(true);
+
+    try {
+      const result = await stopRecording();
+      if (!result || !result.uri) {
+        Alert.alert('Recording Error', 'Failed to record voice message. Please try again.');
+        return;
+      }
+
+      // Determine typed context for upload
+      const uploadContext = vm.currentChatContext === 'preMatch' && vm.currentApplicationId
+        ? { type: 'preMatch' as const, applicationId: vm.currentApplicationId }
+        : vm.currentRelationshipId
+          ? { type: 'relationship' as const, relationshipId: vm.currentRelationshipId }
+          : null;
+
+      if (!uploadContext) {
+        Alert.alert('Error', 'No active chat context');
+        return;
+      }
+
+      // Upload to Supabase Storage
+      const mediaUrl = await uploadVoiceMessage(result.uri, uploadContext, currentUserId!);
+
+      // Send via ViewModel
+      const success = await vm.sendVoiceMessage(mediaUrl, result.durationSeconds);
+
+      if (!success) {
+        Alert.alert('Error', vm.errorMessage || 'Failed to send voice message');
+      }
+    } catch (error) {
+      console.error('[ChatScreen] Voice message error:', error);
+      Alert.alert('Error', 'Failed to send voice message. Please try again.');
+    } finally {
+      setIsSendingVoice(false);
+    }
+  };
+
+  // Simple tap-to-toggle voice recording: tap once to start, tap again to stop and send
+  const handleVoicePress = async () => {
+    if (isRecording) {
+      // Currently recording - stop and send
+      await handleVoiceSend();
+    } else {
+      // Not recording - start recording
+      await startRecording();
+    }
   };
 
   // Handler: Photo sharing
@@ -300,11 +370,6 @@ export const ChatScreen = observer(function ChatScreen() {
     );
   };
 
-  // Handler: Play voice message (placeholder)
-  const handlePlayVoice = (messageId: string) => {
-    Alert.alert('Voice Playback', 'Playing voice message...');
-  };
-
   // Render message item using ChatBubble from components/ui
   const renderMessage = ({ item }: { item: any }) => {
     const isOwn = item.sender_id === currentUserId;
@@ -313,15 +378,20 @@ export const ChatScreen = observer(function ChatScreen() {
       minute: '2-digit'
     });
 
+    // Get voice playback state for voice messages
+    const voicePlayback = item.message_type === 'voice' && item.media_url
+      ? audioPlayer.getPlaybackForMessage(item.id, item.media_url, item.call_duration_minutes || 0)
+      : undefined;
+
     return (
       <ChatBubble
         type={item.message_type === 'text' ? 'text' : 'voice'}
         content={item.content || undefined}
-        voiceDuration={item.call_duration_minutes ? item.call_duration_minutes * 60 : undefined}
+        voicePlayback={voicePlayback}
         isOwn={isOwn}
         timestamp={timestamp}
         status={item.is_read ? 'read' : 'delivered'}
-        onPlayVoice={() => handlePlayVoice(item.id)}
+        isRead={item.is_read}
       />
     );
   };
@@ -407,64 +477,107 @@ export const ChatScreen = observer(function ChatScreen() {
 
         {/* Input Area */}
         <Animated.View style={[styles.inputContainer, { marginBottom: keyboardHeight }]}>
-          <View style={styles.inputRow}>
-            {/* Voice Message Button */}
-            <TouchableOpacity
-              onPress={handleVoiceMessage}
-              style={[styles.inputActionButton, !features.voiceCall && styles.inputActionButtonLocked]}
-            >
-              <Image
-                source={require('@/assets/images/icon-voice.png')}
-                style={styles.inputActionIcon}
-              />
-              {!features.voiceCall && (
+          {/* Recording overlay - shown when recording */}
+          {isRecording ? (
+            <View style={styles.recordingOverlay}>
+              {/* Recording info */}
+              <View style={styles.recordingInfo}>
+                <View style={styles.recordingDot} />
+                <Text style={styles.recordingDurationText}>
+                  {Math.floor(recordingDuration / 60)}:{String(recordingDuration % 60).padStart(2, '0')}
+                </Text>
+              </View>
+
+              {/* Recording text */}
+              <Text style={styles.recordingText}>Recording...</Text>
+
+              {/* Cancel button (trash icon) */}
+              <TouchableOpacity
+                onPress={cancelRecording}
+                style={styles.cancelRecordingButton}
+              >
                 <Image
-                  source={require('@/assets/images/icon-lock.png')}
-                  style={styles.miniLockIconInput}
+                  source={require('@/assets/images/icon-bin.png')}
+                  style={styles.cancelRecordingIcon}
                 />
-              )}
-            </TouchableOpacity>
+              </TouchableOpacity>
 
-            {/* Photo/Image Button */}
-            <TouchableOpacity
-              onPress={handlePhotoShare}
-              style={[styles.inputActionButton, !features.photoSharing && styles.inputActionButtonLocked]}
-            >
-              <Image
-                source={require('@/assets/images/icon-image.png')}
-                style={styles.inputActionIcon}
-              />
-              {!features.photoSharing && (
+              {/* Send button */}
+              <TouchableOpacity
+                onPress={handleVoicePress}
+                style={[
+                  styles.voiceButtonHold,
+                  isSendingVoice && styles.voiceButtonSending,
+                ]}
+              >
+                {isSendingVoice ? (
+                  <Text style={styles.sendingIndicator}>...</Text>
+                ) : (
+                  <Text style={styles.sendButtonIcon}>➤</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View style={styles.inputRow}>
+              {/* Voice Message Button - tap to start recording */}
+              <TouchableOpacity
+                onPress={handleVoicePress}
+                style={[
+                  styles.inputActionButton,
+                  isSendingVoice && styles.inputActionButtonSending,
+                ]}
+              >
+                {isSendingVoice ? (
+                  <Text style={styles.sendingIndicator}>...</Text>
+                ) : (
+                  <Image
+                    source={require('@/assets/images/icon-voice.png')}
+                    style={styles.inputActionIcon}
+                  />
+                )}
+              </TouchableOpacity>
+
+              {/* Photo/Image Button */}
+              <TouchableOpacity
+                onPress={handlePhotoShare}
+                style={[styles.inputActionButton, !features.photoSharing && styles.inputActionButtonLocked]}
+              >
                 <Image
-                  source={require('@/assets/images/icon-lock.png')}
-                  style={styles.miniLockIconInput}
+                  source={require('@/assets/images/icon-image.png')}
+                  style={styles.inputActionIcon}
                 />
-              )}
-            </TouchableOpacity>
+                {!features.photoSharing && (
+                  <Image
+                    source={require('@/assets/images/icon-lock.png')}
+                    style={styles.miniLockIconInput}
+                  />
+                )}
+              </TouchableOpacity>
 
-            {/* Text Input */}
-            <TextInput
-              style={styles.textInput}
-              placeholder="Type a message..."
-              placeholderTextColor="#999"
-              value={messageInput}
-              onChangeText={setMessageInput}
-              multiline
-              maxLength={1000}
-            />
+              {/* Text Input */}
+              <TextInput
+                style={styles.textInput}
+                placeholder="Type a message..."
+                placeholderTextColor="#999"
+                value={messageInput}
+                onChangeText={setMessageInput}
+                multiline
+                maxLength={1000}
+              />
 
-            {/* Send Button */}
-            <TouchableOpacity
-              onPress={handleSendMessage}
-              style={[
-                styles.sendButton,
-                !messageInput.trim() && styles.sendButtonDisabled,
-              ]}
-              disabled={!messageInput.trim()}
-            >
-              <Text style={styles.sendIcon}>➤</Text>
-            </TouchableOpacity>
-          </View>
+              {/* Send Button */}
+              <TouchableOpacity
+                onPress={handleSendMessage}
+                style={[
+                  styles.sendButton,
+                  !messageInput.trim() && styles.sendButtonDisabled,
+                ]}
+                disabled={!messageInput.trim()}
+              >
+                <Text style={styles.sendIcon}>➤</Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </Animated.View>
       </View>
     </SafeAreaView>
@@ -657,6 +770,93 @@ const styles = StyleSheet.create({
   },
   sendIcon: {
     fontSize: 18,
+    color: '#FFF',
+  },
+  // Voice Recording Styles
+  inputActionButtonRecording: {
+    backgroundColor: '#EB8F80',
+    minWidth: 80,
+    paddingHorizontal: 12,
+  },
+  inputActionButtonSending: {
+    backgroundColor: '#CCC',
+    opacity: 0.7,
+  },
+  sendingIndicator: {
+    fontSize: 16,
+    color: '#666',
+  },
+  recordingIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  recordingDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#FF0000',
+  },
+  recordingDuration: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FFF',
+  },
+  // Hold-to-Record Overlay Styles
+  recordingOverlay: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F5F5F5',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#E5E5E5',
+  },
+  recordingInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  recordingDurationText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+  },
+  voiceButtonHold: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: Colors.light.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  voiceButtonSending: {
+    backgroundColor: '#CCC',
+    opacity: 0.7,
+  },
+  recordingText: {
+    flex: 1,
+    textAlign: 'center',
+    fontSize: 14,
+    color: '#FF0000',
+    fontWeight: '500',
+  },
+  cancelRecordingButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#FFE5E5',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
+  },
+  cancelRecordingIcon: {
+    width: 20,
+    height: 20,
+    tintColor: '#FF3B30',
+  },
+  sendButtonIcon: {
+    fontSize: 20,
     color: '#FFF',
   },
 });

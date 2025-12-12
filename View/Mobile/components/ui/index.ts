@@ -21,6 +21,7 @@ export type { TabItem } from './BottomTabBar';
 // Communication components
 export { NotificationItem } from './NotificationItem';
 export { ChatBubble } from './ChatBubble';
+export { VoiceBubble } from './VoiceBubble';
 
 // Form components
 export { FormField } from './FormField';

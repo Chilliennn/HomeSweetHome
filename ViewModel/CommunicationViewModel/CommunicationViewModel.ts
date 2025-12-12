@@ -314,32 +314,48 @@ export class CommunicationViewModel {
   /**
    * Send a voice message
    * UC101_6: Send voice message (max 2 min)
+   * 
+   * Simplified API: VM derives sender, receiver, and context internally
+   * ChatScreen only needs to provide the recorded audio URL and duration
    */
   async sendVoiceMessage(
-    senderId: string,
-    receiverId: string,
     mediaUrl: string,
     durationSeconds: number
   ): Promise<boolean> {
     try {
+      // Validate we have a user
+      if (!this.currentUser) {
+        throw new Error('No current user');
+      }
+
       // Determine context
       if (!this.currentChatContext) {
         throw new Error('No active chat');
       }
 
       let context: { applicationId: string } | { relationshipId: string };
+      let receiverId: string;
 
       if (this.currentChatContext === 'preMatch' && this.currentApplicationId) {
         context = { applicationId: this.currentApplicationId };
+        // Get receiver from current chat info
+        receiverId = this.currentChat?.partnerUser?.id || '';
       } else if (this.currentChatContext === 'relationship' && this.currentRelationshipId) {
         context = { relationshipId: this.currentRelationshipId };
+        // Get receiver from relationship (the other person)
+        const rel = this.currentRelationship;
+        receiverId = rel?.youth_id === this.currentUser ? rel?.elderly_id : rel?.youth_id || '';
       } else {
         throw new Error('Invalid chat context');
       }
 
+      if (!receiverId) {
+        throw new Error('Could not determine receiver');
+      }
+
       // ✅ Always use Service layer (MVVM compliance)
       const message = await communicationService.sendVoiceMessage(
-        senderId,
+        this.currentUser,
         receiverId,
         context,
         mediaUrl,

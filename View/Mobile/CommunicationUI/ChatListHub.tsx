@@ -30,12 +30,21 @@ export const ChatListHub = observer(function ChatListHub() {
       router.replace('/login');
       return;
     }
-    // Load active chats to determine user's stage
+    // Load active chats AND check for relationship
     vm.loadActiveChats();
+    vm.checkActiveRelationship();
   }, [currentUserId]);
 
-  // Show loading while checking user's chats
-  if (vm.isLoading && vm.activePreMatchChats.length === 0) {
+  // ✅ Handle relationship redirect in separate effect
+  useEffect(() => {
+    if (vm.hasActiveRelationship && vm.currentRelationship && vm.hasLoadedOnce) {
+      router.replace(`/(main)/chat?relationshipId=${vm.currentRelationship.id}`);
+    }
+  }, [vm.hasActiveRelationship, vm.currentRelationship, vm.hasLoadedOnce]);
+
+  // ✅ Show loading only when first loading (not loaded once yet)
+  // This prevents infinite loading when activePreMatchChats is empty
+  if (vm.isLoading && !vm.hasLoadedOnce) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#EB8F80" />
@@ -43,13 +52,7 @@ export const ChatListHub = observer(function ChatListHub() {
     );
   }
 
-  // TODO: When relationship stage is implemented, add logic here:
-  // if (user has active relationship in relationships table) {
-  //   return <RelationshipChatList />;
-  // }
-
-  // For now, always show PreMatchChatList
-  // This handles users in pre-match stage (applications with status='pre_chat_active')
+  // For users in pre-match stage (all chat-accessible statuses)
   return <PreMatchChatList />;
 });
 

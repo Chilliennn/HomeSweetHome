@@ -1,5 +1,7 @@
 import { makeAutoObservable, runInAction } from 'mobx';
 import { communicationService, type PreMatchChat } from '../../Model/Service/CoreService/communicationService';
+import { relationshipRepository, type Relationship } from '../../Model/Repository/UserRepository/relationshipRepository';
+import { messageRepository } from '../../Model/Repository/UserRepository/messageRepository';
 import type { Message } from '../../Model/types';
 import type { RealtimeChannel } from '@home-sweet-home/model';
 
@@ -44,6 +46,9 @@ export class CommunicationViewModel {
   /** Currently open chat info */
   currentChat: PreMatchChat | null = null;
 
+  /** Current relationship (if in relationship stage) */
+  currentRelationship: Relationship | null = null;
+
   /** Total unread message count across all chats */
   unreadCount = 0;
 
@@ -56,6 +61,12 @@ export class CommunicationViewModel {
   /**get current user and user type*/
   currentUser: string | null = null;
   currentUserType: 'youth' | 'elderly' | null = null;
+
+  /** Track if chats have been loaded at least once (prevent infinite loading) */
+  hasLoadedOnce = false;
+
+  /** Whether user has active relationship (for routing to bonding screen) */
+  hasActiveRelationship = false;
 
   /** Real-time subscription channel */
   private messageSubscription: ChannelType | null = null;
@@ -83,11 +94,13 @@ export class CommunicationViewModel {
         this.activePreMatchChats = chats;
         this.unreadCount = chats.reduce((sum, chat) => sum + chat.unreadCount, 0);
         this.isLoading = false;
+        this.hasLoadedOnce = true; // ✅ Mark as loaded
       });
     } catch (error) {
       runInAction(() => {
         this.errorMessage = error instanceof Error ? error.message : 'Failed to load chats';
         this.isLoading = false;
+        this.hasLoadedOnce = true; // ✅ Even on error, prevent infinite loading
       });
     }
   }
@@ -97,6 +110,31 @@ export class CommunicationViewModel {
    */
   async refreshChats(): Promise<void> {
     await this.loadActiveChats();
+  }
+
+  /**
+   * Check if user has active relationship
+   * Called by ChatListHub to determine routing
+   */
+  async checkActiveRelationship(): Promise<void> {
+    if (!this.currentUser) return;
+
+    try {
+      const relationship = await relationshipRepository.getActiveRelationshipByUserId(
+        this.currentUser
+      );
+
+      runInAction(() => {
+        this.hasActiveRelationship = relationship !== null;
+        this.currentRelationship = relationship;
+      });
+    } catch (error) {
+      console.error('[CommunicationViewModel] Error checking relationship:', error);
+      runInAction(() => {
+        this.hasActiveRelationship = false;
+        this.currentRelationship = null;
+      });
+    }
   }
 
   // =============================================================
@@ -163,8 +201,53 @@ export class CommunicationViewModel {
   }
 
   /**
+   * Open relationship chat
+   * For users who have both_accepted and established relationship
+   */
+  async openRelationshipChat(relationshipId: string): Promise<void> {
+    // Unsubscribe from previous chat if any
+    if (this.messageSubscription) {
+      communicationService.unsubscribe(this.messageSubscription);
+      this.messageSubscription = null;
+    }
+
+    this.isLoading = true;
+    this.errorMessage = null;
+    this.currentRelationshipId = relationshipId;
+    this.currentApplicationId = null;
+    this.currentChat = null;
+
+    try {
+      // Load relationship details
+      const relationship = await relationshipRepository.getRelationshipById(relationshipId);
+
+      // Load messages
+      const messages = await messageRepository.getMessagesByRelationship(relationshipId);
+
+      runInAction(() => {
+        this.currentRelationship = relationship;
+        this.currentChatMessages = messages;
+        this.currentChatContext = 'relationship';
+        this.isLoading = false;
+      });
+
+      // Mark messages as read
+      await messageRepository.markMessagesAsRead(this.currentUser!, undefined, relationshipId);
+
+      // Subscribe to real-time updates
+      this.subscribeToChat({ type: 'relationship', relationshipId });
+
+    } catch (error) {
+      runInAction(() => {
+        this.errorMessage = error instanceof Error ? error.message : 'Failed to load relationship chat';
+        this.isLoading = false;
+      });
+    }
+  }
+
+  /**
    * Send a text message
-   * UC101_6: Send text message in pre-match chat
+   * UC101_6: Send text message in pre-match or relationship chat
    */
   async sendTextMessage(
     senderId: string,
@@ -186,21 +269,12 @@ export class CommunicationViewModel {
         throw new Error('No active chat');
       }
 
-      let message: Message;
+      let context: { applicationId: string } | { relationshipId: string };
 
       if (this.currentChatContext === 'preMatch' && this.currentApplicationId) {
-        console.log('[CommunicationViewModel] Sending pre-match message');
-        message = await communicationService.sendTextMessage(
-          senderId,
-          receiverId,
-          this.currentApplicationId,
-          content
-        );
-        console.log('[CommunicationViewModel] Message sent successfully', message);
+        context = { applicationId: this.currentApplicationId };
       } else if (this.currentChatContext === 'relationship' && this.currentRelationshipId) {
-        // TODO: Implement relationship text message when relationship chat is added
-        console.error('[CommunicationViewModel] Relationship chat not implemented');
-        throw new Error('Relationship chat not yet implemented');
+        context = { relationshipId: this.currentRelationshipId };
       } else {
         console.error('[CommunicationViewModel] Invalid chat context', {
           context: this.currentChatContext,
@@ -210,10 +284,17 @@ export class CommunicationViewModel {
         throw new Error('Invalid chat context');
       }
 
+      // ✅ Always use Service layer (MVVM compliance)
+      const message = await communicationService.sendTextMessage(
+        senderId,
+        receiverId,
+        context,
+        content
+      );
+
       // Message will be added via real-time subscription
       // But add it immediately for optimistic UI update
       runInAction(() => {
-        // Check if message already exists (from subscription)
         const exists = this.currentChatMessages.some(m => m.id === message.id);
         if (!exists) {
           this.currentChatMessages.push(message);
@@ -246,22 +327,24 @@ export class CommunicationViewModel {
         throw new Error('No active chat');
       }
 
-      let message: Message;
+      let context: { applicationId: string } | { relationshipId: string };
 
       if (this.currentChatContext === 'preMatch' && this.currentApplicationId) {
-        message = await communicationService.sendVoiceMessage(
-          senderId,
-          receiverId,
-          this.currentApplicationId,
-          mediaUrl,
-          durationSeconds
-        );
+        context = { applicationId: this.currentApplicationId };
       } else if (this.currentChatContext === 'relationship' && this.currentRelationshipId) {
-        // TODO: Implement relationship voice message when relationship chat is added
-        throw new Error('Relationship chat not yet implemented');
+        context = { relationshipId: this.currentRelationshipId };
       } else {
         throw new Error('Invalid chat context');
       }
+
+      // ✅ Always use Service layer (MVVM compliance)
+      const message = await communicationService.sendVoiceMessage(
+        senderId,
+        receiverId,
+        context,
+        mediaUrl,
+        durationSeconds
+      );
 
       // Message will be added via real-time subscription
       runInAction(() => {

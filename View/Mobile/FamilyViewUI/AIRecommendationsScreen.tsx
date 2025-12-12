@@ -71,12 +71,9 @@ export const AIRecommendationsScreen = observer(() => {
     );
   };
 
-  const handleDismissRecommation = (suggestionId: string) => {
-    // For now, just reload the list
-    // In a full implementation, this could mark as dismissed
-    if (currentRelationship) {
-      familyViewModel.loadAIRecommendations(currentRelationship.id);
-    }
+  const handleDismissRecommation = async (suggestionId: string) => {
+    // Dismiss the recommendation (marks as used so it won't reappear)
+    await familyViewModel.dismissAIRecommendation(suggestionId);
   };
 
   return (

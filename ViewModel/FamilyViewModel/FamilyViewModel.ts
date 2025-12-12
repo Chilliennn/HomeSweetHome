@@ -1144,6 +1144,29 @@ export class FamilyViewModel {
   }
 
   /**
+   * Dismiss an AI recommendation
+   * Marks the suggestion as used so it won't reappear
+   * FR 3.4.7
+   */
+  async dismissAIRecommendation(suggestionId: string) {
+    try {
+      // Mark as used in database (dismissed suggestions are treated as used)
+      await familyService.useSuggestion(suggestionId);
+
+      // Remove from local state
+      runInAction(() => {
+        this.aiRecommendations = this.aiRecommendations.filter(
+          s => s.id !== suggestionId
+        );
+      });
+    } catch (error: any) {
+      runInAction(() => {
+        this.errorMessage = error.message || 'Failed to dismiss recommendation';
+      });
+    }
+  }
+
+  /**
    * Generate new AI recommendations
    * FR 3.4.2, 3.4.3
    */

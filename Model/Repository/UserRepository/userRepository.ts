@@ -394,6 +394,20 @@ export const userRepository = {
   },
 
   /**
+   * Count messages with media (photos/videos) for a relationship
+   */
+  async getMemoriesCount(relationshipId: string): Promise<number> {
+    const { count, error } = await supabase
+      .from("messages")
+      .select("*", { count: "exact", head: true })
+      .eq("relationship_id", relationshipId)
+      .not("media_url", "is", null);
+
+    if (error) throw error;
+    return count || 0;
+  },
+
+  /**
    * Set up realtime subscriptions for relationship and activities changes
    * Returns subscription objects that can be cleaned up later
    */

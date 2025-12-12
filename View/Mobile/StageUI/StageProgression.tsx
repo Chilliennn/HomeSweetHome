@@ -6,6 +6,9 @@ import {
   StyleSheet,
   ScrollView,
   RefreshControl,
+  Modal,
+  TextInput,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { observer } from "mobx-react-lite";
@@ -310,20 +313,42 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
           {/* Withdraw Modal - Inlined */}
           <Modal
             visible={vm.showWithdrawModal}
-            reason={vm.withdrawalReason}
-            onReasonChange={(text) => vm.setWithdrawalReason(text)}
-            onCancel={() => vm.closeWithdrawModal()}
-            onConfirm={async () => {
-              const success = await vm.submitWithdrawal();
-              if (success) {
-                router.push({
-                  pathname: "/(main)/journey-pause",
-                  params: { userId },
-                });
-              }
-            }}
-            isLoading={vm.isLoading}
-          />
+            transparent
+            animationType="slide"
+            onRequestClose={() => vm.closeWithdrawModal()}
+          >
+            <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "rgba(0,0,0,0.5)" }}>
+              <View style={{ width: "90%", backgroundColor: "#fff", borderRadius: 12, padding: 20 }}>
+                <Text style={{ fontSize: 18, fontWeight: "700", marginBottom: 12 }}>Withdraw request</Text>
+                <Text style={{ marginBottom: 8 }}>Reason</Text>
+                <TextInput
+                  value={vm.withdrawalReason}
+                  onChangeText={(text: string) => vm.setWithdrawalReason(text)}
+                  placeholder="Optional reason"
+                  style={{ borderWidth: 1, borderColor: "#eee", padding: 8, borderRadius: 8, marginBottom: 12 }}
+                />
+
+                <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 8 }}>
+                  <TouchableOpacity onPress={() => vm.closeWithdrawModal()} style={{ padding: 10 }}>
+                    <Text>Cancel</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    onPress={async () => {
+                      const success = await vm.submitWithdrawal();
+                      if (success) {
+                        router.push({ pathname: "/(main)/journey-pause", params: { userId } });
+                      }
+                    }}
+                    style={{ padding: 10, backgroundColor: "#EB8F80", borderRadius: 8 }}
+                    disabled={vm.isLoading}
+                  >
+                    {vm.isLoading ? <ActivityIndicator color="#fff" /> : <Text style={{ color: "#fff" }}>Confirm</Text>}
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          </Modal>
         </View>
       </SafeAreaView>
     );

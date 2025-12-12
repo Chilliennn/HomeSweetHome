@@ -5,6 +5,7 @@ import type {
   RelationshipStage,
   StageInfo,
   StageRequirement,
+  JourneyStats,
 } from "../../types";
 
 export class StageService {
@@ -49,6 +50,34 @@ export class StageService {
       currentStage: relationship.current_stage,
       relationshipId: relationship.id,
       metrics: relationship.stage_metrics,
+    };
+  }
+
+  async getJourneyStats(relationshipId: string): Promise<JourneyStats> {
+    const relationship = await userRepository.getAnyRelationship(
+      relationshipId
+    ); // Use getAny in case status changed
+    if (!relationship) throw new Error("Relationship not found");
+
+    const memoriesCount = await (userRepository as any).getMemoriesCount(
+      relationshipId
+    );
+
+    // Calculate days together
+    const startDate = new Date(
+      relationship.stage_start_date || relationship.created_at
+    );
+    const endDate = relationship.ended_at
+      ? new Date(relationship.ended_at)
+      : new Date();
+    const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
+    const daysTogether = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    return {
+      daysTogether: daysTogether,
+      videoCalls: relationship.stage_metrics.video_calls || 0,
+      homeVisits: relationship.stage_metrics.meetings || 0,
+      memories: memoriesCount,
     };
   }
 
@@ -187,7 +216,7 @@ export class StageService {
     return Math.round((completed / activities.length) * 100);
   }
 
-    async getUnreadNotificationCount(userId: string): Promise<number> {
+  async getUnreadNotificationCount(userId: string): Promise<number> {
     return await userRepository.getUnreadNotificationCount(userId);
   }
 
@@ -247,9 +276,11 @@ export class StageService {
     const diffTime = Math.abs(now.getTime() - startDate.getTime());
     const daysTogether = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-    console.debug(`[StageService] daysTogether computed=${daysTogether} for relationship ${relationship.id}`);
+    console.debug(
+      `[StageService] daysTogether computed=${daysTogether} for relationship ${relationship.id}`
+    );
 
-    // Get video call count from metrics 
+    // Get video call count from metrics
     const metrics = relationship.stage_metrics as any;
     const videoCallCount = metrics?.video_calls || 0;
 

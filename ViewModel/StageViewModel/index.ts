@@ -6,6 +6,7 @@ import type {
   RelationshipStage,
   StageInfo,
   StageRequirement,
+  JourneyStats,
 } from "../../Model/types/index";
 
 export class StageViewModel {
@@ -55,6 +56,8 @@ export class StageViewModel {
   shouldNavigateToStageCompleted: boolean = false;
   shouldNavigateToMilestone: boolean = false;
   shouldNavigateToJourneyPause: boolean = false;
+  isRefreshing: boolean = false;
+  journeyStats: JourneyStats | null = null;
 
   // Tracking state for realtime detection
   private previousStage: RelationshipStage | null = null;
@@ -246,6 +249,7 @@ export class StageViewModel {
       await this.loadMilestoneInfo();
       await this.loadCoolingPeriodInfo();
       await this.loadStageCompletionInfo();
+      await this.loadJourneyStats(); // Load journey stats on initialization
 
       if (this.relationshipId) {
         this.setupRealtimeSubscription(this.relationshipId);
@@ -405,6 +409,45 @@ export class StageViewModel {
       });
     } catch (err: any) {
       console.error("Error marking notifications read:", err);
+    }
+  }
+
+  async loadJourneyStats() {
+    if (!this.userId) return; // Use userId as currentUser is not defined
+
+    this.isLoading = true;
+    try {
+      // Assuming stageService has a method to get the current relationship by userId
+      // and then get journey stats for that relationship.
+      // The provided snippet uses `this.stageService.getCurrentRelationship(this.currentUser.id)`
+      // but `currentUser` is not defined and `stageService` is not `this.stageService`.
+      // I will adapt it to use the existing `stageService` import and `userId`.
+      // If `relationshipId` is already available, use that. Otherwise, fetch it.
+      let currentRelationshipId = this.relationshipId;
+      if (!currentRelationshipId) {
+        // This might be redundant if loadStageProgression is always called first
+        // and sets relationshipId. But for robustness, we can try to get it.
+        // However, stageService.getCurrentRelationship is not defined in the original code.
+        // I will assume `getJourneyStats` can take `userId` or `relationshipId` directly,
+        // or that `relationshipId` is guaranteed to be set by `loadStageProgression`.
+        // For now, I'll use `this.relationshipId` which should be set by `loadStageProgression`.
+        // If `getJourneyStats` requires `relationshipId`, and it's not set, this will fail.
+        // The original snippet implies fetching relationship first.
+        // Given the context, `this.relationshipId` should be available after `loadStageProgression`.
+      }
+
+      if (this.relationshipId) {
+        const stats = await stageService.getJourneyStats(this.relationshipId); // Assuming stageService has this method
+        runInAction(() => {
+          this.journeyStats = stats;
+        });
+      }
+    } catch (error) {
+      console.error("[StageViewModel] Failed to load journey stats", error);
+    } finally {
+      runInAction(() => {
+        this.isLoading = false;
+      });
     }
   }
 
@@ -846,3 +889,4 @@ export class StageViewModel {
 
 // Singleton instance
 export const stageViewModel = new StageViewModel();
+export const vm = stageViewModel;

@@ -21,25 +21,18 @@ export const ChatListHub = observer(function ChatListHub() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const vm = communicationViewModel;
-  const authVM = authViewModel;
 
-  const currentUserId = authVM.authState.currentUserId;
-  const currentUserType = authVM.userType;
+  const currentUserId = vm.currentUser;
+  const currentUserType = vm.currentUserType;
 
   useEffect(() => {
     if (!currentUserId || !currentUserType) {
       router.replace('/login');
       return;
     }
-
-    // Admin users don't have chats
-    if (currentUserType === 'admin') {
-      return;
-    }
-
     // Load active chats to determine user's stage
-    vm.loadActiveChats(currentUserId, currentUserType);
-  }, [currentUserId, currentUserType]);
+    vm.loadActiveChats();
+  }, [currentUserId]);
 
   // Show loading while checking user's chats
   if (vm.isLoading && vm.activePreMatchChats.length === 0) {

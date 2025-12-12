@@ -113,53 +113,32 @@ export const matchingRepository = {
 
     /**
      * Update interest status (Accept/Decline)
-     * UC101_9: Creates pre-match communication session when elderly accepts
+     * Repository ONLY handles database operations
+     * Business logic (welcome messages) moved to Service layer
      */
-    async updateInterestStatus(interestId: string, status: 'accepted' | 'declined'): Promise<void> {
-        
-        const updates: any = {
-            elderly_decision: status === 'accepted' ? 'accept' : 'decline',
-            reviewed_at: new Date().toISOString()
-        };
-
-        if (status === 'accepted') {
-            // If accepted, move to pre-chat
-            updates.status = 'pre_chat_active';
-        } else {
-            updates.status = 'rejected';
-        }
-        console.log('🔵 [Repo] updateInterestStatus', { interestId, status });
-        // Get application details before update (for welcome message)
-        const { data: application, error: fetchError } = await supabase
-            .from('applications')
-            .select('youth_id, elderly_id')
-            .eq('id', interestId)
-            .single();
-        console.log('🔵 [Repo] fetched application for welcome', { application, fetchError });
-        if (fetchError) {
-            console.log('🛑 [Repo] fetchError', fetchError);
-            throw fetchError;
-        }
+    async updateInterestStatus(
+        interestId: string,
+        elderlyDecision: 'accept' | 'decline',
+        newStatus: string
+    ): Promise<Interest> {
+        console.log('[Repo] updateInterestStatus', { interestId, elderlyDecision, newStatus });
 
         // Update application status
-        const { error } = await supabase
+        const { data, error } = await supabase
             .from('applications')
-            .update(updates)
-            .eq('id', interestId);
-        console.log('🔵 [Repo] update result', error);
+            .update({
+                elderly_decision: elderlyDecision,
+                status: newStatus,
+                reviewed_at: new Date().toISOString()
+            })
+            .eq('id', interestId)
+            .select('*, youth:youth_id(*), elderly:elderly_id(*)')
+            .single();
+
+        console.log('[Repo] update result', { data, error });
         if (error) throw error;
 
-        // UC101_9: Create welcome message when elderly accepts
-        if (status === 'accepted' && application) {
-            console.log('🔵 [Repo] calling communicationService.createWelcomeMessage');
-            // Import here to avoid circular dependency
-            const { communicationService } = await import('../../Service/CoreService/communicationService');
-            await communicationService.createWelcomeMessage(
-                interestId,
-                application.youth_id,
-                application.elderly_id
-            );
-        }
+        return data as Interest;
     },
 
     /**
@@ -183,7 +162,7 @@ export const matchingRepository = {
     subscribeToIncomingInterests(
         elderlyId: string,
         onInsert: (interest: Interest) => void
-    ) : RealtimeChannel{
+    ): RealtimeChannel {
         const channel = supabase
             .channel('incoming-requests-' + elderlyId)
             .on('postgres_changes', {
@@ -200,9 +179,9 @@ export const matchingRepository = {
             .subscribe();
         return channel;
     },
-     /**
-     * Subscribe to application updates for youth
-     */
+    /**
+    * Subscribe to application updates for youth
+    */
     subscribeToApplicationUpdates(
         youthId: string,
         onUpdate: (application: Interest) => void

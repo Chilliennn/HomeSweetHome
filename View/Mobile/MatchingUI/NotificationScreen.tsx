@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, FlatList, Alert } from 'react
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { observer } from 'mobx-react-lite';
-import { elderMatchingViewModel, youthMatchingViewModel, authViewModel } from '@home-sweet-home/viewmodel';
+import { elderMatchingViewModel, youthMatchingViewModel, matchingViewModel } from '@home-sweet-home/viewmodel';
 import { Card, Button, IconCircle, LoadingSpinner } from '@/components/ui';
 import { Colors } from '@/constants/theme';
 
@@ -21,25 +21,25 @@ const formatDate = (dateString: string) => {
 
 export const NotificationScreen = observer(() => {
     const router = useRouter();
-    
+
     // UC102_3: Track expanded state for each elderly notification
     const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
 
     // View Models
-    const authVM = authViewModel;
     const matchVM = elderMatchingViewModel;
     const youthVM = youthMatchingViewModel;
+    const rootMatchVM = matchingViewModel;
 
-    const currentUser = authVM.authState;
-    const isElderly = authVM.userType === 'elderly';
+    const currentUserId = rootMatchVM.currentUserId;
+    const isElderly = rootMatchVM.currentUserType === 'elderly';
 
     // Load notifications based on user type
     useEffect(() => {
-        if (currentUser.currentUserId) {
+        if (currentUserId) {
             if (isElderly) {
-                matchVM.loadRequests(currentUser.currentUserId);
+                matchVM.loadRequests(currentUserId);
             } else {
-                youthVM.loadNotifications(currentUser.currentUserId);
+                youthVM.loadNotifications(currentUserId);
             }
         }
         return () => {
@@ -49,11 +49,11 @@ export const NotificationScreen = observer(() => {
                 youthVM.dispose();
             }
         };
-    }, [isElderly, currentUser.currentUserId]);
+    }, [isElderly, currentUserId]);
 
     const handleAccept = async (reqId: string, youthId: string) => {
-        if (!currentUser.currentUserId) return;
-        await matchVM.respondToInterest(reqId, youthId, currentUser.currentUserId, true);
+        if (!currentUserId) return;
+        await matchVM.respondToInterest(reqId, youthId, currentUserId, true);
         console.log('[NotificationScreen] after respondToInterest', {
             successMessage: matchVM.successMessage,
             error: matchVM.error,
@@ -63,9 +63,9 @@ export const NotificationScreen = observer(() => {
     };
 
     const handleDecline = async (reqId: string, youthId: string) => {
-        if (!currentUser.currentUserId) return;
-        await matchVM.respondToInterest(reqId, youthId, currentUser.currentUserId, false);
-        
+        if (!currentUserId) return;
+        await matchVM.respondToInterest(reqId, youthId, currentUserId, false);
+
         if (matchVM.error) {
             Alert.alert('Error', matchVM.error);
         }
@@ -109,7 +109,7 @@ export const NotificationScreen = observer(() => {
         return (
             <Card style={styles.requestCard}>
                 {/* Header Section - Always Visible */}
-                <TouchableOpacity 
+                <TouchableOpacity
                     onPress={() => toggleExpanded(item.id)}
                     activeOpacity={0.8}
                 >
@@ -298,7 +298,7 @@ const styles = StyleSheet.create({
     name: { fontSize: 14, color: '#555', lineHeight: 20 },
     expandIcon: { fontSize: 14, color: '#999', marginLeft: 8 },
     boldText: { fontWeight: '600', color: '#333' },
-    
+
     // UC102_3: Expanded Content
     expandedContent: { paddingHorizontal: 16, paddingBottom: 16, borderTopWidth: 1, borderTopColor: '#F0F0F0' },
     profileSection: { flexDirection: 'row', alignItems: 'center', marginTop: 16, marginBottom: 16 },

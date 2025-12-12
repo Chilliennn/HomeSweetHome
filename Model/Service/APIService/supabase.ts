@@ -16,10 +16,11 @@ function getEnvVar(name: 'SUPABASE_URL' | 'SUPABASE_ANON_KEY'): string {
   }
 
   // 2.  Try process.env (for Node.js / React Native)
-  if (typeof process !== 'undefined' && process.env) {
-    const v = process.env[`EXPO_PUBLIC_${name}`] || process.env[`VITE_${name}`] || process.env[name] || '';
+  if (typeof globalThis !== 'undefined' && (globalThis as any).process?.env) {
+    const env = (globalThis as any).process.env;
+    const v = env[`EXPO_PUBLIC_${name}`] || env[`VITE_${name}`] || env[name] || '';
     if (v) {
-      console.log(`[env] found ${name} in process. env`);
+      console.log(`[env] found ${name} in process.env`);
       return v;
     }
   }
@@ -52,6 +53,6 @@ if (! supabaseUrl || !supabaseAnonKey) {
 }
 
 export const supabase = createClient(
-  supabaseUrl || 'https://placeholder.supabase. co',
+  supabaseUrl || 'https://placeholder.supabase.co',
   supabaseAnonKey || 'placeholder-key'
 );

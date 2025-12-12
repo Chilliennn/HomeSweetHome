@@ -1,26 +1,28 @@
 import React from 'react';
 import {
-    TouchableOpacity, // tap animation
-    Text,
-    StyleSheet, // create style objects
-    ActivityIndicator, // loading spinner
-    ViewStyle,
-    TextStyle,
+  TouchableOpacity, // tap animation
+  Text,
+  StyleSheet, // create style objects
+  ActivityIndicator, // loading spinner
+  ViewStyle,
+  TextStyle,
 } from 'react-native';
 
-type ButtonVariant = 'primary' | 'secondary' | 'outline'
+import { Colors } from '@/constants/theme';
+
+type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'destructive' | 'success';
 
 interface ButtonProps {
-    title: string;
-    onPress: () => void;
-    variant?: ButtonVariant;
-    disabled?: boolean;
-    loading?: boolean;
-    style?: ViewStyle;
-    textStyle?: TextStyle;
+  title: string;
+  onPress: () => void;
+  variant?: ButtonVariant;
+  disabled?: boolean;
+  loading?: boolean;
+  style?: ViewStyle;
+  textStyle?: TextStyle;
 }
 
-export const Button: React. FC<ButtonProps> = ({
+export const Button: React.FC<ButtonProps> = ({
   title,
   onPress,
   variant = 'primary',
@@ -38,7 +40,7 @@ export const Button: React. FC<ButtonProps> = ({
 
   const textStyles = [
     styles.text,
-    styles[`${variant}Text`],
+    styles[`${variant}Text` as keyof typeof styles],
     disabled && styles.disabledText,
     textStyle,
   ];
@@ -50,8 +52,8 @@ export const Button: React. FC<ButtonProps> = ({
       disabled={disabled || loading}
       activeOpacity={0.8}
     >
-      {loading ?  (
-        <ActivityIndicator color={variant === 'primary' ? '#FFF' : '#E89B8E'} />
+      {loading ? (
+        <ActivityIndicator color={variant === 'primary' || variant === 'destructive' || variant === 'success' ? '#FFF' : Colors.light.primary} />
       ) : (
         <Text style={textStyles}>{title}</Text>
       )}
@@ -70,15 +72,21 @@ const styles = StyleSheet.create({
   },
   // Variants
   primary: {
-    backgroundColor: '#E89B8E',
+    backgroundColor: Colors.light.primary,
   },
   secondary: {
-    backgroundColor: '#F0F0F0',
+    backgroundColor: Colors.light.surface,
   },
   outline: {
     backgroundColor: 'transparent',
     borderWidth: 2,
-    borderColor: '#E89B8E',
+    borderColor: Colors.light.primary,
+  },
+  destructive: {
+    backgroundColor: Colors.light.error,
+  },
+  success: {
+    backgroundColor: Colors.light.success,
   },
   // Text styles
   text: {
@@ -89,10 +97,16 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   secondaryText: {
-    color: '#333333',
+    color: Colors.light.text,
   },
   outlineText: {
-    color: '#E89B8E',
+    color: Colors.light.primary,
+  },
+  destructiveText: {
+    color: '#FFFFFF',
+  },
+  successText: {
+    color: '#333333',
   },
   // Disabled
   disabled: {

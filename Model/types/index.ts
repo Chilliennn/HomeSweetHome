@@ -1,5 +1,3 @@
-import { ReactNode } from 'react';
-
 // ============================================
 // USER TYPES
 // ============================================
@@ -73,6 +71,7 @@ export type CommunicationStyle =
 // APPLICATION TYPES
 // ============================================
 export type ApplicationStatus = 
+  | 'pending_interest'      
   | 'pending_ngo_review'
   | 'ngo_approved'
   | 'pre_chat_active'
@@ -211,6 +210,57 @@ export interface Message {
 }
 
 // ============================================
+// COMMUNICATION CAPABILITIES TYPES
+// ============================================
+/**
+ * Communication capabilities define what features are enabled
+ * for a given stage (pre-match, getting_to_know, trial_period, etc.)
+ * 
+ * This allows the Communication module to be reusable across stages
+ * by simply changing the capability configuration
+ */
+export interface CommunicationCapabilities {
+  // Messaging
+  canSendText: boolean;
+  canSendVoice: boolean;
+  canSendImage: boolean;
+  canSendVideo: boolean;
+  
+  // Calls
+  canVoiceCall: boolean;
+  canVideoCall: boolean;
+  
+  // Advanced features
+  canScheduleMeetings: boolean;
+  canShareDiary: boolean;
+  canShareGallery: boolean;
+  
+  // Limits (null = unlimited)
+  textMessageLimit?: number | null;         // chars per message
+  voiceMessageLimit?: number | null;        // seconds per message
+  dailyMessageLimit?: number | null;        // messages per day
+  
+  // Moderation
+  moderationEnabled: boolean;
+  autoBlockEnabled: boolean;
+}
+
+// ============================================
+// MODERATION TYPES
+// ============================================
+export type ModerationSeverity = 'safe' | 'warning' | 'blocked';
+export type ModerationAction = 'allow' | 'warn_user' | 'block_message' | 'report_admin';
+
+export interface ModerationResult {
+  isAllowed: boolean;
+  severity: ModerationSeverity;
+  reason?: string;
+  detectedIssues?: string[];
+  suggestedAction: ModerationAction;
+  adminNotificationRequired: boolean;
+}
+
+// ============================================
 // SAFETY TYPES
 // ============================================
 export type IncidentType = 
@@ -250,7 +300,19 @@ export type NotificationType =
   | 'calendar_reminder'
   | 'safety_alert'
   | 'admin_notice'
-  | 'application_update';
+  | 'application_update'
+  | 'new_interest'
+  | 'interest_accepted'
+  | 'interest_rejected'
+  | 'application_submitted'
+  | 'application_under_review'
+  | 'application_approved'
+  | 'application_rejected'
+  | 'pre_chat_ending_soon'
+  | 'relationship_accepted'
+  | 'relationship_ended'
+  | 'profile_viewed'
+  | 'platform_update';
 
 export interface Notification {
   id: string;
@@ -258,6 +320,8 @@ export interface Notification {
   type: NotificationType;
   title: string;
   message: string;
+  reference_id?: string;     
+  reference_table?: string;   
   is_read: boolean;
   created_at: string;
 }

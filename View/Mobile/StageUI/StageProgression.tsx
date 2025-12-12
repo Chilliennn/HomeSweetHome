@@ -13,7 +13,6 @@ import { useRouter } from "expo-router";
 import { stageViewModel } from "../../../ViewModel/StageViewModel";
 import { StageCircle } from "../components/ui/StageCircle";
 import { NotificationBell } from "../components/ui/NotificationBell";
-import { WithdrawButton } from "../components/ui/WithdrawButton";
 import { LoadingSpinner } from "../components/ui/LoadingSpinner";
 import { BottomTabBar, DEFAULT_TABS } from "../components/ui/BottomTabBar";
 interface StageProgressionScreenProps {
@@ -123,7 +122,7 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
             />
 
             <TouchableOpacity
-              style={styles.withdrawButton}
+              style={styles.withdrawButtonHeader}
               onPress={() => vm.openWithdrawModal()}
             >
               <Text style={styles.withdrawIcon}>⚠️</Text>
@@ -308,7 +307,8 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
             onTabPress={handleTabPress}
           />
 
-          <WithdrawButton
+          {/* Withdraw Modal - Inlined */}
+          <Modal
             visible={vm.showWithdrawModal}
             reason={vm.withdrawalReason}
             onReasonChange={(text) => vm.setWithdrawalReason(text)}
@@ -344,7 +344,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
   },
-  withdrawButton: {
+  withdrawButtonHeader: {
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 16,

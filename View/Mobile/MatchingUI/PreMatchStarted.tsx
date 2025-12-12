@@ -1,25 +1,17 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   View,
   Text,
   ScrollView,
   TouchableOpacity,
   StyleSheet,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter, useLocalSearchParams } from 'expo-router';
+import { observer } from 'mobx-react-lite';
+import { youthMatchingViewModel } from '@home-sweet-home/viewmodel';
 import { IconCircle, Card, Button, ChecklistItem } from '@/components/ui';
-
-// ============================================================================
-// TYPES
-// ============================================================================
-interface PreMatchStartedProps {
-  /** Name of the elderly who accepted */
-  elderlyName: string;
-  /** Called when back button is pressed */
-  onBack?: () => void;
-  /** Called when "Start Chatting" button is pressed */
-  onStartChatting?: () => void;
-}
 
 // ============================================================================
 // WHAT YOU CAN DO LIST
@@ -34,7 +26,7 @@ const ALLOWED_ACTIONS = [
 // COMPONENT
 // ============================================================================
 /**
- * PreMatchStarted - Confirmation screen shown when elderly accepts interest
+ * PreMatchStarted - UC101_5: Confirmation screen when elderly accepts interest
  * 
  * Features:
  * - Chat icon
@@ -44,31 +36,44 @@ const ALLOWED_ACTIONS = [
  * - Privacy notice
  * - Start Chatting button
  * 
- * ViewModel bindings needed:
- * - elderlyName: string (from matchingViewModel.selectedElderly.name)
- * - onStartChatting: () => void (navigates to chat)
- * 
- * Usage:
- * ```tsx
- * <PreMatchStarted
- *   elderlyName="Ah Ma Mei"
- *   onBack={() => navigation.goBack()}
- *   onStartChatting={() => navigateToChat(preMatchId)}
- * />
- * ```
+ * Architecture:
+ * - Full component with logic and UI
+ * - Uses youthMatchingViewModel for match data
+ * - Handles navigation to chat
  */
-export const PreMatchStarted: React.FC<PreMatchStartedProps> = ({
-  elderlyName,
-  onBack,
-  onStartChatting,
-}) => {
+export const PreMatchStarted = observer(function PreMatchStarted() {
+  const router = useRouter();
+  const params = useLocalSearchParams();
+  const vm = youthMatchingViewModel;
+  
+  const matchId = params.matchId as string;
+  
+  // UC101_5: Get match details from ViewModel
+  const match = matchId ? vm.getMatchById(matchId) : null;
+  const elderlyName = match?.elderly?.full_name || 'An Elderly';
+
+  useEffect(() => {
+    if (!matchId) {
+      Alert.alert('Error', 'No match information found');
+      router.back();
+    }
+  }, [matchId]);
+
+  // UC101_6: Navigate to chat screen with application ID
+  const handleStartChatting = () => {
+    router.push(`/(main)/chat?applicationId=${matchId}`);
+  };
+
+  if (!match) {
+    return null;
+  }
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       {/* Back Button */}
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.backButton}
-          onPress={onBack}
+          onPress={() => router.back()}
           activeOpacity={0.7}
         >
           <Text style={styles.backIcon}>←</Text>
@@ -135,7 +140,7 @@ export const PreMatchStarted: React.FC<PreMatchStartedProps> = ({
         {/* Start Chatting Button */}
         <TouchableOpacity
           style={styles.startButton}
-          onPress={onStartChatting}
+          onPress={handleStartChatting}
           activeOpacity={0.8}
         >
           <Text style={styles.startButtonText}>Start Chatting</Text>
@@ -143,7 +148,7 @@ export const PreMatchStarted: React.FC<PreMatchStartedProps> = ({
       </ScrollView>
     </SafeAreaView>
   );
-};
+});
 
 // ============================================================================
 // STYLES

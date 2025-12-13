@@ -62,6 +62,11 @@ export default function LoginScreen() {
           pathname: '/bonding',
           params: { userId: user.id, userName: user.full_name },
         });
+
+        router.replace({
+          pathname: '/(main)/bonding',
+          params: { userId: user.id, userName: user.full_name },
+        });
       } else {
         router.replace({
           pathname: '/matching',

@@ -3,7 +3,7 @@
   "main": "expo-router/entry",
   "version": "1.0.0",
   "scripts": {
-    "dev": "expo start",
+    "dev": "expo start --dev-client",
     "reset-project": "node ./scripts/reset-project. js",
     "android": "expo run:android",
     "ios": "expo run:ios",
@@ -24,6 +24,7 @@
     "@react-navigation/elements": "^2.6.3",
     "@react-navigation/native": "^7.1.8",
     "agora-react-native-rtm": "^2.2.6",
+    "dotenv": "^17.2.3", 
     "expo": "~54.0.25",
     "expo-camera": "~15.0.8",
     "expo-constants": "~18.0.10",

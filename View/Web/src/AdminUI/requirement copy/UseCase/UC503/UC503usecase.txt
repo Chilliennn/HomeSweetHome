@@ -1,0 +1,115 @@
+UC502:  HANDLE SAFETY ALERTS
+USE CASE NAME
+UC-502: HANDLE SAFETY ALERTS
+USE CASE DESCRIPTION
+This use case describes how admin receives and handles safety concern reports submitted by users through UC-401: Report Safety Concern
+PRE-CONDITION
+• User has submitted safety report via UC-401
+• Admin is available
+• Safety report exists in system
+POST-CONDITION
+Admin reviews report, takes appropriate action, actions are logged
+
+
+BASIC FLOW
+ADMIN
+SYSTEM
+ 
+ 
+ 
+ 
+ 
+1. System receives safety report from UC-401 [UC502_1]
+2. System analyzes report severity [C1: Severity Levels] [UC502_1]
+3. System notifies admin via UC-501 [M1: Msg Alert Admin] [UC502_2]
+4. System displays report in admin dashboard [UC502_3]
+
+
+
+
+5. Admin opens safety alerts dashboard [UC502_4]
+6. Admin selects report to review [UC502_4]
+ 
+ 
+ 
+
+
+ 
+ 
+7. System displays full report details [C2: Report Details] [UC502_3]
+
+8. Admin reviews report content and evidence [UC502_4]
+9. Admin decides action [A1: Issue Warning] [A2: Suspend User] [A3: Contact User] [A4: Dismiss Report]
+10. Admin takes action [UC502_5]
+
+
+
+
+11. System executes admin action [UC502_5]
+12. System logs action taken [UC502_6]
+13. System updates report status to "Resolved"
+14. Use case ends
+ALTERNATIVE FLOW
+A1: Issue Warning
+A1.1 Admin selects "Issue Warning" [UC502_5]
+A1.2 Admin enters warning message
+A1.3 System sends warning to reported user via UC-501 [M2: Msg Warning]
+A1.4 System logs warning [UC502_6]
+A1.5 Continue to step BF:13
+
+
+A2: Suspend User
+A2.1 Admin selects "Suspend User" [UC502_5]
+A2.2 Admin enters suspension reason and duration
+A2.3 System suspends user account [UC502_5]
+A2.4 System notifies user via UC-501 [M3: Msg Suspended]
+A2.5 System logs suspension [UC502_6]
+A2.6 Continue to step BF:13
+A3: Contact User
+A4.1 Admin selects "Contact User" [UC502_6]
+A4.2 Admin contacts user directly (phone/email)
+A4.3 Admin documents outcome
+A4.4 System logs contact details [UC502_7]
+A4.5 Continue to step BF:11
+A4: Dismiss Report
+A4.1 Admin determines report does not require action
+A4.2 Admin selects "Dismiss Report"
+A4.3 Admin enters dismissal reason
+A4.4 System marks report as "Dismissed" [UC502_6]
+A4.5 System logs dismissal reason
+A4.6 Continue to step BF:14
+MESSAGE
+M1: Msg Alert Admin = {Safety Alert, [User1] & [User2] triggered a keyword “[Keyword]”.}
+M2: Msg Warning = {We detected concerning behavior in your communications. Please review our Community Guidelines. Continued violations may result in account suspension.}
+M3: Msg Suspended = {Your account has been suspended due to safety concerns.}
+CONSTRAINT
+C1: Severity Levels
+  System auto-categorizes reports (from UC-401):
+Low: General feedback, minor issues
+Medium: Moderate concerns requiring attention
+High: Serious issues requiring prompt action
+Critical: Immediate danger, abuse, or severe conflict
+
+C2: Report Details
+Admin sees full report information:
+Report ID and timestamp
+Reporter information (name, age, stage)
+Report type (Positive Feedback or Safety Concern)
+Subject/title
+Description
+Evidence (images/documents attached)
+AI severity analysis
+Current status (Pending/In Review/Resolved/Dismissed)
+
+C3: Admin Actions
+Issue Warning: Send official warning message to user
+Suspend User: Temporarily block account (7/14/30 days or permanent)
+Contact User: Direct phone/email contact for follow-up
+Dismiss Report: Mark as not requiring action (with reason)
+
+C4: Response Time Requirements
+Critical: Admin must respond within 30 minutes
+High: Admin must respond within 2 hours
+Medium: Admin must respond within 24 hours
+Low: Admin must respond within 48 hours
+

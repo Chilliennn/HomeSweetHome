@@ -392,27 +392,36 @@ export const communicationService = {
       throw new Error(`Voice message too long (max ${VOICE_MAX_DURATION_SECONDS / 60} minutes)`);
     }
 
+    let message: Message;
+
     // Verify pre-match application if applicable
     if ('applicationId' in context) {
       await this.verifyActivePreMatch(context.applicationId, senderId);
 
-      return await messageRepository.sendMessage({
+      message = await messageRepository.sendMessage({
         senderId,
         receiverId,
         applicationId: context.applicationId,
         messageType: 'voice',
         mediaUrl,
+        callDurationMinutes: durationSeconds, // Save duration in seconds (field name is legacy)
       });
     } else {
       // Relationship voice message
-      return await messageRepository.sendMessage({
+      message = await messageRepository.sendMessage({
         senderId,
         receiverId,
         relationshipId: context.relationshipId,
         messageType: 'voice',
         mediaUrl,
+        callDurationMinutes: durationSeconds, // Save duration in seconds (field name is legacy)
       });
     }
+
+    // Call moderation placeholder (teammate will implement)
+    moderationService.handleVoiceMessageCreated(message);
+
+    return message;
   },
 
   /**

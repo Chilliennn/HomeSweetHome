@@ -20,7 +20,7 @@ import { IconCircle, ChatBubble } from '@/components/ui';
 import { Colors } from '@/constants/theme';
 import { useVoiceRecording } from '@/hooks/useVoiceRecording';
 import { useAudioPlayer } from '@/hooks/useAudioPlayer';
-import { uploadVoiceMessage } from '@home-sweet-home/model';
+import { useVoiceUpload } from '@/hooks/useVoiceUpload';
 
 /**
  * ChatScreen - UC104: Pre-match and relationship chat interface
@@ -51,9 +51,10 @@ export const ChatScreen = observer(function ChatScreen() {
   const [isSendingVoice, setIsSendingVoice] = useState(false);
   const keyboardHeight = useRef(new Animated.Value(0)).current;
 
-  // Voice recording and playback hooks
+  // Voice recording, playback, and upload hooks
   const { isRecording, duration: recordingDuration, startRecording, stopRecording, cancelRecording } = useVoiceRecording();
   const audioPlayer = useAudioPlayer();
+  const { uploadVoiceMessage } = useVoiceUpload();
 
   // Load chat on mount (pre-match or relationship)
   useEffect(() => {

@@ -1,0 +1,24 @@
+Technology Stack Strategy
+Our project adopts a Monorepo (Monolithic Repository) strategy. This approach allows us to maintain distinct user experiences for different platforms while maximizing code reusability for business logic.
+
+1.1 Frontend Strategy (UI Layer)
+We utilize a "Separated UI, Shared Logic" approach to ensure optimal User Experience (UX) for each stakeholder.
+
+Mobile Application (User Side): React Native (Expo)
+
+Target Actors: Elderly, Service Provider.
+
+Justification: React Native provides a near-native mobile experience essential for the Elderly (large text, gesture navigation, ease of use) and Service Providers (real-time notifications, mobile job management). We use Expo for rapid prototyping and easy access to native modules (Camera, Location).
+
+Web Admin Dashboard (Admin Side): React.js + Ant Design
+
+Target Actor: Admin.
+
+Justification: The Admin workflow involves reviewing complex data tables (eKYC verification) and managing content moderation. React.js combined with Ant Design (a desktop-first UI library) offers superior data grid capabilities, filtering, and information density compared to mobile-first frameworks like React Native Web.
+
+1.2 Backend & Infrastructure
+Supabase: Chosen as the primary backend-as-a-service (BaaS) for PostgreSQL Database, Authentication, and Realtime subscriptions.
+
+Google Gemini API: Utilized for Generative AI features, specifically Sentiment Analysis (safety filtering) and Topic Recommendation.
+
+ZegoCloud SDK: For integrated in-app video calling.

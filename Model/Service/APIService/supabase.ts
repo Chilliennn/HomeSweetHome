@@ -1,11 +1,14 @@
 import { createClient } from '@supabase/supabase-js';
 
+// Declare process for environments where it may not be defined (browser)
+declare var process: { env: Record<string, string | undefined> } | undefined;
+
 function getEnvVar(name: 'SUPABASE_URL' | 'SUPABASE_ANON_KEY'): string {
   // 1. Try Expo Constants (for React Native)
   try {
     // runtime require so bundlers don't parse web-only code
     // @ts-ignore
-    const Constants = require('expo-constants'). default;
+    const Constants = require('expo-constants').default;
     const val = Constants?.expoConfig?.extra?.[name] || Constants?.manifest?.extra?.[name];
     if (val) {
       console.log(`[env] found ${name} in expo extras`);
@@ -47,7 +50,7 @@ const supabaseAnonKey = getEnvVar('SUPABASE_ANON_KEY');
 
 console.log('[env] supabaseUrl present? ', !!supabaseUrl, 'anon present?', !!supabaseAnonKey);
 
-if (! supabaseUrl || !supabaseAnonKey) {
+if (!supabaseUrl || !supabaseAnonKey) {
   console.warn('⚠️ Supabase credentials not found.  Check your .env file.');
 }
 

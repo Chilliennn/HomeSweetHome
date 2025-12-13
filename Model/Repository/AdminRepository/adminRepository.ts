@@ -372,4 +372,198 @@ function mapRowToSafetyAlert(row: any): SafetyAlertWithProfiles {
 	};
 }
 
+// ============================================
+// CONSULTATION TYPES
+// ============================================
+
+export type ConsultationRequest = {
+	id: string;
+	requesterId: string;
+	requesterName: string;
+	requesterType: 'youth' | 'elderly';
+	requesterAge: number;
+	partnerName: string;
+	partnerAge: number;
+	consultationType: string;
+	preferredMethod: string;
+	preferredDateTime: string;
+	concernDescription: string;
+	status: 'pending_assignment' | 'assigned' | 'in_progress' | 'completed' | 'dismissed';
+	submittedAt: string;
+	urgency: 'low' | 'normal' | 'high';
+	relationshipStage: string;
+	relationshipDuration: string;
+	assignedAdvisorId: string | null;
+	assignedAdvisorName: string | null;
+};
+
+export type Advisor = {
+	id: string;
+	name: string;
+	specialization: string;
+	status: 'available' | 'busy' | 'offline';
+	currentWorkload: number;
+	languages: string[];
+};
+
+export type ConsultationStats = {
+	pendingAssignment: number;
+	assigned: number;
+	inProgress: number;
+	completedToday: number;
+	availableAdvisors: number;
+};
+
+// ============================================
+// CONSULTATION REPOSITORY METHODS
+// ============================================
+
+export const consultationRepository = {
+	async getConsultations(status?: string, urgency?: string, sortBy: 'newest' | 'oldest' = 'newest', limit = 50, offset = 0): Promise<ConsultationRequest[]> {
+		let query = supabase
+			.from('consultation_requests')
+			.select(`
+				*,
+				requester:users!requester_id(*),
+				partner:users!partner_id(*),
+				relationship:relationships(*),
+				advisor:advisors(*)
+			`)
+			.order('submitted_at', { ascending: sortBy === 'oldest' });
+
+		if (status && status !== 'all') query = query.eq('status', status);
+		if (urgency) query = query.eq('urgency', urgency);
+		if (limit) query = query.range(offset, offset + limit - 1);
+
+		const { data, error } = await query;
+		if (error) throw error;
+
+		return (data || []).map((row: any) => mapRowToConsultation(row));
+	},
+
+	async getConsultationById(id: string): Promise<ConsultationRequest | null> {
+		const { data, error } = await supabase
+			.from('consultation_requests')
+			.select(`
+				*,
+				requester:users!requester_id(*),
+				partner:users!partner_id(*),
+				relationship:relationships(*),
+				advisor:advisors(*)
+			`)
+			.eq('id', id)
+			.maybeSingle();
+
+		if (error) throw error;
+		if (!data) return null;
+		return mapRowToConsultation(data);
+	},
+
+	async getConsultationStats(): Promise<ConsultationStats> {
+		const today = new Date().toISOString().slice(0, 10);
+		const [pending, assigned, inProgress, completedToday, advisors] = await Promise.all([
+			supabase.from('consultation_requests').select('*', { count: 'exact', head: true }).eq('status', 'pending_assignment'),
+			supabase.from('consultation_requests').select('*', { count: 'exact', head: true }).eq('status', 'assigned'),
+			supabase.from('consultation_requests').select('*', { count: 'exact', head: true }).eq('status', 'in_progress'),
+			supabase.from('consultation_requests').select('*', { count: 'exact', head: true }).eq('status', 'completed').gte('completed_at', today),
+			supabase.from('advisors').select('*', { count: 'exact', head: true }).eq('status', 'available')
+		]);
+
+		return {
+			pendingAssignment: pending.count || 0,
+			assigned: assigned.count || 0,
+			inProgress: inProgress.count || 0,
+			completedToday: completedToday.count || 0,
+			availableAdvisors: advisors.count || 0
+		};
+	},
+
+	async getAdvisors(status?: string): Promise<Advisor[]> {
+		let query = supabase.from('advisors').select('*').order('name');
+		if (status) query = query.eq('status', status);
+
+		const { data, error } = await query;
+		if (error) throw error;
+
+		return (data || []).map((row: any) => ({
+			id: row.id,
+			name: row.name,
+			specialization: row.specialization || '',
+			status: row.status,
+			currentWorkload: row.current_workload || 0,
+			languages: row.languages || ['English']
+		}));
+	},
+
+	async assignAdvisor(consultationId: string, advisorId: string, adminId: string): Promise<void> {
+		const { error } = await supabase
+			.from('consultation_requests')
+			.update({ status: 'assigned', assigned_advisor_id: advisorId, assigned_at: new Date().toISOString(), assigned_by: adminId })
+			.eq('id', consultationId);
+		if (error) throw error;
+
+		// Update advisor workload (optional RPC, ignore errors if not available)
+		try {
+			await supabase.rpc('increment_advisor_workload', { advisor_id: advisorId });
+		} catch {
+			// RPC may not exist in database
+		}
+	},
+
+	async dismissRequest(consultationId: string, _adminId: string, reason: string): Promise<void> {
+		const { error } = await supabase
+			.from('consultation_requests')
+			.update({ status: 'dismissed', dismissed_reason: reason, updated_at: new Date().toISOString() })
+			.eq('id', consultationId);
+		if (error) throw error;
+	},
+
+	async completeRequest(consultationId: string, notes: string): Promise<void> {
+		const { error } = await supabase
+			.from('consultation_requests')
+			.update({ status: 'completed', resolution_notes: notes, completed_at: new Date().toISOString() })
+			.eq('id', consultationId);
+		if (error) throw error;
+	}
+};
+
+// Helper function to map database row to ConsultationRequest
+function mapRowToConsultation(row: any): ConsultationRequest {
+	const now = new Date();
+	const calculateAge = (dob: string | null): number => {
+		if (!dob) return 0;
+		const dobDate = new Date(dob);
+		let age = now.getFullYear() - dobDate.getFullYear();
+		if (now.getMonth() < dobDate.getMonth() || (now.getMonth() === dobDate.getMonth() && now.getDate() < dobDate.getDate())) age--;
+		return age;
+	};
+
+	let relationshipDuration = 'Unknown';
+	if (row.relationship?.created_at) {
+		const days = Math.floor((now.getTime() - new Date(row.relationship.created_at).getTime()) / (1000 * 60 * 60 * 24));
+		relationshipDuration = `${days} days`;
+	}
+
+	return {
+		id: row.id,
+		requesterId: row.requester_id,
+		requesterName: row.requester?.full_name || 'Unknown',
+		requesterType: row.requester?.user_type || 'elderly',
+		requesterAge: calculateAge(row.requester?.date_of_birth),
+		partnerName: row.partner?.full_name || 'Unknown',
+		partnerAge: calculateAge(row.partner?.date_of_birth),
+		consultationType: row.consultation_type,
+		preferredMethod: row.preferred_method || 'video_call',
+		preferredDateTime: row.preferred_datetime || '',
+		concernDescription: row.concern_description,
+		status: row.status,
+		submittedAt: row.submitted_at,
+		urgency: row.urgency || 'normal',
+		relationshipStage: row.relationship?.current_stage || 'Unknown',
+		relationshipDuration: relationshipDuration,
+		assignedAdvisorId: row.assigned_advisor_id,
+		assignedAdvisorName: row.advisor?.name || null
+	};
+}
+
 export default adminRepository;

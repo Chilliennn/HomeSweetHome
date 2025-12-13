@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { observer } from 'mobx-react-lite';
+import { consultationViewModel, safetyViewModel } from '@home-sweet-home/viewmodel';
 import { AdminLayout } from '../components/ui';
 import { ConsultationDashboard } from './ConsultationDashboard';
 import { ConsultationDetails } from './ConsultationDetails';
@@ -206,11 +208,21 @@ const safetyAlertsData = {
     urgentCount: 0,
 };
 
-const ReportPage: React.FC = () => {
+const ReportPage: React.FC = observer(() => {
     const [hoveredButton, setHoveredButton] = useState<string | null>(null);
     const [currentView, setCurrentView] = useState<'main' | 'consultations' | 'consultation-details' | 'safety-alerts' | 'safety-alert-details'>('main');
     const [selectedRequestId, setSelectedRequestId] = useState<string | null>(null);
     const [selectedAlertId, setSelectedAlertId] = useState<string | null>(null);
+
+    // Load stats on mount
+    useEffect(() => {
+        consultationViewModel.loadStats();
+        safetyViewModel.loadStats();
+    }, []);
+
+    // Get stats from ViewModels with fallback to 0
+    const consultationStats = consultationViewModel.stats;
+    const safetyStats = safetyViewModel.stats;
 
     // Handle tab change - resets view back to main when clicking Reports tab
     const handleTabChange = (tab: string) => {
@@ -439,6 +451,6 @@ const ReportPage: React.FC = () => {
             </div>
         </AdminLayout>
     );
-};
+});
 
 export default ReportPage;

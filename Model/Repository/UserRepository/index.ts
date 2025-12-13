@@ -4,4 +4,5 @@ export { Interest } from './matchingRepository';
 export { messageRepository } from './messageRepository';
 export { notificationRepository } from './notificationRepository';
 export { familyRepository } from './familyRepository';
+export { storageRepository } from './storageRepository';
 

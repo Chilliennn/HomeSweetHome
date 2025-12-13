@@ -1,8 +1,7 @@
 import { useEffect } from 'react';
 import { useRouter } from 'expo-router';
-import * as Notifications from 'expo-notifications';
 import { authViewModel } from '@home-sweet-home/viewmodel';
-import { pushNotificationService } from '@home-sweet-home/model';
+import { useNotificationSetup } from './useNotificationSetup';
 
 /**
  * useNotifications Hook
@@ -14,12 +13,13 @@ import { pushNotificationService } from '@home-sweet-home/model';
  * 
  * Architecture:
  * - View Layer: This hook (reusable logic)
- * - Service Layer: pushNotificationService (business logic)
+ * - Uses useNotificationSetup for platform-specific code
  * - No direct DB/Supabase access (follows MVVM rules)
  */
 export function useNotifications() {
   const router = useRouter();
   const currentUserId = authViewModel.authState.currentUserId;
+  const { registerForPushNotifications, setupNotificationListeners } = useNotificationSetup();
 
   useEffect(() => {
     // Don't setup notifications if user is not logged in
@@ -31,8 +31,7 @@ export function useNotifications() {
     console.log('🔵 [useNotifications] Initializing for user:', currentUserId);
 
     // 1. Register for push notifications
-    pushNotificationService
-      .registerForPushNotifications(currentUserId)
+    registerForPushNotifications(currentUserId)
       .then(token => {
         if (token) {
           console.log('✅ [useNotifications] Push token registered:', token);
@@ -45,7 +44,7 @@ export function useNotifications() {
       });
 
     // 2. Setup notification listeners
-    const cleanup = pushNotificationService.setupNotificationListeners(
+    const cleanup = setupNotificationListeners(
       // Handler: When notification received (app in foreground)
       (notification) => {
         console.log('📬 [useNotifications] Notification received:', {
@@ -55,21 +54,21 @@ export function useNotifications() {
         // The notification will be displayed automatically
         // Additional custom logic can be added here if needed
       },
-      
+
       // Handler: When notification tapped (user clicked on it)
       (response) => {
         const content = response.notification.request.content;
         const data = content.data as any;
-        
+
         console.log('👆 [useNotifications] Notification tapped:', {
           title: content.title,
           type: data?.type,
         });
-        
+
         // Navigate based on notification type
-        if (data?.type === 'new_interest' || 
-            data?.type === 'interest_accepted' || 
-            data?.type === 'interest_rejected') {
+        if (data?.type === 'new_interest' ||
+          data?.type === 'interest_accepted' ||
+          data?.type === 'interest_rejected') {
           console.log('🔀 [useNotifications] Navigating to notification screen');
           router.push('/(main)/notification');
         } else if (data?.type === 'new_message') {
@@ -84,5 +83,5 @@ export function useNotifications() {
       console.log('🔴 [useNotifications] Cleaning up');
       cleanup();
     };
-  }, [currentUserId, router]);
+  }, [currentUserId, router, registerForPushNotifications, setupNotificationListeners]);
 }

@@ -1,9 +1,0 @@
-先检查看\component\ui 有没有可以复用的component , 如果可以达到类似效果的就修改existing 的来达到类似的效果，如果没有才开一个新的component
-
-先不要code business logic （viewmodel, model）, 可以先放placeholder 在那里(可能用coment state 在那里应该需要有什么methods/ data binding methods/....)
-
-before coding 先读一遍 apRules.txt, qualityAttribute.txt, DBTable.txt, fileStructure.txt , 对我们的项目和我的要求有深刻的理解, 要确定你有读到不能忽略, 
-禁用中文in comment, comment 
-
-Do Comment: Legal notices, complex algorithms' rationale, business rules, framework bugs, unclear naming, links to references, future tasks (TODOs).
-

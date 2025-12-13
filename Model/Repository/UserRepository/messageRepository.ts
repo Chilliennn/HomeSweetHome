@@ -58,8 +58,9 @@ export const messageRepository = {
     messageType: MessageType;
     content?: string;
     mediaUrl?: string;
+    callDurationMinutes?: number; // Duration in SECONDS for voice messages
   }): Promise<Message> {
-    const { senderId, receiverId, applicationId, relationshipId, messageType, content, mediaUrl } = params;
+    const { senderId, receiverId, applicationId, relationshipId, messageType, content, mediaUrl, callDurationMinutes } = params;
 
     // Validate: Must have either applicationId OR relationshipId, not both
     if ((applicationId && relationshipId) || (!applicationId && !relationshipId)) {
@@ -76,6 +77,7 @@ export const messageRepository = {
         message_type: messageType,
         content: content || null,
         media_url: mediaUrl || null,
+        call_duration_minutes: callDurationMinutes || null,
         is_read: false,
         sent_at: new Date().toISOString(),
       })

@@ -14,7 +14,7 @@ import { Button } from '@/components/ui/Button';
 import { AlertBanner } from '@/components/ui/AlertBanner';
 import { Header } from '@/components/ui/Header';
 import { useRouter } from 'expo-router';
-import type { MoodType } from '@home-sweet-home/model';
+import type { MoodType, DiaryEntry } from '@home-sweet-home/model';
 
 const MOOD_OPTIONS: { value: MoodType; label: string; emoji: string }[] = [
   { value: 'happy', label: 'Happy', emoji: '😊' },
@@ -64,10 +64,11 @@ export const DiaryScreen = observer(() => {
     router.push('/family/diary/write');
   };
 
-  const handleSelectEntry = (entryId: string) => {
+  const handleSelectEntry = (entry: DiaryEntry) => {
+    familyViewModel.selectDiaryEntry(entry);
     router.push({
       pathname: '/family/diary/detail',
-      params: { entryId },
+      params: { entryId: entry.id },
     });
   };
 
@@ -86,7 +87,7 @@ export const DiaryScreen = observer(() => {
     return (
       <TouchableOpacity
         style={styles.entryCard}
-        onPress={() => handleSelectEntry(item.id)}
+        onPress={() => handleSelectEntry(item)}
       >
         <View style={styles.entryHeader}>
           <View>

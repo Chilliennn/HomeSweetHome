@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   StyleSheet,
@@ -6,6 +6,7 @@ import {
   TextInput,
   TouchableOpacity,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { observer } from 'mobx-react-lite';
 import { familyViewModel } from '@home-sweet-home/viewmodel';
@@ -14,6 +15,7 @@ import { Button } from '@/components/ui/Button';
 import { AlertBanner } from '@/components/ui/AlertBanner';
 import { Header } from '@/components/ui/Header';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { Audio } from 'expo-av';
 import type { MoodType } from '@home-sweet-home/model';
 
 const MOOD_OPTIONS: { value: MoodType; label: string; emoji: string }[] = [
@@ -37,19 +39,26 @@ export const DiaryDetailScreen = observer(() => {
   const router = useRouter();
   const { entryId } = useLocalSearchParams();
   const { selectedDiary, isEditingDiary, isLoading, errorMessage, successMessage } = familyViewModel;
+  const recordingRef = useRef<Audio.Recording | null>(null);
 
   const [editContent, setEditContent] = useState('');
   const [editMood, setEditMood] = useState<MoodType>('happy');
+  const [isRecording, setIsRecording] = useState(false);
+  const [isTranscribing, setIsTranscribing] = useState(false);
 
   // Load diary entry if not already selected
   useEffect(() => {
     const loadEntry = async () => {
-      if (!selectedDiary && entryId && typeof entryId === 'string') {
+      if (entryId && typeof entryId === 'string' && selectedDiary?.id !== entryId) {
         await familyViewModel.loadDiaryEntry(entryId);
       }
     };
     loadEntry();
-  }, [entryId, selectedDiary]);
+
+    return () => {
+      familyViewModel.selectDiaryEntry(null);
+    };
+  }, [entryId, selectedDiary?.id]);
 
   useEffect(() => {
     if (selectedDiary) {
@@ -84,6 +93,58 @@ export const DiaryDetailScreen = observer(() => {
       editContent,
       editMood
     );
+  };
+
+  const handleStartVoiceInput = async () => {
+    try {
+      const { status } = await Audio.requestPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Error', 'Permission denied to access microphone. Please enable microphone access in settings.');
+        return;
+      }
+
+      await Audio.setAudioModeAsync({
+        allowsRecordingIOS: true,
+        playsInSilentModeIOS: true,
+        staysActiveInBackground: false,
+        shouldDuckAndroid: true,
+        playThroughEarpiece: false,
+      });
+
+      const { recording } = await Audio.Recording.createAsync(
+        Audio.RecordingOptionsPresets.HIGH_QUALITY
+      );
+      recordingRef.current = recording;
+      setIsRecording(true);
+    } catch (error) {
+      console.error('Error starting voice recording:', error);
+      Alert.alert('Error', 'Failed to start voice recording. Please try again.');
+      setIsRecording(false);
+    }
+  };
+
+  const handleStopVoiceInput = async () => {
+    try {
+      if (!recordingRef.current) {
+        return;
+      }
+
+      setIsTranscribing(true);
+      await recordingRef.current.stopAndUnloadAsync();
+      const uri = recordingRef.current.getURI();
+      recordingRef.current = null;
+      setIsRecording(false);
+
+      if (uri) {
+        // Placeholder until speech-to-text is integrated.
+        setEditContent((prev) => prev + '\n[Voice note recorded - speech-to-text integration coming soon]');
+      }
+    } catch (error) {
+      console.error('Error stopping voice recording:', error);
+      Alert.alert('Error', 'Failed to process voice recording. Please try again.');
+    } finally {
+      setIsTranscribing(false);
+    }
   };
 
   const handleDelete = () => {
@@ -170,16 +231,54 @@ export const DiaryDetailScreen = observer(() => {
           <ThemedText style={styles.contentLabel}>Entry</ThemedText>
           {isEditingDiary ? (
             <View>
+              <View style={styles.inputMethodSection}>
+                <ThemedText style={styles.contentLabel}>Write or Record</ThemedText>
+                <View style={styles.inputMethodButtons}>
+                  <Button
+                    title="✏️ Text Input"
+                    onPress={() => {}}
+                    variant="primary"
+                  />
+                  {!isRecording ? (
+                    <Button
+                      title="🎤 Voice Input"
+                      onPress={handleStartVoiceInput}
+                      variant="outline"
+                      disabled={isTranscribing}
+                    />
+                  ) : (
+                    <Button
+                      title="⏹️ Stop Recording"
+                      onPress={handleStopVoiceInput}
+                      variant="primary"
+                      disabled={isTranscribing}
+                    />
+                  )}
+                </View>
+              </View>
               <TextInput
                 style={styles.editInput}
                 value={editContent}
                 onChangeText={setEditContent}
                 multiline
                 maxLength={10000}
+                editable={!isRecording}
               />
               <ThemedText style={styles.characterCount}>
                 {editContent.length}/10000
               </ThemedText>
+              {isRecording && (
+                <View style={styles.recordingStatus}>
+                  <ActivityIndicator size="small" color="#9DE2D0" />
+                  <ThemedText style={styles.recordingText}>Recording audio...</ThemedText>
+                </View>
+              )}
+              {isTranscribing && (
+                <View style={styles.recordingStatus}>
+                  <ActivityIndicator size="small" color="#9DE2D0" />
+                  <ThemedText style={styles.recordingText}>Processing recording...</ThemedText>
+                </View>
+              )}
             </View>
           ) : (
             <ThemedText style={styles.contentText}>{selectedDiary.content}</ThemedText>
@@ -326,5 +425,26 @@ const styles = StyleSheet.create({
   actionButtons: {
     gap: 12,
     marginVertical: 24,
+  },
+  inputMethodSection: {
+    marginBottom: 12,
+  },
+  inputMethodButtons: {
+    gap: 12,
+    marginTop: 4,
+  },
+  recordingStatus: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F0F8F6',
+    borderRadius: 8,
+    padding: 12,
+    marginTop: 8,
+    gap: 12,
+  },
+  recordingText: {
+    fontSize: 14,
+    color: '#11181C',
+    fontWeight: '500',
   },
 });

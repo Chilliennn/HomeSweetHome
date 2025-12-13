@@ -1,0 +1,468 @@
+-- ============================================
+-- HOME SWEET HOME DATABASE SCHEMA
+-- ============================================
+
+-- Enable UUID extension
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-- ============================================
+-- 1. USERS TABLE
+-- ============================================
+CREATE TABLE users (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_type TEXT CHECK (user_type IN ('youth', 'elderly', 'admin')) NOT NULL,
+  email TEXT UNIQUE NOT NULL,
+  phone TEXT,
+  full_name TEXT NOT NULL,
+  date_of_birth DATE NOT NULL,
+  gender TEXT CHECK (gender IN ('male', 'female')),
+  location TEXT,
+  languages TEXT[],
+  profile_photo_url TEXT,
+  verification_status TEXT CHECK (verification_status IN ('pending', 'verified', 'rejected')) DEFAULT 'pending',
+  is_active BOOLEAN DEFAULT TRUE,
+  profile_data JSONB, -- Youth/Elderly specific data
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- ============================================
+-- 2. APPLICATIONS TABLE
+-- ============================================
+CREATE TABLE applications (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  youth_id UUID REFERENCES users(id) ON DELETE CASCADE NOT NULL,
+  elderly_id UUID REFERENCES users(id) ON DELETE CASCADE NOT NULL,
+  motivation_letter TEXT NOT NULL,
+  status TEXT CHECK (status IN ('pending_ngo_review', 'ngo_approved', 'pre_chat_active', 
+                                 'both_accepted', 'rejected', 'withdrawn')) DEFAULT 'pending_ngo_review',
+  ngo_reviewer_id UUID REFERENCES users(id),
+  ngo_notes TEXT,
+  youth_decision TEXT CHECK (youth_decision IN ('pending', 'accept', 'decline')) DEFAULT 'pending',
+  elderly_decision TEXT CHECK (elderly_decision IN ('pending', 'accept', 'decline')) DEFAULT 'pending',
+  applied_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  reviewed_at TIMESTAMP WITH TIME ZONE
+);
+
+-- ============================================
+-- 3. RELATIONSHIPS TABLE
+-- ============================================
+CREATE TABLE relationships (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  youth_id UUID REFERENCES users(id) ON DELETE CASCADE NOT NULL,
+  elderly_id UUID REFERENCES users(id) ON DELETE CASCADE NOT NULL,
+  application_id UUID REFERENCES applications(id) ON DELETE CASCADE NOT NULL,
+  current_stage TEXT CHECK (current_stage IN ('getting_to_know', 'trial_period', 
+                                                'official_ceremony', 'family_life')) DEFAULT 'getting_to_know',
+  stage_start_date TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  stage_metrics JSONB DEFAULT '{"message_count": 0, "active_days": 0, "video_calls": 0, "meetings": 0, "progress_percentage": 0, "requirements_met": false}',
+  status TEXT CHECK (status IN ('active', 'paused', 'ended')) DEFAULT 'active',
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  family_name TEXT,
+  ceremony_date DATE,
+  certificate_url TEXT,
+  end_request_status TEXT CHECK (end_request_status IN ('none', 'pending_cooldown', 
+                                                          'under_review', 'approved', 'rejected')) DEFAULT 'none',
+  end_request_by UUID REFERENCES users(id),
+  end_request_reason TEXT,
+  end_request_at TIMESTAMP WITH TIME ZONE,
+  end_admin_notes TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  ended_at TIMESTAMP WITH TIME ZONE
+);
+
+-- ============================================
+-- 4. MESSAGES TABLE
+-- ============================================
+CREATE TABLE messages (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  sender_id UUID REFERENCES users(id) ON DELETE CASCADE NOT NULL,
+  receiver_id UUID REFERENCES users(id) ON DELETE CASCADE NOT NULL,
+  application_id UUID REFERENCES applications(id) ON DELETE CASCADE,
+  relationship_id UUID REFERENCES relationships(id) ON DELETE CASCADE,
+  message_type TEXT CHECK (message_type IN ('text', 'voice', 'image', 'video', 'video_call')) NOT NULL,
+  content TEXT,
+  media_url TEXT,
+  call_duration_minutes INTEGER,
+  is_read BOOLEAN DEFAULT FALSE,
+  sent_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  CHECK (
+    (application_id IS NOT NULL AND relationship_id IS NULL) OR 
+    (application_id IS NULL AND relationship_id IS NOT NULL)
+  )
+);
+
+-- ============================================
+-- 5. MEDIA TABLE
+-- ============================================
+CREATE TABLE media (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  uploader_id UUID REFERENCES users(id) ON DELETE CASCADE NOT NULL,
+  relationship_id UUID REFERENCES relationships(id) ON DELETE CASCADE NOT NULL,
+  media_type TEXT CHECK (media_type IN ('photo', 'voice', 'video', 'document')) NOT NULL,
+  media_category TEXT CHECK (media_category IN ('family_album', 'diary_attachment', 
+                                                  'chat_media', 'other')) NOT NULL,
+  file_url TEXT NOT NULL,
+  caption TEXT,
+  tags TEXT[],
+  uploaded_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- ============================================
+-- 6. CALENDAR_EVENTS TABLE
+-- ============================================
+CREATE TABLE calendar_events (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  relationship_id UUID REFERENCES relationships(id) ON DELETE CASCADE NOT NULL,
+  creator_id UUID REFERENCES users(id) ON DELETE CASCADE NOT NULL,
+  title TEXT NOT NULL,
+  description TEXT,
+  event_type TEXT CHECK (event_type IN ('meetup', 'birthday', 'anniversary', 
+                                         'activity', 'other')) NOT NULL,
+  event_date DATE NOT NULL,
+  event_time TIME,
+  location TEXT,
+  reminder_sent BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- ============================================
+-- 7. DIARY_ENTRIES TABLE
+-- ============================================
+CREATE TABLE diary_entries (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID REFERENCES users(id) ON DELETE CASCADE NOT NULL,
+  relationship_id UUID REFERENCES relationships(id) ON DELETE CASCADE NOT NULL,
+  content TEXT,
+  mood TEXT CHECK (mood IN ('happy', 'sad', 'neutral', 'excited', 'anxious', 'grateful')),
+  is_private BOOLEAN DEFAULT TRUE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- ============================================
+-- 8. AI_SUGGESTIONS TABLE
+-- ============================================
+CREATE TABLE ai_suggestions (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  relationship_id UUID REFERENCES relationships(id) ON DELETE CASCADE NOT NULL,
+  suggestion_type TEXT CHECK (suggestion_type IN ('activity', 'conversation_topic')) NOT NULL,
+  activity_title TEXT,
+  activity_description TEXT,
+  topic_text TEXT,
+  topic_for_stage TEXT CHECK (topic_for_stage IN ('getting_to_know', 'trial_period', 
+                                                    'official_ceremony', 'family_life')),
+  is_used BOOLEAN DEFAULT FALSE,
+  generated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- ============================================
+-- 9. SAFETY_INCIDENTS TABLE
+-- ============================================
+CREATE TABLE safety_incidents (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  relationship_id UUID REFERENCES relationships(id) ON DELETE CASCADE NOT NULL,
+  reporter_id UUID REFERENCES users(id) ON DELETE SET NULL,
+  reported_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+  incident_type TEXT CHECK (incident_type IN ('financial_request', 'negative_sentiment', 
+                                               'harassment', 'abuse', 'inappropriate_content', 
+                                               'other')) NOT NULL,
+  severity TEXT CHECK (severity IN ('low', 'medium', 'high', 'critical')) NOT NULL,
+  description TEXT NOT NULL,
+  evidence JSONB,
+  status TEXT CHECK (status IN ('new', 'under_review', 'resolved', 'false_positive')) DEFAULT 'new',
+  assigned_admin_id UUID REFERENCES users(id) ON DELETE SET NULL,
+  admin_notes TEXT,
+  admin_action_taken TEXT,
+  detected_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  resolved_at TIMESTAMP WITH TIME ZONE
+);
+
+-- ============================================
+-- 10. NOTIFICATIONS TABLE
+-- ============================================
+CREATE TABLE notifications (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID REFERENCES users(id) ON DELETE CASCADE NOT NULL,
+  type TEXT CHECK (type IN ('stage_milestone', 'new_message', 'calendar_reminder', 
+                            'safety_alert', 'admin_notice', 'application_update')) NOT NULL,
+  title TEXT NOT NULL,
+  message TEXT NOT NULL,
+  is_read BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- ============================================
+-- CREATE INDEXES FOR PERFORMANCE
+-- ============================================
+CREATE INDEX idx_users_email ON users(email);
+CREATE INDEX idx_users_type ON users(user_type);
+CREATE INDEX idx_applications_youth ON applications(youth_id);
+CREATE INDEX idx_applications_elderly ON applications(elderly_id);
+CREATE INDEX idx_applications_status ON applications(status);
+CREATE INDEX idx_relationships_youth ON relationships(youth_id);
+CREATE INDEX idx_relationships_elderly ON relationships(elderly_id);
+CREATE INDEX idx_relationships_status ON relationships(status);
+CREATE INDEX idx_messages_relationship ON messages(relationship_id, sent_at DESC);
+CREATE INDEX idx_messages_application ON messages(application_id, sent_at DESC);
+CREATE INDEX idx_safety_incidents_status ON safety_incidents(status, severity);
+CREATE INDEX idx_notifications_user_unread ON notifications(user_id, is_read);
+
+-- ============================================
+-- CREATE UPDATED_AT TRIGGER FUNCTION
+-- ============================================
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER update_users_updated_at
+BEFORE UPDATE ON users
+FOR EACH ROW
+EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_relationships_updated_at
+BEFORE UPDATE ON relationships
+FOR EACH ROW
+EXECUTE FUNCTION update_updated_at_column();
+
+// change for prematch
+ALTER TABLE applications DROP CONSTRAINT applications_status_check;
+ALTER TABLE applications ADD CONSTRAINT applications_status_check 
+CHECK (status IN ('pending_interest', 'pending_ngo_review', 'ngo_approved', 'pre_chat_active', 'both_accepted', 'rejected', 'withdrawn'));
+
+-- ============================================
+-- UPDATED NOTIFICATION TABLE
+-- ============================================
+
+ALTER TABLE notifications 
+ADD COLUMN IF NOT EXISTS reference_id UUID,
+ADD COLUMN IF NOT EXISTS reference_table TEXT;
+
+CREATE INDEX IF NOT EXISTS idx_notifications_reference 
+ON notifications(reference_id, reference_table);
+
+ALTER TABLE notifications DROP CONSTRAINT IF EXISTS notifications_type_check;
+ALTER TABLE notifications ADD CONSTRAINT notifications_type_check 
+CHECK (type IN (
+    'stage_milestone', 
+    'new_message', 
+    'calendar_reminder', 
+    'safety_alert', 
+    'admin_notice', 
+    'application_update',
+    'new_interest',
+    'interest_accepted',
+    'interest_rejected',
+    'application_submitted',
+    'application_under_review',
+    'application_approved',
+    'application_rejected',
+    'pre_chat_ending_soon',
+    'relationship_accepted',
+    'relationship_ended',
+    'profile_viewed',
+    'platform_update'
+));
+-- ============================================
+-- NOTIFICATION TRIGGERS (Updated with Push Notifications)
+-- ============================================
+
+-- 1. Helper function to create notifications
+CREATE OR REPLACE FUNCTION create_notification(
+    p_user_id UUID,
+    p_type TEXT,
+    p_title TEXT,
+    p_message TEXT,
+    p_reference_id UUID DEFAULT NULL,
+    p_reference_table TEXT DEFAULT NULL
+) RETURNS void AS $$
+BEGIN
+    INSERT INTO notifications (
+        user_id,
+        type,
+        title,
+        message,
+        reference_id,
+        reference_table,
+        is_read,
+        created_at
+    ) VALUES (
+        p_user_id,
+        p_type,
+        p_title,
+        p_message,
+        p_reference_id,
+        p_reference_table,
+        false,
+        NOW()
+    );
+END;
+$$ LANGUAGE plpgsql;
+
+-- 2. Applications table trigger function
+CREATE OR REPLACE FUNCTION handle_application_notifications()
+RETURNS TRIGGER AS $$
+DECLARE
+    youth_name TEXT;
+    elderly_name TEXT;
+BEGIN
+    -- Get user names
+    SELECT full_name INTO youth_name 
+    FROM users 
+    WHERE id = NEW.youth_id;
+    
+    SELECT full_name INTO elderly_name 
+    FROM users 
+    WHERE id = NEW.elderly_id;
+
+    -- INSERT events
+    IF TG_OP = 'INSERT' THEN
+        
+        -- Case 1: Youth express interest
+        IF NEW.status = 'pending_interest' THEN
+            -- Create in-app notification
+            PERFORM create_notification(
+                NEW.elderly_id,
+                'new_interest',
+                'New Interest! 🎉',
+                youth_name || ' is interested in connecting with you',
+                NEW.id,
+                'applications'
+            );
+        
+        -- Case 2: Youth submit formal application
+        ELSIF NEW.status = 'pending_ngo_review' THEN
+            PERFORM create_notification(
+                NEW.elderly_id,
+                'application_submitted',
+                'New Application Submitted 📝',
+                youth_name || ' has submitted a formal application',
+                NEW.id,
+                'applications'
+            );
+        END IF;
+    
+    -- UPDATE events
+    ELSIF TG_OP = 'UPDATE' THEN
+        
+        -- Case 3: Elderly responds to interest
+        IF OLD.elderly_decision = 'pending' AND NEW.elderly_decision != 'pending' THEN
+            IF NEW.elderly_decision = 'accept' THEN
+                -- Create in-app notification
+                PERFORM create_notification(
+                    NEW.youth_id,
+                    'interest_accepted',
+                    'Match Started! ✨',
+                    elderly_name || ' accepted your interest. You can now chat!',
+                    NEW.id,
+                    'applications'
+                );
+                
+            ELSE
+                -- Rejected
+                PERFORM create_notification(
+                    NEW.youth_id,
+                    'interest_rejected',
+                    'Request Declined',
+                    elderly_name || ' declined your request',
+                    NEW.id,
+                    'applications'
+                );
+            END IF;
+        END IF;
+        
+        -- Case 4: Pre-chat becomes active
+        IF OLD.status != 'pre_chat_active' AND NEW.status = 'pre_chat_active' THEN
+            PERFORM create_notification(
+                NEW.youth_id,
+                'relationship_accepted',
+                'Connection Established! 🎊',
+                'You can now chat with ' || elderly_name,
+                NEW.id,
+                'applications'
+            );
+            
+            PERFORM create_notification(
+                NEW.elderly_id,
+                'relationship_accepted',
+                'Connection Established! 🎊',
+                'You can now chat with ' || youth_name,
+                NEW.id,
+                'applications'
+            );
+        END IF;
+        
+    END IF;
+    
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- 3. Messages table trigger function
+CREATE OR REPLACE FUNCTION handle_message_notifications()
+RETURNS TRIGGER AS $$
+DECLARE
+    sender_name TEXT;
+    recipient_id UUID;
+BEGIN
+    IF TG_OP = 'INSERT' THEN
+        -- Get sender name
+        SELECT full_name INTO sender_name 
+        FROM users 
+        WHERE id = NEW.sender_id;
+        
+        -- Get recipient ID based on context (application or relationship)
+        IF NEW.application_id IS NOT NULL THEN
+            -- Pre-match message
+            SELECT CASE 
+                WHEN NEW.sender_id = app.youth_id THEN app.elderly_id
+                ELSE app.youth_id
+            END INTO recipient_id
+            FROM applications app
+            WHERE app.id = NEW.application_id;
+        ELSIF NEW.relationship_id IS NOT NULL THEN
+            -- Relationship message
+            SELECT CASE 
+                WHEN NEW.sender_id = rel.youth_id THEN rel.elderly_id
+                ELSE rel.youth_id
+            END INTO recipient_id
+            FROM relationships rel
+            WHERE rel.id = NEW.relationship_id;
+        END IF;
+        
+        -- Only create notification if we found a valid recipient
+        IF recipient_id IS NOT NULL THEN
+            PERFORM create_notification(
+                recipient_id,
+                'new_message',
+                'New Message 💬',
+                sender_name || ' sent you a message',
+                NEW.id,
+                'messages'
+            );
+        END IF;
+    END IF;
+    
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- 4. Drop old triggers
+DROP TRIGGER IF EXISTS trigger_notify_elderly ON applications;
+DROP TRIGGER IF EXISTS trigger_notify_youth ON applications;
+DROP TRIGGER IF EXISTS trigger_application_notifications ON applications;
+DROP TRIGGER IF EXISTS trigger_message_notifications ON messages;
+
+-- 5. Create new triggers
+CREATE TRIGGER trigger_application_notifications
+AFTER INSERT OR UPDATE ON applications
+FOR EACH ROW
+EXECUTE FUNCTION handle_application_notifications();
+
+CREATE TRIGGER trigger_message_notifications
+AFTER INSERT ON messages
+FOR EACH ROW
+EXECUTE FUNCTION handle_message_notifications();

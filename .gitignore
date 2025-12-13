@@ -299,7 +299,7 @@ buck-out/
 .fakebuckversion
 
 ### reference folder ###
-requirement/
-requirement copy/
+#requirement/
+#requirement copy/
 
 # End of https://www.toptal.com/developers/gitignore/api/react,reactnative,nextjs

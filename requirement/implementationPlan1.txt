@@ -1,0 +1,110 @@
+UC101 & UC102 Implementation Plan
+Goal Description
+Implement the business logic and data layer for UC101 (Browse Elderly Profiles) and UC102 (Decide Youth Application). This plan follows a strict MVVM architecture with a Service layer for business rules.
+
+User Review Required
+IMPORTANT
+
+Architecture Refinement:
+
+Service Layer Authority: All business logic (limits, notifications, state changes) resides in matchingService. ViewModels must call Service methods, never Repository directly.
+State Separation: YouthMatchingViewModel and ElderMatchingViewModel manage distinct creation/consumption flows.
+Proposed Changes
+Model Layer (Service & Repository)
+[NEW] 
+matchingService.ts
+Encapsulates business rules for UC101/UC102.
+
+checkPreMatchLimit(userId, userType): Promise<boolean> (Checks C1/C2 constraints)
+canStartPreMatch(youthId, elderlyId): Promise<checkResult> (Validates both parties' limits)
+expressInterest(youthId, elderlyId):
+Creates interest record via Repository.
+Sends notification to Elderly.
+createPreMatchSession(youthId, elderlyId):
+UC102_5 / UC104_1: Creates a pre-match communication session (not official relationship yet).
+Sets status to "PreMatch".
+Enables chat functionality.
+processApplicationDecision(appId, approved, reason?):
+If approved by elderly and confirmed by youth → update relationship to Stage 1 (Official).
+If rejected → store reason and update application status accordingly.
+[NEW] 
+matchingRepository.ts
+Responsible for raw data access.
+
+getAvailableElderlyProfiles(filters)
+getIncomingInterests(elderlyId)
+getIncomingApplications(elderlyId)
+updateInterestStatus(interestId, status)
+upsertRelationship(relationshipData)
+ViewModel Layer (Split)
+[NEW] 
+YouthMatchingViewModel.ts
+Handles UC101 (Youth Perspective).
+
+State: profiles, filters, isExpressingInterest
+Actions:
+loadProfiles()
+expressInterest(elderlyId):
+Call matchingService.checkPreMatchLimit(youthId).
+If limit reached -> Show Error (UC101_6).
+Else -> Call matchingService.expressInterest(youthId, elderlyId).
+On Success: Usage feedback (e.g., "Interest Sent") and refresh local state.
+[NEW] 
+ElderMatchingViewModel.ts
+Handles UC102 (Elderly Perspective).
+
+State: incomingRequests, pendingApplications
+Actions:
+loadRequests()
+respondToInterest(requestId, youthId, accept):
+If accept:
+Call matchingService.canStartPreMatch(youthId, currentElderId).
+If limit reached (Either Youth or Elder) -> Show specific error (C1/C2) and optionally mark request as unavailable.
+If ok -> Call matchingService.createPreMatchSession(youthId, currentElderId).
+Refresh incomingRequests list.
+decideApplication(appId, accept, reason)
+View Layer (Wiring)
+NOTE
+
+All screens bind to the corresponding ViewModel state and call ViewModel actions only. They never access matchingRepository or matchingService directly.
+
+[MODIFY] 
+BrowseElderly.tsx
+Use YouthMatchingViewModel.
+[MODIFY] 
+ElderlyHome.tsx
+Use ElderMatchingViewModel to show pending request counts.
+[NEW] 
+IncomingRequests.tsx
+List requests using ElderMatchingViewModel.incomingRequests.
+[NEW] 
+YouthProfileDetail.tsx
+Display Youth details.
+Bind "Accept" button to ElderMatchingViewModel.respondToInterest.
+[NEW] 
+ReviewApplication.tsx
+Bind "Approve" button to ElderMatchingViewModel.decideApplication.
+Verification Plan
+Service Tests: Verify checkPreMatchLimit returns false when active matches >= limit (3 for Youth, 5 for Elderly).
+Integration Test (Youth): Youth expresses interest -> Service check -> Repository insert -> Success UI.
+Integration Test (Elder): Elderly accepts interest -> Service checks limits -> Pre-match active -> Chat enabled.
+Elder Limit Scenario: When Elder A tries to accept a pre-match that exceeds the limit (e.g., 6th active chat), matchingService.canStartPreMatch must return "limit reached" and ElderMatchingViewModel should show an explanatory error.
+Implementation Steps
+Create Model Layer:
+Create matchingRepository.ts (Data Access).
+Create matchingService.ts (Business Logic).
+Create ViewModel Layer:
+Create YouthMatchingViewModel.ts.
+Create ElderMatchingViewModel.ts.
+Create/Update View Layer:
+Update 
+BrowseElderly.tsx
+ (Wire to YouthVM).
+Create IncomingRequests.tsx (Wire to ElderVM).
+Create YouthProfileDetail.tsx.
+Create ReviewApplication.tsx.
+Update 
+ElderlyHome.tsx
+.
+Integration:
+Ensure UI feedback loops (notifications/toasts) are connected to ViewModel state changes.

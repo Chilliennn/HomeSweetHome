@@ -9,6 +9,6 @@ import { Redirect } from 'expo-router';
  */
 export default function Index() {
   // debug purpose: 
-  // return <Redirect href="/(auth)/profile-setup" />;
+  //return <Redirect href="/(auth)/profile-setup" />;
   return <Redirect href="/(auth)/login" />;
 }

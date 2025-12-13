@@ -2,8 +2,8 @@ import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
-
-import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useColorScheme } from '../hooks/use-color-scheme';
+import { useNotifications } from '../hooks/useNotifications';
 
 /**
  * Root Layout
@@ -14,6 +14,9 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
  */
 export default function RootLayout() {
   const colorScheme = useColorScheme();
+  
+  // ✅ Initialize push notifications (follows MVVM: View → Service)
+  useNotifications();
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>

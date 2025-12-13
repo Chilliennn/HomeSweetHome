@@ -62,6 +62,7 @@ export const ProfileWelcome: React.FC<ProfileWelcomeProps> = ({
           imageSource={require('@/assets/images/logo.png')}
           size={100}
           backgroundColor="#B8E6E6"
+          contentScale={1.5}
           style={styles.logo}
         />
 
@@ -116,7 +117,7 @@ export const ProfileWelcome: React.FC<ProfileWelcomeProps> = ({
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#FAF9F6',
+    backgroundColor: '#FFFDF5',
   },
   container: {
     flex: 1,

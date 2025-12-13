@@ -24,26 +24,40 @@ export interface User {
 }
 
 export interface UserProfileData {
-  // Display Identity
+  // Display Identity (stored in profile_data)
   display_name?: string;
   avatar_url?: string;
+  avatar_meta?: {
+    type?: 'default' | 'custom';
+    selected_avatar_index?: number | null;
+  };
   
-  // Real Identity (private)
-  real_photo_url?: string;
-  ic_number?: string;
+  // Real Identity - only private photo stored here
+  // (phone & location are stored in users table directly)
+  real_identity?: {
+    real_photo_url?: string | null;
+  };
   
-  // Profile Info
+  // Profile Info - only user-type specific data
+  // (languages stored in users table directly)
   interests?: string[];
   self_introduction?: string;
-  communication_styles?: CommunicationStyle[];
   
   // Verification
   age_verified?: boolean;
   verified_age?: number;
+  verification_reference?: string;
+  verified_at?: string;
   
-  // Profile Completion
+  // Profile Completion tracking
   profile_completed?: boolean;
   profile_completed_at?: string;
+  profile_completion?: {
+    real_identity_completed?: boolean;
+    display_identity_completed?: boolean;
+    profile_info_completed?: boolean;
+    profile_completed?: boolean;
+  };
 }
 
 export type CommunicationStyle = 
@@ -57,6 +71,7 @@ export type CommunicationStyle =
 // APPLICATION TYPES
 // ============================================
 export type ApplicationStatus = 
+  | 'pending_interest'      
   | 'pending_ngo_review'
   | 'ngo_approved'
   | 'pre_chat_active'
@@ -129,6 +144,52 @@ export interface Relationship {
   ended_at: string | null;
 }
 
+
+export interface StageFeatureFlags {
+  text: boolean;
+  diary: boolean;
+  scheduling: boolean;
+  video_call: boolean;
+  photo_share: boolean;
+}
+
+export interface StageRequirement {
+  id: string;
+  title: string;
+  description: string;
+  is_completed: boolean;
+  required_value?: number;
+  current_value?: number;
+}
+
+export interface StageInfo {
+  stage: RelationshipStage;
+  display_name: string;
+  order: number;
+  is_current: boolean;
+  is_completed: boolean;
+  start_date?: string;
+  completion_date?: string;
+}
+
+export interface LockedStageDetail {
+  stage_order: number;
+  stage: RelationshipStage;
+  title: string;
+  description: string;
+  unlock_message: string;
+  preview_requirements: string[];
+}
+
+export interface Feature {
+  key: string;
+  name: string;
+  description: string;
+  is_unlocked: boolean;
+  unlock_stage?: RelationshipStage;
+  unlock_message?: string;
+}
+
 // ============================================
 // MESSAGE TYPES
 // ============================================
@@ -146,6 +207,57 @@ export interface Message {
   call_duration_minutes: number | null;
   is_read: boolean;
   sent_at: string;
+}
+
+// ============================================
+// COMMUNICATION CAPABILITIES TYPES
+// ============================================
+/**
+ * Communication capabilities define what features are enabled
+ * for a given stage (pre-match, getting_to_know, trial_period, etc.)
+ * 
+ * This allows the Communication module to be reusable across stages
+ * by simply changing the capability configuration
+ */
+export interface CommunicationCapabilities {
+  // Messaging
+  canSendText: boolean;
+  canSendVoice: boolean;
+  canSendImage: boolean;
+  canSendVideo: boolean;
+  
+  // Calls
+  canVoiceCall: boolean;
+  canVideoCall: boolean;
+  
+  // Advanced features
+  canScheduleMeetings: boolean;
+  canShareDiary: boolean;
+  canShareGallery: boolean;
+  
+  // Limits (null = unlimited)
+  textMessageLimit?: number | null;         // chars per message
+  voiceMessageLimit?: number | null;        // seconds per message
+  dailyMessageLimit?: number | null;        // messages per day
+  
+  // Moderation
+  moderationEnabled: boolean;
+  autoBlockEnabled: boolean;
+}
+
+// ============================================
+// MODERATION TYPES
+// ============================================
+export type ModerationSeverity = 'safe' | 'warning' | 'blocked';
+export type ModerationAction = 'allow' | 'warn_user' | 'block_message' | 'report_admin';
+
+export interface ModerationResult {
+  isAllowed: boolean;
+  severity: ModerationSeverity;
+  reason?: string;
+  detectedIssues?: string[];
+  suggestedAction: ModerationAction;
+  adminNotificationRequired: boolean;
 }
 
 // ============================================
@@ -188,7 +300,19 @@ export type NotificationType =
   | 'calendar_reminder'
   | 'safety_alert'
   | 'admin_notice'
-  | 'application_update';
+  | 'application_update'
+  | 'new_interest'
+  | 'interest_accepted'
+  | 'interest_rejected'
+  | 'application_submitted'
+  | 'application_under_review'
+  | 'application_approved'
+  | 'application_rejected'
+  | 'pre_chat_ending_soon'
+  | 'relationship_accepted'
+  | 'relationship_ended'
+  | 'profile_viewed'
+  | 'platform_update';
 
 export interface Notification {
   id: string;
@@ -196,6 +320,55 @@ export interface Notification {
   type: NotificationType;
   title: string;
   message: string;
+  reference_id?: string;     
+  reference_table?: string;   
   is_read: boolean;
   created_at: string;
+}
+
+// ============================================
+// PROFILE SETUP / UC103 TYPES
+// ============================================
+export interface AgeVerificationPayload {
+  userId: string;
+  userType: UserType;
+  photoUri: string;
+}
+
+export interface AgeVerificationResult {
+  ageVerified: boolean;
+  verifiedAge: number;
+  status: VerificationStatus;
+  referenceId: string;
+  verifiedAt: string;
+  notes?: string;
+}
+
+export interface RealIdentityPayload {
+  phoneNumber: string;
+  location: string;
+  realPhotoUrl: string | null;
+}
+
+export interface DisplayIdentityPayload {
+  displayName: string;
+  avatarType: 'default' | 'custom';
+  selectedAvatarIndex: number | null;
+  customAvatarUrl: string | null;
+}
+
+export interface ProfileInfoPayload {
+  interests: string[];
+  customInterest?: string;
+  selfIntroduction: string;
+  languages: string[];
+  customLanguage?: string;
+}
+
+export interface ProfileCompletionState {
+  ageVerified: boolean;
+  realIdentityCompleted: boolean;
+  displayIdentityCompleted: boolean;
+  profileInfoCompleted: boolean;
+  profileCompleted: boolean;
 }

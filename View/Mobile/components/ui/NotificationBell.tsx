@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ViewStyle } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ViewStyle, Image } from 'react-native';
 
 // ============================================================================
 // TYPES
@@ -46,7 +46,11 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({
       activeOpacity={0.7}
       disabled={!onPress}
     >
-      <Text style={[styles.bellIcon, { fontSize: size * 0.5 }]}>🔔</Text>
+      <Image
+        source={require('../../assets/images/icon-noti.png')}
+        style={[styles.bellIcon, { width: size * 0.5, height: size * 0.5 }]}
+        resizeMode="contain"
+      />
       
       {showBadge && (
         <View style={styles.badge}>
@@ -68,7 +72,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   bellIcon: {
-    textAlign: 'center',
+    // Size is set inline based on container size prop
   },
   badge: {
     position: 'absolute',

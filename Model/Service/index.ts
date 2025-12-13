@@ -3,5 +3,6 @@ export * from './CoreService/ageVerificationService';
 export * from './CoreService/profileCompletionService';
 export * from './CoreService/authService';
 export * from './CoreService/relationshipService';
+export * from './CoreService';
 export * from './CoreService/familyService';
 export * from './CoreService/familyAIService';

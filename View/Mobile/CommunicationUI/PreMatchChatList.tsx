@@ -1,217 +1,250 @@
-import React from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  FlatList,
-} from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import {
-  NotificationBell,
-  BottomTabBar,
-  TabItem,
-} from '@/components/ui';
-import { PreMatchCard } from '@/components/ui/PreMatchCard';
+import { observer } from 'mobx-react-lite';
+import { useRouter } from 'expo-router';
+import { communicationViewModel } from '@home-sweet-home/viewmodel';
+import { useTabNavigation } from '@/hooks/use-tab-navigation';
+import { Card, IconCircle, NotificationBell, ProgressBar, Button } from '@/components/ui';
+import { BottomTabBar, DEFAULT_TABS } from '@/components/ui/BottomTabBar';
+import { Colors } from '@/constants/theme';
 
-// ============================================================================
-// TYPES
-// ============================================================================
-interface PreMatchStats {
-  currentDay: number;
-  totalDays: number;
-  messagesExchanged: number;
-  voiceCalls: number;
-  daysUntilCanApply: number;
-  daysRemaining: number;
-  canApply: boolean;
-}
-
-interface PreMatch {
-  id: string;
-  name: string;
-  avatarEmoji?: string;
-  avatarColor?: string;
-  isOnline?: boolean;
-  stats: PreMatchStats;
-}
-
-interface PreMatchChatListProps {
-  /** List of pre-matches to display */
-  preMatches?: PreMatch[];
-  /** Notification count */
-  notificationCount?: number;
-  /** Called when notification bell is pressed */
-  onNotificationPress?: () => void;
-  /** Called when Chat button is pressed */
-  onChat?: (preMatchId: string) => void;
-  /** Called when View Details button is pressed */
-  onViewDetails?: (preMatchId: string) => void;
-  /** Called when End button is pressed */
-  onEnd?: (preMatchId: string) => void;
-  /** Called when a tab is pressed */
-  onTabPress?: (tabKey: string) => void;
-  /** Current active tab */
-  activeTab?: string;
-}
-
-// ============================================================================
-// MOCK DATA - For UI demonstration
-// ============================================================================
-const MOCK_PRE_MATCHES: PreMatch[] = [
-  {
-    id: '1',
-    name: 'Ah Ma Mei',
-    avatarEmoji: '👵',
-    avatarColor: '#D4E5AE',
-    isOnline: true,
-    stats: {
-      currentDay: 8,
-      totalDays: 14,
-      messagesExchanged: 23,
-      voiceCalls: 2,
-      daysUntilCanApply: 0,
-      daysRemaining: 6,
-      canApply: true,
-    },
-  },
-  {
-    id: '2',
-    name: 'Uncle Tan',
-    avatarEmoji: '👴',
-    avatarColor: '#C8ADD6',
-    isOnline: true,
-    stats: {
-      currentDay: 3,
-      totalDays: 14,
-      messagesExchanged: 12,
-      voiceCalls: 0,
-      daysUntilCanApply: 4,
-      daysRemaining: 11,
-      canApply: false,
-    },
-  },
-];
-
-// Default tabs for bottom navigation
-const TABS: TabItem[] = [
-  { key: 'matching', icon: '👥', label: 'Matching' },
-  { key: 'journey', icon: '📖', label: 'Journey' },
-  { key: 'gallery', icon: '🖼️', label: 'Gallery' },
-  { key: 'chat', icon: '💬', label: 'Chat' },
-  { key: 'settings', icon: '⚙️', label: 'Settings' },
-];
-
-// Tabs that are disabled (no function yet)
-const DISABLED_TABS = ['journey', 'gallery'];
-
-// ============================================================================
-// COMPONENT
-// ============================================================================
 /**
- * PreMatchChatList - Screen showing list of active pre-match conversations
+ * PreMatchChatList - UC101_6: Pre-match chat list screen
  * 
- * Features:
- * - Notification bell with badge
- * - "Pre-Match Chat" title
- * - List of PreMatchCards
- * - Bottom tab navigation
+ * Combined component with logic and UI (follows qualityAttribute.txt)
+ * - Loads chat data from CommunicationViewModel
+ * - Displays chat cards using reusable components from components/ui
+ * - Handles navigation to individual chats
  * 
- * ViewModel bindings needed:
- * - preMatches: PreMatch[] (from CommunicationViewModel.preMatches)
- * - onChat: (id) => void (navigates to chat screen)
- * - onViewDetails: (id) => void (navigates to application form when ready)
- * - onEnd: (id) => void (triggers end pre-match confirmation)
- * 
- * Usage:
- * ```tsx
- * <PreMatchChatList
- *   preMatches={communicationViewModel.preMatches}
- *   onChat={(id) => navigateToChat(id)}
- *   onViewDetails={(id) => navigateToApplication(id)}
- *   onEnd={(id) => showEndConfirmation(id)}
- * />
- * ```
+ * Architecture:
+ * - Observer component (reactive to ViewModel state)
+ * - Uses Card, IconCircle, ProgressBar, Button from components/ui
+ * - Self-contained logic (no unnecessary separation)
  */
-export const PreMatchChatList: React.FC<PreMatchChatListProps> = ({
-  preMatches = MOCK_PRE_MATCHES,
-  notificationCount = 1,
-  onNotificationPress,
-  onChat,
-  onViewDetails,
-  onEnd,
-  onTabPress,
-  activeTab = 'chat',
-}) => {
-  const handleTabPress = (key: string) => {
-    if (DISABLED_TABS.includes(key)) {
+export const PreMatchChatList = observer(function PreMatchChatList() {
+  const router = useRouter();
+  const vm = communicationViewModel;
+
+  const currentUserId = vm.currentUser;
+  const currentUserType = vm.currentUserType;
+
+  // Tab navigation hook
+  const { handleTabPress } = useTabNavigation('chat');
+
+  // Pull-to-refresh state
+  const [refreshing, setRefreshing] = useState(false);
+
+  // Load chats on mount (only once)
+  useEffect(() => {
+    if (!currentUserId || !currentUserType) {
+      Alert.alert('Error', 'User not logged in');
       return;
     }
-    onTabPress?.(key);
+
+    // Load active chats (ViewModel uses internal currentUser)
+    vm.loadActiveChats();
+  }, [currentUserId, currentUserType]);
+
+  // Manual refresh handler
+  const handleRefresh = async () => {
+    if (!currentUserId || !currentUserType) {
+      return;
+    }
+
+    setRefreshing(true);
+    try {
+      await vm.refreshChats();
+    } catch (error) {
+      console.error('[PreMatchChatList] Refresh error:', error);
+    } finally {
+      setRefreshing(false);
+    }
   };
 
-  const renderPreMatchCard = ({ item }: { item: PreMatch }) => (
-    <PreMatchCard
-      id={item.id}
-      name={item.name}
-      avatarEmoji={item.avatarEmoji}
-      avatarColor={item.avatarColor}
-      isOnline={item.isOnline}
-      stats={item.stats}
-      onChat={() => onChat?.(item.id)}
-      onViewDetails={() => onViewDetails?.(item.id)}
-      onEnd={() => onEnd?.(item.id)}
-      style={styles.preMatchCard}
-    />
-  );
+  // Handler: Open chat
+  const handleChat = (applicationId: string) => {
+    router.push(`/(main)/chat?applicationId=${applicationId}`);
+  };
+
+  // Handler: View application details
+  const handleViewDetails = (applicationId: string) => {
+    Alert.alert('Application Details', 'View application details feature coming soon!');
+  };
+
+  // Handler: End pre-match
+  const handleEnd = (applicationId: string) => {
+    Alert.alert(
+      'End Pre-Match',
+      'Are you sure you want to end this pre-match? This action cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'End',
+          style: 'destructive',
+          onPress: () => {
+            Alert.alert('End Pre-Match', 'This feature is coming soon!');
+          },
+        },
+      ]
+    );
+  };
+
+  // Handler: Notification press
+  const handleNotificationPress = () => {
+    router.push('/(main)/notification' as any);
+  };
+
+  // Render pre-match card
+  const renderPreMatchCard = ({ item }: { item: any }) => {
+    const partner = item.partnerUser;
+    const application = item.application;
+
+    // Calculate days
+    const applicationDate = new Date(application.applied_at);
+    const now = new Date();
+    const daysPassed = Math.floor((now.getTime() - applicationDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+    const daysRemaining = Math.max(0, 14 - daysPassed);
+    const daysUntilCanApply = Math.max(0, 7 - daysPassed);
+
+    // Count messages and voice calls
+    const messagesExchanged = item.messages.length;
+    const voiceCalls = item.messages.filter((m: any) => m.message_type === 'voice').length;
+    const canApply = daysPassed >= 7;
+
+    return (
+      <Card style={styles.chatCard}>
+        {/* Header with Avatar and Name */}
+        <View style={styles.cardHeader}>
+          <IconCircle
+            icon={partner.profile_data?.avatar_meta?.type === 'default' ? '👵' : '👤'}
+            size={64}
+            backgroundColor="#C8ADD6"
+            contentScale={0.6}
+          />
+          <View style={styles.headerInfo}>
+            <Text style={styles.name}>{partner.full_name || 'Partner'}</Text>
+            <View style={styles.badgeRow}>
+              <View style={styles.onlineIndicator} />
+              <Text style={styles.onlineText}>Online</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Progress Section */}
+        <View style={styles.progressSection}>
+          <View style={styles.progressHeader}>
+            <Text style={styles.progressTitle}>Pre-Match Progress</Text>
+            <Text style={styles.dayCounter}>{`Day ${daysPassed}/14`}</Text>
+          </View>
+          <ProgressBar
+            progress={(daysPassed / 14) * 100}
+            fillColor={canApply ? Colors.light.success : Colors.light.secondary}
+            height={10}
+          />
+          <View style={styles.progressFooter}>
+            <Text style={styles.progressSubtext}>
+              {canApply
+                ? '✅ Minimum period completed'
+                : `${daysUntilCanApply} days until you can apply`}
+            </Text>
+            <Text style={styles.daysRemaining}>{daysRemaining} days left</Text>
+          </View>
+        </View>
+
+        {/* Stats Grid */}
+        <View style={styles.statsGrid}>
+          <View style={styles.statBox}>
+            <Text style={styles.statValue}>{messagesExchanged}</Text>
+            <Text style={styles.statLabel}>Messages</Text>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statBox}>
+            <Text style={styles.statValue}>{voiceCalls}</Text>
+            <Text style={styles.statLabel}>Voice Calls</Text>
+          </View>
+        </View>
+
+        {/* Action Buttons */}
+        <View style={styles.buttonRow}>
+          <Button
+            title="Chat"
+            onPress={() => handleChat(application.id)}
+            variant="primary"
+            style={styles.chatButton}
+          />
+          {canApply ? (
+            <Button
+              title="View Details"
+              onPress={() => handleViewDetails(application.id)}
+              variant="secondary"
+              style={styles.actionButton}
+            />
+          ) : (
+            <Button
+              title="End"
+              onPress={() => handleEnd(application.id)}
+              variant="destructive"
+              style={styles.actionButton}
+            />
+          )}
+        </View>
+      </Card>
+    );
+  };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      {/* Header */}
-      <View style={styles.header}>
-        <NotificationBell
-          count={notificationCount}
-          onPress={onNotificationPress}
-          size={48}
+      <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+        {/* Header */}
+        <View style={styles.header}>
+          <View style={styles.headerSpacer} />
+          <Text style={styles.headerTitle}>Pre-Match Chats</Text>
+          <NotificationBell
+            count={vm.unreadCount}
+            onPress={handleNotificationPress}
+          />
+        </View>
+
+        <View style={styles.headerDivider} />
+
+        {/* Chat List */}
+        <FlatList
+          data={vm.activePreMatchChats}
+          renderItem={renderPreMatchCard}
+          keyExtractor={(item) => item.application.id}
+          contentContainerStyle={styles.listContent}
+          ItemSeparatorComponent={() => <View style={styles.separator} />}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              colors={['#9DE2D0']}
+              tintColor="#9DE2D0"
+            />
+          }
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>No active chats yet</Text>
+              <Text style={styles.emptySubtext}>
+                When elderly users accept your interest, your chat will appear here
+              </Text>
+            </View>
+          }
         />
-        <Text style={styles.headerTitle}>Pre-Match Chat</Text>
-        <View style={styles.headerSpacer} />
-      </View>
 
-      {/* Divider */}
-      <View style={styles.headerDivider} />
+        {/* Bottom Tab Bar */}
+        <BottomTabBar
+          tabs={DEFAULT_TABS}
+          activeTab="chat"
+          onTabPress={handleTabPress}
+          disabledTabs={['diary', 'memory']}
+        />
+      </SafeAreaView>
+    );
+  });
 
-      {/* Pre-Match List */}
-      <FlatList
-        data={preMatches}
-        renderItem={renderPreMatchCard}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContent}
-        showsVerticalScrollIndicator={false}
-        ItemSeparatorComponent={() => <View style={styles.separator} />}
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>No active pre-matches</Text>
-            <Text style={styles.emptySubtext}>
-              Express interest in elderly profiles to start chatting
-            </Text>
-          </View>
-        }
-      />
 
-      {/* Bottom Tab Bar */}
-      <BottomTabBar
-        tabs={TABS}
-        activeTab={activeTab}
-        onTabPress={handleTabPress}
-        disabledTabs={DISABLED_TABS}
-      />
-    </SafeAreaView>
-  );
-};
-
-// ============================================================================
-// STYLES
-// ============================================================================
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -243,9 +276,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: 16,
   },
-  preMatchCard: {
-    marginBottom: 0,
-  },
   separator: {
     height: 16,
   },
@@ -266,6 +296,115 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#999',
     textAlign: 'center',
+  },
+  chatCard: {
+    padding: 20,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  headerInfo: {
+    flex: 1,
+    marginLeft: 16,
+  },
+  name: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: Colors.light.text,
+    marginBottom: 6,
+  },
+  badgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  onlineIndicator: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#4CAF50',
+  },
+  onlineText: {
+    fontSize: 13,
+    color: '#4CAF50',
+    marginLeft: 6,
+    fontWeight: '500',
+  },
+  progressSection: {
+    marginBottom: 20,
+    backgroundColor: '#F8F8F8',
+    borderRadius: 12,
+    padding: 16,
+  },
+  progressHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  progressTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#666',
+  },
+  dayCounter: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: Colors.light.primary,
+  },
+  progressFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  progressSubtext: {
+    fontSize: 12,
+    color: '#666',
+    flex: 1,
+  },
+  daysRemaining: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#999',
+  },
+  statsGrid: {
+    flexDirection: 'row',
+    backgroundColor: '#F8F8F8',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 20,
+  },
+  statBox: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  statDivider: {
+    width: 1,
+    backgroundColor: '#E0E0E0',
+    marginHorizontal: 16,
+  },
+  statValue: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: Colors.light.primary,
+    marginBottom: 4,
+  },
+  statLabel: {
+    fontSize: 12,
+    color: '#666',
+    textAlign: 'center',
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  chatButton: {
+    flex: 1,
+  },
+  actionButton: {
+    flex: 1,
   },
 });
 

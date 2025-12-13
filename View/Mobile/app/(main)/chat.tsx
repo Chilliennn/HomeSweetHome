@@ -1,72 +1,40 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+/**
+ * Route: /(main)/chat
+ * 
+ * Smart routing for chat feature:
+ * 
+ * WITHOUT applicationId or relationshipId param:
+ * - Entry point from bottom navigation bar
+ * - Shows ChatListHub which routes to:
+ *   - PreMatchChatList (if user in pre-match stage)
+ *   - RelationshipChat (if user has active relationship)
+ * 
+ * WITH applicationId param:
+ * - Direct link to specific pre-match chat
+ * - Shows ChatScreen for that specific application
+ * 
+ * WITH relationshipId param:
+ * - Direct link to relationship chat
+ * - Shows ChatScreen for that relationship with stage-based features
+ * 
+ * Query params:
+ * - applicationId?: Application ID for pre-match chat access
+ * - relationshipId?: Relationship ID for relationship chat access
+ */
+import { useLocalSearchParams } from 'expo-router';
+import { ChatScreen } from '@/CommunicationUI/ChatScreen';
+import { ChatListHub } from '@/CommunicationUI/ChatListHub';
 
-export default function ChatScreen() {
-  const router = useRouter();
-  
-  return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.backButton}
-          onPress={() => router.back()}
-        >
-          <Text style={styles.backIcon}>←</Text>
-        </TouchableOpacity>
-        <Text style={styles.title}>Messages</Text>
-        <View style={styles.placeholder} />
-      </View>
-      <View style={styles.content}>
-        <Text style={styles.emoji}>💬</Text>
-        <Text style={styles.placeholderTitle}>Chat Feature</Text>
-        <Text style={styles.placeholderText}>
-          Stay connected with text, voice, and video messages. Build your relationship through daily communication.
-        </Text>
-      </View>
-    </SafeAreaView>
-  );
+export default function ChatRoute() {
+  const params = useLocalSearchParams();
+  const applicationId = params.applicationId as string | undefined;
+  const relationshipId = params.relationshipId as string | undefined;
+
+  // If ID provided, go directly to chat (pre-match or relationship)
+  if (applicationId || relationshipId) {
+    return <ChatScreen />;
+  }
+
+  // Otherwise, show chat list hub (routes based on user stage)
+  return <ChatListHub />;
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FAF9F6' },
-  header: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    justifyContent: 'space-between',
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#9DE2D0',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  backIcon: { fontSize: 24, color: '#333' },
-  title: { fontSize: 18, fontWeight: '700', color: '#333' },
-  placeholder: { width: 40 },
-  content: { 
-    flex: 1, 
-    justifyContent: 'center', 
-    alignItems: 'center',
-    padding: 40,
-  },
-  emoji: { fontSize: 64, marginBottom: 20 },
-  placeholderTitle: { 
-    fontSize: 24, 
-    fontWeight: '700', 
-    color: '#333',
-    marginBottom: 12,
-  },
-  placeholderText: { 
-    fontSize: 16, 
-    color: '#666',
-    textAlign: 'center',
-    lineHeight: 24,
-  },
-});

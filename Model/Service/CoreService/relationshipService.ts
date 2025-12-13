@@ -1,9 +1,9 @@
-import { userRepository } from '../../Repository/UserRepository';
-import type { Relationship } from '../../types';
+import { userRepository } from "../../Repository/UserRepository";
+import type { Relationship, User } from "../../types";
 
 /**
  * RelationshipService - Business logic for relationship management
- * 
+ *
  * Single Responsibility: Handles relationship-related business logic
  * - Checking active relationships
  * - Relationship status queries
@@ -23,6 +23,14 @@ export const relationshipService = {
    */
   async getActiveRelationship(userId: string): Promise<Relationship | null> {
     return userRepository.getActiveRelationship(userId);
+  },
+
+  /**
+   * Get user's relationship regardless of status (active, paused, etc.)
+   * Used to check if user is in a cooling period
+   */
+  async getAnyRelationship(userId: string): Promise<Relationship | null> {
+    return userRepository.getAnyRelationship(userId);
   },
 
   /**

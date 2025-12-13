@@ -156,13 +156,26 @@ const AdminLogin: React.FC = () => {
     // Simulate authentication delay
     await new Promise(resolve => setTimeout(resolve, 500));
 
-    // Simple client-side mock login — replace with real auth
-    localStorage.setItem('adminLoggedIn', 'true');
-    localStorage.setItem('adminId', 'admin-001');
-    localStorage.setItem('adminName', username);
+    // Hardcoded admin credentials
+    const validAdmins = [
+      { username: 'admin001', password: 'password123', name: 'Admin One' },
+      { username: 'admin002', password: 'password123', name: 'Admin Two' },
+    ];
 
-    setIsLoading(false);
-    navigate('/admin');
+    const admin = validAdmins.find(
+      a => a.username === username.trim() && a.password === password
+    );
+
+    if (admin) {
+      localStorage.setItem('adminLoggedIn', 'true');
+      localStorage.setItem('adminId', admin.username);
+      localStorage.setItem('adminName', admin.name);
+      setIsLoading(false);
+      navigate('/admin');
+    } else {
+      setError('Invalid username or password');
+      setIsLoading(false);
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {

@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
 import { AdminLayout } from '../components/ui';
+import { ConsultationDashboard } from './ConsultationDashboard';
+import { ConsultationDetails } from './ConsultationDetails';
+import { SafetyAlertsDashboard, SafetyAlertDetails } from '../SafetyUI';
 
 // Color constants from UC501UI.txt
 const colors = {
@@ -189,25 +192,126 @@ const styles = {
     },
 };
 
-// Mock data for demonstration
+// Data should come from database - currently showing 0 since no data exists
 const consultationData = {
-    pending: 8,
-    inProgress: 12,
-    completed: 4,
+    pending: 0,
+    inProgress: 0,
+    completed: 0,
 };
 
 const safetyAlertsData = {
-    critical: 2,
-    highPriority: 5,
-    medium: 8,
-    urgentCount: 7,
+    critical: 0,
+    highPriority: 0,
+    medium: 0,
+    urgentCount: 0,
 };
 
 const ReportPage: React.FC = () => {
     const [hoveredButton, setHoveredButton] = useState<string | null>(null);
+    const [currentView, setCurrentView] = useState<'main' | 'consultations' | 'consultation-details' | 'safety-alerts' | 'safety-alert-details'>('main');
+    const [selectedRequestId, setSelectedRequestId] = useState<string | null>(null);
+    const [selectedAlertId, setSelectedAlertId] = useState<string | null>(null);
+
+    // Handle tab change - resets view back to main when clicking Reports tab
+    const handleTabChange = (tab: string) => {
+        if (tab === 'reports') {
+            setCurrentView('main');
+            setSelectedRequestId(null);
+            setSelectedAlertId(null);
+        }
+    };
+
+    // Handle navigation to consultation dashboard
+    const handleViewConsultations = () => {
+        setCurrentView('consultations');
+    };
+
+    // Handle navigation to consultation details
+    const handleSelectRequest = (requestId: string) => {
+        setSelectedRequestId(requestId);
+        setCurrentView('consultation-details');
+    };
+
+    // Handle back navigation
+    const handleBackToReports = () => {
+        setCurrentView('main');
+        setSelectedRequestId(null);
+    };
+
+    const handleBackToConsultations = () => {
+        setCurrentView('consultations');
+        setSelectedRequestId(null);
+    };
+
+    // Handle navigation to safety alerts dashboard
+    const handleViewSafetyAlerts = () => {
+        setCurrentView('safety-alerts');
+    };
+
+    // Handle navigation to safety alert details
+    const handleSelectAlert = (alertId: string) => {
+        setSelectedAlertId(alertId);
+        setCurrentView('safety-alert-details');
+    };
+
+    // Handle back to safety alerts from details
+    const handleBackToSafetyAlerts = () => {
+        setCurrentView('safety-alerts');
+        setSelectedAlertId(null);
+    };
+
+    // Render Consultation Dashboard
+    if (currentView === 'consultations') {
+        return (
+            <AdminLayout onTabChange={handleTabChange}>
+                <ConsultationDashboard
+                    onBack={handleBackToReports}
+                    onSelectRequest={handleSelectRequest}
+                />
+            </AdminLayout>
+        );
+    }
+
+    // Render Consultation Details
+    if (currentView === 'consultation-details' && selectedRequestId) {
+        return (
+            <AdminLayout onTabChange={handleTabChange}>
+                <ConsultationDetails
+                    requestId={selectedRequestId}
+                    onBack={handleBackToConsultations}
+                />
+            </AdminLayout>
+        );
+    }
+
+    // Render Safety Alerts Dashboard
+    if (currentView === 'safety-alerts') {
+        return (
+            <AdminLayout onTabChange={handleTabChange}>
+                <SafetyAlertsDashboard
+                    onBack={handleBackToReports}
+                    onSelectAlert={handleSelectAlert}
+                />
+            </AdminLayout>
+        );
+    }
+
+    // Render Safety Alert Details
+    if (currentView === 'safety-alert-details' && selectedAlertId) {
+        return (
+            <AdminLayout onTabChange={handleTabChange}>
+                <SafetyAlertDetails
+                    alertId={selectedAlertId}
+                    onBack={handleBackToSafetyAlerts}
+                />
+            </AdminLayout>
+        );
+    }
+
+    // Main Reports Dashboard
 
     return (
-        <AdminLayout>
+        <AdminLayout onTabChange={handleTabChange}>
             <div style={styles.container}>
                 {/* Page Header */}
                 <div style={styles.header}>
@@ -268,6 +372,7 @@ const ReportPage: React.FC = () => {
                             }}
                             onMouseEnter={() => setHoveredButton('consultation')}
                             onMouseLeave={() => setHoveredButton(null)}
+                            onClick={handleViewConsultations}
                         >
                             View All Consultations
                         </button>
@@ -325,6 +430,7 @@ const ReportPage: React.FC = () => {
                             }}
                             onMouseEnter={() => setHoveredButton('safety')}
                             onMouseLeave={() => setHoveredButton(null)}
+                            onClick={handleViewSafetyAlerts}
                         >
                             View All Alerts
                         </button>

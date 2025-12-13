@@ -265,3 +265,182 @@ CREATE TABLE public.users (
   updated_at timestamp with time zone DEFAULT now(),
   CONSTRAINT users_pkey PRIMARY KEY (id)
 );
+
+-- ============================================================================
+-- ADDITIONAL ARCHITECTURE RULES (2024)
+-- ============================================================================
+
+7. View-to-ViewModel Module Dependency Rules
+
+Views MUST ONLY import from their corresponding ViewModel module:
+✅ CommunicationUI/* → CommunicationViewModel/*
+✅ MatchingUI/* → MatchingViewModel/*
+❌ MatchingUI/* → AuthViewModel/* (use matching module's user context instead)
+❌ MatchingUI/* → CommunicationViewModel/* (use matching module instead)
+
+ViewModel modules CANNOT depend on other ViewModel modules:
+❌ MatchingViewModel/* → AuthViewModel/*
+❌ CommunicationViewModel/* → AuthViewModel/*
+✅ Files within same module can import each other
+
+User Context Synchronization Pattern:
+Root layouts (e.g., _layout.tsx) sync auth state to feature ViewModels:
+
+Example Pattern:
+// _layout.tsx
+const authVM = authViewModel;
+const featureVM = featureViewModel;
+
+useEffect(() => {
+  const userId = authVM.authState.currentUserId || null;
+  const userType = authVM.userType === 'youth' || authVM.userType === 'elderly' 
+    ? authVM.userType : null;
+  
+  featureVM.setCurrentUser(userId, userType);
+}, [authVM.authState.currentUserId, authVM.userType]);
+
+Each feature ViewModel must implement:
+class FeatureViewModel {
+  currentUserId: string | null = null;
+  currentUserType: 'youth' | 'elderly' | null = null;
+
+  setCurrentUser(userId: string | null, userType: 'youth' | 'elderly' | null) {
+    runInAction(() => {
+      this.currentUserId = userId;
+      this.currentUserType = userType;
+    });
+  }
+}
+
+Benefits: Encapsulation, independent testing, clear boundaries, module reusability.
+
+8. Service-Repository Layering Rules
+
+Repository Layer Responsibilities (Data Access ONLY):
+✅ CRUD operations via Supabase
+✅ Query building and filtering  
+✅ Data transformation (DB rows → Domain objects)
+❌ Business logic or rules
+❌ Calling other Services
+❌ Side effects beyond DB operations
+
+Service Layer Responsibilities (Business Logic):
+✅ Business validation and rules
+✅ Orchestrating multiple Repository calls
+✅ Handling business workflows and side effects
+✅ Calling other Services when needed
+❌ Direct database access (use Repository)
+❌ Dynamic imports to bypass Repository
+
+Anti-Pattern Example (WRONG):
+// Repository calling Service ❌
+async updateInterestStatus(id, status) {
+    await supabase.from('applications').update(...);
+    
+    // This violates layering!
+    if (status === 'accepted') {
+        const { commService } = await import('...');
+        await commService.createWelcomeMessage(...);
+    }
+}
+
+Correct Pattern:
+// Repository (DB operations only) ✅
+async updateInterestStatus(id, decision, status) {
+    const { data } = await supabase
+        .from('applications')
+        .update({ elderly_decision: decision, status })
+        .eq('id', id)
+        .select('*, youth:youth_id(*), elderly:elderly_id(*)')
+        .single();
+    return data;
+}
+
+// Service (orchestrates business logic) ✅
+async respondToInterest(id, response) {
+    // Call Repository for DB operation
+    const app = await matchingRepo.updateInterestStatus(
+        id, 
+        response === 'accepted' ? 'accept' : 'decline',
+        response === 'accepted' ? 'pre_chat_active' : 'rejected'
+    );
+    
+    // Service handles business rules and side effects
+    if (response === 'accepted') {
+        await communicationService.createWelcomeMessage(
+            app.id, app.youth_id, app.elderly_id
+        );
+    }
+}
+
+Dynamic Import Usage Rules:
+❌ NEVER use dynamic imports to bypass Repository layer
+❌ NEVER use dynamic imports to avoid circular dependencies
+✅ Fix circular dependencies through proper layering design
+
+9. Business Logic Placement Rules
+
+Views (UI Components) should ONLY contain:
+✅ UI rendering and layout
+✅ Event handlers that call ViewModel methods
+✅ Simple UI-only state (expanded/collapsed, input focus)
+❌ Business decisions or filtering logic
+❌ Data transformation for display
+❌ Validation rules
+
+ViewModels contain presentation business logic:
+✅ Data filtering/transformation FOR display
+✅ UI state derivation (computed/getter properties)
+✅ Form validation
+✅ Business rules for UI behavior
+✅ Calling Service methods
+
+Services contain core business logic:
+✅ Domain validation rules
+✅ Business workflows and rules
+✅ Orchestrating Repository operations
+✅ Side effects (notifications, welcome messages, etc.)
+
+Anti-Pattern Example (WRONG - Business logic in View):
+function NotificationScreen() {
+    const notifications = vm.notifications;
+    const userType = authVM.userType;
+    
+    // ❌ Business filtering in View
+    const filtered = notifications.filter(n => {
+        if (userType === 'elderly') {
+            return n.type === 'application_update';
+        }
+        return n.type === 'interest_accepted';
+    });
+    
+    const hasUnread = filtered.some(n => !n.is_read);
+    
+    return <View>{filtered.map(...)}</View>;
+}
+
+Correct Pattern (Business logic in ViewModel):
+// ViewModel ✅
+class MatchingViewModel {
+    currentUserType: 'youth' | 'elderly' | null = null;
+    notifications: Notification[] = [];
+    
+    get filteredNotifications() {
+        return this.notifications.filter(n => {
+            if (this.currentUserType === 'elderly') {
+                return n.type === 'application_update';
+            }
+            return n.type === 'interest_accepted';
+        });
+    }
+    
+    get hasUnreadNotifications() {
+        return this.filteredNotifications.some(n => !n.is_read);
+    }
+}
+
+// View (renders only) ✅
+function NotificationScreen() {
+    const vm = matchingViewModel;
+    return <View>{vm.filteredNotifications.map(...)}</View>;
+}

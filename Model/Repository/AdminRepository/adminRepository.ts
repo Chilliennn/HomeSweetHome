@@ -41,7 +41,7 @@ export const adminRepository = {
 			query = query.eq('status', status);
 		}
 
-    if (limit) {query = query.range(offset, offset + limit - 1);}
+		if (limit) { query = query.range(offset, offset + limit - 1); }
 
 		const { data, error } = await query;
 		if (error) throw error;
@@ -129,7 +129,7 @@ export const adminRepository = {
 				.eq('status', 'ngo_approved')
 				.gte('approved_at', new Date().toISOString().slice(0, 10)),
 			supabase.rpc('avg_waiting_time_hours') // optional: a custom Postgres function; fallback handled below
-		]).catch(() => [ { data: null }, { data: null }, { data: null }, { data: null }]);
+		]).catch(() => [{ data: null }, { data: null }, { data: null }, { data: null }]);
 
 		// Fallback values if database function not available
 		const stats: ApplicationStats = {
@@ -174,6 +174,202 @@ export const adminRepository = {
 		const { error } = await supabase.from('applications').update({ locked_by: null }).eq('id', applicationId);
 		if (error) throw error;
 	},
+
+	// ============================================
+	// SAFETY ALERTS (UC503)
+	// ============================================
+
+	async getSafetyAlerts(severity?: string, status?: string, sortBy: 'newest' | 'oldest' = 'newest', limit = 50, offset = 0): Promise<SafetyAlertWithProfiles[]> {
+		let query = supabase
+			.from('safety_incidents')
+			.select(`
+				*,
+				reporter:users!reporter_id(*),
+				reported_user:users!reported_user_id(*),
+				relationship:relationships(*)
+			`)
+			.order('detected_at', { ascending: sortBy === 'oldest' });
+
+		if (severity) query = query.eq('severity', severity);
+		if (status) query = query.eq('status', status);
+		if (limit) query = query.range(offset, offset + limit - 1);
+
+		const { data, error } = await query;
+		if (error) throw error;
+
+		return (data || []).map((row: any) => mapRowToSafetyAlert(row));
+	},
+
+	async getSafetyAlertById(alertId: string): Promise<SafetyAlertWithProfiles | null> {
+		const { data, error } = await supabase
+			.from('safety_incidents')
+			.select(`
+				*,
+				reporter:users!reporter_id(*),
+				reported_user:users!reported_user_id(*),
+				relationship:relationships(*)
+			`)
+			.eq('id', alertId)
+			.maybeSingle();
+
+		if (error) throw error;
+		if (!data) return null;
+
+		return mapRowToSafetyAlert(data);
+	},
+
+	async getSafetyAlertStats(): Promise<SafetyAlertStats> {
+		const [
+			{ count: critical },
+			{ count: high },
+			{ count: medium },
+			{ count: low },
+			{ count: pending }
+		] = await Promise.all([
+			supabase.from('safety_incidents').select('*', { count: 'exact', head: true }).eq('severity', 'critical'),
+			supabase.from('safety_incidents').select('*', { count: 'exact', head: true }).eq('severity', 'high'),
+			supabase.from('safety_incidents').select('*', { count: 'exact', head: true }).eq('severity', 'medium'),
+			supabase.from('safety_incidents').select('*', { count: 'exact', head: true }).eq('severity', 'low'),
+			supabase.from('safety_incidents').select('*', { count: 'exact', head: true }).eq('status', 'new')
+		]);
+
+		return { critical: critical || 0, high: high || 0, medium: medium || 0, low: low || 0, pending: pending || 0, avgResponseTimeMinutes: 15 };
+	},
+
+	async issueWarning(alertId: string, adminId: string, notes: string): Promise<void> {
+		const { error } = await supabase
+			.from('safety_incidents')
+			.update({ status: 'resolved', assigned_admin_id: adminId, admin_notes: notes, admin_action_taken: 'warning_issued', resolved_at: new Date().toISOString() })
+			.eq('id', alertId);
+		if (error) throw error;
+	},
+
+	async suspendUser(alertId: string, userId: string, adminId: string, notes: string): Promise<void> {
+		const { error: incidentError } = await supabase
+			.from('safety_incidents')
+			.update({ status: 'resolved', assigned_admin_id: adminId, admin_notes: notes, admin_action_taken: 'user_suspended', resolved_at: new Date().toISOString() })
+			.eq('id', alertId);
+		if (incidentError) throw incidentError;
+
+		const { error: userError } = await supabase.from('users').update({ is_active: false }).eq('id', userId);
+		if (userError) throw userError;
+	},
+
+	async dismissReport(alertId: string, adminId: string, reason: string): Promise<void> {
+		const { error } = await supabase
+			.from('safety_incidents')
+			.update({ status: 'false_positive', assigned_admin_id: adminId, admin_notes: reason, admin_action_taken: 'dismissed', resolved_at: new Date().toISOString() })
+			.eq('id', alertId);
+		if (error) throw error;
+	},
+
+	async assignAlert(alertId: string, adminId: string): Promise<void> {
+		const { error } = await supabase
+			.from('safety_incidents')
+			.update({ status: 'under_review', assigned_admin_id: adminId })
+			.eq('id', alertId);
+		if (error) throw error;
+	},
 };
+
+// ============================================
+// SAFETY ALERT TYPES
+// ============================================
+
+export type SafetyAlertWithProfiles = {
+	id: string;
+	reporter: { id: string; full_name: string; age: number; location: string | null; user_type: 'youth' | 'elderly'; account_created: string; previous_reports: number; };
+	reported_user: { id: string; full_name: string; age: number; occupation: string | null; user_type: 'youth' | 'elderly'; account_status: 'active' | 'suspended' | 'banned'; previous_warnings: number; };
+	relationship_id: string;
+	incident_type: string;
+	severity: 'critical' | 'high' | 'medium' | 'low';
+	status: 'new' | 'under_review' | 'resolved' | 'false_positive';
+	description: string;
+	subject: string;
+	evidence: { name: string; type: 'image' | 'document'; size: string; url?: string }[];
+	detected_keywords: string[];
+	ai_analysis: { severity_assessment: string; risk_factors: string[]; recommendation: string } | null;
+	relationship_stage: string;
+	relationship_duration: string;
+	detected_at: string;
+	waiting_time_minutes: number;
+	assigned_admin_id: string | null;
+	admin_notes: string | null;
+	admin_action_taken: string | null;
+	resolved_at: string | null;
+};
+
+export type SafetyAlertStats = {
+	critical: number; high: number; medium: number; low: number; pending: number; avgResponseTimeMinutes: number;
+};
+
+// Helper function to map database row to typed alert
+function mapRowToSafetyAlert(row: any): SafetyAlertWithProfiles {
+	const detectedAt = new Date(row.detected_at);
+	const now = new Date();
+	const waitingTimeMinutes = Math.round((now.getTime() - detectedAt.getTime()) / (1000 * 60));
+
+	let relationshipDuration = 'Unknown';
+	if (row.relationship?.created_at) {
+		const days = Math.floor((now.getTime() - new Date(row.relationship.created_at).getTime()) / (1000 * 60 * 60 * 24));
+		relationshipDuration = `${days} days`;
+	}
+
+	const calculateAge = (dob: string | null): number => {
+		if (!dob) return 0;
+		const dobDate = new Date(dob);
+		let age = now.getFullYear() - dobDate.getFullYear();
+		if (now.getMonth() < dobDate.getMonth() || (now.getMonth() === dobDate.getMonth() && now.getDate() < dobDate.getDate())) age--;
+		return age;
+	};
+
+	const incidentTypeSubjects: Record<string, string> = {
+		financial_request: 'Financial Exploitation Request Detected',
+		negative_sentiment: 'Negative Sentiment Pattern Detected',
+		harassment: 'Harassment Behavior Reported',
+		abuse: 'Abuse Concern Reported',
+		inappropriate_content: 'Inappropriate Content Detected',
+		other: 'Safety Concern Reported'
+	};
+
+	return {
+		id: row.id,
+		reporter: {
+			id: row.reporter?.id || '',
+			full_name: row.reporter?.full_name || 'Unknown',
+			age: calculateAge(row.reporter?.date_of_birth),
+			location: row.reporter?.location,
+			user_type: row.reporter?.user_type || 'elderly',
+			account_created: row.reporter?.created_at || '',
+			previous_reports: 0
+		},
+		reported_user: {
+			id: row.reported_user?.id || '',
+			full_name: row.reported_user?.full_name || 'Unknown',
+			age: calculateAge(row.reported_user?.date_of_birth),
+			occupation: row.reported_user?.profile_data?.occupation || null,
+			user_type: row.reported_user?.user_type || 'youth',
+			account_status: row.reported_user?.is_active ? 'active' : 'suspended',
+			previous_warnings: 0
+		},
+		relationship_id: row.relationship_id,
+		incident_type: row.incident_type,
+		severity: row.severity,
+		status: row.status,
+		description: row.description || '',
+		subject: incidentTypeSubjects[row.incident_type] || 'Safety Alert',
+		evidence: row.evidence?.files || [],
+		detected_keywords: row.evidence?.keywords || [],
+		ai_analysis: row.evidence?.ai_analysis || null,
+		relationship_stage: row.relationship?.current_stage || 'Unknown',
+		relationship_duration: relationshipDuration,
+		detected_at: row.detected_at,
+		waiting_time_minutes: waitingTimeMinutes,
+		assigned_admin_id: row.assigned_admin_id,
+		admin_notes: row.admin_notes,
+		admin_action_taken: row.admin_action_taken,
+		resolved_at: row.resolved_at
+	};
+}
 
 export default adminRepository;

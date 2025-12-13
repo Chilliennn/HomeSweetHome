@@ -1,0 +1,96 @@
+USE CASE NAME
+UC500: MANAGE APPLICATION
+USE CASE DESCRIPTION
+This use case allows NGO staff to review youth adoption applications, 
+assess their sincerity and decides whether approve to reject their application
+PRE-CONDITION
+Youth has submitted application , Application is pending admin review
+POST-CONDITION
+Application is approved or rejected, Youth and elderly are notified
+
+
+BASIC FLOW
+A.0 : USER (ADMIN)
+B.0 : SYSTEM
+
+B.1. System adds new application to admin review queue [UC500_1]
+B.2. System sends notification to available staff  [M1: Msg New Application] [UC500_2]
+B.3. The staff logs into staff dashboard [UC500_3]
+
+A.4. System displays list of pending applications sorted by submission time [C1: First Come First Serve][UC500_4]
+A.5. The staff selects an application to review [UC500_5]
+
+B.6. System displays complete application details [C2: Application Details] [UC500_6]
+B.7. The staff reads motivation letter and reviews profiles [UC500_7]
+
+A.8. The staff assesses sincerity and appropriateness [C3: Review Criteria] [UC500_8]
+A.9. The staff clicks "Approve Application" [A1: Reject Application] [A2: Request More Information] [UC500_9]
+
+B.10. System records admin decision with timestamp [UC500_10]
+B.11. System updates application status to "Approved" [UC500_11]
+B.12. System notifies youth [M2: Msg Approved] [UC500_12]
+B.13. System sends application to elderly for review (see UC-02) [UC500_13]
+B.14. Use case ends
+
+
+ALTERNATIVE FLOW
+A1: Reject Application
+A1.1 The staff clicks "Reject Application" [UC500_14]
+A1.2 System prompts for rejection reason [M3: Msg Reject Reason] [UC500_15]
+A1.3 The staff selects reason and adds notes [C4: Rejection Reasons] [UC500_16]
+A1.4 System updates status to "Rejected" [UC500_17]
+A1.5 System notifies youth with feedback [M4: Msg Rejected] [UC500_18]
+A1.6 Use case ends
+A2: Request More Information
+A2.1 The staff clicks "Request More Info" [UC500_19]
+A2.2 System displays request form [M5: Msg Request Form] [UC500_20]
+A2.3 The staff specifies what information needed [UC500_21]
+A2.4 System updates application status to "Info Requested" [UC500_22]
+A2.5 System notifies youth with details [M6: Msg More Info] [UC500_23]
+A2.6 Youth provides additional information and resubmits [UC500_24]
+A2.7 System adds application back to review queue [UC500_25]
+A2.8 Return to step BF:4 
+
+MESSAGE
+M1: Msg New Application = {New companionship application requires review}
+M2: Msg Approved = {Great news! Your application has been approved. The elderly will now review it}
+M3: Msg Reject Reason = {Please select rejection reason and provide feedback}
+M4: Msg Rejected = {Your application requires revision. Reason: [reason]. Please address concerns and reapply}
+M5: Msg Request Form = {Specify what additional information is needed from the applicant}
+M6: Msg More Info = {Your application needs more information. Required: [details]. Please update and resubmit}
+
+CONSTRAINT
+C1: First Come First Serve
+Applications displayed in chronological order by submission time
+Oldest applications appear at top of list
+Recently submitted applications appear at bottom
+C2: Application Details
+Youth profile: age, occupation, background
+Elderly profile: who they applied to
+Complete motivation letter
+Application submission date
+Previous application history if any
+C3: Review Criteria
+Motivation letter quality: genuine interest, thoughtful explanation
+Age verification completed
+No red flags in profile
+Appropriate match for selected elderly
+Review should be completed within 24-48 hours
+C4: Rejection Reasons
+Insufficient motivation letter
+Age verification failed
+Inappropriate match
+Incomplete profile
+Other (requires detailed explanation)
+C5: Application Assignment
+System automatically assigns application to NGO staff when staff clicks on it
+System locks assigned applications to prevent duplicate review
+Lock duration: 2 hours
+If admin does not complete review within 2 hours, system auto-releases lock
+Locked applications show assigned admin name
+Admin can manually release application via "Reassign to Others"
+
+C6: Batch Review Limits
+Maximum 10 applications per batch action
+All selected applications must meet basic criteria
+

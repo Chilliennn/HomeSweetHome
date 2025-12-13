@@ -1,0 +1,7410 @@
+/* review */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px;
+
+position: relative;
+width: 1920px;
+height: 2049px;
+
+/* Quarter Pearl Lusta */
+background: #FFFDF5;
+box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.08);
+border-radius: 16px;
+
+
+/* Background+HorizontalBorder */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+align-items: center;
+padding: 0px 60px;
+gap: 326.7px;
+
+display: none;
+width: 1920px;
+height: 80px;
+
+/* White */
+background: #FFFFFF;
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px 0px 1px;
+
+width: 195px;
+height: 34px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* GrandConnect */
+
+width: 195px;
+height: 33px;
+
+/* Inter/Bold */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 700;
+font-size: 27.1px;
+line-height: 33px;
+/* identical to box height */
+display: flex;
+align-items: center;
+
+/* Mine Shaft */
+color: #333333;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+align-items: center;
+padding: 0px;
+gap: 40px;
+
+display: none;
+width: 834px;
+height: 42px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 10px 24px 11px;
+
+width: 136px;
+height: 42px;
+
+border-radius: 12px;
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Dashboard */
+
+width: 88px;
+height: 21px;
+
+/* Inter/Regular */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 400;
+font-size: 17px;
+line-height: 21px;
+/* identical to box height */
+display: flex;
+align-items: center;
+
+/* Dove Gray */
+color: #666666;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 10px 24px 11px;
+
+width: 157px;
+height: 42px;
+
+border-radius: 12px;
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+flex-grow: 0;
+
+
+/* Relationships */
+
+width: 109px;
+height: 21px;
+
+/* Inter/Regular */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 400;
+font-size: 17.2px;
+line-height: 21px;
+/* identical to box height */
+display: flex;
+align-items: center;
+
+/* Dove Gray */
+color: #666666;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Background */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 10px 24px 11px;
+
+width: 156px;
+height: 42px;
+
+/* Morning Glory */
+background: #9DE2D0;
+border-radius: 12px;
+
+/* Inside auto layout */
+flex: none;
+order: 2;
+flex-grow: 0;
+
+
+/* Applications */
+
+width: 108px;
+height: 21px;
+
+/* Inter/Bold */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 700;
+font-size: 17.4px;
+line-height: 21px;
+/* identical to box height */
+display: flex;
+align-items: center;
+
+/* Mine Shaft */
+color: #333333;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 10px 24px 11px;
+
+width: 111px;
+height: 42px;
+
+border-radius: 12px;
+
+/* Inside auto layout */
+flex: none;
+order: 3;
+flex-grow: 0;
+
+
+/* Reports */
+
+width: 63px;
+height: 21px;
+
+/* Inter/Regular */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 400;
+font-size: 17px;
+line-height: 21px;
+/* identical to box height */
+display: flex;
+align-items: center;
+
+/* Dove Gray */
+color: #666666;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 10px 24px 11px;
+
+width: 114px;
+height: 41px;
+
+border-radius: 12px;
+
+/* Inside auto layout */
+flex: none;
+order: 4;
+flex-grow: 0;
+
+
+/* Settings */
+
+width: 66px;
+height: 20px;
+
+/* Inter/Regular */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 400;
+font-size: 16.7px;
+line-height: 20px;
+display: flex;
+align-items: center;
+
+/* Dove Gray */
+color: #666666;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Middle */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+align-items: center;
+padding: 0px;
+gap: 40px;
+
+width: 820px;
+height: 42px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 2;
+flex-grow: 0;
+
+
+/* Background */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 10px 24px 11px;
+
+width: 141px;
+height: 42px;
+
+/* Morning Glory */
+background: #9DE2D0;
+border-radius: 12px;
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Dashboard */
+
+width: 93px;
+height: 21px;
+
+/* Inter/Bold */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 700;
+font-size: 17.4px;
+line-height: 21px;
+/* identical to box height */
+display: flex;
+align-items: center;
+
+/* Mine Shaft */
+color: #333333;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 10px 24px 11px;
+
+width: 155px;
+height: 42px;
+
+border-radius: 12px;
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+flex-grow: 0;
+
+
+/* Relationships */
+
+width: 107px;
+height: 21px;
+
+/* Inter/Regular */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 400;
+font-size: 17px;
+line-height: 21px;
+/* identical to box height */
+display: flex;
+align-items: center;
+
+/* Dove Gray */
+color: #666666;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 10px 24px 11px;
+
+width: 139px;
+height: 42px;
+
+border-radius: 12px;
+
+/* Inside auto layout */
+flex: none;
+order: 2;
+flex-grow: 0;
+
+
+/* Application */
+
+width: 91px;
+height: 21px;
+
+/* Inter/Regular */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 400;
+font-size: 17.2px;
+line-height: 21px;
+/* identical to box height */
+display: flex;
+align-items: center;
+
+/* Dove Gray */
+color: #666666;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Background */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 10px 24px 11px;
+
+display: none;
+width: 156px;
+height: 42px;
+
+/* Morning Glory */
+background: #9DE2D0;
+border-radius: 12px;
+
+/* Inside auto layout */
+flex: none;
+order: 3;
+flex-grow: 0;
+
+
+/* Applications */
+
+width: 108px;
+height: 21px;
+
+/* Inter/Bold */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 700;
+font-size: 17.4px;
+line-height: 21px;
+/* identical to box height */
+display: flex;
+align-items: center;
+
+/* Mine Shaft */
+color: #333333;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 10px 24px 11px;
+
+width: 111px;
+height: 42px;
+
+border-radius: 12px;
+
+/* Inside auto layout */
+flex: none;
+order: 4;
+flex-grow: 0;
+
+
+/* Reports */
+
+width: 63px;
+height: 21px;
+
+/* Inter/Regular */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 400;
+font-size: 17px;
+line-height: 21px;
+/* identical to box height */
+display: flex;
+align-items: center;
+
+/* Dove Gray */
+color: #666666;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 10px 24px 11px;
+
+width: 114px;
+height: 41px;
+
+border-radius: 12px;
+
+/* Inside auto layout */
+flex: none;
+order: 5;
+flex-grow: 0;
+
+
+/* Settings */
+
+width: 66px;
+height: 20px;
+
+/* Inter/Regular */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 400;
+font-size: 16.7px;
+line-height: 20px;
+display: flex;
+align-items: center;
+
+/* Dove Gray */
+color: #666666;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+align-items: center;
+padding: 0px;
+gap: 24px;
+
+width: 120px;
+height: 48px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 3;
+flex-grow: 0;
+
+
+/* Background */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+justify-content: center;
+align-items: center;
+padding: 0px;
+isolation: isolate;
+
+width: 48px;
+height: 48px;
+
+/* Prelude */
+background: #C8ADD6;
+border-radius: 24px;
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px 0px 1px;
+
+width: 10px;
+height: 11px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+z-index: 0;
+
+
+/* 🔔 */
+
+width: 10px;
+height: 10px;
+
+/* Inter/Regular */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 400;
+font-size: 10px;
+line-height: 12px;
+display: flex;
+align-items: center;
+
+/* White */
+color: #FFFFFF;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Background */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+justify-content: center;
+align-items: center;
+padding: 0px;
+
+position: absolute;
+width: 20px;
+height: 20px;
+right: 8px;
+top: 8px;
+
+/* Apricot */
+background: #EB8F80;
+border-radius: 10px;
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+flex-grow: 0;
+z-index: 1;
+
+
+/* 8 */
+
+width: 8px;
+height: 15px;
+
+/* Inter/Bold */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 700;
+font-size: 12px;
+line-height: 15px;
+/* identical to box height */
+display: flex;
+align-items: center;
+text-align: center;
+
+/* White */
+color: #FFFFFF;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Background */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+justify-content: center;
+align-items: center;
+padding: 13.5px 0px 14.5px;
+
+width: 48px;
+height: 48px;
+
+/* Morning Glory */
+background: #9DE2D0;
+border-radius: 24px;
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+flex-grow: 0;
+
+
+/* SA */
+
+width: 25px;
+height: 22px;
+
+/* Inter/Bold */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 700;
+font-size: 18px;
+line-height: 22px;
+/* identical to box height */
+display: flex;
+align-items: center;
+text-align: center;
+
+/* White */
+color: #FFFFFF;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* header */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+align-items: center;
+padding: 0px 60px;
+gap: 240px;
+
+display: none;
+width: 1920px;
+height: 80px;
+
+/* White */
+background: #FFFFFF;
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px 0px 1px;
+
+width: 221px;
+height: 31px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* HomeSweetHome */
+
+width: 221px;
+height: 30px;
+
+font-family: 'Inter';
+font-style: normal;
+font-weight: 700;
+font-size: 25px;
+line-height: 30px;
+display: flex;
+align-items: center;
+
+/* Mine Shaft */
+color: #333333;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+align-items: center;
+padding: 0px;
+gap: 40px;
+
+width: 943px;
+height: 42px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+flex-grow: 0;
+
+
+/* Background */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 10px 24px 11px;
+
+display: none;
+width: 141px;
+height: 42px;
+
+/* Morning Glory */
+background: #9DE2D0;
+border-radius: 12px;
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Dashboard */
+
+width: 93px;
+height: 21px;
+
+/* Inter/Bold */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 700;
+font-size: 17.4px;
+line-height: 21px;
+/* identical to box height */
+display: flex;
+align-items: center;
+
+/* Mine Shaft */
+color: #333333;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 10px 24px 11px;
+
+width: 136px;
+height: 42px;
+
+border-radius: 12px;
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+flex-grow: 0;
+
+
+/* Dashboard */
+
+width: 88px;
+height: 21px;
+
+/* Inter/Regular */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 400;
+font-size: 17px;
+line-height: 21px;
+/* identical to box height */
+display: flex;
+align-items: center;
+
+/* Dove Gray */
+color: #666666;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 10px 24px 11px;
+
+width: 155px;
+height: 42px;
+
+border-radius: 12px;
+
+/* Inside auto layout */
+flex: none;
+order: 2;
+flex-grow: 0;
+
+
+/* Relationships */
+
+width: 107px;
+height: 21px;
+
+/* Inter/Regular */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 400;
+font-size: 17px;
+line-height: 21px;
+/* identical to box height */
+display: flex;
+align-items: center;
+
+/* Dove Gray */
+color: #666666;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 10px 24px 11px;
+
+display: none;
+width: 139px;
+height: 42px;
+
+border-radius: 12px;
+
+/* Inside auto layout */
+flex: none;
+order: 3;
+flex-grow: 0;
+
+
+/* Application */
+
+width: 91px;
+height: 21px;
+
+/* Inter/Regular */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 400;
+font-size: 17.2px;
+line-height: 21px;
+/* identical to box height */
+display: flex;
+align-items: center;
+
+/* Dove Gray */
+color: #666666;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Background */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 10px 24px 11px;
+
+width: 156px;
+height: 42px;
+
+/* Morning Glory */
+background: #9DE2D0;
+border-radius: 12px;
+
+/* Inside auto layout */
+flex: none;
+order: 4;
+flex-grow: 0;
+
+
+/* Applications */
+
+width: 108px;
+height: 21px;
+
+/* Inter/Bold */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 700;
+font-size: 17.4px;
+line-height: 21px;
+/* identical to box height */
+display: flex;
+align-items: center;
+
+/* Mine Shaft */
+color: #333333;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 10px 24px 11px;
+
+width: 111px;
+height: 42px;
+
+border-radius: 12px;
+
+/* Inside auto layout */
+flex: none;
+order: 5;
+flex-grow: 0;
+
+
+/* Reports */
+
+width: 63px;
+height: 21px;
+
+/* Inter/Regular */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 400;
+font-size: 17px;
+line-height: 21px;
+/* identical to box height */
+display: flex;
+align-items: center;
+
+/* Dove Gray */
+color: #666666;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 10px 24px 11px;
+
+width: 225px;
+height: 41px;
+
+border-radius: 12px;
+
+/* Inside auto layout */
+flex: none;
+order: 6;
+flex-grow: 0;
+
+
+/* Keyword Management */
+
+width: 177px;
+height: 20px;
+
+/* Inter/Regular */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 400;
+font-size: 16.7px;
+line-height: 20px;
+display: flex;
+align-items: center;
+
+/* Dove Gray */
+color: #666666;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+justify-content: flex-end;
+align-items: center;
+padding: 0px;
+gap: 24px;
+
+width: 120px;
+height: 48px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 2;
+flex-grow: 0;
+
+
+/* Background */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+justify-content: center;
+align-items: center;
+padding: 0px;
+isolation: isolate;
+
+width: 48px;
+height: 48px;
+
+/* Prelude */
+background: #C8ADD6;
+border-radius: 24px;
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px 0px 1px;
+
+width: 10px;
+height: 11px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+z-index: 0;
+
+
+/* 🔔 */
+
+width: 10px;
+height: 10px;
+
+/* Inter/Regular */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 400;
+font-size: 10px;
+line-height: 12px;
+display: flex;
+align-items: center;
+
+/* White */
+color: #FFFFFF;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Background */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+justify-content: center;
+align-items: center;
+padding: 0px;
+
+position: absolute;
+width: 20px;
+height: 20px;
+right: 8px;
+top: 8px;
+
+/* Apricot */
+background: #EB8F80;
+border-radius: 10px;
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+flex-grow: 0;
+z-index: 1;
+
+
+/* 8 */
+
+width: 8px;
+height: 15px;
+
+/* Inter/Bold */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 700;
+font-size: 12px;
+line-height: 15px;
+/* identical to box height */
+display: flex;
+align-items: center;
+text-align: center;
+
+/* White */
+color: #FFFFFF;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Background */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+justify-content: center;
+align-items: center;
+padding: 13.5px 0px 14.5px;
+
+width: 48px;
+height: 48px;
+
+/* Morning Glory */
+background: #9DE2D0;
+border-radius: 24px;
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+flex-grow: 0;
+
+
+/* SA */
+
+width: 25px;
+height: 22px;
+
+/* Inter/Bold */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 700;
+font-size: 18px;
+line-height: 22px;
+/* identical to box height */
+display: flex;
+align-items: center;
+text-align: center;
+
+/* White */
+color: #FFFFFF;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* header */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+align-items: center;
+padding: 0px 60px;
+gap: 350px;
+
+width: 1920px;
+height: 80px;
+
+/* White */
+background: #FFFFFF;
+
+/* Inside auto layout */
+flex: none;
+order: 2;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px 0px 1px;
+
+width: 221px;
+height: 31px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* HomeSweetHome */
+
+width: 221px;
+height: 30px;
+
+font-family: 'Inter';
+font-style: normal;
+font-weight: 700;
+font-size: 25px;
+line-height: 30px;
+display: flex;
+align-items: center;
+
+/* Mine Shaft */
+color: #333333;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+align-items: center;
+padding: 0px;
+gap: 40px;
+
+width: 767px;
+height: 42px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+flex-grow: 0;
+
+
+/* Background */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 10px 24px 11px;
+
+display: none;
+width: 141px;
+height: 42px;
+
+/* Morning Glory */
+background: #9DE2D0;
+border-radius: 12px;
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Dashboard */
+
+width: 93px;
+height: 21px;
+
+/* Inter/Bold */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 700;
+font-size: 17.4px;
+line-height: 21px;
+/* identical to box height */
+display: flex;
+align-items: center;
+
+/* Mine Shaft */
+color: #333333;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 10px 24px 11px;
+
+display: none;
+width: 136px;
+height: 42px;
+
+border-radius: 12px;
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+flex-grow: 0;
+
+
+/* Dashboard */
+
+width: 88px;
+height: 21px;
+
+/* Inter/Regular */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 400;
+font-size: 17px;
+line-height: 21px;
+/* identical to box height */
+display: flex;
+align-items: center;
+
+/* Dove Gray */
+color: #666666;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 10px 24px 11px;
+
+width: 155px;
+height: 42px;
+
+border-radius: 12px;
+
+/* Inside auto layout */
+flex: none;
+order: 2;
+flex-grow: 0;
+
+
+/* Relationships */
+
+width: 107px;
+height: 21px;
+
+/* Inter/Regular */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 400;
+font-size: 17px;
+line-height: 21px;
+/* identical to box height */
+display: flex;
+align-items: center;
+
+/* Dove Gray */
+color: #666666;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 10px 24px 11px;
+
+display: none;
+width: 139px;
+height: 42px;
+
+border-radius: 12px;
+
+/* Inside auto layout */
+flex: none;
+order: 3;
+flex-grow: 0;
+
+
+/* Application */
+
+width: 91px;
+height: 21px;
+
+/* Inter/Regular */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 400;
+font-size: 17.2px;
+line-height: 21px;
+/* identical to box height */
+display: flex;
+align-items: center;
+
+/* Dove Gray */
+color: #666666;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Background */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 10px 24px 11px;
+
+width: 156px;
+height: 42px;
+
+/* Morning Glory */
+background: #9DE2D0;
+border-radius: 12px;
+
+/* Inside auto layout */
+flex: none;
+order: 4;
+flex-grow: 0;
+
+
+/* Applications */
+
+width: 108px;
+height: 21px;
+
+/* Inter/Bold */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 700;
+font-size: 17.4px;
+line-height: 21px;
+/* identical to box height */
+display: flex;
+align-items: center;
+
+/* Mine Shaft */
+color: #333333;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 10px 24px 11px;
+
+width: 111px;
+height: 42px;
+
+border-radius: 12px;
+
+/* Inside auto layout */
+flex: none;
+order: 5;
+flex-grow: 0;
+
+
+/* Reports */
+
+width: 63px;
+height: 21px;
+
+/* Inter/Regular */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 400;
+font-size: 17px;
+line-height: 21px;
+/* identical to box height */
+display: flex;
+align-items: center;
+
+/* Dove Gray */
+color: #666666;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 10px 24px 11px;
+
+width: 225px;
+height: 41px;
+
+border-radius: 12px;
+
+/* Inside auto layout */
+flex: none;
+order: 6;
+flex-grow: 0;
+
+
+/* Keyword Management */
+
+width: 177px;
+height: 20px;
+
+/* Inter/Regular */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 400;
+font-size: 16.7px;
+line-height: 20px;
+display: flex;
+align-items: center;
+
+/* Dove Gray */
+color: #666666;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+justify-content: flex-end;
+align-items: center;
+padding: 0px;
+gap: 24px;
+
+width: 120px;
+height: 48px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 2;
+flex-grow: 0;
+
+
+/* Background */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+justify-content: center;
+align-items: center;
+padding: 0px;
+isolation: isolate;
+
+width: 48px;
+height: 48px;
+
+/* Prelude */
+background: #C8ADD6;
+border-radius: 24px;
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px 0px 1px;
+
+width: 10px;
+height: 11px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+z-index: 0;
+
+
+/* 🔔 */
+
+width: 10px;
+height: 10px;
+
+/* Inter/Regular */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 400;
+font-size: 10px;
+line-height: 12px;
+display: flex;
+align-items: center;
+
+/* White */
+color: #FFFFFF;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Background */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+justify-content: center;
+align-items: center;
+padding: 0px;
+
+position: absolute;
+width: 20px;
+height: 20px;
+right: 8px;
+top: 8px;
+
+/* Apricot */
+background: #EB8F80;
+border-radius: 10px;
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+flex-grow: 0;
+z-index: 1;
+
+
+/* 8 */
+
+width: 8px;
+height: 15px;
+
+/* Inter/Bold */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 700;
+font-size: 12px;
+line-height: 15px;
+/* identical to box height */
+display: flex;
+align-items: center;
+text-align: center;
+
+/* White */
+color: #FFFFFF;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Background */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+justify-content: center;
+align-items: center;
+padding: 13.5px 0px 14.5px;
+
+width: 48px;
+height: 48px;
+
+/* Morning Glory */
+background: #9DE2D0;
+border-radius: 24px;
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+flex-grow: 0;
+
+
+/* SA */
+
+width: 25px;
+height: 22px;
+
+/* Inter/Bold */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 700;
+font-size: 18px;
+line-height: 22px;
+/* identical to box height */
+display: flex;
+align-items: center;
+text-align: center;
+
+/* White */
+color: #FFFFFF;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+justify-content: center;
+align-items: flex-start;
+padding: 0px;
+
+width: 1920px;
+height: 2579px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 3;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Container */
+
+width: 1920px;
+height: 2579px;
+overflow: scroll;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px;
+gap: 32px;
+
+position: absolute;
+max-width: 1400px;
+height: 1844px;
+left: 60px;
+right: 460px;
+top: 60px;
+
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+align-items: center;
+padding: 0px;
+gap: 655px;
+
+width: 1400px;
+height: 71px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px;
+gap: 8px;
+
+width: 519px;
+height: 71px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px 0px 1px;
+
+width: 519px;
+height: 19px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Application ID: APP-2024-1201 */
+
+width: 219px;
+height: 18px;
+
+/* Semantic/Textarea */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 400;
+font-size: 15.1px;
+line-height: 18px;
+display: flex;
+align-items: center;
+
+/* Dusty Gray */
+color: #999999;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px 0px 1px;
+
+width: 519px;
+height: 44px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Review Application: Kevin Tan */
+
+width: 519px;
+height: 43px;
+
+/* Inter/Bold */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 700;
+font-size: 35.4px;
+line-height: 43px;
+/* identical to box height */
+display: flex;
+align-items: center;
+
+/* Mine Shaft */
+color: #333333;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-end;
+padding: 0px;
+gap: 8px;
+
+display: none;
+width: 224.91px;
+min-width: 224.91px;
+height: 52px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+flex-grow: 0;
+
+
+/* Background */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+justify-content: flex-end;
+align-items: center;
+padding: 6px 16px;
+
+width: 213px;
+height: 28px;
+
+/* Prelude */
+background: #C8ADD6;
+border-radius: 8px;
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* 🔒 Locked to you for 2 hours */
+
+width: 181px;
+height: 16px;
+
+/* Inter/Bold */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 700;
+font-size: 13.3px;
+line-height: 16px;
+/* identical to box height */
+display: flex;
+align-items: center;
+text-align: right;
+
+/* Mine Shaft */
+color: #333333;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-end;
+padding: 0px;
+
+width: 224.91px;
+height: 16px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Auto-release in: 1h 58m */
+
+width: 149px;
+height: 16px;
+
+/* Inter/Regular */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 400;
+font-size: 13.3px;
+line-height: 16px;
+/* identical to box height */
+display: flex;
+align-items: center;
+text-align: right;
+
+/* Dove Gray */
+color: #666666;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Background+Shadow */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 40px 40px 72px;
+gap: 24px;
+
+width: 1400px;
+height: 568px;
+
+/* White */
+background: #FFFFFF;
+box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.04);
+border-radius: 20px;
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px 0px 1px;
+
+width: 1320px;
+height: 30px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Application Details */
+
+width: 1320px;
+height: 29px;
+
+/* Inter/Bold */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 700;
+font-size: 23.8px;
+line-height: 29px;
+/* identical to box height */
+display: flex;
+align-items: center;
+
+/* Mine Shaft */
+color: #333333;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+justify-content: center;
+align-items: flex-start;
+padding: 0px;
+gap: 40px;
+
+width: 1320px;
+height: 402px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Background+Border */
+
+box-sizing: border-box;
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 28px;
+gap: 20px;
+
+width: 640px;
+height: 402px;
+
+/* Quarter Pearl Lusta */
+background: #FFFDF5;
+/* Caper */
+border: 2px solid #D4E5AE;
+border-radius: 16px;
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px 0px 1px;
+
+width: 580px;
+height: 23px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* 👤 Youth Profile */
+
+width: 136px;
+height: 22px;
+
+/* Inter/Bold */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 700;
+font-size: 18px;
+line-height: 22px;
+/* identical to box height */
+display: flex;
+align-items: center;
+
+/* Mine Shaft */
+color: #333333;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px;
+gap: 16px;
+
+width: 580px;
+height: 263px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+justify-content: space-between;
+align-items: flex-start;
+padding: 0px;
+gap: 357.45px;
+
+width: 580px;
+height: 19px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px;
+
+margin: 0 auto;
+width: 73px;
+height: 19px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Full Name */
+
+width: 73px;
+height: 19px;
+
+/* Inter/Regular */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 400;
+font-size: 15.6px;
+line-height: 19px;
+/* identical to box height */
+display: flex;
+align-items: center;
+
+/* Dove Gray */
+color: #666666;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px;
+
+margin: 0 auto;
+width: 149px;
+height: 19px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Kevin Tan Wei Ming */
+
+width: 149px;
+height: 19px;
+
+/* Semantic/Button */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 700;
+font-size: 15.6px;
+line-height: 19px;
+/* identical to box height */
+display: flex;
+align-items: center;
+
+/* Mine Shaft */
+color: #333333;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+justify-content: space-between;
+align-items: flex-start;
+padding: 0px;
+gap: 470.6px;
+
+width: 580px;
+height: 19px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px;
+
+margin: 0 auto;
+width: 55px;
+height: 19px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* User ID */
+
+width: 55px;
+height: 19px;
+
+/* Inter/Regular */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 400;
+font-size: 15.6px;
+line-height: 19px;
+/* identical to box height */
+display: flex;
+align-items: center;
+
+/* Dove Gray */
+color: #666666;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px;
+
+margin: 0 auto;
+width: 56px;
+height: 19px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Y34567 */
+
+width: 56px;
+height: 17px;
+
+/* Inter/Bold */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 700;
+font-size: 13.9px;
+line-height: 17px;
+/* identical to box height */
+display: flex;
+align-items: center;
+
+/* Mine Shaft */
+color: #333333;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+justify-content: space-between;
+align-items: flex-start;
+padding: 0px;
+gap: 459.03px;
+
+width: 580px;
+height: 19px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 2;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px;
+
+margin: 0 auto;
+width: 29px;
+height: 19px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Age */
+
+width: 29px;
+height: 19px;
+
+/* Semantic/Textarea */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 400;
+font-size: 15.3px;
+line-height: 19px;
+/* identical to box height */
+display: flex;
+align-items: center;
+
+/* Dove Gray */
+color: #666666;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px;
+
+margin: 0 auto;
+width: 93px;
+height: 19px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* 23 years old */
+
+width: 93px;
+height: 19px;
+
+/* Inter/Bold */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 700;
+font-size: 15.4px;
+line-height: 19px;
+/* identical to box height */
+display: flex;
+align-items: center;
+
+/* Mine Shaft */
+color: #333333;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+justify-content: space-between;
+align-items: flex-start;
+padding: 0px;
+gap: 358.58px;
+
+width: 580px;
+height: 19px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 3;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px;
+
+margin: 0 auto;
+width: 81px;
+height: 19px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Occupation */
+
+width: 81px;
+height: 18px;
+
+/* Inter/Regular */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 400;
+font-size: 14.9px;
+line-height: 18px;
+/* identical to box height */
+display: flex;
+align-items: center;
+
+/* Dove Gray */
+color: #666666;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px;
+
+margin: 0 auto;
+width: 141px;
+height: 19px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Software Engineer */
+
+width: 141px;
+height: 19px;
+
+/* Inter/Bold */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 700;
+font-size: 15.5px;
+line-height: 19px;
+/* identical to box height */
+display: flex;
+align-items: center;
+
+/* Mine Shaft */
+color: #333333;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+justify-content: space-between;
+align-items: flex-start;
+padding: 0px;
+gap: 368.96px;
+
+width: 580px;
+height: 19px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 4;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px;
+
+margin: 0 auto;
+width: 72px;
+height: 19px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Education */
+
+width: 72px;
+height: 18px;
+
+/* Semantic/Textarea */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 400;
+font-size: 15.1px;
+line-height: 18px;
+display: flex;
+align-items: center;
+
+/* Dove Gray */
+color: #666666;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px;
+
+margin: 0 auto;
+width: 139px;
+height: 19px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Bachelor's Degree */
+
+width: 139px;
+height: 19px;
+
+/* Semantic/Button */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 700;
+font-size: 15.6px;
+line-height: 19px;
+/* identical to box height */
+display: flex;
+align-items: center;
+
+/* Mine Shaft */
+color: #333333;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+justify-content: space-between;
+align-items: flex-start;
+padding: 0px;
+gap: 441.27px;
+
+width: 580px;
+height: 19px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 5;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px;
+
+margin: 0 auto;
+width: 61px;
+height: 19px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Location */
+
+width: 61px;
+height: 18px;
+
+/* Inter/Regular */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 400;
+font-size: 14.9px;
+line-height: 18px;
+/* identical to box height */
+display: flex;
+align-items: center;
+
+/* Dove Gray */
+color: #666666;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px;
+
+margin: 0 auto;
+width: 78px;
+height: 19px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Singapore */
+
+width: 78px;
+height: 19px;
+
+/* Semantic/Button */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 700;
+font-size: 15.6px;
+line-height: 19px;
+/* identical to box height */
+display: flex;
+align-items: center;
+
+/* Mine Shaft */
+color: #333333;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+justify-content: space-between;
+align-items: flex-start;
+padding: 0px;
+gap: 390.56px;
+
+width: 580px;
+height: 19px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 6;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px;
+
+margin: 0 auto;
+width: 112px;
+height: 19px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Age Verification */
+
+width: 112px;
+height: 18px;
+
+/* Inter/Regular */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 400;
+font-size: 14.9px;
+line-height: 18px;
+/* identical to box height */
+display: flex;
+align-items: center;
+
+/* Dove Gray */
+color: #666666;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px;
+
+margin: 0 auto;
+width: 78px;
+height: 19px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* ✓ Verified */
+
+width: 78px;
+height: 19px;
+
+/* Semantic/Button */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 700;
+font-size: 15.6px;
+line-height: 19px;
+/* identical to box height */
+display: flex;
+align-items: center;
+
+/* Caper */
+color: #D4E5AE;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+justify-content: space-between;
+align-items: flex-start;
+padding: 0px;
+gap: 367.4px;
+
+width: 580px;
+height: 18px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 7;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px;
+
+margin: 0 auto;
+width: 120px;
+height: 18px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Account Created */
+
+width: 120px;
+height: 18px;
+
+/* Inter/Regular */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 400;
+font-size: 14.9px;
+line-height: 18px;
+/* identical to box height */
+display: flex;
+align-items: center;
+
+/* Dove Gray */
+color: #666666;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px;
+
+margin: 0 auto;
+width: 94px;
+height: 18px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Oct 15, 2024 */
+
+width: 94px;
+height: 18px;
+
+/* Inter/Bold */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 700;
+font-size: 15px;
+line-height: 18px;
+display: flex;
+align-items: center;
+
+/* Mine Shaft */
+color: #333333;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Background+Border */
+
+box-sizing: border-box;
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 28px;
+gap: 20px;
+
+width: 640px;
+height: 402px;
+
+/* Quarter Pearl Lusta */
+background: #FFFDF5;
+/* Caper */
+border: 2px solid #D4E5AE;
+border-radius: 16px;
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px 0px 1px;
+
+width: 580px;
+height: 24px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* 👵 Elderly Profile (Applied For) */
+
+width: 278px;
+height: 23px;
+
+/* Inter/Bold */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 700;
+font-size: 18.9px;
+line-height: 23px;
+/* identical to box height */
+display: flex;
+align-items: center;
+
+/* Mine Shaft */
+color: #333333;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px;
+gap: 16px;
+
+width: 580px;
+height: 263px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+justify-content: space-between;
+align-items: flex-start;
+padding: 0px;
+gap: 435.07px;
+
+width: 580px;
+height: 19px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px;
+
+margin: 0 auto;
+width: 73px;
+height: 19px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Full Name */
+
+width: 73px;
+height: 19px;
+
+/* Inter/Regular */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 400;
+font-size: 15.6px;
+line-height: 19px;
+/* identical to box height */
+display: flex;
+align-items: center;
+
+/* Dove Gray */
+color: #666666;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px;
+
+margin: 0 auto;
+width: 71px;
+height: 19px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Rose Lim */
+
+width: 71px;
+height: 19px;
+
+/* Inter/Bold */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 700;
+font-size: 16px;
+line-height: 19px;
+display: flex;
+align-items: center;
+
+/* Mine Shaft */
+color: #333333;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+justify-content: space-between;
+align-items: flex-start;
+padding: 0px 1.13687e-13px 0px 0px;
+gap: 470.6px;
+
+width: 580px;
+height: 19px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px;
+
+margin: 0 auto;
+width: 55px;
+height: 19px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* User ID */
+
+width: 55px;
+height: 19px;
+
+/* Inter/Regular */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 400;
+font-size: 15.6px;
+line-height: 19px;
+/* identical to box height */
+display: flex;
+align-items: center;
+
+/* Dove Gray */
+color: #666666;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px;
+
+margin: 0 auto;
+width: 56px;
+height: 19px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* E89012 */
+
+width: 56px;
+height: 18px;
+
+/* Inter/Bold */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 700;
+font-size: 14.8px;
+line-height: 18px;
+/* identical to box height */
+display: flex;
+align-items: center;
+
+/* Mine Shaft */
+color: #333333;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+justify-content: space-between;
+align-items: flex-start;
+padding: 0px;
+gap: 459.03px;
+
+width: 580px;
+height: 19px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 2;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px;
+
+margin: 0 auto;
+width: 29px;
+height: 19px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Age */
+
+width: 29px;
+height: 19px;
+
+/* Semantic/Textarea */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 400;
+font-size: 15.3px;
+line-height: 19px;
+/* identical to box height */
+display: flex;
+align-items: center;
+
+/* Dove Gray */
+color: #666666;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px;
+
+margin: 0 auto;
+width: 93px;
+height: 19px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* 72 years old */
+
+width: 93px;
+height: 19px;
+
+/* Semantic/Button */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 700;
+font-size: 15.6px;
+line-height: 19px;
+/* identical to box height */
+display: flex;
+align-items: center;
+
+/* Mine Shaft */
+color: #333333;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+justify-content: space-between;
+align-items: flex-start;
+padding: 0px 1.13687e-13px 0px 0px;
+gap: 365.75px;
+
+width: 580px;
+height: 19px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 3;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px;
+
+margin: 0 auto;
+width: 62px;
+height: 19px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Interests */
+
+width: 62px;
+height: 18px;
+
+/* Inter/Regular */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 400;
+font-size: 14.9px;
+line-height: 18px;
+/* identical to box height */
+display: flex;
+align-items: center;
+
+/* Dove Gray */
+color: #666666;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px;
+
+margin: 0 auto;
+width: 152px;
+height: 19px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Cooking, Gardening */
+
+width: 152px;
+height: 19px;
+
+/* Semantic/Button */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 700;
+font-size: 15.6px;
+line-height: 19px;
+/* identical to box height */
+display: flex;
+align-items: center;
+
+/* Mine Shaft */
+color: #333333;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+justify-content: space-between;
+align-items: flex-start;
+padding: 0px;
+gap: 363.01px;
+
+width: 580px;
+height: 19px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 4;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px;
+
+margin: 0 auto;
+width: 80px;
+height: 19px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Languages */
+
+width: 80px;
+height: 19px;
+
+/* Semantic/Textarea */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 400;
+font-size: 15.3px;
+line-height: 19px;
+/* identical to box height */
+display: flex;
+align-items: center;
+
+/* Dove Gray */
+color: #666666;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px;
+
+margin: 0 auto;
+width: 137px;
+height: 19px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* English, Mandarin */
+
+width: 137px;
+height: 19px;
+
+/* Semantic/Button */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 700;
+font-size: 15.6px;
+line-height: 19px;
+/* identical to box height */
+display: flex;
+align-items: center;
+
+/* Mine Shaft */
+color: #333333;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+justify-content: space-between;
+align-items: flex-start;
+padding: 0px;
+gap: 441.27px;
+
+width: 580px;
+height: 19px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 5;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px;
+
+margin: 0 auto;
+width: 61px;
+height: 19px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Location */
+
+width: 61px;
+height: 18px;
+
+/* Inter/Regular */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 400;
+font-size: 14.9px;
+line-height: 18px;
+/* identical to box height */
+display: flex;
+align-items: center;
+
+/* Dove Gray */
+color: #666666;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px;
+
+margin: 0 auto;
+width: 78px;
+height: 19px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Singapore */
+
+width: 78px;
+height: 19px;
+
+/* Semantic/Button */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 700;
+font-size: 15.6px;
+line-height: 19px;
+/* identical to box height */
+display: flex;
+align-items: center;
+
+/* Mine Shaft */
+color: #333333;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+justify-content: space-between;
+align-items: flex-start;
+padding: 0px;
+gap: 374.53px;
+
+width: 580px;
+height: 18px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 6;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px;
+
+margin: 0 auto;
+width: 147px;
+height: 18px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Current Connections */
+
+width: 147px;
+height: 18px;
+
+/* Inter/Regular */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 400;
+font-size: 15px;
+line-height: 18px;
+display: flex;
+align-items: center;
+
+/* Dove Gray */
+color: #666666;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px;
+
+margin: 0 auto;
+width: 59px;
+height: 18px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* 2 active */
+
+width: 59px;
+height: 18px;
+
+/* Semantic/Strong */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 700;
+font-size: 15.1px;
+line-height: 18px;
+display: flex;
+align-items: center;
+
+/* Mine Shaft */
+color: #333333;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+justify-content: space-between;
+align-items: flex-start;
+padding: 0px;
+gap: 438.86px;
+
+width: 580px;
+height: 19px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 7;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px;
+
+margin: 0 auto;
+width: 94px;
+height: 19px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Open to New */
+
+width: 94px;
+height: 18px;
+
+/* Inter/Regular */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 400;
+font-size: 15px;
+line-height: 18px;
+display: flex;
+align-items: center;
+
+/* Dove Gray */
+color: #666666;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px;
+
+margin: 0 auto;
+width: 47px;
+height: 19px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* ✓ Yes */
+
+width: 47px;
+height: 19px;
+
+/* Inter/Bold */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 700;
+font-size: 16px;
+line-height: 19px;
+display: flex;
+align-items: center;
+
+/* Caper */
+color: #D4E5AE;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+justify-content: space-between;
+align-items: center;
+padding: 0px;
+gap: 40px;
+isolation: isolate;
+
+display: none;
+width: 1320px;
+height: 368px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 2;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Background+Border */
+
+box-sizing: border-box;
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+justify-content: center;
+align-items: flex-start;
+padding: 28px;
+gap: 22px;
+
+width: 640px;
+height: 368px;
+
+/* Quarter Pearl Lusta */
+background: #FFFDF5;
+/* Caper */
+border: 2px solid #D4E5AE;
+border-radius: 16px;
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+z-index: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px 0px 1px;
+
+width: 580px;
+height: 23px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* 👤 Youth Profile */
+
+width: 136px;
+height: 22px;
+
+/* Inter/Bold */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 700;
+font-size: 18px;
+line-height: 22px;
+/* identical to box height */
+display: flex;
+align-items: center;
+
+/* Mine Shaft */
+color: #333333;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px;
+gap: 16px;
+
+width: 580px;
+height: 263px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+justify-content: space-between;
+align-items: flex-start;
+padding: 0px;
+gap: 357.45px;
+
+width: 580px;
+height: 19px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px;
+
+margin: 0 auto;
+width: 73px;
+height: 19px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Full Name */
+
+width: 73px;
+height: 19px;
+
+/* Inter/Regular */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 400;
+font-size: 15.6px;
+line-height: 19px;
+/* identical to box height */
+display: flex;
+align-items: center;
+
+/* Dove Gray */
+color: #666666;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px;
+
+margin: 0 auto;
+width: 149px;
+height: 19px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Kevin Tan Wei Ming */
+
+width: 149px;
+height: 19px;
+
+/* Semantic/Button */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 700;
+font-size: 15.6px;
+line-height: 19px;
+/* identical to box height */
+display: flex;
+align-items: center;
+
+/* Mine Shaft */
+color: #333333;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+justify-content: space-between;
+align-items: flex-start;
+padding: 0px;
+gap: 470.6px;
+
+width: 580px;
+height: 19px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px;
+
+margin: 0 auto;
+width: 55px;
+height: 19px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* User ID */
+
+width: 55px;
+height: 19px;
+
+/* Inter/Regular */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 400;
+font-size: 15.6px;
+line-height: 19px;
+/* identical to box height */
+display: flex;
+align-items: center;
+
+/* Dove Gray */
+color: #666666;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px;
+
+margin: 0 auto;
+width: 56px;
+height: 19px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Y34567 */
+
+width: 56px;
+height: 17px;
+
+/* Inter/Bold */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 700;
+font-size: 13.9px;
+line-height: 17px;
+/* identical to box height */
+display: flex;
+align-items: center;
+
+/* Mine Shaft */
+color: #333333;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+justify-content: space-between;
+align-items: flex-start;
+padding: 0px;
+gap: 459.03px;
+
+width: 580px;
+height: 19px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 2;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px;
+
+margin: 0 auto;
+width: 29px;
+height: 19px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Age */
+
+width: 29px;
+height: 19px;
+
+/* Semantic/Textarea */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 400;
+font-size: 15.3px;
+line-height: 19px;
+/* identical to box height */
+display: flex;
+align-items: center;
+
+/* Dove Gray */
+color: #666666;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px;
+
+margin: 0 auto;
+width: 93px;
+height: 19px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* 23 years old */
+
+width: 93px;
+height: 19px;
+
+/* Inter/Bold */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 700;
+font-size: 15.4px;
+line-height: 19px;
+/* identical to box height */
+display: flex;
+align-items: center;
+
+/* Mine Shaft */
+color: #333333;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+justify-content: space-between;
+align-items: flex-start;
+padding: 0px;
+gap: 358.58px;
+
+width: 580px;
+height: 19px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 3;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px;
+
+margin: 0 auto;
+width: 81px;
+height: 19px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Occupation */
+
+width: 81px;
+height: 18px;
+
+/* Inter/Regular */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 400;
+font-size: 14.9px;
+line-height: 18px;
+/* identical to box height */
+display: flex;
+align-items: center;
+
+/* Dove Gray */
+color: #666666;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px;
+
+margin: 0 auto;
+width: 141px;
+height: 19px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Software Engineer */
+
+width: 141px;
+height: 19px;
+
+/* Inter/Bold */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 700;
+font-size: 15.5px;
+line-height: 19px;
+/* identical to box height */
+display: flex;
+align-items: center;
+
+/* Mine Shaft */
+color: #333333;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+justify-content: space-between;
+align-items: flex-start;
+padding: 0px;
+gap: 368.96px;
+
+width: 580px;
+height: 19px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 4;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px;
+
+margin: 0 auto;
+width: 72px;
+height: 19px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Education */
+
+width: 72px;
+height: 18px;
+
+/* Semantic/Textarea */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 400;
+font-size: 15.1px;
+line-height: 18px;
+display: flex;
+align-items: center;
+
+/* Dove Gray */
+color: #666666;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px;
+
+margin: 0 auto;
+width: 139px;
+height: 19px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Bachelor's Degree */
+
+width: 139px;
+height: 19px;
+
+/* Semantic/Button */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 700;
+font-size: 15.6px;
+line-height: 19px;
+/* identical to box height */
+display: flex;
+align-items: center;
+
+/* Mine Shaft */
+color: #333333;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+align-items: flex-start;
+padding: 0px;
+gap: 441.27px;
+
+width: 580px;
+height: 19px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 5;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px;
+
+width: 61px;
+height: 19px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Location */
+
+width: 61px;
+height: 18px;
+
+/* Inter/Regular */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 400;
+font-size: 14.9px;
+line-height: 18px;
+/* identical to box height */
+display: flex;
+align-items: center;
+
+/* Dove Gray */
+color: #666666;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px;
+
+width: 78px;
+height: 19px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Singapore */
+
+width: 78px;
+height: 19px;
+
+/* Semantic/Button */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 700;
+font-size: 15.6px;
+line-height: 19px;
+/* identical to box height */
+display: flex;
+align-items: center;
+
+/* Mine Shaft */
+color: #333333;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+justify-content: space-between;
+align-items: flex-start;
+padding: 0px;
+gap: 390.56px;
+
+width: 580px;
+height: 19px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 6;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px;
+
+margin: 0 auto;
+width: 112px;
+height: 19px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Age Verification */
+
+width: 112px;
+height: 18px;
+
+/* Inter/Regular */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 400;
+font-size: 14.9px;
+line-height: 18px;
+/* identical to box height */
+display: flex;
+align-items: center;
+
+/* Dove Gray */
+color: #666666;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px;
+
+margin: 0 auto;
+width: 78px;
+height: 19px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* ✓ Verified */
+
+width: 78px;
+height: 19px;
+
+/* Semantic/Button */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 700;
+font-size: 15.6px;
+line-height: 19px;
+/* identical to box height */
+display: flex;
+align-items: center;
+
+/* Caper */
+color: #D4E5AE;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+justify-content: space-between;
+align-items: flex-start;
+padding: 0px;
+gap: 367.4px;
+
+width: 580px;
+height: 18px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 7;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px;
+
+margin: 0 auto;
+width: 120px;
+height: 18px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Account Created */
+
+width: 120px;
+height: 18px;
+
+/* Inter/Regular */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 400;
+font-size: 14.9px;
+line-height: 18px;
+/* identical to box height */
+display: flex;
+align-items: center;
+
+/* Dove Gray */
+color: #666666;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px;
+
+margin: 0 auto;
+width: 94px;
+height: 18px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Oct 15, 2024 */
+
+width: 94px;
+height: 18px;
+
+/* Inter/Bold */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 700;
+font-size: 15px;
+line-height: 18px;
+display: flex;
+align-items: center;
+
+/* Mine Shaft */
+color: #333333;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Background+Border */
+
+box-sizing: border-box;
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 28px;
+gap: 20px;
+
+display: none;
+width: 640px;
+height: 367px;
+
+/* Quarter Pearl Lusta */
+background: #FFFDF5;
+/* Caper */
+border: 2px solid #D4E5AE;
+border-radius: 16px;
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+flex-grow: 0;
+z-index: 1;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px 0px 1px;
+
+width: 580px;
+height: 24px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* 👵 Elderly Profile (Applied For) */
+
+width: 278px;
+height: 23px;
+
+/* Inter/Bold */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 700;
+font-size: 18.9px;
+line-height: 23px;
+/* identical to box height */
+display: flex;
+align-items: center;
+
+/* Mine Shaft */
+color: #333333;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px;
+gap: 16px;
+
+width: 580px;
+height: 263px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+justify-content: space-between;
+align-items: flex-start;
+padding: 0px;
+gap: 435.07px;
+
+width: 580px;
+height: 19px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px;
+
+margin: 0 auto;
+width: 73px;
+height: 19px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Full Name */
+
+width: 73px;
+height: 19px;
+
+/* Inter/Regular */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 400;
+font-size: 15.6px;
+line-height: 19px;
+/* identical to box height */
+display: flex;
+align-items: center;
+
+/* Dove Gray */
+color: #666666;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px;
+
+margin: 0 auto;
+width: 71px;
+height: 19px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Rose Lim */
+
+width: 71px;
+height: 19px;
+
+/* Inter/Bold */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 700;
+font-size: 16px;
+line-height: 19px;
+display: flex;
+align-items: center;
+
+/* Mine Shaft */
+color: #333333;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+justify-content: space-between;
+align-items: flex-start;
+padding: 0px 1.13687e-13px 0px 0px;
+gap: 470.6px;
+
+width: 580px;
+height: 19px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px;
+
+margin: 0 auto;
+width: 55px;
+height: 19px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* User ID */
+
+width: 55px;
+height: 19px;
+
+/* Inter/Regular */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 400;
+font-size: 15.6px;
+line-height: 19px;
+/* identical to box height */
+display: flex;
+align-items: center;
+
+/* Dove Gray */
+color: #666666;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px;
+
+margin: 0 auto;
+width: 56px;
+height: 19px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* E89012 */
+
+width: 56px;
+height: 18px;
+
+/* Inter/Bold */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 700;
+font-size: 14.8px;
+line-height: 18px;
+/* identical to box height */
+display: flex;
+align-items: center;
+
+/* Mine Shaft */
+color: #333333;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+justify-content: space-between;
+align-items: flex-start;
+padding: 0px;
+gap: 459.03px;
+
+width: 580px;
+height: 19px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 2;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px;
+
+margin: 0 auto;
+width: 29px;
+height: 19px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Age */
+
+width: 29px;
+height: 19px;
+
+/* Semantic/Textarea */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 400;
+font-size: 15.3px;
+line-height: 19px;
+/* identical to box height */
+display: flex;
+align-items: center;
+
+/* Dove Gray */
+color: #666666;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px;
+
+margin: 0 auto;
+width: 93px;
+height: 19px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* 72 years old */
+
+width: 93px;
+height: 19px;
+
+/* Semantic/Button */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 700;
+font-size: 15.6px;
+line-height: 19px;
+/* identical to box height */
+display: flex;
+align-items: center;
+
+/* Mine Shaft */
+color: #333333;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+justify-content: space-between;
+align-items: flex-start;
+padding: 0px 1.13687e-13px 0px 0px;
+gap: 365.75px;
+
+width: 580px;
+height: 19px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 3;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px;
+
+margin: 0 auto;
+width: 62px;
+height: 19px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Interests */
+
+width: 62px;
+height: 18px;
+
+/* Inter/Regular */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 400;
+font-size: 14.9px;
+line-height: 18px;
+/* identical to box height */
+display: flex;
+align-items: center;
+
+/* Dove Gray */
+color: #666666;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px;
+
+margin: 0 auto;
+width: 152px;
+height: 19px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Cooking, Gardening */
+
+width: 152px;
+height: 19px;
+
+/* Semantic/Button */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 700;
+font-size: 15.6px;
+line-height: 19px;
+/* identical to box height */
+display: flex;
+align-items: center;
+
+/* Mine Shaft */
+color: #333333;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+justify-content: space-between;
+align-items: flex-start;
+padding: 0px;
+gap: 363.01px;
+
+width: 580px;
+height: 19px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 4;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px;
+
+margin: 0 auto;
+width: 80px;
+height: 19px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Languages */
+
+width: 80px;
+height: 19px;
+
+/* Semantic/Textarea */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 400;
+font-size: 15.3px;
+line-height: 19px;
+/* identical to box height */
+display: flex;
+align-items: center;
+
+/* Dove Gray */
+color: #666666;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px;
+
+margin: 0 auto;
+width: 137px;
+height: 19px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* English, Mandarin */
+
+width: 137px;
+height: 19px;
+
+/* Semantic/Button */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 700;
+font-size: 15.6px;
+line-height: 19px;
+/* identical to box height */
+display: flex;
+align-items: center;
+
+/* Mine Shaft */
+color: #333333;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+justify-content: space-between;
+align-items: flex-start;
+padding: 0px;
+gap: 441.27px;
+
+width: 580px;
+height: 19px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 5;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px;
+
+margin: 0 auto;
+width: 61px;
+height: 19px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Location */
+
+width: 61px;
+height: 18px;
+
+/* Inter/Regular */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 400;
+font-size: 14.9px;
+line-height: 18px;
+/* identical to box height */
+display: flex;
+align-items: center;
+
+/* Dove Gray */
+color: #666666;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px;
+
+margin: 0 auto;
+width: 78px;
+height: 19px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Singapore */
+
+width: 78px;
+height: 19px;
+
+/* Semantic/Button */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 700;
+font-size: 15.6px;
+line-height: 19px;
+/* identical to box height */
+display: flex;
+align-items: center;
+
+/* Mine Shaft */
+color: #333333;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+justify-content: space-between;
+align-items: flex-start;
+padding: 0px;
+gap: 374.53px;
+
+width: 580px;
+height: 18px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 6;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px;
+
+margin: 0 auto;
+width: 147px;
+height: 18px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Current Connections */
+
+width: 147px;
+height: 18px;
+
+/* Inter/Regular */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 400;
+font-size: 15px;
+line-height: 18px;
+display: flex;
+align-items: center;
+
+/* Dove Gray */
+color: #666666;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px;
+
+margin: 0 auto;
+width: 59px;
+height: 18px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* 2 active */
+
+width: 59px;
+height: 18px;
+
+/* Semantic/Strong */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 700;
+font-size: 15.1px;
+line-height: 18px;
+display: flex;
+align-items: center;
+
+/* Mine Shaft */
+color: #333333;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+justify-content: space-between;
+align-items: flex-start;
+padding: 0px;
+gap: 438.86px;
+
+width: 580px;
+height: 19px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 7;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px;
+
+margin: 0 auto;
+width: 94px;
+height: 19px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Open to New */
+
+width: 94px;
+height: 18px;
+
+/* Inter/Regular */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 400;
+font-size: 15px;
+line-height: 18px;
+display: flex;
+align-items: center;
+
+/* Dove Gray */
+color: #666666;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px;
+
+margin: 0 auto;
+width: 47px;
+height: 19px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* ✓ Yes */
+
+width: 47px;
+height: 19px;
+
+/* Inter/Bold */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 700;
+font-size: 16px;
+line-height: 19px;
+display: flex;
+align-items: center;
+
+/* Caper */
+color: #D4E5AE;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Group 51 */
+
+position: absolute;
+width: 367px;
+height: 367px;
+left: 713px;
+top: 0px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 2;
+flex-grow: 0;
+z-index: 2;
+
+
+/* Ellipse 10 */
+
+position: absolute;
+width: 367px;
+height: 367px;
+left: 713px;
+top: 0px;
+
+background: url(image);
+
+
+/* Background+Shadow */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 40px;
+gap: 24px;
+
+width: 1400px;
+height: 664px;
+
+/* White */
+background: #FFFFFF;
+box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.04);
+border-radius: 20px;
+
+/* Inside auto layout */
+flex: none;
+order: 2;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px 0px 1px;
+
+width: 1320px;
+height: 29px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Motivation Letter */
+
+width: 1320px;
+height: 28px;
+
+/* Inter/Bold */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 700;
+font-size: 22.9px;
+line-height: 28px;
+/* identical to box height */
+display: flex;
+align-items: center;
+
+/* Mine Shaft */
+color: #333333;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Background+Border */
+
+box-sizing: border-box;
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 32px;
+gap: 16px;
+
+width: 1320px;
+height: 531px;
+
+/* Quarter Pearl Lusta */
+background: #FFFDF5;
+/* Morning Glory */
+border: 2px solid #9DE2D0;
+border-radius: 16px;
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px 0px 1px;
+
+width: 1252px;
+height: 25px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Why I Want to Connect with Elder */
+
+width: 319px;
+height: 24px;
+
+/* Inter/Bold */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 700;
+font-size: 19.5px;
+line-height: 24px;
+/* identical to box height */
+display: flex;
+align-items: center;
+
+/* Mine Shaft */
+color: #333333;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Paragraph */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px;
+gap: 32px;
+
+width: 1252px;
+height: 422px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+flex-grow: 0;
+
+
+/* Dear GrandConnect Team, */
+
+width: 214px;
+height: 33px;
+
+/* Inter/Regular */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 400;
+font-size: 17px;
+line-height: 32px;
+/* identical to box height, or 191% */
+display: flex;
+align-items: center;
+
+/* Mine Shaft */
+color: #333333;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aliquam cursus nisl egestas velit congue, maximus ultrices augue dictum. Donec laoreet risus id mauris vestibulum feugiat. Curabitur in molestie nulla, quis tristique leo. Proin non consequat mauris, eu accumsan lectus. Nullam sagittis ex laoreet massa luctus eleifend. Nam posuere lacus eros, non sodales nisi dignissim eu. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Morbi nec augue sem. In et tempus mauris. Maecenas ut libero porttitor, ultricies tellus ut, pulvinar arcu. Donec rhoncus ligula at ex lacinia gravida. Fusce ex libero, lacinia a ex at, porta finibus nisi. Donec at pretium lectus. Integer ut risus nec enim ultricies semper. Nullam ullamcorper sem et enim porttitor, in dapibus metus luctus. Pellentesque ac sollicitudin augue. Proin interdum ipsum sit amet fermentum pellentesque. Fusce quis risus vestibulum, pellentesque nulla vel, rutrum purus. Nunc interdum non velit a placerat. Suspendisse tortor purus, maximus eget tellus dapibus, tempus euismod orci. */
+
+width: 1237px;
+height: 260px;
+
+/* Inter/Regular */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 400;
+font-size: 16.7px;
+line-height: 32px;
+/* or 194% */
+display: flex;
+align-items: center;
+
+/* Mine Shaft */
+color: #333333;
+
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+flex-grow: 0;
+
+
+/* Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aliquam cursus nisl egestas velit congue, maximus ultrices augue dictum. Donec laoreet risus id mauris vestibulum feugiat. Curabitur in molestie nulla, quis tristique leo. Proin non consequat mauris, eu accumsan lectus. Nullam sagittis ex laoreet massa luctus eleifend. Nam posuere lacus eros, non sodales nisi dignissim eu. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Nullam vitae imperdiet nulla. Donec feugiat magna sit amet nulla placerat, a porta nisl sagittis. Praesent blandit pulvinar magna sit amet imperdiet. Morbi et porta felis. Donec in fringilla dui. Sed dignissim vel sapien ac auctor. Integer rhoncus ut arcu nec rhoncus. Donec blandit, urna vel placerat condimentum, eros risus faucibus libero, a varius diam turpis quis elit. Vivamus pharetra dignissim magna ac dictum. Phasellus auctor porta est vitae viverra. Donec accumsan condimentum felis, eu imperdiet arcu. Nunc accumsan tristique sagittis. Praesent in enim eu elit congue dictum. Fusce dictum rutrum maximus. */
+
+display: none;
+width: 1252px;
+height: 260px;
+
+/* Inter/Regular */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 400;
+font-size: 16.9px;
+line-height: 32px;
+/* or 192% */
+display: flex;
+align-items: center;
+
+/* Mine Shaft */
+color: #333333;
+
+
+/* Inside auto layout */
+flex: none;
+order: 2;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aliquam cursus nisl egestas velit congue, maximus ultrices augue dictum. Donec laoreet risus id mauris vestibulum feugiat. Curabitur in molestie nulla, quis tristique leo. Proin non consequat mauris, eu accumsan lectus. Nullam sagittis ex laoreet massa luctus eleifend. Nam posuere lacus eros, non sodales nisi dignissim eu. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Nullam vitae imperdiet nulla. Donec feugiat magna sit amet nulla placerat, a porta nisl sagittis. Praesent blandit pulvinar magna sit amet imperdiet. Morbi et porta felis. Donec in fringilla dui. Sed dignissim vel sapien ac auctor. Integer rhoncus ut arcu nec rhoncus. Donec blandit, urna vel placerat condimentum, eros risus faucibus libero, a varius diam turpis quis elit. Vivamus pharetra dignissim magna ac dictum. Phasellus auctor porta est vitae viverra. Donec accumsan condimentum felis, eu imperdiet arcu. Nunc accumsan tristique sagittis. Praesent in enim eu elit congue dictum. Fusce dictum rutrum maximus. */
+
+display: none;
+width: 1237px;
+height: 260px;
+
+/* Inter/Regular */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 400;
+font-size: 16.7px;
+line-height: 32px;
+/* or 194% */
+display: flex;
+align-items: center;
+
+/* Mine Shaft */
+color: #333333;
+
+
+/* Inside auto layout */
+flex: none;
+order: 3;
+flex-grow: 0;
+
+
+/* Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aliquam cursus nisl egestas velit congue, maximus ultrices augue dictum. Donec laoreet risus id mauris vestibulum feugiat. Curabitur in molestie nulla, quis tristique leo. Proin non consequat mauris, eu accumsan lectus. Nullam sagittis ex laoreet massa luctus eleifend. Nam posuere lacus eros, non sodales nisi dignissim eu. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Morbi nec augue sem. In et tempus mauris. Maecenas ut libero porttitor, ultricies tellus ut, pulvinar arcu. Donec rhoncus ligula at ex lacinia gravida. Fusce ex libero, lacinia a ex at, porta finibus nisi. Donec at pretium lectus. Integer ut risus nec enim ultricies semper. Nullam ullamcorper sem et enim porttitor, in dapibus metus luctus. Pellentesque ac sollicitudin augue. Proin interdum ipsum sit amet fermentum pellentesque. Fusce quis risus vestibulum, pellentesque nulla vel, rutrum purus. Nunc interdum non velit a placerat. Suspendisse tortor purus, maximus eget tellus dapibus, tempus euismod orci. Morbi id felis risus. Etiam congue tempus enim fermentum eleifend. Suspendisse placerat arcu eu aliquet dignissim. Nunc ut dolor viverra, maximus magna et, cursus felis. Suspendisse hendrerit tellus at dignissim ultrices. Integer viverra est eu leo euismod hendrerit. Suspendisse dolor erat, convallis in hendrerit non, dictum ac odio. Sed quis nunc ex. Etiam ullamcorper mi et lorem molestie semper. Nulla sit amet iaculis augue. Sed elementum tristique ipsum, id vulputate odio pretium eu. Vivamus vestibulum accumsan maximus. Etiam metus tellus, mattis a mattis quis, placerat vitae enim. Nunc vel molestie augue. Curabitur volutpat varius tortor vitae dapibus. Nullam vitae imperdiet nulla. Donec feugiat magna sit amet nulla placerat, a porta nisl sagittis. Praesent blandit pulvinar magna sit amet imperdiet. Morbi et porta felis. Donec in fringilla dui. Sed dignissim vel sapien ac auctor. Integer rhoncus ut arcu nec rhoncus. Donec blandit, urna vel placerat condimentum, eros risus faucibus libero, a varius diam turpis quis elit. Vivamus pharetra dignissim magna ac dictum. Phasellus auctor porta est vitae viverra. Donec accumsan condimentum felis, eu imperdiet arcu. Nunc accumsan tristique sagittis. Praesent in enim eu elit congue dictum. Fusce dictum rutrum maximus. */
+
+display: none;
+width: 1237px;
+height: 551px;
+
+/* Inter/Regular */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 400;
+font-size: 16.7px;
+line-height: 32px;
+/* or 194% */
+display: flex;
+align-items: center;
+
+/* Mine Shaft */
+color: #333333;
+
+
+/* Inside auto layout */
+flex: none;
+order: 4;
+flex-grow: 0;
+
+
+/* Warm regards, Kevin Tan */
+
+width: 426px;
+height: 65px;
+
+/* Inter/Regular */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 400;
+font-size: 17.2px;
+line-height: 32px;
+/* or 188% */
+display: flex;
+align-items: center;
+
+/* Mine Shaft */
+color: #333333;
+
+
+/* Inside auto layout */
+flex: none;
+order: 5;
+flex-grow: 0;
+
+
+/* Background+Shadow */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 40px;
+gap: 24px;
+
+width: 1400px;
+height: 257px;
+
+/* White */
+background: #FFFFFF;
+box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.04);
+border-radius: 20px;
+
+/* Inside auto layout */
+flex: none;
+order: 3;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px 0px 1px;
+
+width: 1320px;
+height: 29px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Application Information */
+
+width: 1320px;
+height: 28px;
+
+/* Inter/Bold */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 700;
+font-size: 23.3px;
+line-height: 28px;
+display: flex;
+align-items: center;
+
+/* Mine Shaft */
+color: #333333;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px;
+gap: 16px;
+
+width: 1320px;
+height: 124px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+justify-content: space-between;
+align-items: flex-start;
+padding: 0px;
+gap: 1023.55px;
+
+width: 1320px;
+height: 19px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px;
+
+margin: 0 auto;
+width: 122px;
+height: 19px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Submission Date */
+
+width: 122px;
+height: 19px;
+
+/* Semantic/Textarea */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 400;
+font-size: 15.3px;
+line-height: 19px;
+/* identical to box height */
+display: flex;
+align-items: center;
+
+/* Dove Gray */
+color: #666666;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px;
+
+margin: 0 auto;
+width: 176px;
+height: 19px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Nov 28, 2024, 10:23 AM */
+
+width: 176px;
+height: 18px;
+
+/* Inter/Bold */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 700;
+font-size: 15px;
+line-height: 18px;
+display: flex;
+align-items: center;
+
+/* Mine Shaft */
+color: #333333;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+justify-content: space-between;
+align-items: flex-start;
+padding: 0px;
+gap: 1116.07px;
+
+width: 1320px;
+height: 19px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px;
+
+margin: 0 auto;
+width: 92px;
+height: 19px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Waiting Time */
+
+width: 92px;
+height: 18px;
+
+/* Inter/Regular */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 400;
+font-size: 15px;
+line-height: 18px;
+display: flex;
+align-items: center;
+
+/* Dove Gray */
+color: #666666;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px;
+
+margin: 0 auto;
+width: 112px;
+height: 19px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* 4 days 6 hours */
+
+width: 112px;
+height: 19px;
+
+/* Inter/Bold */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 700;
+font-size: 15.5px;
+line-height: 19px;
+/* identical to box height */
+display: flex;
+align-items: center;
+
+/* Apricot */
+color: #EB8F80;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+justify-content: space-between;
+align-items: flex-start;
+padding: 0px;
+gap: 989.24px;
+
+width: 1320px;
+height: 19px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 2;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px;
+
+margin: 0 auto;
+width: 152px;
+height: 19px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Previous Applications */
+
+width: 152px;
+height: 18px;
+
+/* Inter/Regular */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 400;
+font-size: 15px;
+line-height: 18px;
+display: flex;
+align-items: center;
+
+/* Dove Gray */
+color: #666666;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px;
+
+margin: 0 auto;
+width: 179px;
+height: 19px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* None (First application) */
+
+width: 179px;
+height: 19px;
+
+/* Inter/Bold */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 700;
+font-size: 15.5px;
+line-height: 19px;
+/* identical to box height */
+display: flex;
+align-items: center;
+
+/* Mine Shaft */
+color: #333333;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+justify-content: space-between;
+align-items: flex-start;
+padding: 0px;
+gap: 1049.65px;
+
+width: 1320px;
+height: 19px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 3;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px;
+
+margin: 0 auto;
+width: 152px;
+height: 19px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Profile Completeness */
+
+width: 152px;
+height: 18px;
+
+/* Semantic/Textarea */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 400;
+font-size: 15.1px;
+line-height: 18px;
+display: flex;
+align-items: center;
+
+/* Dove Gray */
+color: #666666;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+padding: 0px;
+
+margin: 0 auto;
+width: 119px;
+height: 19px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* 100% Complete */
+
+width: 119px;
+height: 19px;
+
+/* Inter/Bold */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 700;
+font-size: 15.3px;
+line-height: 19px;
+/* identical to box height */
+display: flex;
+align-items: center;
+
+/* Caper */
+color: #D4E5AE;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+align-items: flex-start;
+padding: 8px 0px 0px;
+gap: 20px;
+
+width: 1400px;
+height: 65px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 4;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Button */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+justify-content: center;
+align-items: center;
+padding: 17.5px 148.49px 18.5px 148.48px;
+
+width: 452.97px;
+height: 57px;
+min-height: 56px;
+
+/* Apricot */
+background: #EB8F80;
+border-radius: 12px;
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Reject Application */
+
+width: 156px;
+height: 21px;
+
+/* Inter/Bold */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 700;
+font-size: 17.4px;
+line-height: 21px;
+/* identical to box height */
+display: flex;
+align-items: center;
+text-align: center;
+
+/* White */
+color: #FFFFFF;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Button */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+justify-content: center;
+align-items: center;
+padding: 17.5px 148.16px 18.5px 148.15px;
+
+width: 453.31px;
+height: 57px;
+min-height: 56px;
+
+/* Prelude */
+background: #C8ADD6;
+border-radius: 12px;
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+flex-grow: 0;
+
+
+/* Request More Info */
+
+width: 157px;
+height: 21px;
+
+/* Inter/Bold */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 700;
+font-size: 17.6px;
+line-height: 21px;
+display: flex;
+align-items: center;
+text-align: center;
+
+/* Mine Shaft */
+color: #333333;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Button */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+justify-content: center;
+align-items: center;
+padding: 17.5px 139px 18.5px;
+
+width: 453px;
+height: 57px;
+min-height: 56px;
+
+/* Morning Glory */
+background: #9DE2D0;
+border-radius: 12px;
+
+/* Inside auto layout */
+flex: none;
+order: 2;
+flex-grow: 0;
+
+
+/* Approve Application */
+
+width: 175px;
+height: 21px;
+
+/* Inter/Bold */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 700;
+font-size: 17.4px;
+line-height: 21px;
+/* identical to box height */
+display: flex;
+align-items: center;
+text-align: center;
+
+/* Mine Shaft */
+color: #333333;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Container */
+
+/* Auto layout */
+display: flex;
+flex-direction: row;
+align-items: flex-start;
+padding: 0px;
+gap: 921.9px;
+
+width: 1400px;
+height: 59px;
+
+
+/* Inside auto layout */
+flex: none;
+order: 5;
+align-self: stretch;
+flex-grow: 0;
+
+
+/* Button */
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+justify-content: center;
+align-items: center;
+padding: 18px 48px 19px;
+
+width: 245px;
+height: 59px;
+
+/* Prelude */
+background: #C8ADD6;
+border-radius: 12px;
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* ← Back to Queue */
+
+width: 149px;
+height: 22px;
+
+/* Inter/Bold */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 700;
+font-size: 18px;
+line-height: 22px;
+/* identical to box height */
+display: flex;
+align-items: center;
+text-align: center;
+
+/* Mine Shaft */
+color: #333333;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;
+
+
+/* Button */
+
+box-sizing: border-box;
+
+/* Auto layout */
+display: flex;
+flex-direction: column;
+justify-content: center;
+align-items: center;
+padding: 16px 32px 17px;
+
+display: none;
+width: 233px;
+height: 58px;
+min-height: 56px;
+
+/* White */
+background: #FFFFFF;
+/* Morning Glory */
+border: 2px solid #9DE2D0;
+border-radius: 12px;
+
+/* Inside auto layout */
+flex: none;
+order: 1;
+flex-grow: 0;
+
+
+/* Reassign to Others */
+
+width: 165px;
+height: 21px;
+
+/* Semantic/Button */
+font-family: 'Inter';
+font-style: normal;
+font-weight: 700;
+font-size: 17.7px;
+line-height: 21px;
+display: flex;
+align-items: center;
+text-align: center;
+
+/* Mine Shaft */
+color: #333333;
+
+
+/* Inside auto layout */
+flex: none;
+order: 0;
+flex-grow: 0;

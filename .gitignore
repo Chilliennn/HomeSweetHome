@@ -4,6 +4,7 @@
 ### NextJS ###
 # dependencies
 /node_modules
+node_modules/
 /.pnp
 .pnp.js
 
@@ -299,5 +300,6 @@ buck-out/
 
 ### reference folder ###
 requirement/
+requirement copy/
 
 # End of https://www.toptal.com/developers/gitignore/api/react,reactnative,nextjs

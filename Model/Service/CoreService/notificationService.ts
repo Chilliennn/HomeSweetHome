@@ -1,118 +1,82 @@
-import * as Notifications from 'expo-notifications';
-import * as Device from 'expo-device';
-import { Platform } from 'react-native';
-import Constants from 'expo-constants';
-import { supabase } from '../../Service/APIService/supabase';
+import { notificationRepository } from '../../Repository/UserRepository/notificationRepository';
 
 /**
- * Configure how notifications are displayed when app is in foreground
+ * NotificationService
+ * Business logic for push notification management
+ * 
+ * MVVM Architecture:
+ * - Service layer: Business logic only
+ * - Uses Repository for data access
+ * - NO platform-specific code (Expo APIs moved to View layer)
+ * - NO direct database calls
  */
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
-    shouldShowBanner: true,
-    shouldShowList: true,
-  }),
-});
 
-export const pushNotificationService = {
+export interface INotificationService {
+  savePushToken(userId: string, token: string): Promise<void>;
+  canSendNotification(userId: string): Promise<boolean>;
+  sendPushNotification(userId: string, title: string, body: string, data?: any): Promise<void>;
+}
+
+class NotificationService implements INotificationService {
   /**
-   * Register for push notifications and get Expo Push Token
-   * Store token in user's profile for later use
+   * Save push token via Repository
+   * Business logic: Validate userId before saving
    */
-  async registerForPushNotifications(userId: string): Promise<string | null> {
-    if (!Device.isDevice) {
-      console.warn('Push notifications only work on physical devices');
-      return null;
+  async savePushToken(userId: string, token: string): Promise<void> {
+    if (!userId || !token) {
+      throw new Error('User ID and token are required');
     }
+
+    await notificationRepository.savePushToken(userId, token);
+    console.log('✅ Push token saved for user:', userId);
+  }
+
+  /**
+   * Check if user can receive push notifications
+   * Business logic: Verify user has enabled notifications
+   */
+  async canSendNotification(userId: string): Promise<boolean> {
+    if (!userId) return false;
 
     try {
-      // 1. Request permission
-      const { status: existingStatus } = await Notifications.getPermissionsAsync();
-      let finalStatus = existingStatus;
-
-      if (existingStatus !== 'granted') {
-        const { status } = await Notifications.requestPermissionsAsync();
-        finalStatus = status;
-      }
-
-      if (finalStatus !== 'granted') {
-        console.warn('Failed to get push token - permission denied');
-        return null;
-      }
-
-      // 2. Get Expo Push Token
-      const projectId = Constants.expoConfig?.extra?.eas?.projectId;
-      const token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
-      console.log('✅ Push Token:', token);
-
-      // 3. Save token to user's profile
-      await supabase
-        .from('users')
-        .update({ 
-          profile_data: { 
-            push_token: token,
-            push_enabled: true,
-          } 
-        })
-        .eq('id', userId);
-
-      // 4. Setup Android notification channel
-      if (Platform.OS === 'android') {
-        Notifications.setNotificationChannelAsync('default', {
-          name: 'default',
-          importance: Notifications.AndroidImportance.MAX,
-          vibrationPattern: [0, 250, 250, 250],
-          lightColor: '#9DE2D0',
-        });
-      }
-
-      return token;
+      const isEnabled = await notificationRepository.isNotificationEnabled(userId);
+      return isEnabled;
     } catch (error) {
-      console.error('Error registering for push notifications:', error);
-      return null;
+      console.error('Error checking notification status:', error);
+      return false;
     }
-  },
-
-  /**
-   * Setup notification listeners
-   */
-  setupNotificationListeners(
-    onNotificationReceived?: (notification: Notifications.Notification) => void,
-    onNotificationTapped?: (response: Notifications.NotificationResponse) => void
-  ) {
-    // When app is in foreground
-    const receivedSubscription = Notifications.addNotificationReceivedListener(notification => {
-      console.log('📬 Notification received:', notification);
-      onNotificationReceived?.(notification);
-    });
-
-    // When user taps notification
-    const responseSubscription = Notifications.addNotificationResponseReceivedListener(response => {
-      console.log('👆 Notification tapped:', response);
-      onNotificationTapped?.(response);
-    });
-
-    return () => {
-      receivedSubscription.remove();
-      responseSubscription.remove();
-    };
-  },
+  }
 
   /**
    * Send push notification to a specific user
-   * Called from Supabase Edge Function (not from client!)
+   * Business logic: Check if user has notifications enabled before sending
+   * 
+   * NOTE: This should typically be called from Supabase Edge Function,
+   * not from client code (for security reasons)
    */
   async sendPushNotification(
-    expoPushToken: string,
+    userId: string,
     title: string,
     body: string,
     data?: any
-  ) {
+  ): Promise<void> {
+    // Business rule: Check if user has notifications enabled
+    const canSend = await this.canSendNotification(userId);
+    if (!canSend) {
+      console.warn('User has notifications disabled:', userId);
+      return;
+    }
+
+    // Get user's push token
+    const pushToken = await notificationRepository.getPushToken(userId);
+    if (!pushToken) {
+      console.warn('No push token found for user:', userId);
+      return;
+    }
+
+    // Send notification via Expo Push API
     const message = {
-      to: expoPushToken,
+      to: pushToken,
       sound: 'default',
       title,
       body,
@@ -120,14 +84,40 @@ export const pushNotificationService = {
       badge: 1,
     };
 
-    await fetch('https://exp.host/--/api/v2/push/send', {
-      method: 'POST',
-      headers: {
-        Accept: 'application/json',
-        'Accept-encoding': 'gzip, deflate',
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(message),
-    });
-  },
-};
+    try {
+      const response = await fetch('https://exp.host/--/api/v2/push/send', {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          'Accept-encoding': 'gzip, deflate',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(message),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to send push notification: ${response.statusText}`);
+      }
+
+      console.log('✅ Push notification sent to user:', userId);
+    } catch (error) {
+      console.error('Error sending push notification:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update user's notification preferences
+   */
+  async updateNotificationPreferences(userId: string, enabled: boolean): Promise<void> {
+    if (!userId) {
+      throw new Error('User ID is required');
+    }
+
+    await notificationRepository.updateNotificationPreferences(userId, enabled);
+    console.log(`✅ Notification preferences updated for user ${userId}: ${enabled}`);
+  }
+}
+
+// Export singleton instance
+export const notificationService = new NotificationService();

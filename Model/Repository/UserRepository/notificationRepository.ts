@@ -1,4 +1,4 @@
-import { supabase} from '../../Service/APIService/supabase';
+import { supabase } from '../../Service/APIService/supabase';
 import type { Notification, NotificationType } from '../../types';
 import { RealtimeChannel } from '@supabase/supabase-js';
 /**
@@ -153,5 +153,79 @@ export const notificationRepository = {
    */
   unsubscribe(channel: RealtimeChannel): void {
     channel.unsubscribe();
+  },
+
+  // ============================================================================
+  // Push Token Management (for push notification service)
+  // ============================================================================
+
+  /**
+   * Save push token to user's profile
+   */
+  async savePushToken(userId: string, token: string): Promise<void> {
+    const { error } = await supabase
+      .from('users')
+      .update({
+        profile_data: {
+          push_token: token,
+          push_enabled: true,
+        }
+      })
+      .eq('id', userId);
+
+    if (error) throw error;
+  },
+
+  /**
+   * Get user's push token from profile
+   */
+  async getPushToken(userId: string): Promise<string | null> {
+    const { data, error } = await supabase
+      .from('users')
+      .select('profile_data')
+      .eq('id', userId)
+      .single();
+
+    if (error) throw error;
+    return data?.profile_data?.push_token || null;
+  },
+
+  /**
+   * Update notification preferences
+   */
+  async updateNotificationPreferences(userId: string, enabled: boolean): Promise<void> {
+    const { data: currentData, error: fetchError } = await supabase
+      .from('users')
+      .select('profile_data')
+      .eq('id', userId)
+      .single();
+
+    if (fetchError) throw fetchError;
+
+    const updatedProfileData = {
+      ...(currentData?.profile_data || {}),
+      push_enabled: enabled,
+    };
+
+    const { error } = await supabase
+      .from('users')
+      .update({ profile_data: updatedProfileData })
+      .eq('id', userId);
+
+    if (error) throw error;
+  },
+
+  /**
+   * Check if user has notifications enabled
+   */
+  async isNotificationEnabled(userId: string): Promise<boolean> {
+    const { data, error } = await supabase
+      .from('users')
+      .select('profile_data')
+      .eq('id', userId)
+      .single();
+
+    if (error) throw error;
+    return data?.profile_data?.push_enabled ?? false;
   },
 };

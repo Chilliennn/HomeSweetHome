@@ -1,0 +1,200 @@
+UC-104: PRE-MATCH COMMUNICATION
+
+UC104_x
+Description
+UC104_1
+The system shall activate pre-match session when elderly accepts youth's interest
+UC104_2
+The system shall send notification to both parties when pre-match begins
+UC104_3
+The system shall enable chat access for both parties during active pre-match period
+UC104_4
+The system shall display pre-match duration countdown and progress information
+UC104_5
+The system shall deliver message content to recipient
+UC104_6
+The system shall send notification to recipient when new message is received
+UC104_7
+The system shall mark pre-match as ended when either party ends pre-match
+UC104_8
+The system shall send notification to partner when pre-match ends or expires
+UC104_9
+The system shall validate message content for inappropriate or harmful content
+
+
+USE CASE NAME
+UC-104: Pre-Match Communication
+USE CASE DESCRIPTION
+This use case allows anonymous communication between youth and elderly after interest is mutually accepted. Youth and elderly can exchange messages, voice notes, and photos during a 7-14 day period before deciding on formal adoption
+PRE-CONDITION
+Youth has completed profile with age verification 
+Elderly has accepted youth's interest 
+POST-CONDITION
+Youth can proceed to formal application decision
+
+
+BASIC FLOW
+
+BASIC FLOW
+ACTOR
+SYSTEM
+
+
+1. System activates pre-match session [UC104_1]
+2. System sends pre-match notification to both parties [M1: Msg Pre-Match Started] [UC104_2]
+3.  System enables chat access for duration period [C1: Pre-Match Duration] [UC104_3]
+4. Youth accesses chat interface
+
+
+
+
+5. System displays chat interface with partner's display profile [M2: Msg Chat Interface] [UC104_4]
+
+6. System displays pre-match duration information [C1: Pre-Match Duration] [M3: Msg Duration Info] [UC104_5]
+7. User performs communication action [A1: Send Text Message] [A2: Send Voice Note] [A3: Share Photo] [A4: View Full Display Profile] [A5: End Pre-Match] [A6: Exit Chat]
+
+
+
+
+
+
+10. System monitors pre-match duration [C1: Pre-Match Duration] [A7: Duration Expired]
+11. System monitors if partner ends pre-match [A8: Partner Ends Pre-Match] 
+12. System notifies both parties when pre-match period ends naturally [M4: Msg Pre-Match Concluded] [UC104_8]
+11. Use case continues
+ALTERNATIVE FLOW
+A1: Send Text Message
+A1.1 User types text message [C2: Text Message Requirements]
+A1.2 User sends message
+A1.3 System validates message content [C2: Text Message Requirements] [A9: Message Violates Content Policy] [A10: Message Too Long] [UC104_9]
+A1.4 System delivers message to recipient [UC104_5]
+A1.5 System sends notification to recipient [UC104_6]
+A1.6 System displays sent confirmation [M5: Msg Sent]
+A1.7 Return to step BF:9
+A2: Send Voice Note
+A2.1 User records voice note [C3: Voice Note Requirements]
+A2.2 User sends voice note [A11: Voice Note Too Long] [A12: Invalid Audio Format]
+A2.3 System validates voice note [C3: Voice Note Requirements] [UC104_9]
+A2.4 System delivers voice note to recipient [UC104_5]
+A2.5 System sends notification to recipient [UC104_6]
+A2.6 System displays sent confirmation [M5: Msg Sent]
+A2.7 Return to step BF:9
+A3: Share Photo
+A3.1 User selects photo to share [C4: Photo Sharing Requirements]
+A3.2 User adds optional caption [C2: Text Message Requirements]
+A3.3 User sends photo [A13: Photo Too Large] [A14: Invalid Photo Format] [A15: Photo Violates Content Policy]
+A3.4 System validates photo [C4: Photo Sharing Requirements] [UC104_9]
+A3.5 System delivers photo to recipient [UC104_5]
+A3.6 System sends notification to recipient [UC104_6]
+A3.7 System displays sent confirmation [M5: Msg Sent]
+A3.8 Return to step BF:9
+A4: View Full Display Profile
+A4.1 User selects "View Full Profile"
+A4.2 System displays partner's complete display profile
+A4.3 User reviews profile information
+A4.4 User closes profile view
+A4.5 Return to step BF:9
+A5: End Pre-Match
+A5.1 User selects "End Pre-Match"
+A5.2 System displays end confirmation [M6: Msg Confirm End Pre-Match]
+A5.3 User confirms ending [A16: User Cancels]
+A5.4 System marks pre-match as ended [UC104_7]
+A5.5 System notifies partner [M7: Msg Partner Ended Pre-Match] [UC104_8]
+A5.6 System frees up user’s pre-match slot 
+A5.7 System displays confirmation [M8: Msg Pre-Match Ended Successfully]
+A5.8 Use case ends
+A6: Exit Chat
+A6.1 User closes chat interface
+A6.2 System saves conversation state
+A6.3 Pre-match remains active
+A6.4 User can re-access chat anytime within active duration
+A6.5 Return to step BF:10
+A7: Duration Expired
+A7.1 System detects 14-day maximum duration reached
+A7.2 System marks pre-match as expired [UC104_7]
+A7.3 System disables messaging features
+A7.4 System notifies both parties [M9: Msg Duration Expired] [UC104_8]
+A7.5 System frees up youth's pre-match slot
+A7.6 Use case ends
+A8: Partner Ends Pre-Match
+A8.1 System detects elderly has ended pre-match 
+A8.2 System marks pre-match as ended by partner [UC104_7]
+A8.3 System disables messaging features
+A8.4 System displays notification to youth [M7: Msg Partner Ended Pre-Match]
+A8.5 System frees up user's pre-match slot
+A8.6 Use case ends 
+A9: Message Violates Content Policy
+A9.1 System detects message contains inappropriate content 
+A9.2 System prevents message from sending
+A9.3 System displays error [M10: Err Inappropriate Content]
+A9.4 System logs violation for admin review
+A9.5 Return to step BF:9
+A10: Message Too Long
+A10.1 System detects message exceeds character limit 
+A10.2 System displays error with character count [M11: Err Message Too Long]
+A10.3 Return to step BF:9
+A11: Voice Note Too Long
+A11.1 System detects voice note exceeds duration limit 
+A11.2 System displays error [M12: Err Voice Note Too Long]
+A11.3 Return to step BF:9
+A12: Photo Too Large
+A12.1 System detects photo exceeds file size limit 
+A12.2 System displays error with file size [M13: Err Photo Too Large]
+A12.3 Return to step BF:9
+A13: Invalid Photo Format
+A13.1 System detects photo format is not supported 
+A13.2 System displays error [M14: Err Invalid Photo Format]
+A13.3 Return to step BF:9
+MESSAGE
+M1: Msg Pre-Match Started = {Good news! [Display Name] has accepted your interest. Your pre-match period has started. You can now chat anonymously for 7-14 days. Get to know each other before deciding on formal adoption. Minimum 7 days required before formal application}
+
+M2: Msg Chat Interface = {Pre-Match with [Display Name] • Day [Current Day] of 14 • Anonymous Communication • Real identities will be revealed only after official match confirmation}
+
+M3: Msg Duration Info = {Pre-Match Period: Day [Current Day] of 14 • Minimum for formal application: 7 days (Day [7 - Current Day] remaining) • Maximum duration: 14 days • After day 7, you can proceed with formal application from your dashboard}
+
+M4: Msg Pre-Match Concluded = {Your pre-match period with [Display Name] has concluded. You can now decide whether to proceed with formal adoption application or explore other profiles. Visit your dashboard to continue}
+
+M5: Msg Sent = {Message sent successfully}
+
+M6: Msg Confirm End Pre-Match = {Are you sure you want to end this pre-match with [Display Name]? This action cannot be undone and they will be notified}
+
+M7: Msg Partner Ended Pre-Match = {[Display Name] has decided to end this pre-match. Thank you for participating. You can continue browsing other profiles from your dashboard}
+
+M8: Msg Pre-Match Ended Successfully = {Pre-match ended. You'll return to your dashboard where you can browse other profiles}
+
+M9: Msg Duration Expired = {This pre-match period has reached the 14-day maximum. Communication features are now disabled. Visit your dashboard to decide whether to proceed with formal application or explore other profiles}
+
+M10: Err Inappropriate Content = {Your content contains inappropriate material and cannot be sent. Please be respectful in your communication. Repeated violations may result in account suspension}
+
+M11: Err Message Too Long = {Message exceeds character limit. Maximum: 500 characters. Current: [Y] characters. Please shorten your message}
+
+M12: Err Voice Note Too Long = {Voice note exceeds duration limit. Maximum: 2 minutes. Please record a shorter voice note}
+
+M13: Err Photo Too Large = {Photo size exceeds limit. Maximum: 10MB. Current: [Y]MB. Please compress or choose a smaller photo}
+
+M14: Err Invalid Photo Format = {Photo format not supported. Please use JPG, PNG, or HEIC format}
+CONSTRAINT
+C1: Pre-Match Duration
+Minimum: 7 days (before youth can apply formally)
+Maximum: 14 days (automatic expiration)
+Countdown displayed in chat interface
+Ends when: youth ends, elderly ends, or 14 days reached
+C2: Text Message Requirements
+Maximum: 500 characters
+Cannot be empty or only spaces
+Must pass content moderation
+C3: Voice Note Requirements
+Maximum duration: 2 minutes
+Formats: MP3, M4A, WAV, AAC
+Maximum file size: 5MB
+Must pass content moderation via speech-to-text
+C4: Photo Sharing Requirements
+Maximum file size: 10MB
+Formats: JPG, PNG, HEIC
+Minimum resolution: 200x200 pixels
+Optional caption: maximum 200 characters
+Must pass visual content moderation
+Should maintain anonymity (no faces)
+
+
+

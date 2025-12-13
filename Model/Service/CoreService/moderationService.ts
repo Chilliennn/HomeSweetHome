@@ -24,7 +24,7 @@ export interface IModerationService {
     receiverId: string,
     sessionId: string
   ): Promise<ModerationResult>;
-  
+
   /**
    * Analyze voice/media content
    * @param mediaUrl - URL to media file
@@ -63,7 +63,7 @@ export class KeywordModerationService implements IModerationService {
     'routing number',
     'atm card',
   ];
-  
+
   private readonly WARNING_KEYWORDS = [
     'loan',
     'borrow',
@@ -75,7 +75,7 @@ export class KeywordModerationService implements IModerationService {
     'send',
     'transfer',
   ];
-  
+
   /**
    * Moderate text message content
    * Checks for blocked and warning keywords
@@ -87,7 +87,7 @@ export class KeywordModerationService implements IModerationService {
     sessionId: string
   ): Promise<ModerationResult> {
     const lowerMessage = message.toLowerCase();
-    
+
     // Check blocked keywords (high severity - block message)
     for (const keyword of this.BLOCKED_KEYWORDS) {
       if (lowerMessage.includes(keyword)) {
@@ -101,7 +101,7 @@ export class KeywordModerationService implements IModerationService {
         };
       }
     }
-    
+
     // Check warning keywords (medium severity - allow but warn)
     const detectedWarnings: string[] = [];
     for (const keyword of this.WARNING_KEYWORDS) {
@@ -109,7 +109,7 @@ export class KeywordModerationService implements IModerationService {
         detectedWarnings.push(keyword);
       }
     }
-    
+
     if (detectedWarnings.length > 0) {
       return {
         isAllowed: true,
@@ -120,7 +120,7 @@ export class KeywordModerationService implements IModerationService {
         adminNotificationRequired: false,
       };
     }
-    
+
     // No issues detected
     return {
       isAllowed: true,
@@ -129,7 +129,7 @@ export class KeywordModerationService implements IModerationService {
       adminNotificationRequired: false,
     };
   }
-  
+
   /**
    * Moderate media content
    * Phase 1: No media moderation implemented
@@ -206,7 +206,7 @@ export class AIModerationService implements IModerationService {
     // Teammates can integrate OpenAI Moderation API, Azure Content Safety, etc.
     throw new Error('AI moderation not implemented yet. Use KeywordModerationService for Phase 1.');
   }
-  
+
   async moderateMedia(
     mediaUrl: string,
     mediaType: 'voice' | 'image' | 'video',
@@ -218,9 +218,39 @@ export class AIModerationService implements IModerationService {
   }
 }
 
-// Export singleton instance
+// Create instance first
+const keywordService = new KeywordModerationService();
+
+// Export singleton instance with voice message moderation placeholder
 // Phase 1: Use keyword-based moderation
-export const moderationService: IModerationService = new KeywordModerationService();
+export const moderationService = {
+  // Forward IModerationService methods
+  moderateMessage: keywordService.moderateMessage.bind(keywordService),
+  moderateMedia: keywordService.moderateMedia.bind(keywordService),
+
+  /**
+   * Placeholder for voice message moderation
+   * Called after a voice message is successfully created/sent
+   * 
+   * Teammate TODO: Implement voice message moderation
+   * Options:
+   * 1. Speech-to-text (STT) + keyword analysis
+   * 2. Audio content analysis (tone, sentiment)
+   * 3. Third-party moderation API (Azure, AWS Transcribe, etc.)
+   * 
+   * @param message - The voice message that was just sent
+   */
+  handleVoiceMessageCreated(message: any): void {
+    console.log('[ModerationService] Voice message created - moderation placeholder', {
+      messageId: message.id,
+      senderId: message.sender_id,
+      receiverId: message.receiver_id,
+      mediaUrl: message.media_url,
+    });
+    // TODO: Implement voice message moderation
+    // This is a placeholder for teammate integration
+  },
+};
 
 // Phase 2 TODO: Switch to AI moderation when ready
 // export const moderationService: IModerationService = new AIModerationService();

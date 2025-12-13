@@ -1,0 +1,224 @@
+UC-101: ADOPT ELDERLY
+
+UC101_x
+Description
+UC101_1
+The system shall display a list of available elderly profiles to youth users
+UC101_2
+The system shall display detailed elderly profile information including photo, name, age, location, interests, background, communication style, language, expectations, and availability
+UC101_3
+The system shall provide filter functionality by interests, location, language, communication preference, and age range
+UC101_4
+The system shall update displayed profiles based on selected filter criteria
+UC101_5
+The system shall allow youth to express interest  in an elderly profile to start pre-match
+UC101_6
+The system shall prevent youth from expressing interest when active pre-match limit is reached
+UC101_7
+The system shall prevent interest expression when elderly has reached active pre-match limit
+UC101_8
+The system shall send notification to elderly when youth expresses interest
+UC101_9
+The system shall create a pre-match communication session after elderly accepts interest
+UC101_10
+The system shall notify youth when elderly declines interest
+UC101_11
+The system shall allow either party to end pre-match communication before formal application
+UC101_12
+The system shall enforce minimum pre-match duration requirement before allowing formal application
+UC101_13
+The system shall display application form to youth after minimum pre-match duration is met
+UC101_14
+The system shall validate application form for required fields and motivation letter length requirements
+UC101_15
+The system shall submit validated application to admin review queue
+UC101_16
+The system shall display application status to youth on dashboard
+UC101_17
+The system shall forward approved application to elderly for decision
+UC101_18
+The system shall notify youth when application is rejected by admin
+UC101_19
+The system shall notify youth when application is rejected by elderly
+UC101_20
+The system shall prompt youth to confirm match after elderly approval
+UC101_21
+The system shall create official relationship and transition to Stage 1 upon youth confirmation
+UC101_22
+The system shall send confirmation notifications to both parties when match is confirmed
+
+
+USE CASE NAME
+UC-01: ADOPT ELDERLY
+USE CASE DESCRIPTION
+This use case allows youth to complete the entire process of adopting an elderly companion, from profile completion through pre-match communication to formal application
+PRE-CONDITION
+Youth has registered account
+POST-CONDITION
+Relationship is confirmed and enters Stage 1, Both parties receive confirmation
+
+
+BASIC FLOW
+
+BASIC FLOW
+ACTOR (Youth)
+SYSTEM
+1. Youth begins adoption process
+
+
+
+
+
+2. System continues by activating UC_4 - Complete Profile
+3. System displays list of available elderly profiles [UC101_1]
+
+4. Youth browse elderly profile [A1: Filter elderly profiles]
+5. Youth selects an elderly profile to view details
+
+
+
+
+6. System displays complete elderly profile [C1: Profile Information] [UC101_2]
+7. Youth selects action [A2: Express Interest] [A3: Select Another Profile] 
+
+
+
+
+
+8. System checks youth’s active pre-match count [C2:Youth Pre-Match Limits] [A4: Youth Hit Active Pre-Match Limit] [UC101_6]
+9. System checks elderly’s active pre-match count [C3:Elderly Pre-Match Limits] [A5: Elderly Hit Active Pre-Match Limit] [UC101_7]
+10. System sends interest notification to elderly [M1: Msg Interest Sent] [UC101_8]
+11. System continues by activating UC_5 - Pre-Match Communication after elderly approve [A6: Elderly Rejects Interest] [UC101_9]
+12. System prompts youth to proceed with formal application or end pre-match 
+13. Youth selects action [A7: Apply Formally] [A8: End Pre-Match] [UC101_11]
+
+
+
+
+14. System checks pre-match duration requirement [C4: Pre-Match Duration Requirement] [A9: Minimum Duration Not Met] [UC101_12]
+15. System displays application form [M2: Msg Application Form] [UC101_13]
+16. Youth completes application form
+17. Youth submit application 
+
+
+
+
+18. System validates application form [C5 : Application Form Requirements] [A10: Incomplete Form] [UC101_14]
+19. System send application to admin [M3: Msg Application Submitted] [UC101_15]
+20. System updates youth dashboard with application status [UC101_16]
+21. System sends applications to elderly after the admin approves [A11. Admin Rejects Application] [UC101_17] 
+22. System displays match confirmation to youth after elderly approves [A12: Elderly Rejects Application] [UC101_20]
+23. Youth confirms match
+
+
+
+
+24. System updates relationship status to Stage 1 [UC101_21]
+25. System sends confirmation to both parties [M5: Msg Welcome Stage 1] [UC101_22]
+26. Use case ends
+ALTERNATIVE FLOW
+A1: Filter Elderly Profile
+A1.1 Youth clicks "Filter" button 
+A1.2 System displays filter options [C6: Filter Options] [UC101_3]
+A1.3 Youth selects filter criteria 
+A1.4 System displays filtered profiles [UC101_4]
+A1.5 Return to step BF:4
+A2: Express Interest
+A2.1 Youth selects "Express Interest" [UC101_5]
+A2.2 Continue to step BF:8
+A3: Select Another Profile
+A3.1 Youth selects "View Another Profile"
+A3.2 Return to step BF:4
+A4: Youth Hit Active Pre-Match Limit
+A4.1 System detects youth has 3 active pre-matches [UC101_6]
+A4.2 System displays error [M6: Err Youth Limit] [UC101_6]
+A4.3 Use case ends
+A5: Elderly Hit Active Pre-Match Limit
+A5.1 System detects elderly has 5 active pre-matches [UC101_7]
+A5.2 System displays error [M7: Err Elderly Limit] [UC101_7]
+A5.3 Use case ends
+A6: Elderly Rejects Interest
+A6.1 Elderly declines interest notification 
+A6.2 System notifies youth [M8: Msg Interest Declined] [UC101_10]
+A6.3 System frees up youth's active pre-match slot 
+A6.4 Use case ends
+A7: Apply Formally
+A7.1 Youth selects "Apply Formally" 
+A7.2 Continue to step BF:15
+A8: End Pre-Match
+A8.1 Youth selects "End Pre-Match" [UC101_11]
+A8.2 System displays confirmation prompt [UC101_11]
+A8.3 Youth confirms ending
+A8.4 System notifies elderly [M9: Msg Pre-Match Ended]
+A8.5 System frees up both parties' active pre-match slots 
+A8.6 Use case ends
+A9: Minimum Duration Not Met
+A9.1 System detects pre-match period is less than 7 days [UC101_12]
+A9.2 System displays error [M10: Err Minimum Duration]
+A9.3 Return to step BF:13
+A10: Incomplete Form
+A10.1 System detects required fields are incomplete [C2: Form Requirements] [UC101_14]
+A10.2 System displays error indicating missing fields [M11: Err Incomplete Form]
+A10.3 Return to step BF:17
+A11: Admin Rejects Application
+A11.1 Admin reviews and rejects application
+A11.2 System notifies youth with rejection reason [M12: Msg Application Rejected] [UC101_18]
+A11.3 Use case ends
+A12: Elderly Rejects Application
+A12.1 Elderly reviews and rejects application
+A12.2 System notifies youth with rejection reason [M13: Msg Application Rejected By Elderly] [UC101_19]
+A12.3 Use case ends
+MESSAGE
+M1: Msg Interest Sent = {Your interest has been sent to [Elderly Name]. They will review your profile and respond within 24 hours}
+
+M2: Msg Application Form = {You've completed the pre-match period with [Elderly Name]. Please complete the formal application form to proceed}
+
+M3: Msg Application Submitted = {Your application has been submitted successfully. We'll review it within 24-48 hours and notify you of the decision}
+
+M4: Msg Match Confirmed = {[Elderly Name] has approved your application! Please confirm to officially begin your companionship journey}
+
+M5: Msg Welcome Stage 1 = {Congratulations! Your companionship with [Partner Name] is now official. Welcome to Stage 1: Getting to Know Each Other}
+
+M6: Err Youth Limit = {You have reached the limit of 3 active pre-match conversations. Please end one conversation before expressing new interest}
+
+M7: Err Elderly Limit = {This youth has reached their pre-match limit and cannot start new pre-match sessions}
+
+M8: Msg Interest Declined = {[Elderly Name] has declined your interest. You can browse other profiles and express new interest}
+
+M9: Msg Pre-Match Ended = {Pre-match communication with [Name] has ended. You can now express interest in other profiles}
+
+M10: Err Minimum Duration = {You must complete at least 7 days of pre-match communication before applying. Days completed: [X]/7}
+
+M11: Err Incomplete Form = {Please complete all required fields: [List of missing fields]}
+
+M12: Msg Application Rejected = {Your application has been reviewed and was not approved at this time. Reason: [Rejection Reason]}
+
+M13: Msg Application Rejected By Elderly = {[Elderly Name] has declined your application. Reason: [Rejection Reason]. You can apply to other elders}
+CONSTRAINT
+C1: Elderly Profile Information 
+Profile photo
+Name and age
+Location (city/state)
+Interests and hobbies (up to 10 selections)
+Background story (200-500 characters)
+Preferred communication style (text, voice, video)
+Language preferences (Malay, English, Mandarin, Tamil)
+What they're looking for in a companion
+Availability for interaction (daily, weekly, flexible)
+C2: Youth Pre-Match Limits
+Youth can have a maximum of 3 active pre-match conversations simultaneously.
+Pending interests that have not yet been accepted do not count towards this limit.
+C3: Elderly Pre-Match Limits
+5 active pre-match conversations simultaneously
+C4: Pre-Match Duration Requirement
+The duration will be within 7 to 14 days. Youth cannot apply formally before 7 days complete. After 14 days, system prompts both parties to decide continuation
+C5: Application Form Requirement
+Motivation letter must be minimum 100 characters, maximum 1000 characters
+Other fields cannot be empty
+C6: Filter Options
+By interests 
+By location 
+By language
+By communication preference
+By age range 
+

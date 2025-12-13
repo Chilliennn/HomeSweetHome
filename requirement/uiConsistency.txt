@@ -1,0 +1,4 @@
+consistency:
+1. background color use : FFFDF5
+2. color scheme : 9DE2D0, C8ADD6, D4E5AE, EB8F80, FADE9F, FFFDF5, FFFFFF
+3. reuse components from View\Mobile\components\ui

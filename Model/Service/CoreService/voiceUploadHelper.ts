@@ -1,5 +1,4 @@
-import { supabase } from '../APIService/supabase';
-import { File } from 'expo-file-system';
+import { storageRepository } from '../../Repository/StorageRepository/storageRepository';
 
 // ============================================================================
 // TYPES
@@ -18,58 +17,66 @@ export type ChatContext =
 const BUCKET_NAME = 'voice-messages';
 
 // ============================================================================
-// HELPER
+// SERVICE
 // ============================================================================
 /**
- * voiceUploadHelper - Upload voice messages to Supabase Storage
+ * voiceUploadService - Business logic for voice message uploads
  * 
- * Single-responsibility helper for uploading audio files to the voice-messages bucket.
+ * MVVM Architecture:
+ * - Service layer: Business logic only
+ * - NO platform-specific code (file reading moved to View layer)
+ * - Uses Repository for storage operations
  * 
  * File naming: <type>/<contextId>/<senderId>-<timestamp>.m4a
  * Examples:
  *   - preMatch/abc123/user456-1702389600000.m4a
  *   - relationship/xyz789/user456-1702389600000.m4a
  * 
- * @param localFileUri - Local file URI from recording (e.g., file:///...)
+ * @param base64Data - Base64-encoded audio data (from View layer)
  * @param context - Typed chat context with type discriminator
  * @param senderId - Current user ID
+ * @param durationSeconds - Optional duration in seconds
  * @returns Public URL of uploaded file
  * @throws Error if upload fails
  * 
- * Usage:
+ * Usage (from View layer hook):
  * ```typescript
- * const mediaUrl = await uploadVoiceMessage(
- *   recordingResult.uri,
+ * const url = await voiceUploadService.uploadVoiceMessage(
+ *   base64Data,
  *   { type: 'preMatch', applicationId: 'abc123' },
- *   currentUserId
+ *   currentUserId,
+ *   120
  * );
  * ```
  */
 export async function uploadVoiceMessage(
-    localFileUri: string,
+    base64Data: string,
     context: ChatContext,
-    senderId: string
+    senderId: string,
+    durationSeconds?: number
 ): Promise<string> {
-    const { data } = await supabase.auth.getSession();
-    console.log('[debug] session', data);
-    console.log('[voiceUploadHelper] Starting upload', { localFileUri, context, senderId });
+    console.log('[voiceUploadService] Starting upload', {
+        context,
+        senderId,
+        durationSeconds,
+        dataLength: base64Data.length
+    });
 
-    // Extract context id based on type
+    // Business logic: Validate inputs
+    if (!base64Data || !senderId) {
+        throw new Error('Base64 data and sender ID are required');
+    }
+
+    // Business logic: Extract context id based on type
     const contextType = context.type;
     const contextId = context.type === 'preMatch' ? context.applicationId : context.relationshipId;
 
-    // Generate unique filename with type prefix for organization
+    // Business logic: Generate unique filename with type prefix for organization
     const timestamp = Date.now();
     const fileName = `${senderId}-${timestamp}.m4a`;
     const filePath = `${contextType}/${contextId}/${fileName}`;
 
     try {
-        // Create File instance from local URI (Expo SDK 54+ new API)
-        const file = new File(localFileUri);
-
-        // Read file as base64 using new API
-        const base64Data = await file.base64();
-
         // Convert base64 to Uint8Array (no external dependency needed)
         const binaryString = atob(base64Data);
         const bytes = new Uint8Array(binaryString.length);
@@ -77,71 +84,49 @@ export async function uploadVoiceMessage(
             bytes[i] = binaryString.charCodeAt(i);
         }
 
-        // Upload to Supabase Storage
-        const { data, error } = await supabase.storage
-            .from(BUCKET_NAME)
-            .upload(filePath, bytes.buffer, {
-                contentType: 'audio/m4a',
-                cacheControl: '3600',
-                upsert: false,
-            });
+        // Upload via Repository
+        const { path } = await storageRepository.uploadFile(
+            BUCKET_NAME,
+            filePath,
+            bytes.buffer,
+            'audio/m4a'
+        );
 
-        if (error) {
-            console.error('[voiceUploadHelper] Upload error:', error);
-            throw new Error(`Failed to upload voice message: ${error.message}`);
-        }
+        // Get public URL via Repository
+        const publicUrl = storageRepository.getPublicUrl(BUCKET_NAME, path);
 
-        // Get public URL
-        const { data: urlData } = supabase.storage
-            .from(BUCKET_NAME)
-            .getPublicUrl(filePath);
-
-        if (!urlData?.publicUrl) {
-            throw new Error('Failed to get public URL for uploaded file');
-        }
-
-        console.log('[voiceUploadHelper] Upload successful', {
-            filePath: data.path,
-            publicUrl: urlData.publicUrl
+        console.log('[voiceUploadService] Upload successful', {
+            filePath: path,
+            publicUrl,
+            durationSeconds
         });
 
-        return urlData.publicUrl;
+        return publicUrl;
     } catch (error) {
-        console.error('[voiceUploadHelper] Upload failed:', error);
+        console.error('[voiceUploadService] Upload failed:', error);
         throw error;
     }
 }
 
 /**
  * Delete a voice message from storage (for cleanup)
+ * Business logic: Extract path and delete via Repository
  * @param mediaUrl - Public URL of the voice message
  */
 export async function deleteVoiceMessage(mediaUrl: string): Promise<void> {
     try {
-        // Extract file path from URL
-        const url = new URL(mediaUrl);
-        const pathParts = url.pathname.split(`/${BUCKET_NAME}/`);
-        if (pathParts.length < 2) {
-            console.warn('[voiceUploadHelper] Could not extract file path from URL:', mediaUrl);
-            return;
-        }
-
-        const filePath = pathParts[1];
-
-        const { error } = await supabase.storage
-            .from(BUCKET_NAME)
-            .remove([filePath]);
-
-        if (error) {
-            console.error('[voiceUploadHelper] Delete error:', error);
-            throw error;
-        }
-
-        console.log('[voiceUploadHelper] Deleted:', filePath);
+        await storageRepository.deleteFileByUrl(BUCKET_NAME, mediaUrl);
+        console.log('[voiceUploadService] Deleted:', mediaUrl);
     } catch (error) {
-        console.error('[voiceUploadHelper] Delete failed:', error);
+        console.error('[voiceUploadService] Delete failed:', error);
         throw error;
     }
 }
 
-export default { uploadVoiceMessage, deleteVoiceMessage };
+export const voiceUploadService = {
+    uploadVoiceMessage,
+    deleteVoiceMessage,
+};
+
+export default voiceUploadService;
+

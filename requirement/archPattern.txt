@@ -1,0 +1,29 @@
+Architectural Design PatternWe have architected the system using the MVVM (Model-View-ViewModel).This is implemented as a Strict Closed Layered Architecture. The system is divided into 3 vertical layers with a unidirectional data flow.
+
+2.1 Layer Breakdown (Mapped to Use Cases)
+
+Layer 1: View (Presentation / UI Layer)Responsibility: Renders the UI and captures user interactions. Contains NO business logic.
+
+Layer 2: ViewModel (State Management Layer)Responsibility: Acts as the bridge between View and Model. Implemented via React Custom Hooks. It manages local UI state (Loading, Error, Form Input) and invokes the Service Layer.
+
+Layer 3: Model Layer 
+    Inside got two folder :
+    1.Service :
+    Responsibility: The core business logic. This layer is Pure TypeScript and is 100% shared between Mobile and Web in the Monorepo. It acts as the system's "Gatekeeper"
+
+    2.Repository (Data Access)
+    Responsibility: Abstraction layer for Data Access. Converts Service instructions into Supabase SDK calls.Key Components: UserRepository, ServiceRequestRepository, ServiceListingRepository, EventRepository, FeedbackRepository.
+
+
+Youth express interest
+  ↓
+View → ViewModel → Service → Repository → Supabase
+                                  ↓
+                            (Trigger fires)
+                                  ↓
+                         INSERT notification
+                                  ↓
+                         Realtime broadcast
+                                  ↓
+         Repository ← Service ← ViewModel ← View
+                              (callback)

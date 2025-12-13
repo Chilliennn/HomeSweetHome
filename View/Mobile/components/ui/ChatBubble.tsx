@@ -2,10 +2,12 @@ import React from 'react';
 import {
   View,
   Text,
-  TouchableOpacity,
   StyleSheet,
   ViewStyle,
+  Image,
 } from 'react-native';
+import { VoiceBubble } from './VoiceBubble';
+import type { VoicePlayback } from '@/hooks/useAudioPlayer';
 
 // ============================================================================
 // TYPES
@@ -18,18 +20,16 @@ interface ChatBubbleProps {
   type?: MessageType;
   /** Message content (for text messages) */
   content?: string;
-  /** Voice note duration in seconds (for voice messages) */
-  voiceDuration?: number;
+  /** Voice playback state (for voice messages) */
+  voicePlayback?: VoicePlayback;
   /** Whether this message is from the current user */
   isOwn: boolean;
   /** Timestamp string (e.g., "10:30 AM") */
   timestamp: string;
   /** Message delivery status (only shown for own messages) */
   status?: MessageStatus;
-  /** Called when voice play button is pressed */
-  onPlayVoice?: () => void;
-  /** Whether voice is currently playing */
-  isVoicePlaying?: boolean;
+  /** Whether the message has been read by receiver */
+  isRead?: boolean;
   /** Custom container style */
   style?: ViewStyle;
 }
@@ -37,25 +37,19 @@ interface ChatBubbleProps {
 // ============================================================================
 // HELPER FUNCTIONS
 // ============================================================================
-const formatDuration = (seconds: number): string => {
-  const mins = Math.floor(seconds / 60);
-  const secs = seconds % 60;
-  return `${mins.toString().padStart(2, '0')}.${secs.toString().padStart(2, '0')}`;
-};
-
-const getStatusText = (status: MessageStatus): string => {
-  switch (status) {
-    case 'sending':
-      return 'Sending...';
-    case 'sent':
-      return 'Sent';
-    case 'delivered':
-      return 'Delivered';
-    case 'read':
-      return 'Read';
-    default:
-      return '';
+const getStatusIcon = (status: MessageStatus, isRead: boolean): { text: string; color: string } => {
+  if (status === 'sending') {
+    return { text: '○', color: '#999' };
   }
+  if (status === 'sent') {
+    return { text: '✓', color: '#999' };
+  }
+  if (isRead) {
+    // Double check, blue for read
+    return { text: '✓✓', color: '#34B7F1' };
+  }
+  // Delivered but not read
+  return { text: '✓✓', color: '#999' };
 };
 
 // ============================================================================
@@ -66,44 +60,45 @@ const getStatusText = (status: MessageStatus): string => {
  * 
  * Features:
  * - Text messages with left/right alignment
- * - Voice note messages with play button and waveform
+ * - Voice note messages with VoiceBubble component
  * - Timestamp display
- * - Delivery status for own messages
+ * - Delivery status with read receipts (✓✓ blue when read)
  * 
  * ViewModel bindings needed:
  * - message: from CommunicationViewModel.messages[]
- * - onPlayVoice: () => void (triggers voice playback)
+ * - voicePlayback: from useAudioPlayer.getPlaybackForMessage()
  * 
  * Usage:
  * ```tsx
- * // Text message from other user
+ * // Text message
  * <ChatBubble
  *   type="text"
- *   content="Hello! How are you?"
- *   isOwn={false}
+ *   content="Hello!"
+ *   isOwn={true}
  *   timestamp="10:30 AM"
+ *   status="read"
+ *   isRead={true}
  * />
  * 
- * // Voice message from current user
+ * // Voice message
  * <ChatBubble
  *   type="voice"
- *   voiceDuration={83}
+ *   voicePlayback={playback}
  *   isOwn={true}
  *   timestamp="10:40 AM"
  *   status="delivered"
- *   onPlayVoice={() => playVoiceNote()}
+ *   isRead={false}
  * />
  * ```
  */
 export const ChatBubble: React.FC<ChatBubbleProps> = ({
   type = 'text',
   content,
-  voiceDuration = 0,
+  voicePlayback,
   isOwn,
   timestamp,
   status,
-  onPlayVoice,
-  isVoicePlaying = false,
+  isRead = false,
   style,
 }) => {
   const bubbleStyle = [
@@ -113,35 +108,8 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
   ];
 
   const renderContent = () => {
-    if (type === 'voice') {
-      return (
-        <View style={styles.voiceContainer}>
-          <TouchableOpacity
-            style={styles.playButton}
-            onPress={onPlayVoice}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.playIcon}>{isVoicePlaying ? '⏸' : '▶'}</Text>
-          </TouchableOpacity>
-          
-          {/* Voice Waveform Placeholder */}
-          <View style={styles.waveformContainer}>
-            {Array.from({ length: 20 }).map((_, index) => (
-              <View
-                key={index}
-                style={[
-                  styles.waveformBar,
-                  { height: 8 + Math.random() * 16 },
-                ]}
-              />
-            ))}
-          </View>
-          
-          <Text style={[styles.duration, isOwn && styles.ownDuration]}>
-            {formatDuration(voiceDuration)}
-          </Text>
-        </View>
-      );
+    if (type === 'voice' && voicePlayback) {
+      return <VoiceBubble playback={voicePlayback} isOwn={isOwn} />;
     }
 
     return (
@@ -151,18 +119,22 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
     );
   };
 
+  const statusInfo = status ? getStatusIcon(status, isRead) : null;
+
   return (
     <View style={[styles.container, isOwn && styles.ownContainer]}>
       <View style={bubbleStyle}>
         {renderContent()}
       </View>
-      
+
       <View style={[styles.metaRow, isOwn && styles.ownMetaRow]}>
         <Text style={styles.timestamp}>{timestamp}</Text>
-        {isOwn && status && (
+        {isOwn && statusInfo && (
           <>
-            <Text style={styles.metaDot}> • </Text>
-            <Text style={styles.status}>{getStatusText(status)}</Text>
+            <Text style={styles.metaDot}> </Text>
+            <Text style={[styles.status, { color: statusInfo.color }]}>
+              {statusInfo.text}
+            </Text>
           </>
         )}
       </View>
@@ -203,45 +175,6 @@ const styles = StyleSheet.create({
   ownContent: {
     color: '#333',
   },
-  voiceContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    minWidth: 180,
-  },
-  playButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: 'rgba(0,0,0,0.1)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 8,
-  },
-  playIcon: {
-    fontSize: 14,
-    color: '#333',
-  },
-  waveformContainer: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    height: 24,
-    gap: 2,
-  },
-  waveformBar: {
-    width: 3,
-    backgroundColor: '#333',
-    borderRadius: 1.5,
-    opacity: 0.5,
-  },
-  duration: {
-    fontSize: 12,
-    color: '#666',
-    marginLeft: 8,
-  },
-  ownDuration: {
-    color: '#333',
-  },
   metaRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -260,7 +193,6 @@ const styles = StyleSheet.create({
   },
   status: {
     fontSize: 11,
-    color: '#9DE2D0',
   },
 });
 

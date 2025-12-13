@@ -5,6 +5,7 @@
 # dependencies
 node_modules/
 /node_modules
+node_modules/
 /.pnp
 .pnp.js
 
@@ -299,7 +300,8 @@ buck-out/
 .fakebuckversion
 
 ### reference folder ###
-requirement/
+#requirement/
+#requirement copy/
 
 # End of https://www.toptal.com/developers/gitignore/api/react,reactnative,nextjs
 verification_instructions.md

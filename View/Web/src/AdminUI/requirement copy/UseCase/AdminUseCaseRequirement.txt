@@ -1,0 +1,48 @@
+Follow the txt file with the name have flow behind than only read the usecase
+Only Create .tsx file no css - See the View\components
+
+*Admin Main Page*
+First Page will be showing the Login Page 
+Than move on to the 4 part but will go in application page first than move on
+
+Admin page will be given into 4 part 
+    1. Relationship : ( Handle User Relationship that are really hapenning in a bad way )
+        - This use case allows the NGO admin to view a dashboard showing the health status 
+          for each family,view analysis insights, flags family at-risk & provide support recommendations.
+    2. Applications : ( Handle application for relationship and check the details )
+        - This use case allows NGO staff to review youth adoption applications, assess their 
+          sincerity and decides whether approve to reject their application.
+    3. Reports : ( Two Big Part : Family Advisor Consultations ( For the Relationship having problem but they cant solve together ) 
+                    and Safety ALerts ( Something happening very serious between the both user like violance or more ) )
+        - This use case describes how admin receives and handles safety concern reports 
+          submitted by users through UC-401: Report Safety Concern. And This use case allows 
+          both elderly and young adults to consult a family advisor when in need of guidance, 
+          support or mediation in their intergenerational relationship. Users can submit consultation 
+          requests describing their concerns, and the system matches with an available advisor. The 
+          advisor reviews the request and schedules a consultation session.
+    4. Keyword Management : ( Monify the keyword when user is chatting )
+        - This use case allows admin to manage safety keywords. AI suggests new keywords based 
+          on detected patterns, and admin can choose to add them or manually add/remove keywords.
+
+UC1 : Login
+    UI
+        1. UseCase1UI.png
+
+/*
+Header for Admin Page : 
+ Left : HOMESWEETHOME 
+ Middle : Relationship > Application > Reports > Keyword Management
+ Right : Notification Button > Admin Profile
+*/
+
+UC500 : Applications Page   
+    UI
+        Main Page
+        1. UC500_1.png
+        2. UC500_2.png
+
+        Function Page ( After Clicking Into the User Profile )
+        1. review(1).png
+        2. request.png
+        3. reject.png
+        4. approve.png

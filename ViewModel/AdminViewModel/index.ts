@@ -1,0 +1,1 @@
+export {adminViewModel, AdminViewModel} from './AdminViewModel';

@@ -1,0 +1,6 @@
+don change the folder structure , don open new folder
+ensure reusability - better use existing ui component/ methods, if don have then only open a new one
+
+Admin UI do in View>Web>AdminUI
+
+Logic do in ViewModel>AdminViewMOdel

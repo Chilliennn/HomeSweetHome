@@ -1,7 +1,7 @@
 import { makeAutoObservable, runInAction } from 'mobx';
 import * as FileSystem from 'expo-file-system';
 import * as MediaLibrary from 'expo-media-library';
-import { familyService, familyAIService, relationshipService } from '@home-sweet-home/model';
+import { familyService, familyAIService, relationshipService, voiceTranscriptionService } from '@home-sweet-home/model';
 import type {
   MediaItem,
   DiaryEntry,
@@ -51,6 +51,8 @@ export class FamilyViewModel {
   selectedDiary: DiaryEntry | null = null;
   selectedMoodFilter: MoodType | null = null;
   isEditingDiary = false;
+  isTranscribing = false;
+  transcriptionError: string | null = null;
 
   // Calendar state
   calendarEvents: CalendarEvent[] = [];
@@ -822,6 +824,61 @@ export class FamilyViewModel {
         this.errorMessage = error.message || 'Failed to update diary entry';
         this.isLoading = false;
       });
+    }
+  }
+
+  /**
+   * Transcribe voice audio to text for diary entry
+   * UC-301: Voice input for diary writing
+   * FR 3.3.1, 3.3.2, 3.3.4, 3.3.5
+   * 
+   * Called from WriteDiaryScreen when user stops recording
+   * Calls voiceTranscriptionService (Hugging Face Whisper API)
+   * Returns transcribed text for user to review/edit
+   * 
+   * @param base64Audio - Base64-encoded audio from View layer hook
+   * @returns Transcribed text that user can review
+   */
+  async transcribeDiaryVoiceInput(base64Audio: string): Promise<string> {
+    runInAction(() => {
+      this.isTranscribing = true;
+      this.transcriptionError = null;
+    });
+
+    try {
+      console.log('[FamilyViewModel] Starting voice transcription', {
+        audioLength: base64Audio.length,
+      });
+
+      // Call Service for business logic - Whisper transcription via Hugging Face
+      const result = await voiceTranscriptionService.transcribeDiary(base64Audio);
+
+      console.log('[FamilyViewModel] Voice transcription successful', {
+        textLength: result.text.length,
+      });
+
+      runInAction(() => {
+        this.isTranscribing = false;
+      });
+
+      return result.text;
+    } catch (error: any) {
+      console.error('[FamilyViewModel] Voice transcription failed:', error);
+
+      runInAction(() => {
+        this.isTranscribing = false;
+        this.transcriptionError =
+          error.message || 'Failed to transcribe voice input. Please try again.';
+      });
+
+      // Clear error after 5 seconds
+      setTimeout(() => {
+        runInAction(() => {
+          this.transcriptionError = null;
+        });
+      }, 5000);
+
+      throw error;
     }
   }
 

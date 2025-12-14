@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/Button';
 import { AlertBanner } from '@/components/ui/AlertBanner';
 import { Header } from '@/components/ui/Header';
 import { useRouter } from 'expo-router';
+import { useVoiceTranscription } from '@/hooks/useVoiceTranscription';
 import type { MoodType } from '@home-sweet-home/model';
 
 const MOOD_OPTIONS: { value: MoodType; label: string; emoji: string }[] = [
@@ -39,13 +40,13 @@ const MOOD_OPTIONS: { value: MoodType; label: string; emoji: string }[] = [
  */
 export const WriteDiaryScreen = observer(() => {
   const router = useRouter();
-  const { currentRelationship, isLoading, errorMessage } = familyViewModel;
+  const { currentRelationship, isLoading, errorMessage, isTranscribing, transcriptionError } = familyViewModel;
+  const { transcribeAudio } = useVoiceTranscription();
   const recordingRef = useRef<Audio.Recording | null>(null);
 
   const [content, setContent] = useState('');
   const [selectedMood, setSelectedMood] = useState<MoodType>('happy');
   const [isRecording, setIsRecording] = useState(false);
-  const [isTranscribing, setIsTranscribing] = useState(false);
 
   // Initialize relationship if not loaded
   React.useEffect(() => {
@@ -127,22 +128,35 @@ export const WriteDiaryScreen = observer(() => {
         return;
       }
 
-      setIsTranscribing(true);
       await recordingRef.current.stopAndUnloadAsync();
       const uri = recordingRef.current.getURI();
       recordingRef.current = null;
       setIsRecording(false);
 
       if (uri) {
-        // For now, we'll add a placeholder message
-        // In a real implementation, you would send this to a speech-to-text service
-        setContent(content + '\n[Voice note recorded - speech-to-text integration coming soon]');
+        // Use hook to read file and ViewModel to transcribe
+        try {
+          const result = await transcribeAudio(uri);
+          
+          // Append transcribed text to content
+          setContent(prev => {
+            const newContent = prev.trim() ? prev + '\n' + result.text : result.text;
+            return newContent;
+          });
+
+          // Show success feedback
+          Alert.alert('Success', 'Voice transcribed successfully!');
+        } catch (transcriptionError) {
+          console.error('Error transcribing voice:', transcriptionError);
+          Alert.alert(
+            'Transcription Failed',
+            'Could not transcribe voice. Please check your internet connection and try again.'
+          );
+        }
       }
     } catch (error) {
       console.error('Error stopping voice recording:', error);
       Alert.alert('Error', 'Failed to process voice recording. Please try again.');
-    } finally {
-      setIsTranscribing(false);
     }
   };
 
@@ -158,6 +172,16 @@ export const WriteDiaryScreen = observer(() => {
           type="error"
           message={errorMessage}
           onDismiss={() => familyViewModel.clearError()}
+        />
+      )}
+
+      {transcriptionError && (
+        <AlertBanner
+          type="error"
+          message={transcriptionError}
+          onDismiss={() => {
+            // Error auto-clears, but provide manual dismiss option
+          }}
         />
       )}
 
@@ -200,7 +224,7 @@ export const WriteDiaryScreen = observer(() => {
                 title="🎤 Voice Input"
                 onPress={handleStartVoiceInput}
                 variant="outline"
-                disabled={isTranscribing}
+                disabled={isTranscribing || familyViewModel.isTranscribing}
               />
             ) : (
               <Button
@@ -239,10 +263,10 @@ export const WriteDiaryScreen = observer(() => {
         )}
 
         {/* Transcribing Status */}
-        {isTranscribing && (
+        {familyViewModel.isTranscribing && (
           <View style={styles.recordingStatus}>
             <ActivityIndicator size="small" color="#9DE2D0" />
-            <ThemedText style={styles.recordingText}>Processing recording...</ThemedText>
+            <ThemedText style={styles.recordingText}>Transcribing voice with Whisper AI...</ThemedText>
           </View>
         )}
 

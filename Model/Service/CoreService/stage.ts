@@ -57,7 +57,18 @@ export class StageService {
     const relationship = await userRepository.getAnyRelationship(
       relationshipId
     ); // Use getAny in case status changed
-    if (!relationship) throw new Error("Relationship not found");
+    if (!relationship) {
+      console.warn(
+        "[StageService] getJourneyStats: Relationship not found, returning default empty stats"
+      );
+      // Return default empty stats to prevent crashes, as per fix requirements
+      return {
+        daysTogether: 0,
+        videoCalls: 0,
+        homeVisits: 0,
+        memories: 0,
+      };
+    }
 
     const memoriesCount = await (userRepository as any).getMemoriesCount(
       relationshipId

@@ -126,7 +126,7 @@ async function transcribeDiary(base64Audio: string): Promise<TranscriptionResult
       },
       body: JSON.stringify({
         audio_url: upload_url,
-        language_code: 'en',
+        language_detection: true, // Auto-detect language (supports 99+ languages including Chinese, English, Malay)
       }),
     });
 

@@ -7,7 +7,6 @@ import {
   ScrollView,
   RefreshControl,
   Modal,
-  TextInput,
   ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";

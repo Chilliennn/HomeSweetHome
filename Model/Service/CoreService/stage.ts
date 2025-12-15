@@ -54,9 +54,12 @@ export class StageService {
   }
 
   async getJourneyStats(relationshipId: string): Promise<JourneyStats> {
-    const relationship = await userRepository.getAnyRelationship(
+    console.log("[StageService] getJourneyStats called with:", relationshipId);
+
+    // FIX: Use direct lookup by ID, not user search
+    const relationship = await userRepository.getRelationshipById(
       relationshipId
-    ); // Use getAny in case status changed
+    );
     if (!relationship) {
       console.warn(
         "[StageService] getJourneyStats: Relationship not found, returning default empty stats"

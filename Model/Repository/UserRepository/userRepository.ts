@@ -157,6 +157,17 @@ export const userRepository = {
     if (error) throw error;
     return data;
   },
+  async getRelationshipById(relationshipId: string) {
+    const { data, error } = await supabase
+      .from("relationships")
+      .select("*")
+      .eq("id", relationshipId)
+      .single();
+
+    if (error && error.code !== "PGRST116") throw error;
+    return data;
+  },
+
   async getRelationshipStage(userId: string) {
     const { data, error } = await supabase
       .from("relationships")

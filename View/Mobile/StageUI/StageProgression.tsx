@@ -73,12 +73,7 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
     }, [vm.shouldNavigateToJourneyPause, router, userId, vm]);
 
     const handleStagePress = async (stage: any) => {
-      if (vm.showStageCompleted) {
-        vm.closeStageCompleted();
-      }
-      if (vm.showLockedStageDetail) {
-        vm.closeLockedStageDetail();
-      }
+      // Don't pre-emptively close previous view, let toggle logic handle it
       await vm.handleStageClick(stage);
     };
 
@@ -180,35 +175,49 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
             )}
 
             {/* Inline locked-stage preview OR current stage card */}
-            {vm.showLockedStageDetail && vm.lockedStageDetails ? (
-              <View style={styles.lockedDetailContainer}>
-                <View style={styles.lockIconWrapper}>
-                  <Text style={styles.lockIcon}>🔒</Text>
-                </View>
+            {vm.showLockedStageDetail ? (
+              vm.lockedStageDetails ? (
+                <View style={styles.lockedDetailContainer}>
+                  <View style={styles.lockIconWrapper}>
+                    <Text style={styles.lockIcon}>🔒</Text>
+                  </View>
 
-                <Text style={styles.lockedTitle}>
-                  Stage {vm.lockedStageDetails.stage_order}:{" "}
-                  {vm.lockedStageDetails.title}
-                </Text>
-                <Text style={styles.lockedDescription}>
-                  {vm.lockedStageDetails.unlock_message}
-                </Text>
-
-                <View style={styles.previewCard}>
-                  <Text style={styles.previewHeading}>
-                    What&apos;s Next in Stage{" "}
-                    {vm.lockedStageDetails.stage_order}:
+                  <Text style={styles.lockedTitle}>
+                    Stage {vm.lockedStageDetails.stage_order}:{" "}
+                    {vm.lockedStageDetails.title}
                   </Text>
-                  {vm.lockedStageDetails.preview_requirements.map((req, i) => (
-                    <View key={i} style={styles.previewRow}>
-                      <View style={styles.previewBulletWrapper}>
-                        <Text style={styles.previewBullet}>○</Text>
-                      </View>
-                      <Text style={styles.previewText}>{req}</Text>
-                    </View>
-                  ))}
+                  <Text style={styles.lockedDescription}>
+                    {vm.lockedStageDetails.unlock_message}
+                  </Text>
+
+                  <View style={styles.previewCard}>
+                    <Text style={styles.previewHeading}>
+                      What&apos;s Next in Stage{" "}
+                      {vm.lockedStageDetails.stage_order}:
+                    </Text>
+                    {vm.lockedStageDetails.preview_requirements.map(
+                      (req, i) => (
+                        <View key={i} style={styles.previewRow}>
+                          <View style={styles.previewBulletWrapper}>
+                            <Text style={styles.previewBullet}>○</Text>
+                          </View>
+                          <Text style={styles.previewText}>{req}</Text>
+                        </View>
+                      )
+                    )}
+                  </View>
                 </View>
-              </View>
+              ) : (
+                // Loading state for locked details (prevents fallback to current stage card)
+                <View
+                  style={[
+                    styles.lockedDetailContainer,
+                    { minHeight: 200, justifyContent: "center" },
+                  ]}
+                >
+                  <ActivityIndicator color="#EB8F80" size="large" />
+                </View>
+              )
             ) : vm.showStageCompleted ? (
               <View style={styles.lockedDetailContainer}>
                 {/* Inline completion card */}
@@ -317,19 +326,52 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
             animationType="slide"
             onRequestClose={() => vm.closeWithdrawModal()}
           >
-            <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "rgba(0,0,0,0.5)" }}>
-              <View style={{ width: "90%", backgroundColor: "#fff", borderRadius: 12, padding: 20 }}>
-                <Text style={{ fontSize: 18, fontWeight: "700", marginBottom: 12 }}>Withdraw request</Text>
+            <View
+              style={{
+                flex: 1,
+                justifyContent: "center",
+                alignItems: "center",
+                backgroundColor: "rgba(0,0,0,0.5)",
+              }}
+            >
+              <View
+                style={{
+                  width: "90%",
+                  backgroundColor: "#fff",
+                  borderRadius: 12,
+                  padding: 20,
+                }}
+              >
+                <Text
+                  style={{ fontSize: 18, fontWeight: "700", marginBottom: 12 }}
+                >
+                  Withdraw request
+                </Text>
                 <Text style={{ marginBottom: 8 }}>Reason</Text>
                 <TextInput
                   value={vm.withdrawalReason}
                   onChangeText={(text: string) => vm.setWithdrawalReason(text)}
                   placeholder="Optional reason"
-                  style={{ borderWidth: 1, borderColor: "#eee", padding: 8, borderRadius: 8, marginBottom: 12 }}
+                  style={{
+                    borderWidth: 1,
+                    borderColor: "#eee",
+                    padding: 8,
+                    borderRadius: 8,
+                    marginBottom: 12,
+                  }}
                 />
 
-                <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 8 }}>
-                  <TouchableOpacity onPress={() => vm.closeWithdrawModal()} style={{ padding: 10 }}>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    justifyContent: "flex-end",
+                    gap: 8,
+                  }}
+                >
+                  <TouchableOpacity
+                    onPress={() => vm.closeWithdrawModal()}
+                    style={{ padding: 10 }}
+                  >
                     <Text>Cancel</Text>
                   </TouchableOpacity>
 
@@ -337,13 +379,24 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
                     onPress={async () => {
                       const success = await vm.submitWithdrawal();
                       if (success) {
-                        router.push({ pathname: "/(main)/journey-pause", params: { userId } });
+                        router.push({
+                          pathname: "/(main)/journey-pause",
+                          params: { userId },
+                        });
                       }
                     }}
-                    style={{ padding: 10, backgroundColor: "#EB8F80", borderRadius: 8 }}
+                    style={{
+                      padding: 10,
+                      backgroundColor: "#EB8F80",
+                      borderRadius: 8,
+                    }}
                     disabled={vm.isLoading}
                   >
-                    {vm.isLoading ? <ActivityIndicator color="#fff" /> : <Text style={{ color: "#fff" }}>Confirm</Text>}
+                    {vm.isLoading ? (
+                      <ActivityIndicator color="#fff" />
+                    ) : (
+                      <Text style={{ color: "#fff" }}>Confirm</Text>
+                    )}
                   </TouchableOpacity>
                 </View>
               </View>

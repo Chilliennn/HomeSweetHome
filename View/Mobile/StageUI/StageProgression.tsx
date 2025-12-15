@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { observer } from "mobx-react-lite";
+import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { stageViewModel } from "../../../ViewModel/StageViewModel";
 import { StageCircle } from "../components/ui/StageCircle";
@@ -319,60 +320,46 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
             onTabPress={handleTabPress}
           />
 
-          {/* Withdraw Modal - Inlined */}
+          {/* Withdraw Modal */}
           <Modal
             visible={vm.showWithdrawModal}
             transparent
-            animationType="slide"
+            animationType="fade"
             onRequestClose={() => vm.closeWithdrawModal()}
           >
-            <View
-              style={{
-                flex: 1,
-                justifyContent: "center",
-                alignItems: "center",
-                backgroundColor: "rgba(0,0,0,0.5)",
-              }}
-            >
-              <View
-                style={{
-                  width: "90%",
-                  backgroundColor: "#fff",
-                  borderRadius: 12,
-                  padding: 20,
-                }}
-              >
-                <Text
-                  style={{ fontSize: 18, fontWeight: "700", marginBottom: 12 }}
-                >
-                  Withdraw request
-                </Text>
-                <Text style={{ marginBottom: 8 }}>Reason</Text>
-                <TextInput
-                  value={vm.withdrawalReason}
-                  onChangeText={(text: string) => vm.setWithdrawalReason(text)}
-                  placeholder="Optional reason"
-                  style={{
-                    borderWidth: 1,
-                    borderColor: "#eee",
-                    padding: 8,
-                    borderRadius: 8,
-                    marginBottom: 12,
-                  }}
+            <View style={styles.modalOverlay}>
+              <View style={styles.modalContent}>
+                <Ionicons
+                  name="warning"
+                  size={48}
+                  color="#FFC107"
+                  style={{ marginBottom: 16 }}
                 />
 
-                <View
-                  style={{
-                    flexDirection: "row",
-                    justifyContent: "flex-end",
-                    gap: 8,
-                  }}
-                >
+                <Text style={styles.modalTitle}>Withdraw from Match?</Text>
+                <Text style={styles.modalDescription}>
+                  Are you sure you want to withdraw from this match? This action
+                  cannot be undone.
+                </Text>
+
+                <View style={styles.warningBox}>
+                  <Ionicons
+                    name="alarm-outline"
+                    size={20}
+                    color="#D32F2F"
+                    style={{ marginRight: 8 }}
+                  />
+                  <Text style={styles.warningText}>
+                    A 24-hour cooling period will begin after withdrawal.
+                  </Text>
+                </View>
+
+                <View style={styles.modalButtonRow}>
                   <TouchableOpacity
                     onPress={() => vm.closeWithdrawModal()}
-                    style={{ padding: 10 }}
+                    style={styles.modalCancelButton}
                   >
-                    <Text>Cancel</Text>
+                    <Text style={styles.modalCancelText}>Cancel</Text>
                   </TouchableOpacity>
 
                   <TouchableOpacity
@@ -385,17 +372,13 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
                         });
                       }
                     }}
-                    style={{
-                      padding: 10,
-                      backgroundColor: "#EB8F80",
-                      borderRadius: 8,
-                    }}
+                    style={styles.modalWithdrawButton}
                     disabled={vm.isLoading}
                   >
                     {vm.isLoading ? (
                       <ActivityIndicator color="#fff" />
                     ) : (
-                      <Text style={{ color: "#fff" }}>Confirm</Text>
+                      <Text style={styles.modalWithdrawText}>Withdraw</Text>
                     )}
                   </TouchableOpacity>
                 </View>
@@ -685,5 +668,88 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: "center",
     marginBottom: 12,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  modalContent: {
+    backgroundColor: "#fff",
+    borderRadius: 24,
+    padding: 24,
+    width: "100%",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 5,
+  },
+  modalTitle: {
+    fontSize: 24,
+    fontWeight: "800",
+    color: "#333",
+    marginTop: 8,
+    marginBottom: 12,
+    textAlign: "center",
+  },
+  modalDescription: {
+    fontSize: 16,
+    color: "#666",
+    textAlign: "center",
+    marginBottom: 24,
+    lineHeight: 22,
+  },
+  warningBox: {
+    backgroundColor: "#FFE082",
+    borderRadius: 12,
+    padding: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 24,
+    width: "100%",
+  },
+  warningText: {
+    flex: 1,
+    color: "#333",
+    fontSize: 14,
+    fontWeight: "600",
+    lineHeight: 20,
+  },
+  modalButtonRow: {
+    flexDirection: "row",
+    gap: 12,
+    width: "100%",
+  },
+  modalCancelButton: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: "#E0E0E0",
+    alignItems: "center",
+    backgroundColor: "#fff",
+  },
+  modalCancelText: {
+    color: "#666",
+    fontSize: 16,
+    fontWeight: "700",
+  },
+  modalWithdrawButton: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    backgroundColor: "#EB8F80",
+    alignItems: "center",
+    borderWidth: 2,
+    borderColor: "#EB8F80",
+  },
+  modalWithdrawText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "700",
   },
 });

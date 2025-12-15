@@ -457,10 +457,14 @@ export class StageService {
       if (index > 0) {
         completedStage = stageOrder[index - 1];
         stageOrdVal = index;
-        unlockedFeatures = featuresByStage[currentStageRel] || [];
+        unlockedFeatures = featuresByStage[completedStage] || [];
         console.log(
           "[StageService] Calculated completion data via fallback for stage:",
-          completedStage
+          {
+            completedStage,
+            currentStage: currentStageRel,
+            unlockedFeatures,
+          }
         );
       } else {
         return null; // No previous stage

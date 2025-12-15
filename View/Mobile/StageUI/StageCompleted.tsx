@@ -121,7 +121,7 @@ export const StageCompletedScreen: React.FC<StageCompletedScreenProps> =
             {/* Celebration Section */}
             <View style={styles.celebrationSection}>
               <StageCircle
-                order={vm.completedStageOrder}
+                order={vm.completedStageOrder + 1}
                 displayName={""} 
                 isCurrent={false}
                 isCompleted={true}
@@ -132,7 +132,7 @@ export const StageCompletedScreen: React.FC<StageCompletedScreenProps> =
                 Stage {vm.completedStageOrder + 1} Complete!
               </Text>
               <Text style={styles.completedMessage}>
-                {vm.stageCompletionMessage + 1}
+                {vm.stageCompletionMessage}
               </Text>
             </View>
 

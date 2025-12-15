@@ -1,9 +1,9 @@
 // View/Web/src/pages/KeywordManagementPage.tsx
 
-import { supabase } from '../../../../Model/Service/APIService/supabase';
-import { KeywordRepository } from '../../../../Model/Repository/AdminRepository/KeywordRepository';
-import { KeywordService } from '../../../../Model/Service/CoreService/KeywordService';
-import { KeywordManagementViewModel } from '../../../../ViewModel/KeyManagementViewModel/KeyManagementViewModel';
+import { supabase } from '@home-sweet-home/model';
+import { KeywordRepository } from '@home-sweet-home/model';
+import { KeywordService } from '@home-sweet-home/model';
+import { KeywordManagementViewModel } from '@home-sweet-home/viewmodel';
 import { KeywordManagementScreen } from '../components/AdminUI/KeywordManagementScreen';
 
 interface Props {

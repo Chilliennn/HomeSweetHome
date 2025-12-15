@@ -1,41 +1,29 @@
-import { useState } from 'react'
-import { useEffect } from 'react'
-import { supabase } from '@home-sweet-home/shared'
-import './App.css'
+// View/Web/src/App.tsx
+
+import { useState } from 'react';
+import './App.css';
+
+// Pages
+import { KeywordManagementPage } from './pages/KeywordManagementPage';
+import { RelationshipsScreen } from './components/AdminUI/RelationshipsScreen';
+
+type PageType = 'relationships' | 'applications' | 'reports' | 'keyword-management';
 
 function App() {
-  const [status, setStatus] = useState<string>('Testing supabase')
+  const [currentPage, setCurrentPage] = useState<PageType>('keyword-management');
 
-  useEffect(() => {
-    async function testSupabase(){
-      try{
-        const { data, error } = await supabase.auth.getSession();
+  const handleNavigate = (page: string) => {
+    setCurrentPage(page as PageType);
+  };
 
-        if(error){
-          setStatus(`error: ${error.message}`);
-        }else{
-          const{error: dbError} = await supabase.from('users').select('*').limit(1);
-          if(dbError && dbError.code !== '42P01'){
-            console.log('DB test:', dbError);
-          }
-
-          setStatus(`Connected, Session: ${data.session ? 'Logged in' : 'Not logged in'}`);
-        }
-      } catch (err:any){
-        setStatus(`connection error : ${err.message}`);
-      }
-    }
-
-    testSupabase();
-  }, []);
-
-  return(
-    <div>
-      <h1>Home Sweet Home</h1>
-      <h2>Supabase connection test</h2>
-      <p>{status}</p>
-    </div>
-  );
+  // Render the current page
+  switch (currentPage) {
+    case 'relationships':
+      return <RelationshipsScreen onNavigate={handleNavigate} />;
+    case 'keyword-management':
+    default:
+      return <KeywordManagementPage onNavigate={handleNavigate} />;
+  }
 }
 
-export default App
+export default App;

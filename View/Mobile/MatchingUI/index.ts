@@ -11,9 +11,11 @@ export { MatchApproved } from './MatchApproved';
 // Elderly side components
 export { ElderlyHome } from './ElderlyHome';
 export { YouthProfileDetail } from './YouthProfileDetail';
+export { ElderlyReviewApplication } from './ElderlyReviewApplication';
 
 // Shared components
 export { NotificationScreen } from './NotificationScreen';
 
 // Screen components (with ViewModel logic)
 export { MatchingScreenComponent } from './MatchingScreen';
+

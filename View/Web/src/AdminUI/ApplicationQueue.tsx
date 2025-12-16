@@ -219,8 +219,8 @@ export const ApplicationQueue: React.FC<ApplicationQueueProps> = observer(({ onS
 
   const getStatusColor = (status: string): string => {
     const colors: { [key: string]: string } = {
-      pending_ngo_review: '#9DE2D0',
-      ngo_approved: '#C8ADD6',
+      pending_review: '#9DE2D0',
+      approved: '#C8ADD6',
       info_requested: '#D4E5AE',
       rejected: '#EB8F80',
       withdrawn: '#FADE9F',

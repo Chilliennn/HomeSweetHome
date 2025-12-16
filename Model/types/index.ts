@@ -72,8 +72,9 @@ export type CommunicationStyle =
 // ============================================
 export type ApplicationStatus =
   | "pending_interest"
-  | "pending_ngo_review"
-  | "ngo_approved"
+  | "pending_review"
+  | "info_requested"
+  | "approved"
   | "pre_chat_active"
   | "both_accepted"
   | "rejected"
@@ -390,7 +391,7 @@ export interface ProfileCompletionState {
 // ============================================
 // FAMILY LIFE & MEMORY TYPES (UC300-UC304)
 // ============================================
-export type MoodType = 
+export type MoodType =
   | 'happy'
   | 'sad'
   | 'neutral'

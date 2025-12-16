@@ -81,6 +81,20 @@ export const ChatScreen = observer(function ChatScreen() {
     };
   }, [applicationId, relationshipId, currentUserId]);
 
+  // Detect incoming calls and navigate to full-screen incoming call screen
+  useEffect(() => {
+    if (vm.pendingIncomingCall) {
+      const { callerName, callType, roomUrl } = vm.pendingIncomingCall;
+      // Clear the pending call immediately to prevent re-navigation
+      vm.clearPendingIncomingCall();
+      // Navigate to incoming call screen
+      router.push({
+        pathname: '/incoming-call' as any,
+        params: { callerName, callType, roomUrl }
+      });
+    }
+  }, [vm.pendingIncomingCall]);
+
   // Keyboard event listeners
   useEffect(() => {
     const keyboardWillShow = Keyboard.addListener(
@@ -385,6 +399,60 @@ export const ChatScreen = observer(function ChatScreen() {
     const voicePlayback = item.message_type === 'voice' && item.media_url
       ? audioPlayer.getPlaybackForMessage(item.id, item.media_url, item.call_duration_minutes || 0)
       : undefined;
+
+    // Check if this is a call invite message
+    const isCallInvite = item.content?.includes('📞 Incoming') && item.content?.includes('Tap to join:');
+
+    // Extract call URL and type if it's a call invite
+    let callUrl: string | null = null;
+    let callType: 'voice' | 'video' = 'voice';
+
+    if (isCallInvite) {
+      const urlMatch = item.content.match(/Tap to join: (https?:\/\/[^\s]+)/);
+      if (urlMatch) {
+        callUrl = urlMatch[1];
+      }
+      callType = item.content.includes('Video Call') ? 'video' : 'voice';
+    }
+
+    // Handle tap on call invite (for receiver only)
+    const handleCallTap = () => {
+      if (!isOwn && callUrl) {
+        router.push({
+          pathname: '/call',
+          params: { type: callType, url: callUrl }
+        });
+      }
+    };
+
+    // Render call invite message specially
+    if (isCallInvite) {
+      return (
+        <TouchableOpacity
+          onPress={handleCallTap}
+          disabled={isOwn}
+          style={[
+            styles.callInviteContainer,
+            isOwn ? styles.callInviteOwn : styles.callInvitePartner
+          ]}
+        >
+          <View style={styles.callInviteBubble}>
+            <Text style={styles.callInviteIcon}>
+              {callType === 'video' ? '📹' : '📞'}
+            </Text>
+            <View style={styles.callInviteText}>
+              <Text style={styles.callInviteTitle}>
+                {callType === 'video' ? 'Video Call' : 'Voice Call'}
+              </Text>
+              <Text style={styles.callInviteAction}>
+                {isOwn ? 'Call sent' : 'Tap to join'}
+              </Text>
+            </View>
+          </View>
+          <Text style={styles.callInviteTime}>{timestamp}</Text>
+        </TouchableOpacity>
+      );
+    }
 
     return (
       <ChatBubble
@@ -861,6 +929,48 @@ const styles = StyleSheet.create({
   sendButtonIcon: {
     fontSize: 20,
     color: '#FFF',
+  },
+  // Call invite message styles
+  callInviteContainer: {
+    marginVertical: 4,
+    marginHorizontal: 16,
+    maxWidth: '75%',
+  },
+  callInviteOwn: {
+    alignSelf: 'flex-end',
+  },
+  callInvitePartner: {
+    alignSelf: 'flex-start',
+  },
+  callInviteBubble: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#E8F5E9',
+    borderRadius: 16,
+    padding: 12,
+    gap: 12,
+  },
+  callInviteIcon: {
+    fontSize: 32,
+  },
+  callInviteText: {
+    flex: 1,
+  },
+  callInviteTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#2E7D32',
+  },
+  callInviteAction: {
+    fontSize: 14,
+    color: '#4CAF50',
+    marginTop: 2,
+  },
+  callInviteTime: {
+    fontSize: 11,
+    color: '#999',
+    marginTop: 4,
+    textAlign: 'right',
   },
 });
 

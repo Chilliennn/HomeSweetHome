@@ -121,12 +121,12 @@ export const adminRepository = {
 	async getApplicationStats(): Promise<ApplicationStats> {
 		// Implement simple aggregate queries
 		const [{ data: pending }, { data: locked }, { data: approvedToday }, { data: avgWait }] = await Promise.all([
-			supabase.from('applications').select('id', { count: 'exact' }).eq('status', 'pending_ngo_review'),
+			supabase.from('applications').select('id', { count: 'exact' }).eq('status', 'pending_review'),
 			supabase.from('applications').select('id', { count: 'exact' }).neq('locked_by', null),
 			supabase
 				.from('applications')
 				.select('id', { count: 'exact' })
-				.eq('status', 'ngo_approved')
+				.eq('status', 'approved')
 				.gte('approved_at', new Date().toISOString().slice(0, 10)),
 			supabase.rpc('avg_waiting_time_hours') // optional: a custom Postgres function; fallback handled below
 		]).catch(() => [{ data: null }, { data: null }, { data: null }, { data: null }]);
@@ -143,7 +143,7 @@ export const adminRepository = {
 	},
 
 	async approveApplication(applicationId: string, adminId: string, notes?: string): Promise<void> {
-		const updates: any = { status: 'ngo_approved', approved_by: adminId, approved_at: new Date().toISOString() };
+		const updates: any = { status: 'approved', approved_by: adminId, approved_at: new Date().toISOString() };
 		if (notes) updates.approval_notes = notes;
 		const { error } = await supabase.from('applications').update(updates).eq('id', applicationId);
 		if (error) throw error;

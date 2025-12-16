@@ -47,9 +47,9 @@ export class AdminViewModel {
     this.errorMessage = null;
 
     try {
-      const status = this.filter === 'all' ? undefined : 
-                     this.filter === 'pending' ? 'pending_ngo_review' :
-                     this.filter === 'info_requested' ? 'info_requested' : undefined;
+      const status = this.filter === 'all' ? undefined :
+        this.filter === 'pending' ? 'pending_review' :
+          this.filter === 'info_requested' ? 'info_requested' : undefined;
 
       const offset = (this.currentPage - 1) * this.itemsPerPage;
       this.applications = await applicationService.getApplications(
@@ -131,7 +131,7 @@ export class AdminViewModel {
         notes
       );
       // Update local state
-      this.selectedApplication.status = 'ngo_approved';
+      this.selectedApplication.status = 'approved';
       // Reload stats
       await this.loadStats();
     } catch (error) {
@@ -255,8 +255,8 @@ export class AdminViewModel {
    */
   getDisplayStatus(status: string): string {
     const statusMap: { [key: string]: string } = {
-      pending_ngo_review: 'Pending Review',
-      ngo_approved: 'Approved',
+      pending_review: 'Pending Review',
+      approved: 'Approved',
       info_requested: 'Info Requested',
       rejected: 'Rejected',
       withdrawn: 'Withdrawn',

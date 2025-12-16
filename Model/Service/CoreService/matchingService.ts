@@ -289,7 +289,7 @@ export const matchingService = {
         if (application.elderly_id !== elderlyId) {
             throw new Error('You are not authorized to review this application');
         }
-        if (application.status !== 'pending_ngo_review') {
+        if (application.status !== 'pending_review') {
             throw new Error('This application is not pending review');
         }
 
@@ -342,6 +342,6 @@ export const matchingService = {
      */
     async getPendingApplicationsForElderly(elderlyId: string): Promise<Interest[]> {
         const allApplications = await matchingRepository.getElderlyApplications(elderlyId);
-        return allApplications.filter(app => app.status === 'pending_ngo_review');
+        return allApplications.filter(app => app.status === 'pending_review');
     }
 };

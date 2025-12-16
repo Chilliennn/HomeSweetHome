@@ -305,7 +305,7 @@ export const matchingRepository = {
             .from('applications')
             .update({
                 motivation_letter: motivationLetter,
-                status: 'pending_ngo_review',
+                status: 'pending_review',
                 youth_decision: 'accept',
                 reviewed_at: new Date().toISOString()
             })

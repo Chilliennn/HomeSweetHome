@@ -104,8 +104,8 @@ export const PreMatchChatList = observer(function PreMatchChatList() {
     const isElderly = currentUserType === 'elderly';
 
     // Check application status for elderly side
-    // When youth submits formal application, status becomes 'pending_ngo_review'
-    const isPendingReview = application.status === 'pending_ngo_review';
+    // When youth submits formal application, status becomes 'pending_review'
+    const isPendingReview = application.status === 'pending_review';
     const isBothAccepted = application.status === 'both_accepted';
 
     // For elderly: lock chat when youth has submitted formal application

@@ -5,6 +5,7 @@ import type { Message, MessageType, User } from '../../types';
 import type { Interest } from '../../Repository/UserRepository/matchingRepository';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import { moderationService } from './moderationService';
+import { dailyService } from '../APIService';
 
 // ============================================================================
 // TYPES
@@ -161,8 +162,8 @@ export const communicationService = {
    * UC101_6: Display list of active pre-match conversations
    * 
    * Business Rule: Users can chat during all pre-match phases:
-   * - pending_ngo_review: After youth sends application
-   * - ngo_approved: After NGO approves, before elderly decision
+   * - pending_review: After youth sends application
+   * - approved: After NGO approves, before elderly decision
    * - pre_chat_active: After elderly accepts interest
    */
   async getActivePreMatchChats(userId: string, userType: 'youth' | 'elderly'): Promise<PreMatchChat[]> {
@@ -174,7 +175,7 @@ export const communicationService = {
 
       // ✅ Filter for chat-accessible statuses (include pending, approved, and active)
       // Exclude only 'rejected', 'withdrawn', and 'both_accepted' (which becomes relationship)
-      const chatAccessibleStatuses = ['pending_ngo_review', 'ngo_approved', 'pre_chat_active'];
+      const chatAccessibleStatuses = ['pending_review', 'approved', 'pre_chat_active'];
       const activeChats = applications.filter(app =>
         chatAccessibleStatuses.includes(app.status)
       );
@@ -621,5 +622,41 @@ export const communicationService = {
       console.error('Error submitting decision:', error);
       throw error;
     }
+  },
+
+  /**
+   * Initiate a voice or video call
+   * 1. Check capability
+   * 2. Create room
+   * 3. Send invite link
+   */
+  async initiateCall(
+    senderId: string,
+    receiverId: string,
+    context: { applicationId: string } | { relationshipId: string },
+    isVideo: boolean
+  ): Promise<{ roomUrl: string; message: Message }> {
+    console.log('[communicationService] initiateCall', { senderId, isVideo });
+
+    // 1. Create Room
+    const room = await dailyService.createRoom();
+
+    // 2. Create invite message content
+    const callType = isVideo ? 'Video Call' : 'Voice Call';
+    const content = `📞 Incoming ${callType}\nTap to join: ${room.url}`;
+
+    // 3. Send as text message
+    // Note: We use the existing sendTextMessage which handles moderation/validation
+    const message = await this.sendTextMessage(
+      senderId,
+      receiverId,
+      context,
+      content
+    );
+
+    return {
+      roomUrl: room.url,
+      message,
+    };
   },
 };

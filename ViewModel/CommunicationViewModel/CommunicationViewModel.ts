@@ -387,6 +387,122 @@ export class CommunicationViewModel {
   }
 
   /**
+   * Send an image message
+   * @param mediaUrl - Public URL of the uploaded image
+   */
+  async sendImageMessage(mediaUrl: string): Promise<boolean> {
+    try {
+      if (!this.currentUser) {
+        throw new Error('No current user');
+      }
+
+      if (!this.currentChatContext) {
+        throw new Error('No active chat');
+      }
+
+      let context: { applicationId: string } | { relationshipId: string };
+      let receiverId: string;
+
+      if (this.currentChatContext === 'preMatch' && this.currentApplicationId) {
+        context = { applicationId: this.currentApplicationId };
+        receiverId = this.currentChat?.partnerUser?.id || '';
+      } else if (this.currentChatContext === 'relationship' && this.currentRelationshipId) {
+        context = { relationshipId: this.currentRelationshipId };
+        const rel = this.currentRelationship;
+        receiverId = rel?.youth_id === this.currentUser ? rel?.elderly_id : rel?.youth_id || '';
+      } else {
+        throw new Error('Invalid chat context');
+      }
+
+      if (!receiverId) {
+        throw new Error('Could not determine receiver');
+      }
+
+      // Send image message via Service
+      const message = await communicationService.sendMediaMessage(
+        this.currentUser,
+        receiverId,
+        context,
+        'image',
+        mediaUrl
+      );
+
+      // Optimistic UI update
+      runInAction(() => {
+        const exists = this.currentChatMessages.some(m => m.id === message.id);
+        if (!exists) {
+          this.currentChatMessages.push(message);
+        }
+      });
+
+      return true;
+    } catch (error) {
+      runInAction(() => {
+        this.errorMessage = error instanceof Error ? error.message : 'Failed to send image';
+      });
+      return false;
+    }
+  }
+
+  /**
+   * Send a video message
+   * @param mediaUrl - Public URL of the uploaded video
+   */
+  async sendVideoMessage(mediaUrl: string): Promise<boolean> {
+    try {
+      if (!this.currentUser) {
+        throw new Error('No current user');
+      }
+
+      if (!this.currentChatContext) {
+        throw new Error('No active chat');
+      }
+
+      let context: { applicationId: string } | { relationshipId: string };
+      let receiverId: string;
+
+      if (this.currentChatContext === 'preMatch' && this.currentApplicationId) {
+        context = { applicationId: this.currentApplicationId };
+        receiverId = this.currentChat?.partnerUser?.id || '';
+      } else if (this.currentChatContext === 'relationship' && this.currentRelationshipId) {
+        context = { relationshipId: this.currentRelationshipId };
+        const rel = this.currentRelationship;
+        receiverId = rel?.youth_id === this.currentUser ? rel?.elderly_id : rel?.youth_id || '';
+      } else {
+        throw new Error('Invalid chat context');
+      }
+
+      if (!receiverId) {
+        throw new Error('Could not determine receiver');
+      }
+
+      // Send video message via Service
+      const message = await communicationService.sendMediaMessage(
+        this.currentUser,
+        receiverId,
+        context,
+        'video',
+        mediaUrl
+      );
+
+      // Optimistic UI update
+      runInAction(() => {
+        const exists = this.currentChatMessages.some(m => m.id === message.id);
+        if (!exists) {
+          this.currentChatMessages.push(message);
+        }
+      });
+
+      return true;
+    } catch (error) {
+      runInAction(() => {
+        this.errorMessage = error instanceof Error ? error.message : 'Failed to send video';
+      });
+      return false;
+    }
+  }
+
+  /**
    * Close current chat and clean up subscriptions
    */
   closeChat(): void {

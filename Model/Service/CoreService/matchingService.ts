@@ -1,7 +1,7 @@
-import { matchingRepository } from '../../Repository/UserRepository/matchingRepository';
+import { matchingRepository, ElderlyFilters, ElderlyProfilesResult } from '../../Repository/UserRepository/matchingRepository';
 import { notificationRepository } from '../../Repository/UserRepository/notificationRepository';
 import type { RealtimeChannel } from '@supabase/supabase-js';
-import { UserType } from '../../types';
+import { User, UserType } from '../../types';
 import type { Interest } from '../../Repository/UserRepository/matchingRepository';
 
 // ============================================================================
@@ -12,6 +12,14 @@ const PRE_MATCH_LIMITS = {
     elderly: 5,
 };
 
+// Match scoring weights
+const MATCH_SCORE_WEIGHTS = {
+    SAME_INTEREST: 10,      // +10 per shared interest
+    SAME_LANGUAGE: 15,      // +15 per shared language
+    SAME_LOCATION: 20,      // +20 for same location
+    AGE_PREFERENCE: 10,     // +10 if within preferred age range
+};
+
 // ============================================================================
 // SERVICE
 // ============================================================================
@@ -19,8 +27,66 @@ export const matchingService = {
     // ============================================
     // READ OPERATIONS
     // ============================================
-    async getAvailableElderlyProfiles(filters?: any) {
-        return await matchingRepository.getAvailableElderlyProfiles(filters);
+
+    /**
+     * Calculate match score between youth and elderly
+     */
+    calculateMatchScore(youthProfile: User | null, elderlyProfile: User): number {
+        if (!youthProfile) return 0;
+
+        let score = 0;
+
+        // Match interests
+        const youthInterests = youthProfile.profile_data?.interests || [];
+        const elderlyInterests = elderlyProfile.profile_data?.interests || [];
+        for (const interest of youthInterests) {
+            if (elderlyInterests.includes(interest)) {
+                score += MATCH_SCORE_WEIGHTS.SAME_INTEREST;
+            }
+        }
+
+        // Match languages
+        const youthLanguages = youthProfile.languages || [];
+        const elderlyLanguages = elderlyProfile.languages || [];
+        for (const lang of youthLanguages) {
+            if (elderlyLanguages.includes(lang)) {
+                score += MATCH_SCORE_WEIGHTS.SAME_LANGUAGE;
+            }
+        }
+
+        // Match location
+        if (youthProfile.location && elderlyProfile.location) {
+            if (youthProfile.location.toLowerCase() === elderlyProfile.location.toLowerCase()) {
+                score += MATCH_SCORE_WEIGHTS.SAME_LOCATION;
+            }
+        }
+
+        return score;
+    },
+
+    /**
+     * Get available elderly profiles with filtering, scoring, and pagination
+     * UC101_1, UC101_3, UC101_4: Display and filter elderly profiles
+     */
+    async getAvailableElderlyProfiles(
+        filters?: ElderlyFilters,
+        youthProfile?: User
+    ): Promise<ElderlyProfilesResult> {
+        const result = await matchingRepository.getAvailableElderlyProfiles(filters, youthProfile);
+
+        // Calculate match scores and sort by score (highest first)
+        const profilesWithScores = result.profiles.map(profile => ({
+            profile,
+            score: this.calculateMatchScore(youthProfile || null, profile)
+        }));
+
+        profilesWithScores.sort((a, b) => b.score - a.score);
+
+        return {
+            profiles: profilesWithScores.map(p => p.profile),
+            totalCount: result.totalCount,
+            hasMore: result.hasMore
+        };
     },
 
     async getIncomingInterests(elderlyId: string) {

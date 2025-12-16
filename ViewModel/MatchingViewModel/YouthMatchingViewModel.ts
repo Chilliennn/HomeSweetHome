@@ -2,6 +2,7 @@ import { makeAutoObservable, runInAction } from 'mobx';
 import { matchingService } from '../../Model/Service/CoreService/matchingService';
 import { User } from '../../Model/types';
 import { RealtimeChannel, supabase, Interest } from '@home-sweet-home/model';
+import { ElderlyFilters } from '../../Model/Repository/UserRepository/matchingRepository';
 
 export class YouthMatchingViewModel {
     profiles: User[] = [];
@@ -13,20 +14,48 @@ export class YouthMatchingViewModel {
     private subscription: RealtimeChannel | null = null;
     private notificationSubscription: RealtimeChannel | null = null;
 
+    // Filter and pagination state
+    filters: ElderlyFilters = {};
+    hasMoreProfiles: boolean = false;
+    totalProfileCount: number = 0;
+    currentOffset: number = 0;
+    private currentYouthProfile: User | null = null;
+    private readonly PAGE_SIZE = 10;
+
     constructor() {
         makeAutoObservable(this);
     }
 
     /**
-     * Load available elderly profiles.
+     * Load available elderly profiles with current filters.
+     * Fetches first page of results.
      */
-    async loadProfiles(filters?: any) {
+    async loadProfiles(youthProfile?: User) {
         this.isLoading = true;
         this.error = null;
+        this.currentOffset = 0;
+
+        if (youthProfile) {
+            this.currentYouthProfile = youthProfile;
+        }
+
         try {
-            const data = await matchingService.getAvailableElderlyProfiles(filters);
+            const filtersWithPagination: ElderlyFilters = {
+                ...this.filters,
+                offset: 0,
+                limit: this.PAGE_SIZE
+            };
+
+            const result = await matchingService.getAvailableElderlyProfiles(
+                filtersWithPagination,
+                this.currentYouthProfile || undefined
+            );
+
             runInAction(() => {
-                this.profiles = data;
+                this.profiles = result.profiles;
+                this.hasMoreProfiles = result.hasMore;
+                this.totalProfileCount = result.totalCount;
+                this.currentOffset = result.profiles.length;
             });
         } catch (e: any) {
             runInAction(() => {
@@ -37,6 +66,57 @@ export class YouthMatchingViewModel {
                 this.isLoading = false;
             });
         }
+    }
+
+    /**
+     * Load more elderly profiles (pagination)
+     */
+    async loadMoreProfiles() {
+        if (this.isLoading || !this.hasMoreProfiles) return;
+
+        this.isLoading = true;
+        try {
+            const filtersWithPagination: ElderlyFilters = {
+                ...this.filters,
+                offset: this.currentOffset,
+                limit: this.PAGE_SIZE
+            };
+
+            const result = await matchingService.getAvailableElderlyProfiles(
+                filtersWithPagination,
+                this.currentYouthProfile || undefined
+            );
+
+            runInAction(() => {
+                this.profiles = [...this.profiles, ...result.profiles];
+                this.hasMoreProfiles = result.hasMore;
+                this.currentOffset += result.profiles.length;
+            });
+        } catch (e: any) {
+            runInAction(() => {
+                this.error = e.message || 'Failed to load more profiles';
+            });
+        } finally {
+            runInAction(() => {
+                this.isLoading = false;
+            });
+        }
+    }
+
+    /**
+     * Set filter options and reload profiles
+     */
+    async setFilters(newFilters: ElderlyFilters) {
+        this.filters = newFilters;
+        await this.loadProfiles();
+    }
+
+    /**
+     * Clear all filters and reload profiles
+     */
+    async clearFilters() {
+        this.filters = {};
+        await this.loadProfiles();
     }
 
     /**

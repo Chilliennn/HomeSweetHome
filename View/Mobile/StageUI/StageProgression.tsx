@@ -18,6 +18,7 @@ import { StageCircle } from "../components/ui/StageCircle";
 import { NotificationBell } from "../components/ui/NotificationBell";
 import { LoadingSpinner } from "../components/ui/LoadingSpinner";
 import { BottomTabBar, DEFAULT_TABS } from "../components/ui/BottomTabBar";
+import { RelationshipStage } from "@home-sweet-home/model/types";
 interface StageProgressionScreenProps {
   userId: string;
   initialOpenStage?: string;
@@ -31,6 +32,9 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
     useEffect(() => {
       if (userId) {
         vm.initialize(userId);
+        // Ensure modals are closed to show current stage card by default
+        if (vm.showStageCompleted) vm.closeStageCompleted();
+        if (vm.showLockedStageDetail) vm.closeLockedStageDetail();
       }
       return () => {
         vm.dispose();
@@ -72,10 +76,30 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
       }
     }, [vm.shouldNavigateToJourneyPause, router, userId, vm]);
 
-    const handleStagePress = async (stage: any) => {
-      // Don't pre-emptively close previous view, let toggle logic handle it
-      await vm.handleStageClick(stage);
-    };
+    const handleStagePress = async (targetStage: RelationshipStage) => {
+    try {
+      // Close any open modals before navigating
+      if (vm.showStageCompleted) vm.closeStageCompleted();
+      if (vm.showLockedStageDetail) vm.closeLockedStageDetail();
+      
+      // If clicking current stage, just close modals to show current stage card
+      const currentStageInfo = vm.stages.find(s => s.is_current);
+      if (currentStageInfo?.stage === targetStage) {
+        // Modals already closed above, current stage card will show
+        return;
+      }
+      
+      await vm.handleStageClick(targetStage, { forceOpen: true });
+    } catch (err) {
+      console.error("[StageProgression] handleStagePress error:", err);
+    }
+  };
+
+  // Collapse multiple spaces into single spaces for display
+  const collapseSpaces = (text?: string) => {
+    if (!text) return "";
+    return text.replace(/\s+/g, " ").trim();
+  };
 
     const handleNotificationPress = () => {
       vm.markNotificationsRead();
@@ -227,12 +251,25 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
 
                 {/* show completed stage number */}
                 <Text style={styles.lockedTitle}>
-                  Stage {vm.completedStageOrder + 1}:{" "}
-                  {vm.stageJustCompletedName}
+                  {(() => {
+                    const completedOrder = vm.completedStageOrder ?? 0;
+                    const completedStage = vm.stages[completedOrder];
+                    const completedNumber = completedOrder + 1;
+                    const completedName = collapseSpaces(completedStage?.display_name || "");
+                    return `Stage ${completedNumber}: ${completedName}`;
+                  })()}
                 </Text>
 
                 <Text style={styles.lockedDescription}>
-                  {vm.stageCompletionMessage}
+                  {(() => {
+                    const completedOrder = vm.completedStageOrder ?? 0;
+                    const completedStage = vm.stages[completedOrder];
+                    const nextStage = vm.stages[completedOrder + 1];
+                    const completedName = collapseSpaces(completedStage?.display_name || "");
+                    const nextNumber = completedOrder + 2;
+                    const nextName = collapseSpaces(nextStage?.display_name || "");
+                    return `Congratulations! You've successfully completed "${completedName}" and moved to Stage ${nextNumber}: ${nextName}.`;
+                  })()}
                 </Text>
 
                 <View style={styles.previewCard}>

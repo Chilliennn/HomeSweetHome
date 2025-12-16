@@ -11,7 +11,6 @@ import { useRouter } from "expo-router";
 import { observer } from "mobx-react-lite";
 import { vm } from "../../../ViewModel/StageViewModel";
 import { Colors } from "@/constants/theme";
-import { StageCircle } from "../components/ui/StageCircle";
 import { Button } from "../components/ui/Button";
 import { Ionicons } from "@expo/vector-icons";
 

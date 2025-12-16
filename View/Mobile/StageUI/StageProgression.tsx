@@ -53,13 +53,23 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
 
     // Watch for auto-navigation to Stage Completed page
     useEffect(() => {
-      if (!vm.shouldNavigateToStageCompleted) return;
-      vm.shouldNavigateToStageCompleted = false;
-
-      vm.loadStageCompletionInfo(vm.stageJustCompleted ?? undefined).catch(
-        (err) => console.error("Failed to load stage completion info:", err)
-      );
-    }, [vm, vm.shouldNavigateToStageCompleted]);
+      if (vm.consumeStageCompletionNavigation()) {
+        console.log("[StageProgression] Navigating to stage-completed ->", {
+          stageJustCompleted: vm.stageJustCompleted,
+          stageJustCompletedName: vm.stageJustCompletedName,
+          userId,
+        });
+        
+        vm.loadStageCompletionInfo(vm.stageJustCompleted ?? undefined).catch(
+          (err) => console.error("Failed to load stage completion info:", err)
+        );
+        
+        router.push({
+          pathname: "/(main)/stage-completed",
+          params: { userId, stage: vm.stageJustCompleted ?? "" },
+        });
+      }
+    }, [vm, vm.shouldNavigateToStageCompleted, router, userId]);
 
     // Watch for auto-navigation to Milestone page
     useEffect(() => {
@@ -70,8 +80,7 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
 
     // Watch for auto-navigation to Journey Pause page
     useEffect(() => {
-      if (vm.shouldNavigateToJourneyPause) {
-        vm.shouldNavigateToJourneyPause = false;
+      if (vm.consumeJourneyPauseNavigation()) {
         router.push({ pathname: "/(main)/journey-pause", params: { userId } });
       }
     }, [vm.shouldNavigateToJourneyPause, router, userId, vm]);

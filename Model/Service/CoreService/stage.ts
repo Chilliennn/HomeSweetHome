@@ -283,8 +283,11 @@ export class StageService {
       status: relationship.status,
     });
 
-    // Calculate days together from created_at
-    const startDate = new Date(relationship.created_at);
+    // Calculate days together from stage_start_date (or fallback to created_at)
+    const stageStart = relationship.stage_start_date
+      ? new Date(relationship.stage_start_date)
+      : new Date(relationship.created_at);
+    const startDate = stageStart;
     const now = new Date();
     const diffTime = Math.abs(now.getTime() - startDate.getTime());
     const daysTogether = Math.ceil(diffTime / (1000 * 60 * 60 * 24));

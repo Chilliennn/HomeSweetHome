@@ -177,7 +177,9 @@ export class StageViewModel {
         );
       }
 
-      this.previousStage = newData.current_stage;
+      runInAction(() => {
+        this.previousStage = newData.current_stage;
+      });
     }
 
     // Detect cooling period
@@ -224,6 +226,26 @@ export class StageViewModel {
     if (pending) {
       runInAction(() => {
         this.shouldNavigateToMilestone = false;
+      });
+    }
+    return pending;
+  }
+
+  consumeStageCompletionNavigation(): boolean {
+    const pending = this.shouldNavigateToStageCompleted;
+    if (pending) {
+      runInAction(() => {
+        this.shouldNavigateToStageCompleted = false;
+      });
+    }
+    return pending;
+  }
+
+  consumeJourneyPauseNavigation(): boolean {
+    const pending = this.shouldNavigateToJourneyPause;
+    if (pending) {
+      runInAction(() => {
+        this.shouldNavigateToJourneyPause = false;
       });
     }
     return pending;

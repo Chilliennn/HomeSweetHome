@@ -198,5 +198,150 @@ export const matchingService = {
      */
     unsubscribe(channel: RealtimeChannel): void {
         matchingRepository.unsubscribe(channel);
+    },
+
+    // ============================================
+    // FORMAL APPLICATION OPERATIONS (UC101/UC102)
+    // ============================================
+
+    /**
+     * Submit formal application after pre-match period
+     * UC101_12: Youth submits formal adoption application
+     * 
+     * @param applicationId - The pre-match application ID
+     * @param youthId - Youth user ID
+     * @param formData - Motivation letter and other form data
+     */
+    async submitFormalApplication(
+        applicationId: string,
+        youthId: string,
+        formData: {
+            motivationLetter: string;
+            availability?: string;
+            commitmentLevel?: string;
+            whatCanOffer?: string;
+        }
+    ): Promise<Interest> {
+        console.log('[matchingService] submitFormalApplication', { applicationId, youthId });
+
+        // Verify the application belongs to this youth
+        const application = await matchingRepository.getApplicationById(applicationId);
+        if (!application) {
+            throw new Error('Application not found');
+        }
+        if (application.youth_id !== youthId) {
+            throw new Error('You are not authorized to submit this application');
+        }
+        if (application.status !== 'pre_chat_active') {
+            throw new Error('This pre-match is not active');
+        }
+
+        // Check minimum duration (7 days)
+        const { communicationService } = await import('./communicationService');
+        const status = communicationService.calcPreMatchStatus(application.applied_at);
+        if (!status.canApply) {
+            throw new Error(`Minimum pre-match period not met. ${7 - status.daysPassed} days remaining.`);
+        }
+
+        // Update application with motivation letter and change status
+        const updated = await matchingRepository.submitFormalApplication(
+            applicationId,
+            formData.motivationLetter,
+            {
+                availability: formData.availability,
+                commitmentLevel: formData.commitmentLevel,
+                whatCanOffer: formData.whatCanOffer,
+            }
+        );
+
+        // Create notification for elderly
+        const youthName = application.youth?.full_name || 'A Youth';
+        await notificationRepository.createNotification({
+            user_id: application.elderly_id,
+            type: 'application_submitted',
+            title: 'New Formal Application 📋',
+            message: `${youthName} has submitted a formal adoption application. Please review.`,
+            reference_id: applicationId,
+            reference_table: 'applications',
+        });
+
+        console.log('[matchingService] Formal application submitted successfully');
+        return updated;
+    },
+
+    /**
+     * Elderly reviews formal application (approve/reject)
+     * UC102: Elderly decides on formal application
+     */
+    async reviewFormalApplication(
+        applicationId: string,
+        elderlyId: string,
+        decision: 'approve' | 'reject',
+        notes?: string
+    ): Promise<Interest> {
+        console.log('[matchingService] reviewFormalApplication', { applicationId, elderlyId, decision });
+
+        // Verify the application
+        const application = await matchingRepository.getApplicationById(applicationId);
+        if (!application) {
+            throw new Error('Application not found');
+        }
+        if (application.elderly_id !== elderlyId) {
+            throw new Error('You are not authorized to review this application');
+        }
+        if (application.status !== 'pending_review') {
+            throw new Error('This application is not pending review');
+        }
+
+        // Update elderly decision
+        const newElderlyDecision = decision === 'approve' ? 'accept' : 'decline';
+        await matchingRepository.updateElderlyDecision(applicationId, newElderlyDecision);
+
+        // Update application status
+        const newStatus = decision === 'approve' ? 'both_accepted' : 'rejected';
+        const updated = await matchingRepository.updateApplicationStatus(applicationId, newStatus);
+
+        // Create notification for youth
+        const elderlyName = application.elderly?.full_name || 'The Elderly';
+        if (decision === 'approve') {
+            await notificationRepository.createNotification({
+                user_id: application.youth_id,
+                type: 'application_approved',
+                title: 'Application Approved! 🎉',
+                message: `${elderlyName} has approved your application. Confirm to begin your journey!`,
+                reference_id: applicationId,
+                reference_table: 'applications',
+            });
+
+            // TODO: Create relationship record (handled by DB trigger or separate function)
+        } else {
+            await notificationRepository.createNotification({
+                user_id: application.youth_id,
+                type: 'application_rejected',
+                title: 'Application Update',
+                message: `${elderlyName} has declined your application. Keep browsing for other matches!`,
+                reference_id: applicationId,
+                reference_table: 'applications',
+            });
+        }
+
+        console.log('[matchingService] Application reviewed:', decision);
+        return updated;
+    },
+
+    /**
+     * Get application by ID for detail view
+     */
+    async getApplicationById(applicationId: string): Promise<Interest> {
+        return await matchingRepository.getApplicationById(applicationId);
+    },
+
+    /**
+     * Get formal applications pending review for elderly
+     * UC102_1: Elderly views pending applications
+     */
+    async getPendingApplicationsForElderly(elderlyId: string): Promise<Interest[]> {
+        const allApplications = await matchingRepository.getElderlyApplications(elderlyId);
+        return allApplications.filter(app => app.status === 'pending_review');
     }
 };

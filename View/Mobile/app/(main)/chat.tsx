@@ -3,19 +3,19 @@
  * 
  * Smart routing for chat feature:
  * 
- * WITHOUT applicationId or relationshipId param:
+ * WITHOUT params:
  * - Entry point from bottom navigation bar
  * - Shows ChatListHub which routes to:
  *   - PreMatchChatList (if user in pre-match stage)
- *   - RelationshipChat (if user has active relationship)
+ *   - Redirects with relationshipId (if user has relationship)
  * 
  * WITH applicationId param:
- * - Direct link to specific pre-match chat
- * - Shows ChatScreen for that specific application
+ * - Direct link to pre-match chat (e.g., from notification)
+ * - Shows ChatScreen for that specific pre-match chat
  * 
  * WITH relationshipId param:
  * - Direct link to relationship chat
- * - Shows ChatScreen for that relationship with stage-based features
+ * - Shows ChatScreen for that relationship
  * 
  * Query params:
  * - applicationId?: Application ID for pre-match chat access
@@ -30,7 +30,7 @@ export default function ChatRoute() {
   const applicationId = params.applicationId as string | undefined;
   const relationshipId = params.relationshipId as string | undefined;
 
-  // If ID provided, go directly to chat (pre-match or relationship)
+  // If applicationId or relationshipId provided, go directly to chat
   if (applicationId || relationshipId) {
     return <ChatScreen />;
   }

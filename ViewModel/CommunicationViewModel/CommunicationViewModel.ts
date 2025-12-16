@@ -68,6 +68,13 @@ export class CommunicationViewModel {
   /** Whether user has active relationship (for routing to bonding screen) */
   hasActiveRelationship = false;
 
+  /** Pending incoming call info (set when call invite received, cleared when handled) */
+  pendingIncomingCall: {
+    callerName: string;
+    callType: 'voice' | 'video';
+    roomUrl: string;
+  } | null = null;
+
   /** Real-time subscription channel */
   private messageSubscription: ChannelType | null = null;
 
@@ -418,6 +425,32 @@ export class CommunicationViewModel {
           if (!exists) {
             console.log('[CommunicationViewModel] Adding message to UI');
             this.currentChatMessages.push(newMessage);
+
+            // Check if this is an incoming call invite (not from self)
+            if (newMessage.sender_id !== this.currentUser && newMessage.content) {
+              const isCallInvite = newMessage.content.includes('📞 Incoming') &&
+                newMessage.content.includes('Tap to join:');
+
+              if (isCallInvite) {
+                // Extract call info
+                const urlMatch = newMessage.content.match(/Tap to join: (https?:\/\/[^\s]+)/);
+                const callUrl = urlMatch ? urlMatch[1] : null;
+                const callType = newMessage.content.includes('Video Call') ? 'video' : 'voice';
+
+                if (callUrl) {
+                  console.log('[CommunicationViewModel] Incoming call detected!', { callType, callUrl });
+                  // Store pending incoming call info for the UI to react
+                  this.pendingIncomingCall = {
+                    callerName: this.currentChat?.partnerUser?.full_name ||
+                      this.currentRelationship?.elderly?.full_name ||
+                      this.currentRelationship?.youth?.full_name ||
+                      'Unknown',
+                    callType: callType as 'voice' | 'video',
+                    roomUrl: callUrl,
+                  };
+                }
+              }
+            }
           } else {
             console.log('[CommunicationViewModel] Message already exists');
           }
@@ -444,9 +477,16 @@ export class CommunicationViewModel {
 
   /**
    * Clear error message
-   */
+  */
   clearError(): void {
     this.errorMessage = null;
+  }
+
+  /**
+   * Clear pending incoming call (after user handles it)
+   */
+  clearPendingIncomingCall(): void {
+    this.pendingIncomingCall = null;
   }
 
   /**
@@ -456,6 +496,164 @@ export class CommunicationViewModel {
     if (this.messageSubscription) {
       communicationService.unsubscribe(this.messageSubscription);
       this.messageSubscription = null;
+    }
+  }
+
+  // =============================================================
+  // Pre-Match Decision Actions (UC104)
+  // =============================================================
+
+  /**
+   * Get pre-match status for an application
+   * UC104: Check days passed, can apply (>=7), is expired (>=14)
+   */
+  getPreMatchStatus(applicationId: string): { daysPassed: number; canApply: boolean; isExpired: boolean } | null {
+    const chat = this.getChatByApplicationId(applicationId);
+    if (!chat) return null;
+
+    return communicationService.calcPreMatchStatus(chat.application.applied_at);
+  }
+
+  /**
+   * Get first expired pre-match chat (for force redirect to decision)
+   * UC104_7: After 14 days, force user to decide
+   */
+  getFirstExpiredChat(): typeof this.activePreMatchChats[0] | null {
+    for (const chat of this.activePreMatchChats) {
+      const status = communicationService.calcPreMatchStatus(chat.application.applied_at);
+      if (status.isExpired) {
+        return chat;
+      }
+    }
+    return null;
+  }
+
+  /**
+   * End pre-match communication
+   * UC104_7: Mark pre-match as ended when user decides to end
+   */
+  async endPreMatch(applicationId: string): Promise<boolean> {
+    if (!this.currentUser) {
+      this.errorMessage = 'User not logged in';
+      return false;
+    }
+
+    this.isLoading = true;
+    try {
+      await communicationService.endPreMatch(applicationId, this.currentUser);
+
+      // Remove from active chats
+      runInAction(() => {
+        this.activePreMatchChats = this.activePreMatchChats.filter(
+          chat => chat.application.id !== applicationId
+        );
+        this.isLoading = false;
+      });
+
+      return true;
+    } catch (error) {
+      runInAction(() => {
+        this.errorMessage = error instanceof Error ? error.message : 'Failed to end pre-match';
+        this.isLoading = false;
+      });
+      return false;
+    }
+  }
+
+  /**
+   * Submit formal application decision
+   * UC101_12-15: Submit formal application or decline after 7 days
+   */
+  async submitDecision(applicationId: string, decision: 'apply' | 'decline'): Promise<boolean> {
+    if (!this.currentUser || !this.currentUserType) {
+      this.errorMessage = 'User not logged in';
+      return false;
+    }
+
+    this.isLoading = true;
+    try {
+      await communicationService.submitDecision(
+        applicationId,
+        this.currentUser,
+        this.currentUserType,
+        decision
+      );
+
+      // Refresh chat list
+      await this.loadActiveChats();
+
+      runInAction(() => {
+        this.isLoading = false;
+      });
+
+      return true;
+    } catch (error) {
+      runInAction(() => {
+        this.errorMessage = error instanceof Error ? error.message : 'Failed to submit decision';
+        this.isLoading = false;
+      });
+      return false;
+    }
+  }
+
+  // =============================================================
+  // Call Actions (Daily.co)
+  // =============================================================
+
+  /**
+   * Start a voice or video call
+   * Creates a room and sends an invite
+   */
+  async startCall(isVideo: boolean): Promise<string | null> {
+    if (!this.currentUser) {
+      this.errorMessage = 'User not logged in';
+      return null;
+    }
+
+    // Determine receiver and context
+    let context: { applicationId: string } | { relationshipId: string };
+    let receiverId: string;
+
+    if (this.currentChatContext === 'preMatch' && this.currentApplicationId) {
+      context = { applicationId: this.currentApplicationId };
+      receiverId = this.currentChat?.partnerUser?.id || '';
+    } else if (this.currentChatContext === 'relationship' && this.currentRelationshipId) {
+      context = { relationshipId: this.currentRelationshipId };
+      const rel = this.currentRelationship;
+      receiverId = rel?.youth_id === this.currentUser ? rel?.elderly_id : rel?.youth_id || '';
+    } else {
+      this.errorMessage = 'No active chat context';
+      return null;
+    }
+
+    if (!receiverId) {
+      this.errorMessage = 'Could not determine receiver';
+      return null;
+    }
+
+    this.isLoading = true;
+
+    try {
+      const { roomUrl } = await communicationService.initiateCall(
+        this.currentUser,
+        receiverId,
+        context,
+        isVideo
+      );
+
+      runInAction(() => {
+        this.isLoading = false;
+        // Optimization: Optimistically add the invite message to the list
+        // (Though initiateCall does send it, we might want instant feedback)
+      });
+
+      return roomUrl;
+    } catch (error) {
+      runInAction(() => {
+        this.errorMessage = error instanceof Error ? error.message : 'Failed to start call';
+        this.isLoading = false;
+      });
+      return null;
     }
   }
 }

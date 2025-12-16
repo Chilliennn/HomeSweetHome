@@ -46,15 +46,34 @@ export const userRepository = {
   },
 
   async getActiveRelationship(userId: string): Promise<Relationship | null> {
+    console.debug(
+      "[userRepository.getActiveRelationship] START - userId:",
+      userId
+    );
     const { data, error } = await supabase
       .from("relationships")
       .select("*")
       .or(`youth_id.eq.${userId},elderly_id.eq.${userId}`)
-      .eq("status", "active")
-      .single();
+      .order("created_at", { ascending: false });
 
-    if (error && error.code !== "PGRST116") throw error;
-    return data;
+    console.debug(
+      "[userRepository.getActiveRelationship] raw response - data:",
+      data,
+      "error:",
+      error
+    );
+    if (error) throw error;
+
+    if (!data || data.length === 0) return null;
+
+    // Filter in-memory to ensure correct status matching
+    const activeRelationship = data.find((r) => r.status === "active");
+
+    console.debug(
+      "[userRepository.getActiveRelationship] RETURN:",
+      activeRelationship || null
+    );
+    return activeRelationship || null;
   },
 
   /**
@@ -62,18 +81,43 @@ export const userRepository = {
    * Used to check if user is in a cooling period
    */
   async getAnyRelationship(userId: string): Promise<Relationship | null> {
+    console.debug(
+      "[userRepository.getAnyRelationship] START - userId:",
+      userId
+    );
     const { data, error } = await supabase
       .from("relationships")
       .select("*")
       .or(`youth_id.eq.${userId},elderly_id.eq.${userId}`)
-      .in("status", ["active", "paused"])
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .single();
+      .order("created_at", { ascending: false });
+    console.debug(
+      "[userRepository.getAnyRelationship] raw response - data:",
+      data,
+      "error:",
+      error
+    );
 
-    if (error && error.code !== "PGRST116") throw error;
-    return data;
+    if (error) throw error;
+
+    if (!data || data.length === 0) {
+      console.debug(
+        "[userRepository.getAnyRelationship] No relationships found"
+      );
+      return null;
+    }
+
+    // Explicitly find the relevant relationship in memory
+    const relevantRelationship = data.find(
+      (r) => r.status === "active" || r.status === "paused"
+    );
+
+    console.debug(
+      "[userRepository.getAnyRelationship] RETURN:",
+      relevantRelationship || null
+    );
+    return relevantRelationship || null;
   },
+
   async updateProfileData(userId: string, profileData: UserProfileData) {
     const { data, error } = await supabase
       .from("users")
@@ -157,6 +201,21 @@ export const userRepository = {
     if (error) throw error;
     return data;
   },
+  async updateRelationshipStage(
+    relationshipId: string,
+    newStage: RelationshipStage
+  ) {
+    const { error } = await supabase
+      .from("relationships")
+      .update({
+        current_stage: newStage,
+        stage_start_date: new Date().toISOString(),
+      })
+      .eq("id", relationshipId);
+
+    if (error) throw error;
+  },
+
   async getRelationshipById(relationshipId: string) {
     const { data, error } = await supabase
       .from("relationships")

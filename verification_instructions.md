@@ -111,6 +111,168 @@ completed_at timestamp with time zone,
 CONSTRAINT activities_pkey PRIMARY KEY (id),
 CONSTRAINT activities_relationship_id_fkey FOREIGN KEY (relationship_id) REFERENCES public.relationships(id)
 );
+-- WARNING: This schema is for context only and is not meant to be run.
+-- Table order and constraints may not be valid for execution.
+
+CREATE TABLE public.activities (
+id uuid NOT NULL DEFAULT uuid_generate_v4(),
+relationship_id uuid NOT NULL,
+stage text NOT NULL CHECK (stage = ANY (ARRAY['getting_acquainted'::text, 'building_trust'::text, 'family_bond'::text, 'full_adoption'::text])),
+title text NOT NULL,
+description text NOT NULL,
+created_by text NOT NULL CHECK (created_by = ANY (ARRAY['system'::text, 'ngo'::text, 'admin'::text, 'ai'::text, 'user'::text])),
+is_completed boolean DEFAULT false,
+youth_signed boolean DEFAULT false,
+elderly_signed boolean DEFAULT false,
+created_at timestamp with time zone DEFAULT now(),
+completed_at timestamp with time zone,
+CONSTRAINT activities_pkey PRIMARY KEY (id),
+CONSTRAINT activities_relationship_id_fkey FOREIGN KEY (relationship_id) REFERENCES public.relationships(id)
+);
+-- WARNING: This schema is for context only and is not meant to be run.
+-- Table order and constraints may not be valid for execution.
+
+CREATE TABLE public.activities (
+id uuid NOT NULL DEFAULT uuid_generate_v4(),
+relationship_id uuid NOT NULL,
+stage text NOT NULL CHECK (stage = ANY (ARRAY['getting_acquainted'::text, 'building_trust'::text, 'family_bond'::text, 'full_adoption'::text])),
+title text NOT NULL,
+description text NOT NULL,
+created_by text NOT NULL CHECK (created_by = ANY (ARRAY['system'::text, 'ngo'::text, 'admin'::text, 'ai'::text, 'user'::text])),
+is_completed boolean DEFAULT false,
+youth_signed boolean DEFAULT false,
+elderly_signed boolean DEFAULT false,
+created_at timestamp with time zone DEFAULT now(),
+completed_at timestamp with time zone,
+CONSTRAINT activities_pkey PRIMARY KEY (id),
+CONSTRAINT activities_relationship_id_fkey FOREIGN KEY (relationship_id) REFERENCES public.relationships(id)
+);
+-- WARNING: This schema is for context only and is not meant to be run.
+-- Table order and constraints may not be valid for execution.
+
+CREATE TABLE public.activities (
+id uuid NOT NULL DEFAULT uuid_generate_v4(),
+relationship_id uuid NOT NULL,
+stage text NOT NULL CHECK (stage = ANY (ARRAY['getting_acquainted'::text, 'building_trust'::text, 'family_bond'::text, 'full_adoption'::text])),
+title text NOT NULL,
+description text NOT NULL,
+created_by text NOT NULL CHECK (created_by = ANY (ARRAY['system'::text, 'ngo'::text, 'admin'::text, 'ai'::text, 'user'::text])),
+is_completed boolean DEFAULT false,
+youth_signed boolean DEFAULT false,
+elderly_signed boolean DEFAULT false,
+created_at timestamp with time zone DEFAULT now(),
+completed_at timestamp with time zone,
+CONSTRAINT activities_pkey PRIMARY KEY (id),
+CONSTRAINT activities_relationship_id_fkey FOREIGN KEY (relationship_id) REFERENCES public.relationships(id)
+);
+-- WARNING: This schema is for context only and is not meant to be run.
+-- Table order and constraints may not be valid for execution.
+
+CREATE TABLE public.activities (
+id uuid NOT NULL DEFAULT uuid_generate_v4(),
+relationship_id uuid NOT NULL,
+stage text NOT NULL CHECK (stage = ANY (ARRAY['getting_acquainted'::text, 'building_trust'::text, 'family_bond'::text, 'full_adoption'::text])),
+title text NOT NULL,
+description text NOT NULL,
+created_by text NOT NULL CHECK (created_by = ANY (ARRAY['system'::text, 'ngo'::text, 'admin'::text, 'ai'::text, 'user'::text])),
+is_completed boolean DEFAULT false,
+youth_signed boolean DEFAULT false,
+elderly_signed boolean DEFAULT false,
+created_at timestamp with time zone DEFAULT now(),
+completed_at timestamp with time zone,
+CONSTRAINT activities_pkey PRIMARY KEY (id),
+CONSTRAINT activities_relationship_id_fkey FOREIGN KEY (relationship_id) REFERENCES public.relationships(id)
+);
+-- WARNING: This schema is for context only and is not meant to be run.
+-- Table order and constraints may not be valid for execution.
+
+CREATE TABLE public.activities (
+id uuid NOT NULL DEFAULT uuid_generate_v4(),
+relationship_id uuid NOT NULL,
+stage text NOT NULL CHECK (stage = ANY (ARRAY['getting_acquainted'::text, 'building_trust'::text, 'family_bond'::text, 'full_adoption'::text])),
+title text NOT NULL,
+description text NOT NULL,
+created_by text NOT NULL CHECK (created_by = ANY (ARRAY['system'::text, 'ngo'::text, 'admin'::text, 'ai'::text, 'user'::text])),
+is_completed boolean DEFAULT false,
+youth_signed boolean DEFAULT false,
+elderly_signed boolean DEFAULT false,
+created_at timestamp with time zone DEFAULT now(),
+completed_at timestamp with time zone,
+CONSTRAINT activities_pkey PRIMARY KEY (id),
+CONSTRAINT activities_relationship_id_fkey FOREIGN KEY (relationship_id) REFERENCES public.relationships(id)
+);
+-- WARNING: This schema is for context only and is not meant to be run.
+-- Table order and constraints may not be valid for execution.
+
+CREATE TABLE public.activities (
+id uuid NOT NULL DEFAULT uuid_generate_v4(),
+relationship_id uuid NOT NULL,
+stage text NOT NULL CHECK (stage = ANY (ARRAY['getting_acquainted'::text, 'building_trust'::text, 'family_bond'::text, 'full_adoption'::text])),
+title text NOT NULL,
+description text NOT NULL,
+created_by text NOT NULL CHECK (created_by = ANY (ARRAY['system'::text, 'ngo'::text, 'admin'::text, 'ai'::text, 'user'::text])),
+is_completed boolean DEFAULT false,
+youth_signed boolean DEFAULT false,
+elderly_signed boolean DEFAULT false,
+created_at timestamp with time zone DEFAULT now(),
+completed_at timestamp with time zone,
+CONSTRAINT activities_pkey PRIMARY KEY (id),
+CONSTRAINT activities_relationship_id_fkey FOREIGN KEY (relationship_id) REFERENCES public.relationships(id)
+);
+-- WARNING: This schema is for context only and is not meant to be run.
+-- Table order and constraints may not be valid for execution.
+
+CREATE TABLE public.activities (
+id uuid NOT NULL DEFAULT uuid_generate_v4(),
+relationship_id uuid NOT NULL,
+stage text NOT NULL CHECK (stage = ANY (ARRAY['getting_acquainted'::text, 'building_trust'::text, 'family_bond'::text, 'full_adoption'::text])),
+title text NOT NULL,
+description text NOT NULL,
+created_by text NOT NULL CHECK (created_by = ANY (ARRAY['system'::text, 'ngo'::text, 'admin'::text, 'ai'::text, 'user'::text])),
+is_completed boolean DEFAULT false,
+youth_signed boolean DEFAULT false,
+elderly_signed boolean DEFAULT false,
+created_at timestamp with time zone DEFAULT now(),
+completed_at timestamp with time zone,
+CONSTRAINT activities_pkey PRIMARY KEY (id),
+CONSTRAINT activities_relationship_id_fkey FOREIGN KEY (relationship_id) REFERENCES public.relationships(id)
+);
+-- WARNING: This schema is for context only and is not meant to be run.
+-- Table order and constraints may not be valid for execution.
+
+CREATE TABLE public.activities (
+id uuid NOT NULL DEFAULT uuid_generate_v4(),
+relationship_id uuid NOT NULL,
+stage text NOT NULL CHECK (stage = ANY (ARRAY['getting_acquainted'::text, 'building_trust'::text, 'family_bond'::text, 'full_adoption'::text])),
+title text NOT NULL,
+description text NOT NULL,
+created_by text NOT NULL CHECK (created_by = ANY (ARRAY['system'::text, 'ngo'::text, 'admin'::text, 'ai'::text, 'user'::text])),
+is_completed boolean DEFAULT false,
+youth_signed boolean DEFAULT false,
+elderly_signed boolean DEFAULT false,
+created_at timestamp with time zone DEFAULT now(),
+completed_at timestamp with time zone,
+CONSTRAINT activities_pkey PRIMARY KEY (id),
+CONSTRAINT activities_relationship_id_fkey FOREIGN KEY (relationship_id) REFERENCES public.relationships(id)
+);
+-- WARNING: This schema is for context only and is not meant to be run.
+-- Table order and constraints may not be valid for execution.
+
+CREATE TABLE public.activities (
+id uuid NOT NULL DEFAULT uuid_generate_v4(),
+relationship_id uuid NOT NULL,
+stage text NOT NULL CHECK (stage = ANY (ARRAY['getting_acquainted'::text, 'building_trust'::text, 'family_bond'::text, 'full_adoption'::text])),
+title text NOT NULL,
+description text NOT NULL,
+created_by text NOT NULL CHECK (created_by = ANY (ARRAY['system'::text, 'ngo'::text, 'admin'::text, 'ai'::text, 'user'::text])),
+is_completed boolean DEFAULT false,
+youth_signed boolean DEFAULT false,
+elderly_signed boolean DEFAULT false,
+created_at timestamp with time zone DEFAULT now(),
+completed_at timestamp with time zone,
+CONSTRAINT activities_pkey PRIMARY KEY (id),
+CONSTRAINT activities_relationship_id_fkey FOREIGN KEY (relationship_id) REFERENCES public.relationships(id)
+);
 CREATE TABLE public.ai_suggestions (
 id uuid NOT NULL DEFAULT uuid_generate_v4(),
 relationship_id uuid NOT NULL,
@@ -130,6 +292,362 @@ youth_id uuid NOT NULL,
 elderly_id uuid NOT NULL,
 motivation_letter text NOT NULL,
 status text DEFAULT 'pending_ngo_review'::text CHECK (status = ANY (ARRAY['pending_ngo_review'::text, 'ngo_approved'::text, 'pre_chat_active'::text, 'both_accepted'::text, 'rejected'::text, 'withdrawn'::text])),
+ngo_reviewer_id uuid,
+-- WARNING: This schema is for context only and is not meant to be run.
+-- Table order and constraints may not be valid for execution.
+
+CREATE TABLE public.activities (
+id uuid NOT NULL DEFAULT uuid_generate_v4(),
+relationship_id uuid NOT NULL,
+stage text NOT NULL CHECK (stage = ANY (ARRAY['getting_acquainted'::text, 'building_trust'::text, 'family_bond'::text, 'full_adoption'::text])),
+title text NOT NULL,
+description text NOT NULL,
+created_by text NOT NULL CHECK (created_by = ANY (ARRAY['system'::text, 'ngo'::text, 'admin'::text, 'ai'::text, 'user'::text])),
+is_completed boolean DEFAULT false,
+youth_signed boolean DEFAULT false,
+elderly_signed boolean DEFAULT false,
+created_at timestamp with time zone DEFAULT now(),
+completed_at timestamp with time zone,
+CONSTRAINT activities_pkey PRIMARY KEY (id),
+CONSTRAINT activities_relationship_id_fkey FOREIGN KEY (relationship_id) REFERENCES public.relationships(id)
+);
+CREATE TABLE public.ai_suggestions (
+id uuid NOT NULL DEFAULT uuid_generate_v4(),
+relationship_id uuid NOT NULL,
+suggestion_type text NOT NULL CHECK (suggestion_type = ANY (ARRAY['activity'::text, 'conversation_topic'::text])),
+activity_title text,
+activity_description text,
+topic_text text,
+topic_for_stage text CHECK (topic_for_stage = ANY (ARRAY['getting_to_know'::text, 'trial_period'::text, 'official_ceremony'::text, 'family_life'::text])),
+is_used boolean DEFAULT false,
+generated_at timestamp with time zone DEFAULT now(),
+CONSTRAINT ai_suggestions_pkey PRIMARY KEY (id),
+CONSTRAINT ai_suggestions_relationship_id_fkey FOREIGN KEY (relationship_id) REFERENCES public.relationships(id)
+);
+CREATE TABLE public.applications (
+id uuid NOT NULL DEFAULT uuid_generate_v4(),
+youth_id uuid NOT NULL,
+elderly_id uuid NOT NULL,
+motivation_letter text NOT NULL,
+status text DEFAULT 'pending_ngo_review'::text CHECK (status = ANY (ARRAY['pending_ngo_review'::text, 'ngo_approved'::text, 'pre_chat_active'::text, 'both_accepted'::text, 'rejected'::text, 'withdrawn'::text])),
+ngo_reviewer_id uuid,
+-- WARNING: This schema is for context only and is not meant to be run.
+-- Table order and constraints may not be valid for execution.
+
+CREATE TABLE public.activities (
+id uuid NOT NULL DEFAULT uuid_generate_v4(),
+relationship_id uuid NOT NULL,
+stage text NOT NULL CHECK (stage = ANY (ARRAY['getting_acquainted'::text, 'building_trust'::text, 'family_bond'::text, 'full_adoption'::text])),
+title text NOT NULL,
+description text NOT NULL,
+created_by text NOT NULL CHECK (created_by = ANY (ARRAY['system'::text, 'ngo'::text, 'admin'::text, 'ai'::text, 'user'::text])),
+is_completed boolean DEFAULT false,
+youth_signed boolean DEFAULT false,
+elderly_signed boolean DEFAULT false,
+created_at timestamp with time zone DEFAULT now(),
+completed_at timestamp with time zone,
+CONSTRAINT activities_pkey PRIMARY KEY (id),
+CONSTRAINT activities_relationship_id_fkey FOREIGN KEY (relationship_id) REFERENCES public.relationships(id)
+);
+CREATE TABLE public.ai_suggestions (
+id uuid NOT NULL DEFAULT uuid_generate_v4(),
+relationship_id uuid NOT NULL,
+suggestion_type text NOT NULL CHECK (suggestion_type = ANY (ARRAY['activity'::text, 'conversation_topic'::text])),
+activity_title text,
+activity_description text,
+topic_text text,
+topic_for_stage text CHECK (topic_for_stage = ANY (ARRAY['getting_to_know'::text, 'trial_period'::text, 'official_ceremony'::text, 'family_life'::text])),
+is_used boolean DEFAULT false,
+generated_at timestamp with time zone DEFAULT now(),
+CONSTRAINT ai_suggestions_pkey PRIMARY KEY (id),
+CONSTRAINT ai_suggestions_relationship_id_fkey FOREIGN KEY (relationship_id) REFERENCES public.relationships(id)
+);
+CREATE TABLE public.applications (
+id uuid NOT NULL DEFAULT uuid_generate_v4(),
+youth_id uuid NOT NULL,
+elderly_id uuid NOT NULL,
+motivation_letter text NOT NULL,
+status text DEFAULT 'pending_ngo_review'::text CHECK (status = ANY (ARRAY['pending_ngo_review'::text, 'ngo_approved'::text, 'pre_chat_active'::text, 'both_accepted'::text, 'rejected'::text, 'withdrawn'::text])),
+ngo_reviewer_id uuid,
+ngo_notes text,
+youth_decision text DEFAULT 'pending'::text CHECK (youth_decision = ANY (ARRAY['pending'::text, 'accept'::text, 'decline'::text])),
+elderly_decision text DEFAULT 'pending'::text CHECK (elderly_decision = ANY (ARRAY['pending'::text, 'accept'::text, 'decline'::text])),
+applied_at timestamp with time zone DEFAULT now(),
+reviewed_at timestamp with time zone,
+CONSTRAINT applications_pkey PRIMARY KEY (id),
+-- WARNING: This schema is for context only and is not meant to be run.
+-- Table order and constraints may not be valid for execution.
+
+CREATE TABLE public.activities (
+id uuid NOT NULL DEFAULT uuid_generate_v4(),
+relationship_id uuid NOT NULL,
+stage text NOT NULL CHECK (stage = ANY (ARRAY['getting_acquainted'::text, 'building_trust'::text, 'family_bond'::text, 'full_adoption'::text])),
+title text NOT NULL,
+description text NOT NULL,
+created_by text NOT NULL CHECK (created_by = ANY (ARRAY['system'::text, 'ngo'::text, 'admin'::text, 'ai'::text, 'user'::text])),
+is_completed boolean DEFAULT false,
+youth_signed boolean DEFAULT false,
+elderly_signed boolean DEFAULT false,
+created_at timestamp with time zone DEFAULT now(),
+completed_at timestamp with time zone,
+CONSTRAINT activities_pkey PRIMARY KEY (id),
+CONSTRAINT activities_relationship_id_fkey FOREIGN KEY (relationship_id) REFERENCES public.relationships(id)
+);
+CREATE TABLE public.ai_suggestions (
+id uuid NOT NULL DEFAULT uuid_generate_v4(),
+relationship_id uuid NOT NULL,
+suggestion_type text NOT NULL CHECK (suggestion_type = ANY (ARRAY['activity'::text, 'conversation_topic'::text])),
+activity_title text,
+activity_description text,
+topic_text text,
+topic_for_stage text CHECK (topic_for_stage = ANY (ARRAY['getting_to_know'::text, 'trial_period'::text, 'official_ceremony'::text, 'family_life'::text])),
+is_used boolean DEFAULT false,
+generated_at timestamp with time zone DEFAULT now(),
+CONSTRAINT ai_suggestions_pkey PRIMARY KEY (id),
+CONSTRAINT ai_suggestions_relationship_id_fkey FOREIGN KEY (relationship_id) REFERENCES public.relationships(id)
+);
+CREATE TABLE public.applications (
+id uuid NOT NULL DEFAULT uuid_generate_v4(),
+youth_id uuid NOT NULL,
+elderly_id uuid NOT NULL,
+motivation_letter text NOT NULL,
+status text DEFAULT 'pending_ngo_review'::text CHECK (status = ANY (ARRAY['pending_ngo_review'::text, 'ngo_approved'::text, 'pre_chat_active'::text, 'both_accepted'::text, 'rejected'::text, 'withdrawn'::text])),
+ngo_reviewer_id uuid,
+ngo_notes text,
+youth_decision text DEFAULT 'pending'::text CHECK (youth_decision = ANY (ARRAY['pending'::text, 'accept'::text, 'decline'::text])),
+elderly_decision text DEFAULT 'pending'::text CHECK (elderly_decision = ANY (ARRAY['pending'::text, 'accept'::text, 'decline'::text])),
+applied_at timestamp with time zone DEFAULT now(),
+reviewed_at timestamp with time zone,
+CONSTRAINT applications_pkey PRIMARY KEY (id),
+-- WARNING: This schema is for context only and is not meant to be run.
+-- Table order and constraints may not be valid for execution.
+
+CREATE TABLE public.activities (
+id uuid NOT NULL DEFAULT uuid_generate_v4(),
+relationship_id uuid NOT NULL,
+stage text NOT NULL CHECK (stage = ANY (ARRAY['getting_acquainted'::text, 'building_trust'::text, 'family_bond'::text, 'full_adoption'::text])),
+title text NOT NULL,
+description text NOT NULL,
+created_by text NOT NULL CHECK (created_by = ANY (ARRAY['system'::text, 'ngo'::text, 'admin'::text, 'ai'::text, 'user'::text])),
+is_completed boolean DEFAULT false,
+youth_signed boolean DEFAULT false,
+elderly_signed boolean DEFAULT false,
+created_at timestamp with time zone DEFAULT now(),
+completed_at timestamp with time zone,
+CONSTRAINT activities_pkey PRIMARY KEY (id),
+CONSTRAINT activities_relationship_id_fkey FOREIGN KEY (relationship_id) REFERENCES public.relationships(id)
+);
+CREATE TABLE public.ai_suggestions (
+id uuid NOT NULL DEFAULT uuid_generate_v4(),
+relationship_id uuid NOT NULL,
+suggestion_type text NOT NULL CHECK (suggestion_type = ANY (ARRAY['activity'::text, 'conversation_topic'::text])),
+activity_title text,
+activity_description text,
+topic_text text,
+topic_for_stage text CHECK (topic_for_stage = ANY (ARRAY['getting_to_know'::text, 'trial_period'::text, 'official_ceremony'::text, 'family_life'::text])),
+is_used boolean DEFAULT false,
+generated_at timestamp with time zone DEFAULT now(),
+CONSTRAINT ai_suggestions_pkey PRIMARY KEY (id),
+CONSTRAINT ai_suggestions_relationship_id_fkey FOREIGN KEY (relationship_id) REFERENCES public.relationships(id)
+);
+CREATE TABLE public.applications (
+id uuid NOT NULL DEFAULT uuid_generate_v4(),
+youth_id uuid NOT NULL,
+elderly_id uuid NOT NULL,
+motivation_letter text NOT NULL,
+status text DEFAULT 'pending_ngo_review'::text CHECK (status = ANY (ARRAY['pending_ngo_review'::text, 'ngo_approved'::text, 'pre_chat_active'::text, 'both_accepted'::text, 'rejected'::text, 'withdrawn'::text])),
+ngo_reviewer_id uuid,
+ngo_notes text,
+youth_decision text DEFAULT 'pending'::text CHECK (youth_decision = ANY (ARRAY['pending'::text, 'accept'::text, 'decline'::text])),
+elderly_decision text DEFAULT 'pending'::text CHECK (elderly_decision = ANY (ARRAY['pending'::text, 'accept'::text, 'decline'::text])),
+applied_at timestamp with time zone DEFAULT now(),
+reviewed_at timestamp with time zone,
+CONSTRAINT applications_pkey PRIMARY KEY (id),
+-- WARNING: This schema is for context only and is not meant to be run.
+-- Table order and constraints may not be valid for execution.
+
+CREATE TABLE public.activities (
+id uuid NOT NULL DEFAULT uuid_generate_v4(),
+relationship_id uuid NOT NULL,
+stage text NOT NULL CHECK (stage = ANY (ARRAY['getting_acquainted'::text, 'building_trust'::text, 'family_bond'::text, 'full_adoption'::text])),
+title text NOT NULL,
+description text NOT NULL,
+created_by text NOT NULL CHECK (created_by = ANY (ARRAY['system'::text, 'ngo'::text, 'admin'::text, 'ai'::text, 'user'::text])),
+is_completed boolean DEFAULT false,
+youth_signed boolean DEFAULT false,
+elderly_signed boolean DEFAULT false,
+created_at timestamp with time zone DEFAULT now(),
+completed_at timestamp with time zone,
+CONSTRAINT activities_pkey PRIMARY KEY (id),
+CONSTRAINT activities_relationship_id_fkey FOREIGN KEY (relationship_id) REFERENCES public.relationships(id)
+);
+CREATE TABLE public.ai_suggestions (
+id uuid NOT NULL DEFAULT uuid_generate_v4(),
+relationship_id uuid NOT NULL,
+suggestion_type text NOT NULL CHECK (suggestion_type = ANY (ARRAY['activity'::text, 'conversation_topic'::text])),
+activity_title text,
+activity_description text,
+topic_text text,
+topic_for_stage text CHECK (topic_for_stage = ANY (ARRAY['getting_to_know'::text, 'trial_period'::text, 'official_ceremony'::text, 'family_life'::text])),
+is_used boolean DEFAULT false,
+generated_at timestamp with time zone DEFAULT now(),
+CONSTRAINT ai_suggestions_pkey PRIMARY KEY (id),
+CONSTRAINT ai_suggestions_relationship_id_fkey FOREIGN KEY (relationship_id) REFERENCES public.relationships(id)
+);
+CREATE TABLE public.applications (
+id uuid NOT NULL DEFAULT uuid_generate_v4(),
+youth_id uuid NOT NULL,
+elderly_id uuid NOT NULL,
+motivation_letter text NOT NULL,
+status text DEFAULT 'pending_ngo_review'::text CHECK (status = ANY (ARRAY['pending_ngo_review'::text, 'ngo_approved'::text, 'pre_chat_active'::text, 'both_accepted'::text, 'rejected'::text, 'withdrawn'::text])),
+ngo_reviewer_id uuid,
+ngo_notes text,
+youth_decision text DEFAULT 'pending'::text CHECK (youth_decision = ANY (ARRAY['pending'::text, 'accept'::text, 'decline'::text])),
+elderly_decision text DEFAULT 'pending'::text CHECK (elderly_decision = ANY (ARRAY['pending'::text, 'accept'::text, 'decline'::text])),
+applied_at timestamp with time zone DEFAULT now(),
+reviewed_at timestamp with time zone,
+CONSTRAINT applications_pkey PRIMARY KEY (id),
+-- WARNING: This schema is for context only and is not meant to be run.
+-- Table order and constraints may not be valid for execution.
+
+CREATE TABLE public.activities (
+id uuid NOT NULL DEFAULT uuid_generate_v4(),
+relationship_id uuid NOT NULL,
+stage text NOT NULL CHECK (stage = ANY (ARRAY['getting_acquainted'::text, 'building_trust'::text, 'family_bond'::text, 'full_adoption'::text])),
+title text NOT NULL,
+description text NOT NULL,
+created_by text NOT NULL CHECK (created_by = ANY (ARRAY['system'::text, 'ngo'::text, 'admin'::text, 'ai'::text, 'user'::text])),
+is_completed boolean DEFAULT false,
+youth_signed boolean DEFAULT false,
+elderly_signed boolean DEFAULT false,
+created_at timestamp with time zone DEFAULT now(),
+completed_at timestamp with time zone,
+CONSTRAINT activities_pkey PRIMARY KEY (id),
+CONSTRAINT activities_relationship_id_fkey FOREIGN KEY (relationship_id) REFERENCES public.relationships(id)
+);
+CREATE TABLE public.ai_suggestions (
+id uuid NOT NULL DEFAULT uuid_generate_v4(),
+relationship_id uuid NOT NULL,
+suggestion_type text NOT NULL CHECK (suggestion_type = ANY (ARRAY['activity'::text, 'conversation_topic'::text])),
+activity_title text,
+activity_description text,
+topic_text text,
+topic_for_stage text CHECK (topic_for_stage = ANY (ARRAY['getting_to_know'::text, 'trial_period'::text, 'official_ceremony'::text, 'family_life'::text])),
+is_used boolean DEFAULT false,
+generated_at timestamp with time zone DEFAULT now(),
+CONSTRAINT ai_suggestions_pkey PRIMARY KEY (id),
+CONSTRAINT ai_suggestions_relationship_id_fkey FOREIGN KEY (relationship_id) REFERENCES public.relationships(id)
+);
+CREATE TABLE public.applications (
+id uuid NOT NULL DEFAULT uuid_generate_v4(),
+youth_id uuid NOT NULL,
+elderly_id uuid NOT NULL,
+motivation_letter text NOT NULL,
+status text DEFAULT 'pending_ngo_review'::text CHECK (status = ANY (ARRAY['pending_ngo_review'::text, 'ngo_approved'::text, 'pre_chat_active'::text, 'both_accepted'::text, 'rejected'::text, 'withdrawn'::text])),
+ngo_reviewer_id uuid,
+ngo_notes text,
+youth_decision text DEFAULT 'pending'::text CHECK (youth_decision = ANY (ARRAY['pending'::text, 'accept'::text, 'decline'::text])),
+elderly_decision text DEFAULT 'pending'::text CHECK (elderly_decision = ANY (ARRAY['pending'::text, 'accept'::text, 'decline'::text])),
+applied_at timestamp with time zone DEFAULT now(),
+reviewed_at timestamp with time zone,
+CONSTRAINT applications_pkey PRIMARY KEY (id),
+-- WARNING: This schema is for context only and is not meant to be run.
+-- Table order and constraints may not be valid for execution.
+
+CREATE TABLE public.activities (
+id uuid NOT NULL DEFAULT uuid_generate_v4(),
+relationship_id uuid NOT NULL,
+stage text NOT NULL CHECK (stage = ANY (ARRAY['getting_acquainted'::text, 'building_trust'::text, 'family_bond'::text, 'full_adoption'::text])),
+title text NOT NULL,
+description text NOT NULL,
+created_by text NOT NULL CHECK (created_by = ANY (ARRAY['system'::text, 'ngo'::text, 'admin'::text, 'ai'::text, 'user'::text])),
+is_completed boolean DEFAULT false,
+youth_signed boolean DEFAULT false,
+elderly_signed boolean DEFAULT false,
+created_at timestamp with time zone DEFAULT now(),
+completed_at timestamp with time zone,
+CONSTRAINT activities_pkey PRIMARY KEY (id),
+CONSTRAINT activities_relationship_id_fkey FOREIGN KEY (relationship_id) REFERENCES public.relationships(id)
+);
+CREATE TABLE public.ai_suggestions (
+id uuid NOT NULL DEFAULT uuid_generate_v4(),
+relationship_id uuid NOT NULL,
+suggestion_type text NOT NULL CHECK (suggestion_type = ANY (ARRAY['activity'::text, 'conversation_topic'::text])),
+activity_title text,
+activity_description text,
+topic_text text,
+topic_for_stage text CHECK (topic_for_stage = ANY (ARRAY['getting_to_know'::text, 'trial_period'::text, 'official_ceremony'::text, 'family_life'::text])),
+is_used boolean DEFAULT false,
+generated_at timestamp with time zone DEFAULT now(),
+CONSTRAINT ai_suggestions_pkey PRIMARY KEY (id),
+CONSTRAINT ai_suggestions_relationship_id_fkey FOREIGN KEY (relationship_id) REFERENCES public.relationships(id)
+);
+CREATE TABLE public.applications (
+id uuid NOT NULL DEFAULT uuid_generate_v4(),
+youth_id uuid NOT NULL,
+elderly_id uuid NOT NULL,
+motivation_letter text NOT NULL,
+status text DEFAULT 'pending_ngo_review'::text CHECK (status = ANY (ARRAY['pending_ngo_review'::text, 'ngo_approved'::text, 'pre_chat_active'::text, 'both_accepted'::text, 'rejected'::text, 'withdrawn'::text])),
+ngo_reviewer_id uuid,
+ngo_notes text,
+youth_decision text DEFAULT 'pending'::text CHECK (youth_decision = ANY (ARRAY['pending'::text, 'accept'::text, 'decline'::text])),
+elderly_decision text DEFAULT 'pending'::text CHECK (elderly_decision = ANY (ARRAY['pending'::text, 'accept'::text, 'decline'::text])),
+applied_at timestamp with time zone DEFAULT now(),
+reviewed_at timestamp with time zone,
+CONSTRAINT applications_pkey PRIMARY KEY (id),
+-- WARNING: This schema is for context only and is not meant to be run.
+-- Table order and constraints may not be valid for execution.
+
+CREATE TABLE public.activities (
+id uuid NOT NULL DEFAULT uuid_generate_v4(),
+relationship_id uuid NOT NULL,
+stage text NOT NULL CHECK (stage = ANY (ARRAY['getting_acquainted'::text, 'building_trust'::text, 'family_bond'::text, 'full_adoption'::text])),
+title text NOT NULL,
+description text NOT NULL,
+created_by text NOT NULL CHECK (created_by = ANY (ARRAY['system'::text, 'ngo'::text, 'admin'::text, 'ai'::text, 'user'::text])),
+is_completed boolean DEFAULT false,
+youth_signed boolean DEFAULT false,
+elderly_signed boolean DEFAULT false,
+created_at timestamp with time zone DEFAULT now(),
+completed_at timestamp with time zone,
+CONSTRAINT activities_pkey PRIMARY KEY (id),
+CONSTRAINT activities_relationship_id_fkey FOREIGN KEY (relationship_id) REFERENCES public.relationships(id)
+);
+CREATE TABLE public.advisors (
+id uuid NOT NULL DEFAULT uuid_generate_v4(),
+user_id uuid,
+name character varying NOT NULL,
+email character varying,
+phone character varying,
+specialization character varying,
+languages ARRAY DEFAULT ARRAY['English'::text],
+status character varying DEFAULT 'available'::character varying CHECK (status::text = ANY (ARRAY['available'::character varying, 'busy'::character varying, 'offline'::character varying]::text[])),
+current_workload integer DEFAULT 0,
+max_workload integer DEFAULT 10,
+created_at timestamp with time zone DEFAULT now(),
+updated_at timestamp with time zone DEFAULT now(),
+CONSTRAINT advisors_pkey PRIMARY KEY (id),
+CONSTRAINT advisors_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id)
+);
+CREATE TABLE public.ai_suggestions (
+id uuid NOT NULL DEFAULT uuid_generate_v4(),
+relationship_id uuid NOT NULL,
+suggestion_type text NOT NULL CHECK (suggestion_type = ANY (ARRAY['activity'::text, 'conversation_topic'::text])),
+activity_title text,
+activity_description text,
+topic_text text,
+topic_for_stage text CHECK (topic_for_stage = ANY (ARRAY['getting_to_know'::text, 'trial_period'::text, 'official_ceremony'::text, 'family_life'::text])),
+is_used boolean DEFAULT false,
+generated_at timestamp with time zone DEFAULT now(),
+CONSTRAINT ai_suggestions_pkey PRIMARY KEY (id),
+CONSTRAINT ai_suggestions_relationship_id_fkey FOREIGN KEY (relationship_id) REFERENCES public.relationships(id)
+);
+CREATE TABLE public.applications (
+id uuid NOT NULL DEFAULT uuid_generate_v4(),
+youth_id uuid NOT NULL,
+elderly_id uuid NOT NULL,
+motivation_letter text NOT NULL,
+status text DEFAULT 'pending_review'::text CHECK (status = ANY (ARRAY['pending_review'::text, 'info_requested'::text, 'approved'::text, 'rejected'::text])),
 ngo_reviewer_id uuid,
 ngo_notes text,
 youth_decision text DEFAULT 'pending'::text CHECK (youth_decision = ANY (ARRAY['pending'::text, 'accept'::text, 'decline'::text])),
@@ -157,6 +675,32 @@ CONSTRAINT calendar_events_pkey PRIMARY KEY (id),
 CONSTRAINT calendar_events_relationship_id_fkey FOREIGN KEY (relationship_id) REFERENCES public.relationships(id),
 CONSTRAINT calendar_events_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.users(id)
 );
+CREATE TABLE public.consultation_requests (
+id uuid NOT NULL DEFAULT uuid_generate_v4(),
+requester_id uuid NOT NULL,
+partner_id uuid,
+relationship_id uuid,
+consultation_type character varying NOT NULL,
+preferred_method character varying DEFAULT 'video_call'::character varying CHECK (preferred_method::text = ANY (ARRAY['video_call'::character varying, 'phone'::character varying, 'in_person'::character varying, 'chat'::character varying]::text[])),
+preferred_datetime timestamp with time zone,
+concern_description text NOT NULL,
+urgency character varying DEFAULT 'normal'::character varying CHECK (urgency::text = ANY (ARRAY['low'::character varying, 'normal'::character varying, 'high'::character varying]::text[])),
+status character varying DEFAULT 'pending_assignment'::character varying CHECK (status::text = ANY (ARRAY['pending_assignment'::character varying, 'assigned'::character varying, 'in_progress'::character varying, 'completed'::character varying, 'dismissed'::character varying]::text[])),
+assigned_advisor_id uuid,
+assigned_at timestamp with time zone,
+assigned_by uuid,
+resolution_notes text,
+dismissed_reason text,
+completed_at timestamp with time zone,
+submitted_at timestamp with time zone DEFAULT now(),
+updated_at timestamp with time zone DEFAULT now(),
+CONSTRAINT consultation_requests_pkey PRIMARY KEY (id),
+CONSTRAINT consultation_requests_requester_id_fkey FOREIGN KEY (requester_id) REFERENCES public.users(id),
+CONSTRAINT consultation_requests_partner_id_fkey FOREIGN KEY (partner_id) REFERENCES public.users(id),
+CONSTRAINT consultation_requests_relationship_id_fkey FOREIGN KEY (relationship_id) REFERENCES public.relationships(id),
+CONSTRAINT consultation_requests_assigned_advisor_id_fkey FOREIGN KEY (assigned_advisor_id) REFERENCES public.advisors(id),
+CONSTRAINT consultation_requests_assigned_by_fkey FOREIGN KEY (assigned_by) REFERENCES public.users(id)
+);
 CREATE TABLE public.diary_entries (
 id uuid NOT NULL DEFAULT uuid_generate_v4(),
 user_id uuid NOT NULL,
@@ -179,9 +723,23 @@ file_url text NOT NULL,
 caption text,
 tags ARRAY,
 uploaded_at timestamp with time zone DEFAULT now(),
+memory_id uuid,
 CONSTRAINT media_pkey PRIMARY KEY (id),
 CONSTRAINT media_uploader_id_fkey FOREIGN KEY (uploader_id) REFERENCES public.users(id),
-CONSTRAINT media_relationship_id_fkey FOREIGN KEY (relationship_id) REFERENCES public.relationships(id)
+CONSTRAINT media_relationship_id_fkey FOREIGN KEY (relationship_id) REFERENCES public.relationships(id),
+CONSTRAINT media_memory_id_fkey FOREIGN KEY (memory_id) REFERENCES public.memories(id)
+);
+CREATE TABLE public.memories (
+id uuid NOT NULL DEFAULT uuid_generate_v4(),
+relationship_id uuid NOT NULL,
+uploader_id uuid NOT NULL,
+caption text,
+thumbnail_url text NOT NULL,
+media_count integer DEFAULT 1,
+uploaded_at timestamp with time zone DEFAULT now(),
+CONSTRAINT memories_pkey PRIMARY KEY (id),
+CONSTRAINT memories_relationship_id_fkey FOREIGN KEY (relationship_id) REFERENCES public.relationships(id),
+CONSTRAINT memories_uploader_id_fkey FOREIGN KEY (uploader_id) REFERENCES public.users(id)
 );
 CREATE TABLE public.messages (
 id uuid NOT NULL DEFAULT uuid_generate_v4(),
@@ -204,11 +762,13 @@ CONSTRAINT messages_relationship_id_fkey FOREIGN KEY (relationship_id) REFERENCE
 CREATE TABLE public.notifications (
 id uuid NOT NULL DEFAULT uuid_generate_v4(),
 user_id uuid NOT NULL,
-type text NOT NULL CHECK (type = ANY (ARRAY['stage_milestone'::text, 'new_message'::text, 'calendar_reminder'::text, 'safety_alert'::text, 'admin_notice'::text, 'application_update'::text])),
+type text NOT NULL CHECK (type = ANY (ARRAY['stage_milestone'::text, 'new_message'::text, 'calendar_reminder'::text, 'safety_alert'::text, 'admin_notice'::text, 'application_update'::text, 'new_interest'::text, 'interest_accepted'::text, 'interest_rejected'::text, 'application_submitted'::text, 'application_under_review'::text, 'application_approved'::text, 'application_rejected'::text, 'pre_chat_ending_soon'::text, 'relationship_accepted'::text, 'relationship_ended'::text, 'profile_viewed'::text, 'platform_update'::text])),
 title text NOT NULL,
 message text NOT NULL,
 is_read boolean DEFAULT false,
 created_at timestamp with time zone DEFAULT now(),
+reference_id uuid,
+reference_table text,
 CONSTRAINT notifications_pkey PRIMARY KEY (id),
 CONSTRAINT notifications_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id)
 );

@@ -319,6 +319,12 @@ export class StageViewModel {
 
       // Load requirements for current stage
       await this.loadCurrentStageRequirements();
+
+      // Check for auto-advancement condition
+      if (this.userId) {
+        void stageService.advanceStageIfEligible(this.userId);
+      }
+
       await this.loadStageFeatures();
     } catch (err: any) {
       runInAction(() => {

@@ -12,10 +12,11 @@
       "supportsTablet": true,
       "infoPlist": {
         "NSCameraUsageDescription": "This app needs access to your camera to take photos",
-        "NSPhotoLibraryUsageDescription": "This app needs access to your photo library to select images",
-        "NSPhotoLibraryAddUsageDescription": "This app needs permission to save photos",
+        "NSPhotoLibraryUsageDescription": "Allow $(PRODUCT_NAME) to access your photos.",
+        "NSPhotoLibraryAddUsageDescription": "Allow $(PRODUCT_NAME) to save photos.",
         "NSMicrophoneUsageDescription": "This app needs access to your microphone to record voice diaries"
-      }
+      },
+      "bundleIdentifier": "com.anonymous.HomeSweetHome"
     },
     "android": {
       "adaptiveIcon": {

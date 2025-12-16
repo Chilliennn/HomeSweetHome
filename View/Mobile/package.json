@@ -17,9 +17,11 @@
   },
   "dependencies": {
     "@daily-co/react-native-daily-js": "^0.82.0",
+    "@daily-co/react-native-webrtc": "124.0.6-daily.1",
     "@expo/vector-icons": "^15.0.3",
     "@home-sweet-home/model": "workspace:*",
     "@home-sweet-home/viewmodel": "workspace:*",
+    "@react-native-async-storage/async-storage": "1.24.0",
     "@react-native-community/slider": "^5.1.1",
     "@react-navigation/bottom-tabs": "^7.4.0",
     "@react-navigation/elements": "^2.6.3",
@@ -45,6 +47,7 @@
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-native": "0.81.5",
+    "react-native-background-timer": "2.4.1",
     "react-native-gesture-handler": "~2.28.0",
     "react-native-safe-area-context": "~5.6.0",
     "react-native-screens": "~4.16.0",
@@ -52,6 +55,7 @@
     "twilio-video": "^2.33.0"
   },
   "devDependencies": {
+    "@types/node": "^24.10.1",
     "@types/react": "~19.1.0",
     "dotenv-cli": "^11.0.0",
     "eslint": "^9.25.0",

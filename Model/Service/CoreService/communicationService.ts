@@ -508,4 +508,118 @@ export const communicationService = {
       // Don't throw - welcome message is nice-to-have, not critical
     }
   },
+
+  /**
+   * Calculate pre-match status for an application
+   * UC104: Pre-match duration is 7-14 days
+   * 
+   * @returns daysPassed, canApply (>=7), isExpired (>=14)
+   */
+  calcPreMatchStatus(appliedAt: string): { daysPassed: number; canApply: boolean; isExpired: boolean } {
+    const applicationDate = new Date(appliedAt);
+    const now = new Date();
+    const daysPassed = Math.floor((now.getTime() - applicationDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+
+    return {
+      daysPassed,
+      canApply: daysPassed >= 7,
+      isExpired: daysPassed >= 14,
+    };
+  },
+
+  /**
+   * End pre-match communication
+   * UC104_7: Mark pre-match as ended when either party ends pre-match
+   * UC104_8: Send notification to partner when pre-match ends
+   */
+  async endPreMatch(applicationId: string, userId: string): Promise<void> {
+    try {
+      // Verify user is part of this application
+      const application = await matchingRepository.getApplicationById(applicationId);
+
+      if (!application) {
+        throw new Error('Pre-match not found');
+      }
+
+      if (application.youth_id !== userId && application.elderly_id !== userId) {
+        throw new Error('You are not part of this pre-match');
+      }
+
+      if (application.status !== 'pre_chat_active') {
+        throw new Error('This pre-match is not active');
+      }
+
+      // Update application status to withdrawn
+      await matchingRepository.updateApplicationStatus(applicationId, 'withdrawn');
+
+      // Notify partner (future: create notification)
+      console.log('[communicationService] Pre-match ended by user:', userId, 'for application:', applicationId);
+    } catch (error) {
+      console.error('Error ending pre-match:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Submit formal application decision
+   * UC101_12-15: Submit formal application after 7 days
+   * 
+   * @param decision - 'apply' to submit formal application, 'decline' to end pre-match
+   */
+  async submitDecision(
+    applicationId: string,
+    userId: string,
+    userType: 'youth' | 'elderly',
+    decision: 'apply' | 'decline'
+  ): Promise<void> {
+    try {
+      const application = await matchingRepository.getApplicationById(applicationId);
+
+      if (!application) {
+        throw new Error('Pre-match not found');
+      }
+
+      // Verify user is part of this application
+      if (application.youth_id !== userId && application.elderly_id !== userId) {
+        throw new Error('You are not part of this pre-match');
+      }
+
+      // Verify pre-match is active
+      if (application.status !== 'pre_chat_active') {
+        throw new Error('This pre-match is not active');
+      }
+
+      // Check if minimum duration met
+      const status = this.calcPreMatchStatus(application.applied_at);
+      if (!status.canApply) {
+        throw new Error(`Minimum pre-match duration not met. ${7 - status.daysPassed} days remaining.`);
+      }
+
+      if (decision === 'decline') {
+        // End the pre-match
+        await this.endPreMatch(applicationId, userId);
+        return;
+      }
+
+      // Decision is 'apply' - update appropriate decision field
+      if (userType === 'youth') {
+        await matchingRepository.updateYouthDecision(applicationId, 'accept');
+      } else {
+        await matchingRepository.updateElderlyDecision(applicationId, 'accept');
+      }
+
+      // Check if both parties accepted - if so, create relationship
+      const updated = await matchingRepository.getApplicationById(applicationId);
+      if (updated?.youth_decision === 'accept' && updated?.elderly_decision === 'accept') {
+        // Both accepted - update status to both_accepted
+        await matchingRepository.updateApplicationStatus(applicationId, 'both_accepted');
+        // Relationship creation handled by matchingService or trigger
+        console.log('[communicationService] Both parties accepted, relationship will be created');
+      }
+
+    } catch (error) {
+      console.error('Error submitting decision:', error);
+      throw error;
+    }
+  },
 };

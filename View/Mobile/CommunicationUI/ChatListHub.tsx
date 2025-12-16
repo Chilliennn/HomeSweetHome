@@ -3,7 +3,6 @@ import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { observer } from 'mobx-react-lite';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { communicationViewModel } from '@home-sweet-home/viewmodel';
-import { authViewModel } from '@home-sweet-home/viewmodel';
 import { PreMatchChatList } from './PreMatchChatList';
 
 /**
@@ -41,6 +40,20 @@ export const ChatListHub = observer(function ChatListHub() {
       router.replace(`/(main)/chat?relationshipId=${vm.currentRelationship.id}`);
     }
   }, [vm.hasActiveRelationship, vm.currentRelationship, vm.hasLoadedOnce]);
+
+  // ✅ UC104_7: Check for expired pre-matches (14+ days) and force redirect
+  useEffect(() => {
+    if (vm.hasLoadedOnce && !vm.hasActiveRelationship) {
+      const expiredChat = vm.getFirstExpiredChat();
+      if (expiredChat) {
+        console.log('[ChatListHub] Found expired pre-match, redirecting to decision screen');
+        router.replace({
+          pathname: '/pre-match-expired',
+          params: { applicationId: expiredChat.application.id }
+        } as any);
+      }
+    }
+  }, [vm.hasLoadedOnce, vm.activePreMatchChats, vm.hasActiveRelationship]);
 
   // ✅ Show loading only when first loading (not loaded once yet)
   // This prevents infinite loading when activePreMatchChats is empty

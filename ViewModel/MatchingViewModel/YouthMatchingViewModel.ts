@@ -1,7 +1,7 @@
 import { makeAutoObservable, runInAction } from 'mobx';
 import { matchingService } from '../../Model/Service/CoreService/matchingService';
 import { User } from '../../Model/types';
-import { RealtimeChannel , supabase, Interest} from '@home-sweet-home/model';
+import { RealtimeChannel, supabase, Interest } from '@home-sweet-home/model';
 
 export class YouthMatchingViewModel {
     profiles: User[] = [];
@@ -45,7 +45,7 @@ export class YouthMatchingViewModel {
      */
     async loadNotifications(youthId: string) {
         console.log('🔵 [YouthVM] Loading notifications for:', youthId);
-        
+
         this.isLoading = true;
         try {
             const data = await matchingService.getYouthApplications(youthId);
@@ -54,12 +54,12 @@ export class YouthMatchingViewModel {
                 this.activeMatches = data.filter(app =>
                     app.status === 'pre_chat_active' || app.status === 'rejected'
                 );
-                
+
                 // Track all elderly IDs that youth has expressed interest to
                 this.expressedElderlyIds = new Set(
                     data.map(app => app.elderly_id)
                 );
-                
+
                 console.log('✅ [YouthVM] Loaded:', {
                     activeMatches: this.activeMatches.length,
                     expressed: this.expressedElderlyIds.size
@@ -69,12 +69,12 @@ export class YouthMatchingViewModel {
             // Setup realtime for application updates
             if (!this.subscription) {
                 console.log('🟢 [YouthVM] Setting up realtime for applications...');
-                
+
                 this.subscription = matchingService.subscribeToApplicationUpdates(
                     youthId,
                     (updated) => {
                         console.log('🎉 [YouthVM] Application updated:', updated.id);
-                        
+
                         // Only show if elderly responded
                         if (updated.elderly_decision !== 'pending') {
                             runInAction(() => {
@@ -95,7 +95,7 @@ export class YouthMatchingViewModel {
             // Setup realtime for notifications (bell icon updates)
             if (!this.notificationSubscription) {
                 console.log('🟢 [YouthVM] Setting up realtime for notifications...');
-                
+
                 this.notificationSubscription = matchingService.subscribeToNotifications(
                     youthId,
                     (notification) => {
@@ -174,6 +174,49 @@ export class YouthMatchingViewModel {
     clearMessages() {
         this.error = null;
         this.successMessage = null;
+    }
+
+    /**
+     * Submit formal application after pre-match period
+     * UC101_12: Youth submits formal adoption application
+     */
+    async submitFormalApplication(
+        applicationId: string,
+        formData: {
+            motivationLetter: string;
+            availability?: string;
+            commitmentLevel?: string;
+            whatCanOffer?: string;
+        }
+    ): Promise<boolean> {
+        this.isLoading = true;
+        this.error = null;
+
+        try {
+            // Get youth ID from auth
+            const { supabase } = await import('@home-sweet-home/model');
+            const { data: { user } } = await supabase.auth.getUser();
+
+            if (!user) {
+                throw new Error('User not logged in');
+            }
+
+            await matchingService.submitFormalApplication(applicationId, user.id, formData);
+
+            runInAction(() => {
+                this.successMessage = 'Application submitted successfully!';
+            });
+            return true;
+        } catch (e: any) {
+            runInAction(() => {
+                this.error = e.message || 'Failed to submit application';
+            });
+            return false;
+        } finally {
+            runInAction(() => {
+                this.isLoading = false;
+            });
+        }
     }
 }
 

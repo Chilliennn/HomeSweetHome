@@ -256,7 +256,8 @@ export const ChatScreen = observer(function ChatScreen() {
       handleLockedFeature('Voice Call', 'getting_to_know');
       return;
     }
-    Alert.alert('Voice Call', 'Voice call feature coming soon!');
+    // Navigate to voice call screen
+    router.push({ pathname: '/call', params: { type: 'voice' } } as any);
   };
 
   // Handler: Video call
@@ -265,7 +266,8 @@ export const ChatScreen = observer(function ChatScreen() {
       handleLockedFeature('Video Call', 'trial_period');
       return;
     }
-    Alert.alert('Video Call', 'Video call feature coming soon!');
+    // Navigate to video call screen
+    router.push({ pathname: '/call', params: { type: 'video' } } as any);
   };
 
   // Handle voice message send

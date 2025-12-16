@@ -21,7 +21,7 @@ export class ElderMatchingViewModel {
      */
     async loadRequests(elderlyId: string) {
         console.log('🔵 [ElderVM] Loading requests for:', elderlyId);
-        
+
         const data = await matchingService.getIncomingInterests(elderlyId);
         runInAction(() => {
             this.incomingRequests = data;
@@ -31,12 +31,12 @@ export class ElderMatchingViewModel {
         // Setup realtime for incoming interests
         if (!this.subscription) {
             console.log('🟢 [ElderVM] Setting up realtime for interests...');
-            
+
             this.subscription = matchingService.subscribeToIncomingInterests(
                 elderlyId,
                 (newInterest) => {
                     console.log('🎉 [ElderVM] New interest received:', newInterest.id);
-                    
+
                     runInAction(() => {
                         const exists = this.incomingRequests.some(r => r.id === newInterest.id);
                         if (!exists) {
@@ -51,7 +51,7 @@ export class ElderMatchingViewModel {
         // Setup realtime for notifications (bell icon updates)
         if (!this.notificationSubscription) {
             console.log('🟢 [ElderVM] Setting up realtime for notifications...');
-            
+
             this.notificationSubscription = matchingService.subscribeToNotifications(
                 elderlyId,
                 (notification) => {
@@ -104,6 +104,41 @@ export class ElderMatchingViewModel {
     clearMessages() {
         this.error = null;
         this.successMessage = null;
+    }
+
+    /**
+     * Review formal application (approve/reject)
+     * UC102: Elderly decides on formal application
+     */
+    async reviewFormalApplication(applicationId: string, decision: 'approve' | 'reject'): Promise<boolean> {
+        this.isLoading = true;
+        this.error = null;
+
+        try {
+            // Get elderly ID from auth
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) {
+                throw new Error('User not logged in');
+            }
+
+            await matchingService.reviewFormalApplication(applicationId, user.id, decision);
+
+            runInAction(() => {
+                this.successMessage = decision === 'approve'
+                    ? 'Application approved! Match confirmed.'
+                    : 'Application rejected.';
+            });
+            return true;
+        } catch (e: any) {
+            runInAction(() => {
+                this.error = e.message || 'Failed to process application';
+            });
+            return false;
+        } finally {
+            runInAction(() => {
+                this.isLoading = false;
+            });
+        }
     }
 }
 

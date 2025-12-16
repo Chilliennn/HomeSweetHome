@@ -229,5 +229,91 @@ export const matchingRepository = {
     */
     unsubscribe(channel: RealtimeChannel): void {
         supabase.removeChannel(channel);
+    },
+
+    /**
+     * Update application status
+     * UC104_7: Mark pre-match as ended
+     */
+    async updateApplicationStatus(applicationId: string, newStatus: string): Promise<Interest> {
+        const { data, error } = await supabase
+            .from('applications')
+            .update({
+                status: newStatus,
+                reviewed_at: new Date().toISOString()
+            })
+            .eq('id', applicationId)
+            .select('*, youth:youth_id(*), elderly:elderly_id(*)')
+            .single();
+
+        if (error) throw error;
+        return data as Interest;
+    },
+
+    /**
+     * Update youth decision
+     * UC101_12: Youth submits formal application decision
+     */
+    async updateYouthDecision(applicationId: string, decision: 'accept' | 'decline' | 'pending'): Promise<Interest> {
+        const { data, error } = await supabase
+            .from('applications')
+            .update({
+                youth_decision: decision,
+                reviewed_at: new Date().toISOString()
+            })
+            .eq('id', applicationId)
+            .select('*, youth:youth_id(*), elderly:elderly_id(*)')
+            .single();
+
+        if (error) throw error;
+        return data as Interest;
+    },
+
+    /**
+     * Update elderly decision
+     * UC102: Elderly decides on application
+     */
+    async updateElderlyDecision(applicationId: string, decision: 'accept' | 'decline' | 'pending'): Promise<Interest> {
+        const { data, error } = await supabase
+            .from('applications')
+            .update({
+                elderly_decision: decision,
+                reviewed_at: new Date().toISOString()
+            })
+            .eq('id', applicationId)
+            .select('*, youth:youth_id(*), elderly:elderly_id(*)')
+            .single();
+
+        if (error) throw error;
+        return data as Interest;
+    },
+
+    /**
+     * Submit formal application with motivation letter
+     * UC101_12: Youth submits formal adoption application
+     */
+    async submitFormalApplication(
+        applicationId: string,
+        motivationLetter: string,
+        additionalData?: {
+            availability?: string;
+            commitmentLevel?: string;
+            whatCanOffer?: string;
+        }
+    ): Promise<Interest> {
+        const { data, error } = await supabase
+            .from('applications')
+            .update({
+                motivation_letter: motivationLetter,
+                status: 'pending_ngo_review',
+                youth_decision: 'accept',
+                reviewed_at: new Date().toISOString()
+            })
+            .eq('id', applicationId)
+            .select('*, youth:youth_id(*), elderly:elderly_id(*)')
+            .single();
+
+        if (error) throw error;
+        return data as Interest;
     }
 };

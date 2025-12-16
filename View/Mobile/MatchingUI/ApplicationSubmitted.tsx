@@ -1,5 +1,17 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+/**
+ * ApplicationSubmitted - Success screen after formal application submission (101_2)
+ * 
+ * Shows application timeline with current status and next steps.
+ * Displays partner info with icon-hug.
+ * 
+ * UC101_13: Youth sees application status after submission
+ * 
+ * MVVM: View layer - displays reactive ViewModel data
+ */
+import React, { useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, Image } from 'react-native';
+import { observer } from 'mobx-react-lite';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import {
   Card,
   IconCircle,
@@ -8,54 +20,29 @@ import {
   TimelineItem,
   DEFAULT_TABS,
 } from '../components/ui';
+import { communicationViewModel } from '@home-sweet-home/viewmodel';
+import { Colors } from '@/constants/theme';
 
-// ============================================================================
-// TYPES
-// ============================================================================
-interface ApplicationSubmittedProps {
-  /** Notification count to display */
-  notificationCount?: number;
-  /** Current active tab key */
-  activeTab?: string;
-  /** Callback when notification bell is pressed */
-  onNotificationPress?: () => void;
-  /** Callback when filter is pressed */
-  onFilterPress?: () => void;
-  /** Callback when tab is selected */
-  onTabSelect?: (key: string) => void;
-}
+// Project icons
+const IconHug = require('@/assets/images/icon-hug.png');
 
-// ============================================================================
-// COMPONENT
-// ============================================================================
-/**
- * ApplicationSubmitted - Success screen after formal application submission
- * 
- * Shows application timeline with current status and next steps.
- * Displays header with notification bell and filter button.
- * 
- * ViewModel bindings needed:
- * - applicationStatus: 'submitted' | 'admin_review' | 'elderly_review' | 'confirmed'
- *   (from MatchingViewModel.currentApplication.status)
- * - submittedAt: Date (from MatchingViewModel.currentApplication.submittedAt)
- * - notificationCount: number (from CommunicationViewModel.unreadCount)
- * - onNotificationPress: () => void (navigation to notifications)
- * - onFilterPress: () => void (open filter modal)
- * - activeTabIndex: number (from NavigationViewModel.activeTab)
- * - onTabSelect: (index) => void (calls NavigationViewModel.setActiveTab)
- */
-export const ApplicationSubmitted: React.FC<ApplicationSubmittedProps> = ({
-  notificationCount = 1,
-  activeTab = 'matching',
-  onNotificationPress,
-  onFilterPress,
-  onTabSelect,
-}) => {
-  // TODO: Replace with ViewModel bindings
-  // const { currentApplication } = matchingViewModel;
-  // const { unreadCount } = communicationViewModel;
+export const ApplicationSubmitted = observer(function ApplicationSubmitted() {
+  const router = useRouter();
+  const params = useLocalSearchParams();
+  const applicationId = params.applicationId as string;
 
-  // Placeholder timeline data - will come from ViewModel
+  const vm = communicationViewModel;
+  const chat = vm.getChatByApplicationId(applicationId);
+  const partner = chat?.partnerUser;
+
+  // Load data if needed
+  useEffect(() => {
+    if (!chat && !vm.hasLoadedOnce) {
+      vm.loadActiveChats();
+    }
+  }, [chat, vm.hasLoadedOnce]);
+
+  // Timeline steps
   const timelineSteps = [
     {
       title: 'Application Submitted',
@@ -63,15 +50,10 @@ export const ApplicationSubmitted: React.FC<ApplicationSubmittedProps> = ({
       status: 'completed' as const,
     },
     {
-      title: 'Admin Review',
-      subtitle: '24-48 hours',
+      title: 'Elderly Review',
+      subtitle: 'Waiting for response',
       status: 'current' as const,
       icon: '⏳',
-    },
-    {
-      title: 'Elderly Review',
-      subtitle: 'After admin approval',
-      status: 'pending' as const,
     },
     {
       title: 'Match Confirmation',
@@ -80,11 +62,21 @@ export const ApplicationSubmitted: React.FC<ApplicationSubmittedProps> = ({
     },
   ];
 
+  const handleNotificationPress = () => {
+    router.push('/notifications' as any);
+  };
+
   const handleTabSelect = (key: string) => {
-    if (onTabSelect) {
-      onTabSelect(key);
+    switch (key) {
+      case 'home':
+        router.push('/(main)/home' as any);
+        break;
+      case 'chat':
+        router.push('/(main)/chat' as any);
+        break;
+      default:
+        break;
     }
-    // TODO: Call navigationViewModel.setActiveTab(key)
   };
 
   return (
@@ -92,14 +84,10 @@ export const ApplicationSubmitted: React.FC<ApplicationSubmittedProps> = ({
       {/* Header */}
       <View style={styles.header}>
         <NotificationBell
-          count={notificationCount}
-          onPress={onNotificationPress}
+          count={0}
+          onPress={handleNotificationPress}
         />
-        <View style={styles.filterButton}>
-          <Text style={styles.filterText} onPress={onFilterPress}>
-            Filter
-          </Text>
-        </View>
+        <View style={styles.headerSpacer} />
       </View>
 
       {/* Content */}
@@ -108,21 +96,38 @@ export const ApplicationSubmitted: React.FC<ApplicationSubmittedProps> = ({
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        {/* Success Icon */}
+        {/* Success Icon with Hug */}
         <View style={styles.successIconContainer}>
-          <IconCircle
-            icon="✓"
-            size={100}
-            backgroundColor="#9DE2D0"
-          />
+          <View style={styles.hugIconCircle}>
+            <Image source={IconHug} style={styles.hugIcon} />
+          </View>
         </View>
 
         {/* Title & Description */}
         <Text style={styles.title}>Application Submitted!</Text>
         <Text style={styles.description}>
-          Your application has been submitted successfully. We'll review it
-          within 24-48 hours and notify you of the decision.
+          Your formal application for{' '}
+          <Text style={styles.boldText}>{partner?.full_name || 'your partner'}</Text>
+          {' '}has been submitted successfully. They will review it soon.
         </Text>
+
+        {/* Partner Card */}
+        {partner && (
+          <Card style={styles.partnerCard}>
+            <View style={styles.partnerRow}>
+              <IconCircle
+                icon="👵"
+                size={64}
+                backgroundColor="#C8ADD6"
+                contentScale={0.65}
+              />
+              <View style={styles.partnerInfo}>
+                <Text style={styles.partnerName}>{partner.full_name}</Text>
+                <Text style={styles.partnerStatus}>Reviewing your application...</Text>
+              </View>
+            </View>
+          </Card>
+        )}
 
         {/* Timeline Card */}
         <Card style={styles.timelineCard}>
@@ -140,22 +145,28 @@ export const ApplicationSubmitted: React.FC<ApplicationSubmittedProps> = ({
             ))}
           </View>
         </Card>
+
+        {/* Info Card */}
+        <Card style={styles.infoCard}>
+          <Text style={styles.infoTitle}>💡 What's Next?</Text>
+          <Text style={styles.infoText}>
+            While waiting for a response, you can continue chatting with your
+            partner. Once they approve, you'll receive a notification!
+          </Text>
+        </Card>
       </ScrollView>
 
       {/* Bottom Tab Bar */}
       <BottomTabBar
         tabs={DEFAULT_TABS}
-        activeTab={activeTab}
+        activeTab="matching"
         onTabPress={handleTabSelect}
-        disabledTabs={['journey', 'gallery']} // Journey and Gallery disabled until match
+        disabledTabs={['journey', 'gallery']}
       />
     </View>
   );
-};
+});
 
-// ============================================================================
-// STYLES
-// ============================================================================
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -169,16 +180,8 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 8,
   },
-  filterButton: {
-    backgroundColor: '#9DE2D0',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 20,
-  },
-  filterText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
+  headerSpacer: {
+    width: 40,
   },
   scrollView: {
     flex: 1,
@@ -192,10 +195,22 @@ const styles = StyleSheet.create({
     marginTop: 40,
     marginBottom: 24,
   },
+  hugIconCircle: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: '#E8F5E9',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  hugIcon: {
+    width: 72,
+    height: 72,
+  },
   title: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#333',
+    color: Colors.light.success,
     textAlign: 'center',
     marginBottom: 12,
   },
@@ -204,12 +219,41 @@ const styles = StyleSheet.create({
     color: '#666',
     textAlign: 'center',
     lineHeight: 24,
-    marginBottom: 32,
+    marginBottom: 24,
     paddingHorizontal: 16,
+  },
+  boldText: {
+    fontWeight: '700',
+    color: Colors.light.text,
+  },
+  partnerCard: {
+    width: '100%',
+    padding: 16,
+    marginBottom: 16,
+    backgroundColor: '#F0F8FF',
+  },
+  partnerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  partnerInfo: {
+    flex: 1,
+    marginLeft: 16,
+  },
+  partnerName: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: Colors.light.text,
+  },
+  partnerStatus: {
+    fontSize: 14,
+    color: Colors.light.primary,
+    marginTop: 4,
   },
   timelineCard: {
     width: '100%',
     padding: 20,
+    marginBottom: 16,
   },
   timelineTitle: {
     fontSize: 18,
@@ -219,6 +263,22 @@ const styles = StyleSheet.create({
   },
   timeline: {
     paddingLeft: 4,
+  },
+  infoCard: {
+    width: '100%',
+    padding: 20,
+    backgroundColor: '#FADE9F',
+  },
+  infoTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 8,
+  },
+  infoText: {
+    fontSize: 14,
+    color: '#555',
+    lineHeight: 22,
   },
 });
 

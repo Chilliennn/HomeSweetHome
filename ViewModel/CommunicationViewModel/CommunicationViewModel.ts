@@ -458,6 +458,103 @@ export class CommunicationViewModel {
       this.messageSubscription = null;
     }
   }
+
+  // =============================================================
+  // Pre-Match Decision Actions (UC104)
+  // =============================================================
+
+  /**
+   * Get pre-match status for an application
+   * UC104: Check days passed, can apply (>=7), is expired (>=14)
+   */
+  getPreMatchStatus(applicationId: string): { daysPassed: number; canApply: boolean; isExpired: boolean } | null {
+    const chat = this.getChatByApplicationId(applicationId);
+    if (!chat) return null;
+
+    return communicationService.calcPreMatchStatus(chat.application.applied_at);
+  }
+
+  /**
+   * Get first expired pre-match chat (for force redirect to decision)
+   * UC104_7: After 14 days, force user to decide
+   */
+  getFirstExpiredChat(): typeof this.activePreMatchChats[0] | null {
+    for (const chat of this.activePreMatchChats) {
+      const status = communicationService.calcPreMatchStatus(chat.application.applied_at);
+      if (status.isExpired) {
+        return chat;
+      }
+    }
+    return null;
+  }
+
+  /**
+   * End pre-match communication
+   * UC104_7: Mark pre-match as ended when user decides to end
+   */
+  async endPreMatch(applicationId: string): Promise<boolean> {
+    if (!this.currentUser) {
+      this.errorMessage = 'User not logged in';
+      return false;
+    }
+
+    this.isLoading = true;
+    try {
+      await communicationService.endPreMatch(applicationId, this.currentUser);
+
+      // Remove from active chats
+      runInAction(() => {
+        this.activePreMatchChats = this.activePreMatchChats.filter(
+          chat => chat.application.id !== applicationId
+        );
+        this.isLoading = false;
+      });
+
+      return true;
+    } catch (error) {
+      runInAction(() => {
+        this.errorMessage = error instanceof Error ? error.message : 'Failed to end pre-match';
+        this.isLoading = false;
+      });
+      return false;
+    }
+  }
+
+  /**
+   * Submit formal application decision
+   * UC101_12-15: Submit formal application or decline after 7 days
+   */
+  async submitDecision(applicationId: string, decision: 'apply' | 'decline'): Promise<boolean> {
+    if (!this.currentUser || !this.currentUserType) {
+      this.errorMessage = 'User not logged in';
+      return false;
+    }
+
+    this.isLoading = true;
+    try {
+      await communicationService.submitDecision(
+        applicationId,
+        this.currentUser,
+        this.currentUserType,
+        decision
+      );
+
+      // Refresh chat list
+      await this.loadActiveChats();
+
+      runInAction(() => {
+        this.isLoading = false;
+      });
+
+      return true;
+    } catch (error) {
+      runInAction(() => {
+        this.errorMessage = error instanceof Error ? error.message : 'Failed to submit decision';
+        this.isLoading = false;
+      });
+      return false;
+    }
+  }
 }
 
 // Singleton instance

@@ -67,27 +67,14 @@ export const PreMatchChatList = observer(function PreMatchChatList() {
     router.push(`/(main)/chat?applicationId=${applicationId}`);
   };
 
-  // Handler: View application details
+  // Handler: View application details - navigate to decision screen
   const handleViewDetails = (applicationId: string) => {
-    Alert.alert('Application Details', 'View application details feature coming soon!');
+    router.push({ pathname: '/pre-match-decision', params: { applicationId } } as any);
   };
 
-  // Handler: End pre-match
+  // Handler: End pre-match - navigate to end confirmation
   const handleEnd = (applicationId: string) => {
-    Alert.alert(
-      'End Pre-Match',
-      'Are you sure you want to end this pre-match? This action cannot be undone.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'End',
-          style: 'destructive',
-          onPress: () => {
-            Alert.alert('End Pre-Match', 'This feature is coming soon!');
-          },
-        },
-      ]
-    );
+    router.push({ pathname: '/end-pre-match', params: { applicationId } } as any);
   };
 
   // Handler: Notification press
@@ -112,21 +99,42 @@ export const PreMatchChatList = observer(function PreMatchChatList() {
     const voiceCalls = item.messages.filter((m: any) => m.message_type === 'voice').length;
     const canApply = daysPassed >= 7;
 
+    // Check if this is youth or elderly side
+    const isYouth = currentUserType === 'youth';
+    const isElderly = currentUserType === 'elderly';
+
+    // Check application status for elderly side
+    // When youth submits formal application, status becomes 'pending_ngo_review'
+    const isPendingReview = application.status === 'pending_ngo_review';
+    const isBothAccepted = application.status === 'both_accepted';
+
+    // For elderly: lock chat when youth has submitted formal application
+    const isChatLocked = isElderly && isPendingReview;
+
     return (
       <Card style={styles.chatCard}>
         {/* Header with Avatar and Name */}
         <View style={styles.cardHeader}>
           <IconCircle
-            icon={partner.profile_data?.avatar_meta?.type === 'default' ? '👵' : '👤'}
+            icon={partner.profile_data?.avatar_meta?.type === 'default' ? (isYouth ? '👵' : '🧑') : '👤'}
             size={64}
-            backgroundColor="#C8ADD6"
+            backgroundColor={isYouth ? '#C8ADD6' : '#B8D4E3'}
             contentScale={0.6}
           />
           <View style={styles.headerInfo}>
             <Text style={styles.name}>{partner.full_name || 'Partner'}</Text>
             <View style={styles.badgeRow}>
-              <View style={styles.onlineIndicator} />
-              <Text style={styles.onlineText}>Online</Text>
+              {isChatLocked ? (
+                <>
+                  <View style={[styles.onlineIndicator, { backgroundColor: '#FF9800' }]} />
+                  <Text style={[styles.onlineText, { color: '#FF9800' }]}>Application Pending</Text>
+                </>
+              ) : (
+                <>
+                  <View style={styles.onlineIndicator} />
+                  <Text style={styles.onlineText}>Online</Text>
+                </>
+              )}
             </View>
           </View>
         </View>
@@ -144,9 +152,11 @@ export const PreMatchChatList = observer(function PreMatchChatList() {
           />
           <View style={styles.progressFooter}>
             <Text style={styles.progressSubtext}>
-              {canApply
-                ? '✅ Minimum period completed'
-                : `${daysUntilCanApply} days until you can apply`}
+              {isChatLocked
+                ? '⏳ Waiting for review...'
+                : canApply
+                  ? '✅ Minimum period completed'
+                  : `${daysUntilCanApply} days until you can apply`}
             </Text>
             <Text style={styles.daysRemaining}>{daysRemaining} days left</Text>
           </View>
@@ -165,26 +175,56 @@ export const PreMatchChatList = observer(function PreMatchChatList() {
           </View>
         </View>
 
+        {/* Elderly: Pending Review Message */}
+        {isChatLocked && (
+          <View style={styles.pendingBanner}>
+            <Text style={styles.pendingIcon}>📋</Text>
+            <View style={styles.pendingTextContainer}>
+              <Text style={styles.pendingTitle}>Formal Application Submitted</Text>
+              <Text style={styles.pendingSubtext}>
+                {partner.full_name || 'The youth'} has submitted a formal adoption application.
+                Please review it in your notifications.
+              </Text>
+            </View>
+          </View>
+        )}
+
         {/* Action Buttons */}
         <View style={styles.buttonRow}>
+          {/* Chat Button - disabled for elderly if pending review */}
           <Button
-            title="Chat"
+            title={isChatLocked ? 'Chat Locked' : 'Chat'}
             onPress={() => handleChat(application.id)}
             variant="primary"
             style={styles.chatButton}
+            disabled={isChatLocked}
           />
-          {canApply ? (
+
+          {/* Youth side: View Details or End button */}
+          {isYouth && (
+            canApply ? (
+              <Button
+                title="View Details"
+                onPress={() => handleViewDetails(application.id)}
+                variant="secondary"
+                style={styles.actionButton}
+              />
+            ) : (
+              <Button
+                title="End"
+                onPress={() => handleEnd(application.id)}
+                variant="destructive"
+                style={styles.actionButton}
+              />
+            )
+          )}
+
+          {/* Elderly side: Review button if pending */}
+          {isElderly && isPendingReview && (
             <Button
-              title="View Details"
-              onPress={() => handleViewDetails(application.id)}
+              title="Review"
+              onPress={() => router.push({ pathname: '/review-application', params: { applicationId: application.id } } as any)}
               variant="secondary"
-              style={styles.actionButton}
-            />
-          ) : (
-            <Button
-              title="End"
-              onPress={() => handleEnd(application.id)}
-              variant="destructive"
               style={styles.actionButton}
             />
           )}
@@ -194,55 +234,55 @@ export const PreMatchChatList = observer(function PreMatchChatList() {
   };
 
   return (
-      <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-        {/* Header */}
-        <View style={styles.header}>
-          <View style={styles.headerSpacer} />
-          <Text style={styles.headerTitle}>Pre-Match Chats</Text>
-          <NotificationBell
-            count={vm.unreadCount}
-            onPress={handleNotificationPress}
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+      {/* Header */}
+      <View style={styles.header}>
+        <View style={styles.headerSpacer} />
+        <Text style={styles.headerTitle}>Pre-Match Chats</Text>
+        <NotificationBell
+          count={vm.unreadCount}
+          onPress={handleNotificationPress}
+        />
+      </View>
+
+      <View style={styles.headerDivider} />
+
+      {/* Chat List */}
+      <FlatList
+        data={vm.activePreMatchChats}
+        renderItem={renderPreMatchCard}
+        keyExtractor={(item) => item.application.id}
+        contentContainerStyle={styles.listContent}
+        ItemSeparatorComponent={() => <View style={styles.separator} />}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            colors={['#9DE2D0']}
+            tintColor="#9DE2D0"
           />
-        </View>
+        }
+        ListEmptyComponent={
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>No active chats yet</Text>
+            <Text style={styles.emptySubtext}>
+              When elderly users accept your interest, your chat will appear here
+            </Text>
+          </View>
+        }
+      />
 
-        <View style={styles.headerDivider} />
-
-        {/* Chat List */}
-        <FlatList
-          data={vm.activePreMatchChats}
-          renderItem={renderPreMatchCard}
-          keyExtractor={(item) => item.application.id}
-          contentContainerStyle={styles.listContent}
-          ItemSeparatorComponent={() => <View style={styles.separator} />}
-          showsVerticalScrollIndicator={false}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={handleRefresh}
-              colors={['#9DE2D0']}
-              tintColor="#9DE2D0"
-            />
-          }
-          ListEmptyComponent={
-            <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>No active chats yet</Text>
-              <Text style={styles.emptySubtext}>
-                When elderly users accept your interest, your chat will appear here
-              </Text>
-            </View>
-          }
-        />
-
-        {/* Bottom Tab Bar */}
-        <BottomTabBar
-          tabs={DEFAULT_TABS}
-          activeTab="chat"
-          onTabPress={handleTabPress}
-          disabledTabs={['diary', 'memory']}
-        />
-      </SafeAreaView>
-    );
-  });
+      {/* Bottom Tab Bar */}
+      <BottomTabBar
+        tabs={DEFAULT_TABS}
+        activeTab="chat"
+        onTabPress={handleTabPress}
+        disabledTabs={['diary', 'memory']}
+      />
+    </SafeAreaView>
+  );
+});
 
 
 const styles = StyleSheet.create({
@@ -405,6 +445,32 @@ const styles = StyleSheet.create({
   },
   actionButton: {
     flex: 1,
+  },
+  pendingBanner: {
+    flexDirection: 'row',
+    backgroundColor: '#FFF3E0',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    alignItems: 'flex-start',
+  },
+  pendingIcon: {
+    fontSize: 24,
+    marginRight: 12,
+  },
+  pendingTextContainer: {
+    flex: 1,
+  },
+  pendingTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FF9800',
+    marginBottom: 4,
+  },
+  pendingSubtext: {
+    fontSize: 12,
+    color: '#666',
+    lineHeight: 18,
   },
 });
 

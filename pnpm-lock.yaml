@@ -27,6 +27,9 @@ importers:
       '@types/react':
         specifier: ^19.2.7
         version: 19.2.7
+      babel-plugin-module-resolver:
+        specifier: ^5.0.0
+        version: 5.0.2
       turbo:
         specifier: ^2.3.0
         version: 2.6.3
@@ -39,7 +42,13 @@ importers:
       '@supabase/supabase-js':
         specifier: ^2.86.0
         version: 2.87.1
+      expo-constants:
+        specifier: ~18.0.10
+        version: 18.0.12(expo@54.0.29)(react-native@0.81.5(@babel/core@7.28.5)(@types/react@19.2.7)(react@19.2.3))
     devDependencies:
+      '@types/node':
+        specifier: ^24.10.1
+        version: 24.10.4
       eslint:
         specifier: ^9.39.1
         version: 9.39.2
@@ -67,6 +76,9 @@ importers:
       '@react-native-async-storage/async-storage':
         specifier: 1.24.0
         version: 1.24.0(react-native@0.81.5(@babel/core@7.28.5)(@types/react@19.1.17)(react@19.1.0))
+      '@react-native-community/datetimepicker':
+        specifier: ^8.0.0
+        version: 8.5.1(expo@54.0.29)(react-native@0.81.5(@babel/core@7.28.5)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
       '@react-native-community/slider':
         specifier: ^5.1.1
         version: 5.1.1
@@ -85,6 +97,9 @@ importers:
       expo:
         specifier: ~54.0.25
         version: 54.0.29(@babel/core@7.28.5)(@expo/metro-runtime@6.1.2)(expo-router@6.0.19)(react-native@0.81.5(@babel/core@7.28.5)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
+      expo-av:
+        specifier: ~15.0.1
+        version: 15.0.2(expo@54.0.29)(react-native-web@0.21.2(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react-native@0.81.5(@babel/core@7.28.5)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
       expo-camera:
         specifier: ~15.0.8
         version: 15.0.16(expo@54.0.29)
@@ -94,6 +109,9 @@ importers:
       expo-dev-client:
         specifier: ^6.0.20
         version: 6.0.20(expo@54.0.29)
+      expo-file-system:
+        specifier: ~18.0.1
+        version: 18.0.12(expo@54.0.29)(react-native@0.81.5(@babel/core@7.28.5)(@types/react@19.1.17)(react@19.1.0))
       expo-font:
         specifier: ~14.0.9
         version: 14.0.10(expo@54.0.29)(react-native@0.81.5(@babel/core@7.28.5)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
@@ -109,9 +127,18 @@ importers:
       expo-linking:
         specifier: ~8.0.9
         version: 8.0.10(expo@54.0.29)(react-native@0.81.5(@babel/core@7.28.5)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
+      expo-media-library:
+        specifier: ~15.4.0
+        version: 15.4.1(expo@54.0.29)
+      expo-permissions:
+        specifier: ~14.4.0
+        version: 14.4.0(expo@54.0.29)
       expo-router:
         specifier: ~6.0.15
         version: 6.0.19(@expo/metro-runtime@6.1.2)(@types/react-dom@19.1.11(@types/react@19.1.17))(@types/react@19.1.17)(expo-constants@18.0.12)(expo-linking@8.0.10)(expo@54.0.29)(react-dom@19.1.0(react@19.1.0))(react-native-gesture-handler@2.28.0(react-native@0.81.5(@babel/core@7.28.5)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0))(react-native-safe-area-context@5.6.2(react-native@0.81.5(@babel/core@7.28.5)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0))(react-native-screens@4.16.0(react-native@0.81.5(@babel/core@7.28.5)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0))(react-native-web@0.21.2(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react-native@0.81.5(@babel/core@7.28.5)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
+      expo-speech:
+        specifier: ~12.0.1
+        version: 12.0.2(expo@54.0.29)
       expo-splash-screen:
         specifier: ~31.0.11
         version: 31.0.12(expo@54.0.29)
@@ -167,6 +194,9 @@ importers:
       '@types/react':
         specifier: ~19.1.0
         version: 19.1.17
+      babel-plugin-module-resolver:
+        specifier: ^5.0.0
+        version: 5.0.2
       dotenv-cli:
         specifier: ^11.0.0
         version: 11.0.0
@@ -1529,6 +1559,19 @@ packages:
     peerDependencies:
       react-native: ^0.0.0-0 || >=0.60 <1.0
 
+  '@react-native-community/datetimepicker@8.5.1':
+    resolution: {integrity: sha512-TuwM1ORbxCjOp1GOtONj0QnpDpVfq0F4UlfKZYPxL/vmriaLHt2Kgvw63Bv0Bpep4eOkslVVSS1IRfRI6d392g==}
+    peerDependencies:
+      expo: '>=52.0.0'
+      react: '*'
+      react-native: '*'
+      react-native-windows: '*'
+    peerDependenciesMeta:
+      expo:
+        optional: true
+      react-native-windows:
+        optional: true
+
   '@react-native-community/slider@5.1.1':
     resolution: {integrity: sha512-W98If/LnTaziU3/0h5+G1LvJaRhMc6iLQBte6UWa4WBIHDMaDPglNBIFKcCXc9Dxp83W+f+5Wv22Olq9M2HJYA==}
 
@@ -2204,6 +2247,9 @@ packages:
     resolution: {integrity: sha512-ESAc/RJvGTFEzRwOTT4+lNDk/GNHMkKbNzsvT0qKRfDyyYTskxB5rnU2njIDYVxXCBHHEI1c0YwHob3WaYujOg==}
     engines: {node: ^14.15.0 || ^16.10.0 || >=18.0.0}
 
+  babel-plugin-module-resolver@5.0.2:
+    resolution: {integrity: sha512-9KtaCazHee2xc0ibfqsDeamwDps6FZNo5S0Q81dUqEuFzVwPhcT4J5jOqIVvgCA3Q/wO9hKYxN/Ds3tIsp5ygg==}
+
   babel-plugin-polyfill-corejs2@0.4.14:
     resolution: {integrity: sha512-Co2Y9wX854ts6U8gAAPXfn0GmAyctHuK8n0Yhfjd6t30g7yvKjspvvOo9yG+z52PZRgFErt7Ka2pYnXCjLKEpg==}
     peerDependencies:
@@ -2842,6 +2888,17 @@ packages:
       react: '*'
       react-native: '*'
 
+  expo-av@15.0.2:
+    resolution: {integrity: sha512-AHIHXdqLgK1dfHZF0JzX3YSVySGMrWn9QtPzaVjw54FAzvXfMt4sIoq4qRL/9XWCP9+ICcCs/u3EcvmxQjrfcA==}
+    peerDependencies:
+      expo: '*'
+      react: '*'
+      react-native: '*'
+      react-native-web: '*'
+    peerDependenciesMeta:
+      react-native-web:
+        optional: true
+
   expo-av@16.0.8:
     resolution: {integrity: sha512-cmVPftGR/ca7XBgs7R6ky36lF3OC0/MM/lpgX/yXqfv0jASTsh7AYX9JxHCwFmF+Z6JEB1vne9FDx4GiLcGreQ==}
     peerDependencies:
@@ -2888,6 +2945,12 @@ packages:
     resolution: {integrity: sha512-jd5BxjaF7382JkDMaC+P04aXXknB2UhWaVx5WiQKA05ugm/8GH5uaz9P9ckWdMKZGQVVEOC8MHaUADoT26KmFA==}
     peerDependencies:
       expo: '*'
+
+  expo-file-system@18.0.12:
+    resolution: {integrity: sha512-HAkrd/mb8r+G3lJ9MzmGeuW2B+BxQR1joKfeCyY4deLl1zoZ48FrAWjgZjHK9aHUVhJ0ehzInu/NQtikKytaeg==}
+    peerDependencies:
+      expo: '*'
+      react-native: '*'
 
   expo-file-system@19.0.21:
     resolution: {integrity: sha512-s3DlrDdiscBHtab/6W1osrjGL+C2bvoInPJD7sOwmxfJ5Woynv2oc+Fz1/xVXaE/V7HE/+xrHC/H45tu6lZzzg==}
@@ -2948,6 +3011,11 @@ packages:
     peerDependencies:
       expo: '*'
 
+  expo-media-library@15.4.1:
+    resolution: {integrity: sha512-lpWcT4pynWcE7TyNMUkLFH4YcueCTnq7UOJYRR0vewPEJeQXwRscka7zBtrhA+RSsJda013Q0615K+5lRLt14Q==}
+    peerDependencies:
+      expo: '*'
+
   expo-modules-autolinking@3.0.23:
     resolution: {integrity: sha512-YZnaE0G+52xftjH5nsIRaWsoVBY38SQCECclpdgLisdbRY/6Mzo7ndokjauOv3mpFmzMZACHyJNu1YSAffQwTg==}
     hasBin: true
@@ -2964,6 +3032,11 @@ packages:
       expo: '*'
       react: '*'
       react-native: '*'
+
+  expo-permissions@14.4.0:
+    resolution: {integrity: sha512-oAcnJ7dlZhpBydK73cwomA2xofizayVUz+FW5REl7dMu7MYyeN/3aqhlpZ3mYddrxvG161bqu97MQr01UixUnw==}
+    peerDependencies:
+      expo: '*'
 
   expo-router@6.0.19:
     resolution: {integrity: sha512-XK+vwpyEmGGamUM/S7+LwtjuBzbTm8VY401h8SOs8Tv1mrLl+7QNvAkk5lJiXgUVKaAIEXl8GxkWhF7mxBUzyg==}
@@ -3002,6 +3075,11 @@ packages:
   expo-server@1.0.5:
     resolution: {integrity: sha512-IGR++flYH70rhLyeXF0Phle56/k4cee87WeQ4mamS+MkVAVP+dDlOHf2nN06Z9Y2KhU0Gp1k+y61KkghF7HdhA==}
     engines: {node: '>=20.16.0'}
+
+  expo-speech@12.0.2:
+    resolution: {integrity: sha512-voWNz69hvtLEA2jipAbM5XJBIbKCusQsDZ/G/vAKKkP5AUTzAmcdRDWGcmESPRKK0JUtQZ8WetujgLCn2kl83w==}
+    peerDependencies:
+      expo: '*'
 
   expo-splash-screen@31.0.12:
     resolution: {integrity: sha512-o466xFYh7Fld7CuBrzx5I12LONo7a4xzOSbxS+buOEObL/Wp4Xu4QhXg80ZY7puCGbJbtm7Ltjgg5olnWOU/Rg==}
@@ -3110,6 +3188,13 @@ packages:
     resolution: {integrity: sha512-aAWcW57uxVNrQZqFXjITpW3sIUQmHGG3qSb9mUah9MgMC4NeWhNOlNjXEYq3HjRAvL6arUviZGGJsBg6z0zsWA==}
     engines: {node: '>= 0.8'}
 
+  find-babel-config@2.1.2:
+    resolution: {integrity: sha512-ZfZp1rQyp4gyuxqt1ZqjFGVeVBvmpURMqdIWXbPRfB97Bf6BzdK/xSIbylEINzQ0kB5tlDQfn9HkNXXWsqTqLg==}
+
+  find-up@3.0.0:
+    resolution: {integrity: sha512-1yD6RmLI1XBfxugvORwlck6f75tYL+iR0jqwsOrOxMZyGYqUuDhJ0l4AXdO1iX/FTs9cBAMEk1gWSEx1kSbylg==}
+    engines: {node: '>=6'}
+
   find-up@4.1.0:
     resolution: {integrity: sha512-PpOwAdQ/YlXQ2vj8a3h8IipDuYRi3wceVQQGYWxNINccq40Anw7BlsEXCMbt1Zt+OLA6Fq9suIpIWD0OsnISlw==}
     engines: {node: '>=8'}
@@ -3211,6 +3296,10 @@ packages:
   glob@7.2.3:
     resolution: {integrity: sha512-nFR0zLpU2YCaRxwoCJvL6UvCH2JFyFVIvwTLsIf21AuHlMskA1hhTdk+LlYJtOlYt9v6dvszD2BGRqBL+iQK9Q==}
     deprecated: Glob versions prior to v9 are no longer supported
+
+  glob@9.3.5:
+    resolution: {integrity: sha512-e1LleDykUz2Iu+MTYdkSsuWX8lvAjAcs0Xef0lNIu0S2wOAzuTxCJtcd9S3cijlwYF18EsU3rzb8jPVobxDh9Q==}
+    engines: {node: '>=16 || 14 >=14.17'}
 
   global-dirs@0.1.1:
     resolution: {integrity: sha512-NknMLn7F2J7aflwFOlGdNIuCDpN3VGoSoB+aap3KABFWbHVn1TCgFC+np23J8W2BiZbjfEw3BFBycSMv1AFblg==}
@@ -3674,6 +3763,10 @@ packages:
   lines-and-columns@1.2.4:
     resolution: {integrity: sha512-7ylylesZQ/PV29jhEDl3Ufjo6ZX7gCqJr5F7PKrqc93v7fzSymt1BpwEU8nAUXs8qzzvqhbjhK5QZg6Mt/HkBg==}
 
+  locate-path@3.0.0:
+    resolution: {integrity: sha512-7AO748wWnIhNqAuaty2ZWHkQHRSNfPVIsPIfwEOWO22AmaoVrWavlOcMR5nzTLNYvp36X220/maaRsrec1G65A==}
+    engines: {node: '>=6'}
+
   locate-path@5.0.0:
     resolution: {integrity: sha512-t7hw9pI+WvuwNJXwk5zVHpyhIqzg2qTlklJOf0mVxGSbe3Fp2VieZcduNYjaLDoy6p9uGpQEGWG87WpMKlNq8g==}
     engines: {node: '>=8'}
@@ -3880,12 +3973,20 @@ packages:
   minimatch@3.1.2:
     resolution: {integrity: sha512-J7p63hRiAjw1NDEww1W7i37+ByIrOWO5XQQAzZ3VOcL0PNybwpfmV/N05zFAzwQ9USyEcX6t3UO+K5aqBQOIHw==}
 
+  minimatch@8.0.4:
+    resolution: {integrity: sha512-W0Wvr9HyFXZRGIDgCicunpQ299OKXs9RgZfaukz4qAW/pJhcpUfupc9c+OObPOFueNy8VSrZgEmDtk6Kh4WzDA==}
+    engines: {node: '>=16 || 14 >=14.17'}
+
   minimatch@9.0.5:
     resolution: {integrity: sha512-G6T0ZX48xgozx7587koeX9Ys2NYy6Gmv//P89sEte9V9whIapMNF4idKxnW2QtCcLiTWlb/wfCabAtAFWhhBow==}
     engines: {node: '>=16 || 14 >=14.17'}
 
   minimist@1.2.8:
     resolution: {integrity: sha512-2yyAR8qBkN3YuheJanUpWC5U3bb5osDywNB8RzDVlDwDHbocAJveqqj1u8+SVD7jkWT4yvsHCpWqqWqAxb0zCA==}
+
+  minipass@4.2.8:
+    resolution: {integrity: sha512-fNzuVyifolSLFL4NzpF+wEF4qrgqaaKX0haXPQEdQ7NKAN+WecoKMHV09YcuL/DHxrUsYQOK3MiuDf7Ip2OXfQ==}
+    engines: {node: '>=8'}
 
   minipass@7.1.2:
     resolution: {integrity: sha512-qOOzS1cBTWYF4BH8fVePDBOO9iptMnGUEZwNc/cMWnTV2nVLZ7VoNWEPHkYczZA0pdoA7dl6e7FL659nX9S2aw==}
@@ -4073,6 +4174,10 @@ packages:
     resolution: {integrity: sha512-TYOanM3wGwNGsZN2cVTYPArw454xnXj5qmWF1bEoAc4+cU/ol7GVh7odevjp1FNHduHc3KZMcFduxU5Xc6uJRQ==}
     engines: {node: '>=10'}
 
+  p-locate@3.0.0:
+    resolution: {integrity: sha512-x+12w/To+4GFfgJhBEpiDcLozRJGegY+Ei7/z0tSLkMmxGZNybVMSfWj9aJn8Z5Fc7dBUNJOOVgPv2H7IwulSQ==}
+    engines: {node: '>=6'}
+
   p-locate@4.1.0:
     resolution: {integrity: sha512-R79ZZ/0wAxKGu3oYMlz8jy/kbhsNrS7SKZ7PxEHBgJ5+F2mtFW2fK2cOtBh1cHYkQsbzFV7I+EoRKe6Yt0oK7A==}
     engines: {node: '>=8'}
@@ -4097,6 +4202,10 @@ packages:
     resolution: {integrity: sha512-CiyeOxFT/JZyN5m0z9PfXw4SCBJ6Sygz1Dpl0wqjlhDEGGBP1GnsUVEL0p63hoG1fcj3fHynXi9NYO4nWOL+qQ==}
     engines: {node: '>= 0.8'}
 
+  path-exists@3.0.0:
+    resolution: {integrity: sha512-bpC7GYwiDYQ4wYLe+FA8lhRjhQCMcQGuSgGGqDkg/QerRWw9CmGRT0iSOVRSZJ29NMLZgIzqaljJ63oaL4NIJQ==}
+    engines: {node: '>=4'}
+
   path-exists@4.0.0:
     resolution: {integrity: sha512-ak9Qy5Q7jYb2Wwcey5Fpvg2KoAc/ZIhLSLOSBmRmygPsGwkVVt0fZa0qrtMz+m6tJTAHfZQ8FnmB4MG4LWy7/w==}
     engines: {node: '>=8'}
@@ -4111,6 +4220,10 @@ packages:
 
   path-parse@1.0.7:
     resolution: {integrity: sha512-LDJzPVEEEPR+y48z93A0Ed0yXb8pAByGWo/k5YYdYgpY2/2EsOsksJrq7lOHxryrVOn1ejG6oAp8ahvOIQD8sw==}
+
+  path-scurry@1.11.1:
+    resolution: {integrity: sha512-Xa4Nw17FS9ApQFJ9umLiJS4orGjm7ZzwUrwamcGQuHSzDyth9boKDaycYdDcZDuqYATXw4HFXgaqWTctW/v1HA==}
+    engines: {node: '>=16 || 14 >=14.18'}
 
   path-scurry@2.0.1:
     resolution: {integrity: sha512-oWyT4gICAu+kaA7QWk/jvCHWarMKNs6pXOGWKDTr7cw4IGcUbW+PeTfbaQiLGheFRpjo6O9J0PmyMfQPjH71oA==}
@@ -4134,6 +4247,10 @@ packages:
   pirates@4.0.7:
     resolution: {integrity: sha512-TfySrs/5nm8fQJDcBDuUng3VOUKsd7S+zqvbOTiGXHfxX4wK31ard+hoNuvkicM/2YFzlpDgABOevKSsB4G/FA==}
     engines: {node: '>= 6'}
+
+  pkg-up@3.1.0:
+    resolution: {integrity: sha512-nDywThFk1i4BQK4twPQ6TA4RT8bDY96yeuCVBWL3ePARCiEKDRSrNGbFIgUJpLp+XeIR65v8ra7WuJOFUBtkMA==}
+    engines: {node: '>=8'}
 
   plist@3.1.0:
     resolution: {integrity: sha512-uysumyrvkUX0rX/dEVqt8gC3sTBzd4zoWfLeS29nb53imdaXVvLINYXTI2GNqzaMuvacNx4uJQ8+b3zXR0pkgQ==}
@@ -4627,6 +4744,9 @@ packages:
   requireg@0.2.2:
     resolution: {integrity: sha512-nYzyjnFcPNGR3lx9lwPPPnuQxv6JWEZd2Ci0u9opN7N5zUEPIhY/GbL3vMGOr2UXwEg9WwSyV9X9Y/kLFgPsOg==}
     engines: {node: '>= 4.0.0'}
+
+  reselect@4.1.8:
+    resolution: {integrity: sha512-ab9EmR80F/zQTMNeneUr4cv+jSwPJgIlvEmVwLerwrWVbpLlBuls9XHzIeTFy4cegU2NHBp3va0LKOzU5qFEYQ==}
 
   resize-observer-polyfill@1.5.1:
     resolution: {integrity: sha512-LwZrotdHOo12nQuZlHEmtuXdqGoOD0OhaxopaNFxWzInpEgaLWoVuAMbTzixuosCx2nEG58ngzW3vxdWoxIgdg==}
@@ -5262,6 +5382,10 @@ packages:
 
   wcwidth@1.0.1:
     resolution: {integrity: sha512-XHPEwS0q6TaxcvG85+8EYkbiCux2XtWG2mkc47Ng2A77BQu9+DqIOJldST4HgPkuea7dvKSj5VgX3P1d4rW8Tg==}
+
+  web-streams-polyfill@3.3.3:
+    resolution: {integrity: sha512-d2JWLCivmZYTSIoge9MsgFCZrt571BikcWGYkjC1khllbTeDlGqZ2D8vD8E/lJa8WGWbb7Plm8/XJYV7IJHZZw==}
+    engines: {node: '>= 8'}
 
   webidl-conversions@3.0.1:
     resolution: {integrity: sha512-2JAn3z8AR6rjK8Sm8orRC0h/bcl/DqL7tRPdGZ4I1CjdF+EaMLmYxBHyXuKL849eucPFhvBoxMsflfOb8kxaeQ==}
@@ -6516,7 +6640,7 @@ snapshots:
       postcss: 8.4.49
       resolve-from: 5.0.0
     optionalDependencies:
-      expo: 54.0.29(@babel/core@7.28.5)(@expo/metro-runtime@6.1.2)(expo-router@6.0.19)(react-native@0.81.5(@babel/core@7.28.5)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
+      expo: 54.0.29(@babel/core@7.28.5)(@expo/metro-runtime@6.1.2)(expo-router@6.0.19)(react-native@0.81.5(@babel/core@7.28.5)(@types/react@19.2.7)(react@19.2.3))(react@19.2.3)
     transitivePeerDependencies:
       - bufferutil
       - supports-color
@@ -6595,7 +6719,7 @@ snapshots:
       '@expo/json-file': 10.0.8
       '@react-native/normalize-colors': 0.81.5
       debug: 4.4.3
-      expo: 54.0.29(@babel/core@7.28.5)(@expo/metro-runtime@6.1.2)(expo-router@6.0.19)(react-native@0.81.5(@babel/core@7.28.5)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
+      expo: 54.0.29(@babel/core@7.28.5)(@expo/metro-runtime@6.1.2)(expo-router@6.0.19)(react-native@0.81.5(@babel/core@7.28.5)(@types/react@19.2.7)(react@19.2.3))(react@19.2.3)
       resolve-from: 5.0.0
       semver: 7.7.3
       xml2js: 0.6.0
@@ -7246,6 +7370,14 @@ snapshots:
     dependencies:
       merge-options: 3.0.4
       react-native: 0.81.5(@babel/core@7.28.5)(@types/react@19.1.17)(react@19.1.0)
+
+  '@react-native-community/datetimepicker@8.5.1(expo@54.0.29)(react-native@0.81.5(@babel/core@7.28.5)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)':
+    dependencies:
+      invariant: 2.2.4
+      react: 19.1.0
+      react-native: 0.81.5(@babel/core@7.28.5)(@types/react@19.1.17)(react@19.1.0)
+    optionalDependencies:
+      expo: 54.0.29(@babel/core@7.28.5)(@expo/metro-runtime@6.1.2)(expo-router@6.0.19)(react-native@0.81.5(@babel/core@7.28.5)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
 
   '@react-native-community/slider@5.1.1': {}
 
@@ -8158,6 +8290,14 @@ snapshots:
       '@types/babel__core': 7.20.5
       '@types/babel__traverse': 7.28.0
 
+  babel-plugin-module-resolver@5.0.2:
+    dependencies:
+      find-babel-config: 2.1.2
+      glob: 9.3.5
+      pkg-up: 3.1.0
+      reselect: 4.1.8
+      resolve: 1.22.11
+
   babel-plugin-polyfill-corejs2@0.4.14(@babel/core@7.28.5):
     dependencies:
       '@babel/compat-data': 7.28.5
@@ -8244,7 +8384,7 @@ snapshots:
       resolve-from: 5.0.0
     optionalDependencies:
       '@babel/runtime': 7.28.4
-      expo: 54.0.29(@babel/core@7.28.5)(@expo/metro-runtime@6.1.2)(expo-router@6.0.19)(react-native@0.81.5(@babel/core@7.28.5)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
+      expo: 54.0.29(@babel/core@7.28.5)(@expo/metro-runtime@6.1.2)(expo-router@6.0.19)(react-native@0.81.5(@babel/core@7.28.5)(@types/react@19.2.7)(react@19.2.3))(react@19.2.3)
     transitivePeerDependencies:
       - '@babel/core'
       - supports-color
@@ -8754,9 +8894,9 @@ snapshots:
       '@typescript-eslint/eslint-plugin': 8.49.0(@typescript-eslint/parser@8.49.0(eslint@9.39.2)(typescript@5.9.3))(eslint@9.39.2)(typescript@5.9.3)
       '@typescript-eslint/parser': 8.49.0(eslint@9.39.2)(typescript@5.9.3)
       eslint: 9.39.2
-      eslint-import-resolver-typescript: 3.10.1(eslint-plugin-import@2.32.0)(eslint@9.39.2)
+      eslint-import-resolver-typescript: 3.10.1(eslint-plugin-import@2.32.0(@typescript-eslint/parser@8.49.0(eslint@9.39.2)(typescript@5.9.3))(eslint@9.39.2))(eslint@9.39.2)
       eslint-plugin-expo: 1.0.0(eslint@9.39.2)(typescript@5.9.3)
-      eslint-plugin-import: 2.32.0(@typescript-eslint/parser@8.49.0(eslint@9.39.2)(typescript@5.9.3))(eslint-import-resolver-typescript@3.10.1)(eslint@9.39.2)
+      eslint-plugin-import: 2.32.0(@typescript-eslint/parser@8.49.0(eslint@9.39.2)(typescript@5.9.3))(eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0(@typescript-eslint/parser@8.49.0(eslint@9.39.2)(typescript@5.9.3))(eslint@9.39.2))(eslint@9.39.2))(eslint@9.39.2)
       eslint-plugin-react: 7.37.5(eslint@9.39.2)
       eslint-plugin-react-hooks: 5.2.0(eslint@9.39.2)
       globals: 16.5.0
@@ -8774,7 +8914,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0)(eslint@9.39.2):
+  eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0(@typescript-eslint/parser@8.49.0(eslint@9.39.2)(typescript@5.9.3))(eslint@9.39.2))(eslint@9.39.2):
     dependencies:
       '@nolyfill/is-core-module': 1.0.39
       debug: 4.4.3
@@ -8785,18 +8925,18 @@ snapshots:
       tinyglobby: 0.2.15
       unrs-resolver: 1.11.1
     optionalDependencies:
-      eslint-plugin-import: 2.32.0(@typescript-eslint/parser@8.49.0(eslint@9.39.2)(typescript@5.9.3))(eslint-import-resolver-typescript@3.10.1)(eslint@9.39.2)
+      eslint-plugin-import: 2.32.0(@typescript-eslint/parser@8.49.0(eslint@9.39.2)(typescript@5.9.3))(eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0(@typescript-eslint/parser@8.49.0(eslint@9.39.2)(typescript@5.9.3))(eslint@9.39.2))(eslint@9.39.2))(eslint@9.39.2)
     transitivePeerDependencies:
       - supports-color
 
-  eslint-module-utils@2.12.1(@typescript-eslint/parser@8.49.0(eslint@9.39.2)(typescript@5.9.3))(eslint-import-resolver-node@0.3.9)(eslint-import-resolver-typescript@3.10.1)(eslint@9.39.2):
+  eslint-module-utils@2.12.1(@typescript-eslint/parser@8.49.0(eslint@9.39.2)(typescript@5.9.3))(eslint-import-resolver-node@0.3.9)(eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0(@typescript-eslint/parser@8.49.0(eslint@9.39.2)(typescript@5.9.3))(eslint@9.39.2))(eslint@9.39.2))(eslint@9.39.2):
     dependencies:
       debug: 3.2.7
     optionalDependencies:
       '@typescript-eslint/parser': 8.49.0(eslint@9.39.2)(typescript@5.9.3)
       eslint: 9.39.2
       eslint-import-resolver-node: 0.3.9
-      eslint-import-resolver-typescript: 3.10.1(eslint-plugin-import@2.32.0)(eslint@9.39.2)
+      eslint-import-resolver-typescript: 3.10.1(eslint-plugin-import@2.32.0(@typescript-eslint/parser@8.49.0(eslint@9.39.2)(typescript@5.9.3))(eslint@9.39.2))(eslint@9.39.2)
     transitivePeerDependencies:
       - supports-color
 
@@ -8809,7 +8949,7 @@ snapshots:
       - supports-color
       - typescript
 
-  eslint-plugin-import@2.32.0(@typescript-eslint/parser@8.49.0(eslint@9.39.2)(typescript@5.9.3))(eslint-import-resolver-typescript@3.10.1)(eslint@9.39.2):
+  eslint-plugin-import@2.32.0(@typescript-eslint/parser@8.49.0(eslint@9.39.2)(typescript@5.9.3))(eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0(@typescript-eslint/parser@8.49.0(eslint@9.39.2)(typescript@5.9.3))(eslint@9.39.2))(eslint@9.39.2))(eslint@9.39.2):
     dependencies:
       '@rtsao/scc': 1.1.0
       array-includes: 3.1.9
@@ -8820,7 +8960,7 @@ snapshots:
       doctrine: 2.1.0
       eslint: 9.39.2
       eslint-import-resolver-node: 0.3.9
-      eslint-module-utils: 2.12.1(@typescript-eslint/parser@8.49.0(eslint@9.39.2)(typescript@5.9.3))(eslint-import-resolver-node@0.3.9)(eslint-import-resolver-typescript@3.10.1)(eslint@9.39.2)
+      eslint-module-utils: 2.12.1(@typescript-eslint/parser@8.49.0(eslint@9.39.2)(typescript@5.9.3))(eslint-import-resolver-node@0.3.9)(eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0(@typescript-eslint/parser@8.49.0(eslint@9.39.2)(typescript@5.9.3))(eslint@9.39.2))(eslint@9.39.2))(eslint@9.39.2)
       hasown: 2.0.2
       is-core-module: 2.16.1
       is-glob: 4.0.3
@@ -8970,6 +9110,14 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
+  expo-av@15.0.2(expo@54.0.29)(react-native-web@0.21.2(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react-native@0.81.5(@babel/core@7.28.5)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0):
+    dependencies:
+      expo: 54.0.29(@babel/core@7.28.5)(@expo/metro-runtime@6.1.2)(expo-router@6.0.19)(react-native@0.81.5(@babel/core@7.28.5)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
+      react: 19.1.0
+      react-native: 0.81.5(@babel/core@7.28.5)(@types/react@19.1.17)(react@19.1.0)
+    optionalDependencies:
+      react-native-web: 0.21.2(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+
   expo-av@16.0.8(expo@54.0.29)(react-native-web@0.21.2(react-dom@19.1.0(react@19.2.3))(react@19.2.3))(react-native@0.81.5(@babel/core@7.28.5)(@types/react@19.2.7)(react@19.2.3))(react@19.2.3):
     dependencies:
       expo: 54.0.29(@babel/core@7.28.5)(@expo/metro-runtime@6.1.2)(expo-router@6.0.19)(react-native@0.81.5(@babel/core@7.28.5)(@types/react@19.2.7)(react@19.2.3))(react@19.2.3)
@@ -9034,6 +9182,12 @@ snapshots:
     dependencies:
       expo: 54.0.29(@babel/core@7.28.5)(@expo/metro-runtime@6.1.2)(expo-router@6.0.19)(react-native@0.81.5(@babel/core@7.28.5)(@types/react@19.2.7)(react@19.2.3))(react@19.2.3)
       ua-parser-js: 0.7.41
+
+  expo-file-system@18.0.12(expo@54.0.29)(react-native@0.81.5(@babel/core@7.28.5)(@types/react@19.1.17)(react@19.1.0)):
+    dependencies:
+      expo: 54.0.29(@babel/core@7.28.5)(@expo/metro-runtime@6.1.2)(expo-router@6.0.19)(react-native@0.81.5(@babel/core@7.28.5)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
+      react-native: 0.81.5(@babel/core@7.28.5)(@types/react@19.1.17)(react@19.1.0)
+      web-streams-polyfill: 3.3.3
 
   expo-file-system@19.0.21(expo@54.0.29)(react-native@0.81.5(@babel/core@7.28.5)(@types/react@19.1.17)(react@19.1.0)):
     dependencies:
@@ -9121,6 +9275,10 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
+  expo-media-library@15.4.1(expo@54.0.29):
+    dependencies:
+      expo: 54.0.29(@babel/core@7.28.5)(@expo/metro-runtime@6.1.2)(expo-router@6.0.19)(react-native@0.81.5(@babel/core@7.28.5)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
+
   expo-modules-autolinking@3.0.23:
     dependencies:
       '@expo/spawn-async': 1.7.2
@@ -9155,6 +9313,10 @@ snapshots:
       react-native: 0.81.5(@babel/core@7.28.5)(@types/react@19.2.7)(react@19.2.3)
     transitivePeerDependencies:
       - supports-color
+
+  expo-permissions@14.4.0(expo@54.0.29):
+    dependencies:
+      expo: 54.0.29(@babel/core@7.28.5)(@expo/metro-runtime@6.1.2)(expo-router@6.0.19)(react-native@0.81.5(@babel/core@7.28.5)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
 
   expo-router@6.0.19(@expo/metro-runtime@6.1.2)(@types/react-dom@19.1.11(@types/react@19.1.17))(@types/react@19.1.17)(expo-constants@18.0.12)(expo-linking@8.0.10)(expo@54.0.29)(react-dom@19.1.0(react@19.1.0))(react-native-gesture-handler@2.28.0(react-native@0.81.5(@babel/core@7.28.5)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0))(react-native-safe-area-context@5.6.2(react-native@0.81.5(@babel/core@7.28.5)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0))(react-native-screens@4.16.0(react-native@0.81.5(@babel/core@7.28.5)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0))(react-native-web@0.21.2(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react-native@0.81.5(@babel/core@7.28.5)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0):
     dependencies:
@@ -9242,6 +9404,10 @@ snapshots:
     optional: true
 
   expo-server@1.0.5: {}
+
+  expo-speech@12.0.2(expo@54.0.29):
+    dependencies:
+      expo: 54.0.29(@babel/core@7.28.5)(@expo/metro-runtime@6.1.2)(expo-router@6.0.19)(react-native@0.81.5(@babel/core@7.28.5)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
 
   expo-splash-screen@31.0.12(expo@54.0.29):
     dependencies:
@@ -9408,6 +9574,14 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
+  find-babel-config@2.1.2:
+    dependencies:
+      json5: 2.2.3
+
+  find-up@3.0.0:
+    dependencies:
+      locate-path: 3.0.0
+
   find-up@4.1.0:
     dependencies:
       locate-path: 5.0.0
@@ -9513,6 +9687,13 @@ snapshots:
       minimatch: 3.1.2
       once: 1.4.0
       path-is-absolute: 1.0.1
+
+  glob@9.3.5:
+    dependencies:
+      fs.realpath: 1.0.0
+      minimatch: 8.0.4
+      minipass: 4.2.8
+      path-scurry: 1.11.1
 
   global-dirs@0.1.1:
     dependencies:
@@ -9980,6 +10161,11 @@ snapshots:
 
   lines-and-columns@1.2.4: {}
 
+  locate-path@3.0.0:
+    dependencies:
+      p-locate: 3.0.0
+      path-exists: 3.0.0
+
   locate-path@5.0.0:
     dependencies:
       p-locate: 4.1.0
@@ -10403,11 +10589,17 @@ snapshots:
     dependencies:
       brace-expansion: 1.1.12
 
+  minimatch@8.0.4:
+    dependencies:
+      brace-expansion: 2.0.2
+
   minimatch@9.0.5:
     dependencies:
       brace-expansion: 2.0.2
 
   minimist@1.2.8: {}
+
+  minipass@4.2.8: {}
 
   minipass@7.1.2: {}
 
@@ -10598,6 +10790,10 @@ snapshots:
     dependencies:
       yocto-queue: 0.1.0
 
+  p-locate@3.0.0:
+    dependencies:
+      p-limit: 2.3.0
+
   p-locate@4.1.0:
     dependencies:
       p-limit: 2.3.0
@@ -10618,6 +10814,8 @@ snapshots:
 
   parseurl@1.3.3: {}
 
+  path-exists@3.0.0: {}
+
   path-exists@4.0.0: {}
 
   path-is-absolute@1.0.1: {}
@@ -10625,6 +10823,11 @@ snapshots:
   path-key@3.1.1: {}
 
   path-parse@1.0.7: {}
+
+  path-scurry@1.11.1:
+    dependencies:
+      lru-cache: 10.4.3
+      minipass: 7.1.2
 
   path-scurry@2.0.1:
     dependencies:
@@ -10640,6 +10843,10 @@ snapshots:
   picomatch@4.0.3: {}
 
   pirates@4.0.7: {}
+
+  pkg-up@3.1.0:
+    dependencies:
+      find-up: 3.0.0
 
   plist@3.1.0:
     dependencies:
@@ -11404,6 +11611,8 @@ snapshots:
       rc: 1.2.8
       resolve: 1.7.1
 
+  reselect@4.1.8: {}
+
   resize-observer-polyfill@1.5.1: {}
 
   resolve-from@4.0.0: {}
@@ -12125,6 +12334,8 @@ snapshots:
   wcwidth@1.0.1:
     dependencies:
       defaults: 1.0.4
+
+  web-streams-polyfill@3.3.3: {}
 
   webidl-conversions@3.0.1: {}
 

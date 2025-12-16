@@ -3,7 +3,6 @@ import type {
   User,
   Relationship,
   RelationshipStage,
-  StageMetrics,
   StageFeatureFlags,
   StageRequirement,
   LockedStageDetail,

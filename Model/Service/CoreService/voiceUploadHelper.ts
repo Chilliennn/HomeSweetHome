@@ -1,4 +1,4 @@
-import { storageRepository } from '../../Repository/StorageRepository/storageRepository';
+import { storageRepository } from '../../Repository/UserRepository/storageRepository';
 
 // ============================================================================
 // TYPES

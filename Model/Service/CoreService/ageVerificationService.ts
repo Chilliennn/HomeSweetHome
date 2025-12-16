@@ -1,4 +1,4 @@
-import { AgeVerificationPayload, AgeVerificationResult, UserType } from '../../types';
+import type { AgeVerificationPayload, AgeVerificationResult, UserType } from '../../types';
 
 const AGE_LIMITS: Record<UserType, { min: number; max: number }> = {
   youth: { min: 18, max: 40 },

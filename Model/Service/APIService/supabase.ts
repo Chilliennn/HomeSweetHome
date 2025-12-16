@@ -5,7 +5,7 @@ function getEnvVar(name: 'SUPABASE_URL' | 'SUPABASE_ANON_KEY'): string {
   try {
     // runtime require so bundlers don't parse web-only code
     // @ts-ignore
-    const Constants = require('expo-constants'). default;
+    const Constants = require('expo-constants').default;
     const val = Constants?.expoConfig?.extra?.[name] || Constants?.manifest?.extra?.[name];
     if (val) {
       console.log(`[env] found ${name} in expo extras`);
@@ -19,7 +19,7 @@ function getEnvVar(name: 'SUPABASE_URL' | 'SUPABASE_ANON_KEY'): string {
   if (typeof process !== 'undefined' && process.env) {
     const v = process.env[`EXPO_PUBLIC_${name}`] || process.env[`VITE_${name}`] || process.env[name] || '';
     if (v) {
-      console.log(`[env] found ${name} in process. env`);
+      console.log(`[env] found ${name} in process.env`);
       return v;
     }
   }

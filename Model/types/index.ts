@@ -386,3 +386,82 @@ export interface ProfileCompletionState {
   profileInfoCompleted: boolean;
   profileCompleted: boolean;
 }
+
+// ============================================
+// FAMILY LIFE & MEMORY TYPES (UC300-UC304)
+// ============================================
+export type MoodType = 
+  | 'happy'
+  | 'sad'
+  | 'neutral'
+  | 'excited'
+  | 'anxious'
+  | 'grateful';
+
+export type MediaType = 'photo' | 'voice' | 'video' | 'document';
+export type MediaCategory = 'family_album' | 'diary_attachment' | 'chat_media' | 'other';
+
+export interface MediaItem {
+  id: string;
+  uploader_id: string;
+  relationship_id: string;
+  media_type: MediaType;
+  media_category: MediaCategory;
+  file_url: string;
+  caption: string | null;
+  tags: string[] | null;
+  memory_id: string | null;
+  uploaded_at: string;
+}
+
+export interface Memory {
+  id: string;
+  relationship_id: string;
+  uploader_id: string;
+  caption: string | null;
+  thumbnail_url: string;
+  media_count: number;
+  uploaded_at: string;
+  // Optional: populated when fetching with joined media
+  media?: MediaItem[];
+}
+
+export interface DiaryEntry {
+  id: string;
+  user_id: string;
+  relationship_id: string;
+  content: string;
+  mood: MoodType;
+  is_private: boolean;
+  created_at: string;
+}
+
+export type EventType = 'meetup' | 'birthday' | 'anniversary' | 'activity' | 'other';
+
+export interface CalendarEvent {
+  id: string;
+  relationship_id: string;
+  creator_id: string;
+  title: string;
+  description: string | null;
+  event_type: EventType;
+  event_date: string;
+  event_time: string | null;
+  location: string | null;
+  reminder_sent: boolean;
+  created_at: string;
+}
+
+export type AISuggestionType = 'activity' | 'conversation_topic';
+
+export interface AISuggestion {
+  id: string;
+  relationship_id: string;
+  suggestion_type: AISuggestionType;
+  activity_title: string | null;
+  activity_description: string | null;
+  topic_text: string | null;
+  topic_for_stage: string | null;
+  is_used: boolean;
+  generated_at: string;
+}

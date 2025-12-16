@@ -179,68 +179,6 @@ export const RelationshipsScreen: React.FC<Props> = ({ onNavigate }) => {
             backgroundColor: '#FDF8F3',
             fontFamily: "'Inter', system-ui, -apple-system, sans-serif"
         }}>
-            {/* ========== TOP HEADER ========== */}
-            <header style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: '12px 24px',
-                backgroundColor: '#ffffff',
-                borderBottom: '1px solid #f0f0f0',
-                width: '100%',
-                boxSizing: 'border-box',
-                position: 'relative',
-                flexShrink: 0
-            }}>
-                <div style={{ flex: '0 0 auto' }}>
-                    <span style={{ fontSize: '18px', fontWeight: 600, color: '#1a1a1a' }}>HomeSweetHome</span>
-                </div>
-
-                <nav style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '24px',
-                    position: 'absolute',
-                    left: '50%',
-                    transform: 'translateX(-50%)'
-                }}>
-                    <button style={{
-                        padding: '8px 20px',
-                        borderRadius: '20px',
-                        fontSize: '14px',
-                        fontWeight: 500,
-                        backgroundColor: '#9DE2D0',
-                        color: '#1a1a1a',
-                        border: 'none',
-                        cursor: 'pointer'
-                    }}>
-                        Relationships
-                    </button>
-                    {["Applications", "Reports"].map((label) => (
-                        <span key={label} onClick={() => onNavigate?.(label.toLowerCase())}
-                            style={{ fontSize: '14px', fontWeight: 400, color: '#666666', cursor: 'pointer' }}>
-                            {label}
-                        </span>
-                    ))}
-                    <span onClick={() => onNavigate?.('keyword-management')}
-                        style={{ fontSize: '14px', fontWeight: 400, color: '#666666', cursor: 'pointer' }}>
-                        Keyword Management
-                    </span>
-                </nav>
-
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: '0 0 auto' }}>
-                    <div style={{
-                        width: '32px', height: '32px', borderRadius: '50%', backgroundColor: '#FFB347',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px'
-                    }}>🔔</div>
-                    <div style={{
-                        width: '32px', height: '32px', borderRadius: '50%', backgroundColor: '#9DE2D0',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: '11px', fontWeight: 600, color: '#ffffff'
-                    }}>SA</div>
-                </div>
-            </header>
-
             {/* ========== MAIN LAYOUT ========== */}
             <div style={{ display: 'flex', flex: 1, width: '100%', overflow: 'hidden' }}>
                 {/* ========== LEFT SIDEBAR ========== */}

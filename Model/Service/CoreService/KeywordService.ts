@@ -15,6 +15,17 @@ export interface NormalizedSuggestion {
     badges: string[]; // ["Financial Exploitation", "Critical"]
 }
 
+// Helper function to map category names to IDs
+function getCategoryId(categoryName: string): string {
+    const categoryMap: { [key: string]: string } = {
+        "Financial Exploitation": "1",
+        "Personal Information": "2",
+        "Inappropriate Content": "3",
+        "Abuse & Harassment": "4"
+    };
+    return categoryMap[categoryName] || "1"; // Default to Financial Exploitation
+}
+
 export class KeywordService {
     private keywordRepo: KeywordRepository;
 
@@ -70,15 +81,19 @@ export class KeywordService {
         return this.keywordRepo.fetchKeywords();
     }
 
-    async addKeyword(keyword: string, category: string, severity: "Low" | "Medium" | "High" | "Critical"): Promise<void> {
+    async addKeyword(keyword: string, categoryName: string, severity: "Low" | "Medium" | "High" | "Critical"): Promise<void> {
+        // Convert category name to ID
+        const category_id = getCategoryId(categoryName);
         // map UI severity to DB severity
         const dbSeverity = severity.toLowerCase() as any;
-        await this.keywordRepo.addKeyword(keyword, category, dbSeverity);
+        await this.keywordRepo.addKeyword(keyword, category_id, dbSeverity);
     }
 
-    async updateKeyword(id: string, keyword: string, category: string, severity: "Low" | "Medium" | "High" | "Critical"): Promise<void> {
+    async updateKeyword(id: string, keyword: string, categoryName: string, severity: "Low" | "Medium" | "High" | "Critical"): Promise<void> {
+        // Convert category name to ID
+        const category_id = getCategoryId(categoryName);
         const dbSeverity = severity.toLowerCase() as any;
-        await this.keywordRepo.updateKeyword(id, { keyword, category, severity: dbSeverity });
+        await this.keywordRepo.updateKeyword(id, { keyword, category_id, severity: dbSeverity });
     }
 
     async deleteKeyword(id: string): Promise<void> {

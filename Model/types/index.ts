@@ -27,26 +27,26 @@ export interface UserProfileData {
   // Display Identity
   display_name?: string;
   avatar_url?: string;
-  
+
   // Real Identity (private)
   real_photo_url?: string;
   ic_number?: string;
-  
+
   // Profile Info
   interests?: string[];
   self_introduction?: string;
   communication_styles?: CommunicationStyle[];
-  
+
   // Verification
   age_verified?: boolean;
   verified_age?: number;
-  
+
   // Profile Completion
   profile_completed?: boolean;
   profile_completed_at?: string;
 }
 
-export type CommunicationStyle = 
+export type CommunicationStyle =
   | 'text_messaging'
   | 'voice_calls'
   | 'video_calls'
@@ -56,7 +56,7 @@ export type CommunicationStyle =
 // ============================================
 // APPLICATION TYPES
 // ============================================
-export type ApplicationStatus = 
+export type ApplicationStatus =
   | 'pending_ngo_review'
   | 'ngo_approved'
   | 'pre_chat_active'
@@ -83,7 +83,7 @@ export interface Application {
 // ============================================
 // RELATIONSHIP TYPES
 // ============================================
-export type RelationshipStage = 
+export type RelationshipStage =
   | 'getting_to_know'
   | 'trial_period'
   | 'official_ceremony'
@@ -91,7 +91,7 @@ export type RelationshipStage =
 
 export type RelationshipStatus = 'active' | 'paused' | 'ended';
 
-export type EndRequestStatus = 
+export type EndRequestStatus =
   | 'none'
   | 'pending_cooldown'
   | 'under_review'
@@ -151,7 +151,7 @@ export interface Message {
 // ============================================
 // SAFETY TYPES
 // ============================================
-export type IncidentType = 
+export type IncidentType =
   | 'financial_request'
   | 'negative_sentiment'
   | 'harassment'
@@ -182,7 +182,7 @@ export interface SafetyIncident {
 // ============================================
 // NOTIFICATION TYPES
 // ============================================
-export type NotificationType = 
+export type NotificationType =
   | 'stage_milestone'
   | 'new_message'
   | 'calendar_reminder'
@@ -199,3 +199,8 @@ export interface Notification {
   is_read: boolean;
   created_at: string;
 }
+
+// ============================================
+// SAFETY REPORT TYPES (UC401)
+// ============================================
+export * from './SafetyTypes';

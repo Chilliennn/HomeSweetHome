@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { observer } from 'mobx-react-lite';
-import { youthMatchingViewModel } from '@home-sweet-home/viewmodel';
+import { youthMatchingViewModel, communicationViewModel } from '@home-sweet-home/viewmodel';
 import { authViewModel } from '@home-sweet-home/viewmodel';
 import { User } from '@home-sweet-home/model';
 import { useTabNavigation } from '../hooks/use-tab-navigation';
@@ -215,7 +215,7 @@ export const BrowseElderly: React.FC<BrowseElderlyProps> = observer(({
       {/* Journey Progress Dropdown */}
       <View style={styles.journeySection}>
         <JourneyProgressDropdown
-          currentStep={currentJourneyStep}
+          currentStep={communicationViewModel.currentJourneyStep}
           currentDescription="Browse elders to find your match"
           nextDescription="Choose & chat anonymously for 7-14 days"
           onLearnMore={onLearnMorePress}

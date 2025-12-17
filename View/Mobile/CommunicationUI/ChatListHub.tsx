@@ -42,10 +42,13 @@ export const ChatListHub = observer(function ChatListHub() {
   }, [vm.hasActiveRelationship, vm.currentRelationship, vm.hasLoadedOnce]);
 
   // ✅ UC104_7: Check for expired pre-matches (14+ days) and force redirect
+  // Skip redirect if application is already pending_review (youth already submitted)
   useEffect(() => {
     if (vm.hasLoadedOnce && !vm.hasActiveRelationship) {
       const expiredChat = vm.getFirstExpiredChat();
-      if (expiredChat) {
+      // Only redirect to expired screen if status is still pre_chat_active
+      // If pending_review, youth already submitted - show chat list normally
+      if (expiredChat && expiredChat.application.status === 'pre_chat_active') {
         console.log('[ChatListHub] Found expired pre-match, redirecting to decision screen');
         router.replace({
           pathname: '/pre-match-expired',

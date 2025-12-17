@@ -40,10 +40,19 @@ export const EndPreMatchScreen = observer(function EndPreMatchScreen() {
 
     const [step, setStep] = useState<Step>('confirm');
     const [isSubmitting, setIsSubmitting] = useState(false);
+    // Cache partner name so we can show it in success screen even after chat is removed
+    const [cachedPartnerName, setCachedPartnerName] = useState<string | null>(null);
 
     // Get chat data
     const chat = vm.getChatByApplicationId(applicationId);
     const partner = chat?.partnerUser;
+
+    // Cache partner name when chat is available
+    React.useEffect(() => {
+        if (partner?.full_name && !cachedPartnerName) {
+            setCachedPartnerName(partner.full_name);
+        }
+    }, [partner?.full_name, cachedPartnerName]);
 
     // Handle back
     const handleBack = () => {
@@ -57,6 +66,11 @@ export const EndPreMatchScreen = observer(function EndPreMatchScreen() {
 
     // Handle confirm end
     const handleConfirmEnd = async () => {
+        // Cache partner name before ending (chat will be removed from list)
+        if (partner?.full_name) {
+            setCachedPartnerName(partner.full_name);
+        }
+
         setIsSubmitting(true);
         const success = await vm.endPreMatch(applicationId);
         setIsSubmitting(false);
@@ -68,18 +82,13 @@ export const EndPreMatchScreen = observer(function EndPreMatchScreen() {
         }
     };
 
-    // Handle done (after success)
     const handleDone = () => {
-        if (fromExpired) {
-            router.replace('/(main)/chat-list' as any);
-        } else {
-            router.back();
-            router.back(); // Go back twice - to PreMatchDecisionScreen and then ChatList
-        }
+        // Navigate back to chat list
+        router.replace('/(main)/chat' as any);
     };
 
-    // Loading state
-    if (!chat) {
+    // Loading state - only show in confirm step (not in success step)
+    if (!chat && step === 'confirm') {
         return (
             <SafeAreaView style={styles.container}>
                 <View style={styles.loadingContainer}>
@@ -88,6 +97,9 @@ export const EndPreMatchScreen = observer(function EndPreMatchScreen() {
             </SafeAreaView>
         );
     }
+
+    // Use cached name for success screen
+    const displayPartnerName = cachedPartnerName || partner?.full_name || 'your partner';
 
     // Step 2: Success screen (104_4)
     if (step === 'success') {
@@ -105,7 +117,7 @@ export const EndPreMatchScreen = observer(function EndPreMatchScreen() {
                     <Text style={styles.successTitle}>Pre-Match Ended</Text>
                     <Text style={styles.successSubtitle}>
                         Your pre-match with{'\n'}
-                        <Text style={styles.partnerHighlight}>{partner?.full_name || 'your partner'}</Text>
+                        <Text style={styles.partnerHighlight}>{displayPartnerName}</Text>
                         {'\n'}has been ended.
                     </Text>
 
@@ -121,7 +133,7 @@ export const EndPreMatchScreen = observer(function EndPreMatchScreen() {
                 {/* Done Button */}
                 <View style={styles.singleButtonContainer}>
                     <TouchableOpacity style={styles.doneButton} onPress={handleDone}>
-                        <Text style={styles.doneButtonText}>Continue Browsing</Text>
+                        <Text style={styles.doneButtonText}>Done</Text>
                     </TouchableOpacity>
                 </View>
             </SafeAreaView>
@@ -152,7 +164,7 @@ export const EndPreMatchScreen = observer(function EndPreMatchScreen() {
                 <Text style={styles.title}>Are you sure?</Text>
                 <Text style={styles.subtitle}>
                     You're about to end your pre-match with{'\n'}
-                    <Text style={styles.partnerHighlight}>{partner?.full_name || 'your partner'}</Text>
+                    <Text style={styles.partnerHighlight}>{displayPartnerName}</Text>
                 </Text>
 
                 {/* Consequences List */}

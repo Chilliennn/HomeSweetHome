@@ -519,25 +519,86 @@ export const ChatScreen = observer(function ChatScreen() {
               </Text>
             </View>
           </View>
-          <Text style={styles.callInviteTime}>{timestamp}</Text>
+          <View style={styles.callInviteFooter}>
+            <Text style={styles.callInviteTime}>{timestamp}</Text>
+            {isOwn && (
+              <Text style={[styles.readStatus, item.is_read ? styles.readStatusRead : styles.readStatusDelivered]}>
+                {item.is_read ? '✓✓' : '✓'}
+              </Text>
+            )}
+          </View>
         </TouchableOpacity>
       );
     }
 
     // Render image message
     if (item.message_type === 'image' && item.media_url) {
+      const handleImagePress = () => {
+        // Open full-screen image viewer (future enhancement)
+        Alert.alert('Image', 'Tap and hold to save to memories');
+      };
+
+      const handleSaveToMemory = async () => {
+        // Check if in relationship context before showing dialog
+        console.log('[ChatScreen] Save to Memory - context:', vm.currentChatContext, 'relationshipId:', vm.currentRelationshipId);
+
+        if (!vm.currentRelationshipId) {
+          Alert.alert(
+            'Not Available',
+            'Save to Memories is only available after completing formal adoption. This feature will be available once you become officially matched!'
+          );
+          return;
+        }
+
+        Alert.alert(
+          'Save to Memories',
+          'Would you like to save this photo to your shared family album?',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            {
+              text: 'Save',
+              onPress: async () => {
+                console.log('[ChatScreen] Saving media:', item.media_url, 'type:', item.message_type);
+                const success = await vm.saveChatMediaToMemory(
+                  item.media_url,
+                  item.message_type as 'image' | 'video'
+                );
+                if (success) {
+                  Alert.alert('Saved!', 'Photo has been added to your Family Album.');
+                } else {
+                  console.log('[ChatScreen] Save failed:', vm.errorMessage);
+                  Alert.alert('Error', vm.errorMessage || 'Failed to save to memories.');
+                }
+              }
+            }
+          ]
+        );
+      };
+
       return (
-        <View style={[
-          styles.mediaBubbleContainer,
-          isOwn ? styles.mediaBubbleOwn : styles.mediaBubblePartner
-        ]}>
+        <TouchableOpacity
+          onPress={handleImagePress}
+          onLongPress={handleSaveToMemory}
+          delayLongPress={500}
+          style={[
+            styles.mediaBubbleContainer,
+            isOwn ? styles.mediaBubbleOwn : styles.mediaBubblePartner
+          ]}
+        >
           <Image
             source={{ uri: item.media_url }}
             style={styles.mediaImage}
-            resizeMode="cover"
+            resizeMode="contain"
           />
-          <Text style={styles.mediaTimestamp}>{timestamp}</Text>
-        </View>
+          <View style={styles.mediaFooter}>
+            <Text style={styles.mediaTimestamp}>{timestamp}</Text>
+            {isOwn && (
+              <Text style={[styles.readStatus, item.is_read ? styles.readStatusRead : styles.readStatusDelivered]}>
+                {item.is_read ? '✓✓' : '✓'}
+              </Text>
+            )}
+          </View>
+        </TouchableOpacity>
       );
     }
 
@@ -555,7 +616,14 @@ export const ChatScreen = observer(function ChatScreen() {
             <Text style={styles.videoPlayIcon}>▶️</Text>
             <Text style={styles.videoLabel}>Video</Text>
           </View>
-          <Text style={styles.mediaTimestamp}>{timestamp}</Text>
+          <View style={styles.mediaFooter}>
+            <Text style={styles.mediaTimestamp}>{timestamp}</Text>
+            {isOwn && (
+              <Text style={[styles.readStatus, item.is_read ? styles.readStatusRead : styles.readStatusDelivered]}>
+                {item.is_read ? '✓✓' : '✓'}
+              </Text>
+            )}
+          </View>
         </TouchableOpacity>
       );
     }
@@ -1095,9 +1163,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#F0F0F0',
   },
   mediaImage: {
-    width: 220,
-    height: 180,
+    width: 250,
+    height: undefined,
+    aspectRatio: 0.75, // Portrait orientation (3:4)
+    maxHeight: 350,
     borderRadius: 12,
+    backgroundColor: '#f0f0f0',
   },
   mediaTimestamp: {
     fontSize: 11,
@@ -1121,6 +1192,32 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontSize: 14,
     marginTop: 8,
+  },
+  // Read status styles
+  callInviteFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: 4,
+    marginTop: 4,
+  },
+  mediaFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  readStatus: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  readStatusRead: {
+    color: '#4A90D9', // Blue for read (like WhatsApp)
+  },
+  readStatusDelivered: {
+    color: '#999', // Gray for delivered but not read
   },
 });
 

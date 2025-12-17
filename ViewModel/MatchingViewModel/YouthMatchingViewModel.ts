@@ -259,9 +259,14 @@ export class YouthMatchingViewModel {
     /**
      * Submit formal application after pre-match period
      * UC101_12: Youth submits formal adoption application
+     * 
+     * @param applicationId - The application ID
+     * @param youthId - The youth user ID (passed from View layer)
+     * @param formData - Motivation letter and other form data
      */
     async submitFormalApplication(
         applicationId: string,
+        youthId: string,
         formData: {
             motivationLetter: string;
             availability?: string;
@@ -269,30 +274,33 @@ export class YouthMatchingViewModel {
             whatCanOffer?: string;
         }
     ): Promise<boolean> {
+        console.log('🔵 [YouthVM] submitFormalApplication started', { applicationId, youthId });
         this.isLoading = true;
         this.error = null;
 
         try {
-            // Get youth ID from auth
-            const { supabase } = await import('@home-sweet-home/model');
-            const { data: { user } } = await supabase.auth.getUser();
-
-            if (!user) {
+            if (!youthId) {
+                console.error('❌ [YouthVM] No youthId provided');
                 throw new Error('User not logged in');
             }
 
-            await matchingService.submitFormalApplication(applicationId, user.id, formData);
+            console.log('🔵 [YouthVM] Calling matchingService.submitFormalApplication...');
 
+            await matchingService.submitFormalApplication(applicationId, youthId, formData);
+
+            console.log('✅ [YouthVM] Application submitted successfully');
             runInAction(() => {
                 this.successMessage = 'Application submitted successfully!';
             });
             return true;
         } catch (e: any) {
+            console.error('❌ [YouthVM] Submit failed:', e.message);
             runInAction(() => {
                 this.error = e.message || 'Failed to submit application';
             });
             return false;
         } finally {
+            console.log('🔵 [YouthVM] Submit completed (finally block)');
             runInAction(() => {
                 this.isLoading = false;
             });

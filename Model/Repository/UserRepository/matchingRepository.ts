@@ -396,6 +396,8 @@ export const matchingRepository = {
             whatCanOffer?: string;
         }
     ): Promise<Interest> {
+        console.log('🔵 [Repo] submitFormalApplication START', { applicationId, motivationLetterLength: motivationLetter.length });
+
         const { data, error } = await supabase
             .from('applications')
             .update({
@@ -408,7 +410,29 @@ export const matchingRepository = {
             .select('*, youth:youth_id(*), elderly:elderly_id(*)')
             .single();
 
-        if (error) throw error;
+        console.log('🔵 [Repo] submitFormalApplication supabase result:', { data: data?.id, error });
+
+        if (error) {
+            console.error('❌ [Repo] submitFormalApplication error:', error);
+            throw error;
+        }
+
+        console.log('✅ [Repo] submitFormalApplication SUCCESS');
         return data as Interest;
+    },
+
+    /**
+     * Get youth's pending applications (status = pending_review)
+     * Used to prevent multiple simultaneous applications
+     */
+    async getYouthPendingApplications(youthId: string): Promise<Interest[]> {
+        const { data, error } = await supabase
+            .from('applications')
+            .select('*, elderly:elderly_id(*)')
+            .eq('youth_id', youthId)
+            .eq('status', 'pending_review');
+
+        if (error) throw error;
+        return data || [];
     }
 };

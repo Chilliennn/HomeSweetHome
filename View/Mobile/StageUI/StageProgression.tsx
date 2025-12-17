@@ -7,17 +7,18 @@ import {
   ScrollView,
   RefreshControl,
   Modal,
-  TextInput,
   ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { observer } from "mobx-react-lite";
+import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { stageViewModel } from "../../../ViewModel/StageViewModel";
 import { StageCircle } from "../components/ui/StageCircle";
 import { NotificationBell } from "../components/ui/NotificationBell";
 import { LoadingSpinner } from "../components/ui/LoadingSpinner";
 import { BottomTabBar, DEFAULT_TABS } from "../components/ui/BottomTabBar";
+import { RelationshipStage } from "@home-sweet-home/model/types";
 interface StageProgressionScreenProps {
   userId: string;
   initialOpenStage?: string;
@@ -29,17 +30,37 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
     const vm = stageViewModel;
 
     useEffect(() => {
-      if (userId) {
-        vm.initialize(userId);
-      }
+      let mounted = true;
+      const init = async () => {
+        if (!userId) return;
+        try {
+          await vm.initialize(userId);
+
+          if (!mounted) return;
+
+          if (vm.showStageCompleted) vm.closeStageCompleted();
+          if (vm.showLockedStageDetail) vm.closeLockedStageDetail();
+
+          setTimeout(() => {
+            if (!mounted) return;
+            if (vm.showStageCompleted) vm.closeStageCompleted();
+            if (vm.showLockedStageDetail) vm.closeLockedStageDetail();
+          }, 100);
+        } catch (e) {
+          console.error("[StageProgression] init error:", e);
+        }
+      };
+
+      init();
+
       return () => {
+        mounted = false;
         vm.dispose();
       };
     }, [userId, vm]);
 
     useEffect(() => {
       if (!initialOpenStage) return;
-      // close any inline previews before opening target
       if (vm.showStageCompleted) vm.closeStageCompleted();
       if (vm.showLockedStageDetail) vm.closeLockedStageDetail();
       vm.handleStageClick(initialOpenStage as any, { forceOpen: true }).catch(
@@ -49,13 +70,35 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
 
     // Watch for auto-navigation to Stage Completed page
     useEffect(() => {
-      if (!vm.shouldNavigateToStageCompleted) return;
-      vm.shouldNavigateToStageCompleted = false;
+      if (vm.consumeStageCompletionNavigation()) {
+        (async () => {
+          console.log("[StageProgression] Stage completion detected, loading info ->", {
+            stageJustCompleted: vm.stageJustCompleted,
+            stageJustCompletedName: vm.stageJustCompletedName,
+            userId,
+          });
 
-      vm.loadStageCompletionInfo(vm.stageJustCompleted ?? undefined).catch(
-        (err) => console.error("Failed to load stage completion info:", err)
-      );
-    }, [vm, vm.shouldNavigateToStageCompleted]);
+          try {
+            // Ensure VM has the latest completion info
+            await vm.loadStageCompletionInfo(vm.stageJustCompleted ?? undefined);
+
+            // If the just completed stage is the final stage (family_life),
+            // navigate to the Journey Completed screen instead.
+            if (vm.stageJustCompleted === ("family_life" as any)) {
+              console.log("[StageProgression] Navigating to journey-completed page");
+              router.push({ pathname: "/(main)/journey-completed", params: { userId } });
+            } else {
+              router.push({
+                pathname: "/(main)/stage-completed",
+                params: { userId, stage: vm.stageJustCompleted ?? "" },
+              });
+            }
+          } catch (err) {
+            console.error("Failed to handle stage completion navigation:", err);
+          }
+        })();
+      }
+    }, [vm, vm.shouldNavigateToStageCompleted, router, userId]);
 
     // Watch for auto-navigation to Milestone page
     useEffect(() => {
@@ -66,21 +109,52 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
 
     // Watch for auto-navigation to Journey Pause page
     useEffect(() => {
-      if (vm.shouldNavigateToJourneyPause) {
-        vm.shouldNavigateToJourneyPause = false;
+      if (vm.consumeJourneyPauseNavigation()) {
         router.push({ pathname: "/(main)/journey-pause", params: { userId } });
       }
     }, [vm.shouldNavigateToJourneyPause, router, userId, vm]);
 
-    const handleStagePress = async (stage: any) => {
-      if (vm.showStageCompleted) {
-        vm.closeStageCompleted();
+    // Watch for auto-navigation to Journey Completed page (final stage fully completed)
+    useEffect(() => {
+      if (vm.consumeJourneyCompletedNavigation()) {
+        (async () => {
+          try {
+            // Ensure completion info loaded
+            await vm.loadStageCompletionInfo(vm.currentStage ?? undefined);
+            router.push({ pathname: "/(main)/journey-completed", params: { userId } });
+          } catch (err) {
+            console.error("Failed to navigate to journey-completed:", err);
+          }
+        })();
       }
-      if (vm.showLockedStageDetail) {
-        vm.closeLockedStageDetail();
+    }, [vm.shouldNavigateToJourneyCompleted, router, userId, vm]);
+
+    const handleStagePress = async (targetStage: RelationshipStage) => {
+      try {
+        // Close any open modals before navigating
+        if (vm.showStageCompleted) vm.closeStageCompleted();
+        if (vm.showLockedStageDetail) vm.closeLockedStageDetail();
+
+        // If clicking current stage, just close modals to show current stage card
+        const currentStageInfo = vm.stages.find((s) => s.is_current);
+        if (currentStageInfo?.stage === targetStage) {
+          // Modals already closed above, current stage card will show
+          return;
+        }
+
+        await vm.handleStageClick(targetStage, { forceOpen: true });
+      } catch (err) {
+        console.error("[StageProgression] handleStagePress error:", err);
       }
-      await vm.handleStageClick(stage);
     };
+
+    const collapseSpaces = (text?: string) => {
+      if (!text) return "";
+      return text.replace(/\s+/g, " ").trim();
+    };
+
+    const progressPct = vm.progressPercentage ?? 0;
+    const progressWidthPct = progressPct > 0 ? Math.max(progressPct, 2) : 0;
 
     const handleNotificationPress = () => {
       vm.markNotificationsRead();
@@ -89,6 +163,8 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
 
     const handleRefresh = async () => {
       await vm.refresh();
+      if (vm.showStageCompleted) vm.closeStageCompleted();
+      if (vm.showLockedStageDetail) vm.closeLockedStageDetail();
     };
 
     const handleTabPress = (key: string) => {
@@ -180,35 +256,49 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
             )}
 
             {/* Inline locked-stage preview OR current stage card */}
-            {vm.showLockedStageDetail && vm.lockedStageDetails ? (
-              <View style={styles.lockedDetailContainer}>
-                <View style={styles.lockIconWrapper}>
-                  <Text style={styles.lockIcon}>🔒</Text>
-                </View>
+            {vm.showLockedStageDetail ? (
+              vm.lockedStageDetails ? (
+                <View style={styles.lockedDetailContainer}>
+                  <View style={styles.lockIconWrapper}>
+                    <Text style={styles.lockIcon}>🔒</Text>
+                  </View>
 
-                <Text style={styles.lockedTitle}>
-                  Stage {vm.lockedStageDetails.stage_order}:{" "}
-                  {vm.lockedStageDetails.title}
-                </Text>
-                <Text style={styles.lockedDescription}>
-                  {vm.lockedStageDetails.unlock_message}
-                </Text>
-
-                <View style={styles.previewCard}>
-                  <Text style={styles.previewHeading}>
-                    What&apos;s Next in Stage{" "}
-                    {vm.lockedStageDetails.stage_order}:
+                  <Text style={styles.lockedTitle}>
+                    Stage {vm.lockedStageDetails.stage_order}:{" "}
+                    {vm.lockedStageDetails.title}
                   </Text>
-                  {vm.lockedStageDetails.preview_requirements.map((req, i) => (
-                    <View key={i} style={styles.previewRow}>
-                      <View style={styles.previewBulletWrapper}>
-                        <Text style={styles.previewBullet}>○</Text>
-                      </View>
-                      <Text style={styles.previewText}>{req}</Text>
-                    </View>
-                  ))}
+                  <Text style={styles.lockedDescription}>
+                    {vm.lockedStageDetails.unlock_message}
+                  </Text>
+
+                  <View style={styles.previewCard}>
+                    <Text style={styles.previewHeading}>
+                      What&apos;s Next in Stage{" "}
+                      {vm.lockedStageDetails.stage_order}:
+                    </Text>
+                    {vm.lockedStageDetails.preview_requirements.map(
+                      (req, i) => (
+                        <View key={i} style={styles.previewRow}>
+                          <View style={styles.previewBulletWrapper}>
+                            <Text style={styles.previewBullet}>○</Text>
+                          </View>
+                          <Text style={styles.previewText}>{req}</Text>
+                        </View>
+                      )
+                    )}
+                  </View>
                 </View>
-              </View>
+              ) : (
+                // Loading state for locked details (prevents fallback to current stage card)
+                <View
+                  style={[
+                    styles.lockedDetailContainer,
+                    { minHeight: 200, justifyContent: "center" },
+                  ]}
+                >
+                  <ActivityIndicator color="#EB8F80" size="large" />
+                </View>
+              )
             ) : vm.showStageCompleted ? (
               <View style={styles.lockedDetailContainer}>
                 {/* Inline completion card */}
@@ -218,12 +308,31 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
 
                 {/* show completed stage number */}
                 <Text style={styles.lockedTitle}>
-                  Stage {vm.completedStageOrder + 1}:{" "}
-                  {vm.stageJustCompletedName}
+                  {(() => {
+                    const completedOrder = vm.completedStageOrder ?? 0;
+                    const completedStage = vm.stages[completedOrder];
+                    const completedNumber = completedOrder + 1;
+                    const completedName = collapseSpaces(
+                      completedStage?.display_name || ""
+                    );
+                    return `Stage ${completedNumber}: ${completedName}`;
+                  })()}
                 </Text>
 
                 <Text style={styles.lockedDescription}>
-                  {vm.stageCompletionMessage}
+                  {(() => {
+                    const completedOrder = vm.completedStageOrder ?? 0;
+                    const completedStage = vm.stages[completedOrder];
+                    const nextStage = vm.stages[completedOrder + 1];
+                    const completedName = collapseSpaces(
+                      completedStage?.display_name || ""
+                    );
+                    const nextNumber = completedOrder + 2;
+                    const nextName = collapseSpaces(
+                      nextStage?.display_name || ""
+                    );
+                    return `Congratulations! You've successfully completed "${completedName}" and moved to Stage ${nextNumber}: ${nextName}.`;
+                  })()}
                 </Text>
 
                 <View style={styles.previewCard}>
@@ -248,15 +357,17 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
               <View style={styles.currentStageCard}>
                 <Text style={styles.cardTitle}>
                   Current Stage:{" "}
-                  {vm.stages.find((s) => s.is_current)?.display_name}
+                  {collapseSpaces(
+                    vm.stages.find((s) => s.is_current)?.display_name
+                  )}
                 </Text>
 
                 <View style={styles.progressBar}>
                   <View
                     style={[
-                      styles.progressFill,
-                      { width: `${vm.progressPercentage}%` },
-                    ]}
+                  styles.progressFill, 
+                  { width: `${progressWidthPct}%` }
+                ]}
                   />
                 </View>
 
@@ -310,40 +421,66 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
             onTabPress={handleTabPress}
           />
 
-          {/* Withdraw Modal - Inlined */}
+          {/* Withdraw Modal */}
           <Modal
             visible={vm.showWithdrawModal}
             transparent
-            animationType="slide"
+            animationType="fade"
             onRequestClose={() => vm.closeWithdrawModal()}
           >
-            <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "rgba(0,0,0,0.5)" }}>
-              <View style={{ width: "90%", backgroundColor: "#fff", borderRadius: 12, padding: 20 }}>
-                <Text style={{ fontSize: 18, fontWeight: "700", marginBottom: 12 }}>Withdraw request</Text>
-                <Text style={{ marginBottom: 8 }}>Reason</Text>
-                <TextInput
-                  value={vm.withdrawalReason}
-                  onChangeText={(text: string) => vm.setWithdrawalReason(text)}
-                  placeholder="Optional reason"
-                  style={{ borderWidth: 1, borderColor: "#eee", padding: 8, borderRadius: 8, marginBottom: 12 }}
+            <View style={styles.modalOverlay}>
+              <View style={styles.modalContent}>
+                <Ionicons
+                  name="warning"
+                  size={48}
+                  color="#FFC107"
+                  style={{ marginBottom: 16 }}
                 />
 
-                <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 8 }}>
-                  <TouchableOpacity onPress={() => vm.closeWithdrawModal()} style={{ padding: 10 }}>
-                    <Text>Cancel</Text>
+                <Text style={styles.modalTitle}>Withdraw from Match?</Text>
+                <Text style={styles.modalDescription}>
+                  Are you sure you want to withdraw from this match? This action
+                  cannot be undone.
+                </Text>
+
+                <View style={styles.warningBox}>
+                  <Ionicons
+                    name="alarm-outline"
+                    size={20}
+                    color="#D32F2F"
+                    style={{ marginRight: 8 }}
+                  />
+                  <Text style={styles.warningText}>
+                    A 24-hour cooling period will begin after withdrawal.
+                  </Text>
+                </View>
+
+                <View style={styles.modalButtonRow}>
+                  <TouchableOpacity
+                    onPress={() => vm.closeWithdrawModal()}
+                    style={styles.modalCancelButton}
+                  >
+                    <Text style={styles.modalCancelText}>Cancel</Text>
                   </TouchableOpacity>
 
                   <TouchableOpacity
                     onPress={async () => {
                       const success = await vm.submitWithdrawal();
                       if (success) {
-                        router.push({ pathname: "/(main)/journey-pause", params: { userId } });
+                        router.push({
+                          pathname: "/(main)/journey-pause",
+                          params: { userId },
+                        });
                       }
                     }}
-                    style={{ padding: 10, backgroundColor: "#EB8F80", borderRadius: 8 }}
+                    style={styles.modalWithdrawButton}
                     disabled={vm.isLoading}
                   >
-                    {vm.isLoading ? <ActivityIndicator color="#fff" /> : <Text style={{ color: "#fff" }}>Confirm</Text>}
+                    {vm.isLoading ? (
+                      <ActivityIndicator color="#fff" />
+                    ) : (
+                      <Text style={styles.modalWithdrawText}>Withdraw</Text>
+                    )}
                   </TouchableOpacity>
                 </View>
               </View>
@@ -425,6 +562,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 20,
     marginBottom: 16,
+    alignItems: "flex-start",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
@@ -438,10 +576,12 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   progressBar: {
+    width: "100%",
     height: 8,
     backgroundColor: "#F0F0F0",
     borderRadius: 4,
     overflow: "hidden",
+    flexDirection: "row",
     marginBottom: 8,
   },
   progressFill: {
@@ -632,5 +772,88 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: "center",
     marginBottom: 12,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  modalContent: {
+    backgroundColor: "#fff",
+    borderRadius: 24,
+    padding: 24,
+    width: "100%",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 5,
+  },
+  modalTitle: {
+    fontSize: 24,
+    fontWeight: "800",
+    color: "#333",
+    marginTop: 8,
+    marginBottom: 12,
+    textAlign: "center",
+  },
+  modalDescription: {
+    fontSize: 16,
+    color: "#666",
+    textAlign: "center",
+    marginBottom: 24,
+    lineHeight: 22,
+  },
+  warningBox: {
+    backgroundColor: "#FFE082",
+    borderRadius: 12,
+    padding: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 24,
+    width: "100%",
+  },
+  warningText: {
+    flex: 1,
+    color: "#333",
+    fontSize: 14,
+    fontWeight: "600",
+    lineHeight: 20,
+  },
+  modalButtonRow: {
+    flexDirection: "row",
+    gap: 12,
+    width: "100%",
+  },
+  modalCancelButton: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: "#E0E0E0",
+    alignItems: "center",
+    backgroundColor: "#fff",
+  },
+  modalCancelText: {
+    color: "#666",
+    fontSize: 16,
+    fontWeight: "700",
+  },
+  modalWithdrawButton: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    backgroundColor: "#EB8F80",
+    alignItems: "center",
+    borderWidth: 2,
+    borderColor: "#EB8F80",
+  },
+  modalWithdrawText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "700",
   },
 });

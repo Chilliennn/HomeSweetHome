@@ -94,13 +94,15 @@ const LoginScreen = observer(function LoginScreen() {
       // 1. CHECK RELATIONSHIP STATUS (including paused)
       // Prioritize relationship status over profile completion
       // ============================================================================
+      console.log('[Login] Checking relationship for user:', user.id);
       const relationship = await relationshipService.getAnyRelationship(
         user.id
       );
+      console.log('[Login] Relationship found:', relationship);
 
       if (relationship) {
-        // Check if relationship is paused (cooling period)
         if (relationship.status === "paused") {
+          console.log('[Login] User has paused relationship → journey-pause');
           router.replace({
             pathname: "/(main)/journey-pause",
             params: { userId: user.id },
@@ -110,6 +112,7 @@ const LoginScreen = observer(function LoginScreen() {
 
         // User has active relationship → Go to bonding
         if (relationship.status === "active") {
+          console.log('[Login] User has active relationship → bonding');
           router.replace({
             pathname: "/(main)/bonding",
             params: { userId: user.id, userName: user.full_name },
@@ -117,6 +120,8 @@ const LoginScreen = observer(function LoginScreen() {
           return;
         }
       }
+
+      console.log('[Login] No active/paused relationship found → checking profile');
 
       // ============================================================================
       // 2. CHECK PROFILE COMPLETION STATUS

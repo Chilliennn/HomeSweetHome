@@ -54,10 +54,24 @@ export class StageService {
   }
 
   async getJourneyStats(relationshipId: string): Promise<JourneyStats> {
-    const relationship = await userRepository.getAnyRelationship(
+    console.log("[StageService] getJourneyStats called with:", relationshipId);
+
+    // FIX: Use direct lookup by ID, not user search
+    const relationship = await userRepository.getRelationshipById(
       relationshipId
-    ); // Use getAny in case status changed
-    if (!relationship) throw new Error("Relationship not found");
+    );
+    if (!relationship) {
+      console.warn(
+        "[StageService] getJourneyStats: Relationship not found, returning default empty stats"
+      );
+      // Return default empty stats to prevent crashes, as per fix requirements
+      return {
+        daysTogether: 0,
+        videoCalls: 0,
+        homeVisits: 0,
+        memories: 0,
+      };
+    }
 
     const memoriesCount = await (userRepository as any).getMemoriesCount(
       relationshipId
@@ -259,8 +273,7 @@ export class StageService {
     achievements: string[];
     currentStage: RelationshipStage;
   } | null> {
-    // Use getAnyRelationship to support paused users checking milestones/history
-    const relationship = await userRepository.getAnyRelationship(userId);
+    const relationship = await userRepository.getActiveRelationship(userId);
     if (!relationship) return null;
 
     console.debug("[StageService] getMilestoneInfo relationship:", {
@@ -270,8 +283,11 @@ export class StageService {
       status: relationship.status,
     });
 
-    // Calculate days together from created_at
-    const startDate = new Date(relationship.created_at);
+    // Calculate days together from stage_start_date (or fallback to created_at)
+    const stageStart = relationship.stage_start_date
+      ? new Date(relationship.stage_start_date)
+      : new Date(relationship.created_at);
+    const startDate = stageStart;
     const now = new Date();
     const diffTime = Math.abs(now.getTime() - startDate.getTime());
     const daysTogether = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
@@ -323,8 +339,7 @@ export class StageService {
     currentStage: RelationshipStage;
     stageDisplayName: string;
   } | null> {
-    // Use getAnyRelationship to find paused relationships
-    const relationship = await userRepository.getAnyRelationship(userId);
+    const relationship = await userRepository.getActiveRelationship(userId);
     if (!relationship) {
       console.log(
         "[getCoolingPeriodInfo] No relationship found for user:",
@@ -391,6 +406,49 @@ export class StageService {
   /**
    * Get stage completion info - returns details about the just-completed stage
    */
+  async advanceStageIfEligible(userId: string): Promise<void> {
+    try {
+      const relationship = await userRepository.getRelationshipStage(userId);
+      if (!relationship) return;
+
+      const currentStage = relationship.current_stage as RelationshipStage;
+      const requirements = await userRepository.getStageRequirements(
+        relationship.id,
+        currentStage
+      );
+
+      // Check if there are requirements and all are completed
+      if (
+        requirements.length > 0 &&
+        requirements.every((r) => r.is_completed)
+      ) {
+        const stageOrder: RelationshipStage[] = [
+          "getting_to_know",
+          "trial_period",
+          "official_ceremony",
+          "family_life",
+        ];
+        const currentIndex = stageOrder.indexOf(currentStage);
+
+        if (currentIndex !== -1 && currentIndex < stageOrder.length - 1) {
+          const nextStage = stageOrder[currentIndex + 1];
+          console.log(
+            `[StageService] Auto-advancing stage from ${currentStage} to ${nextStage}`
+          );
+          await userRepository.updateRelationshipStage(
+            relationship.id,
+            nextStage
+          );
+        }
+      }
+    } catch (e) {
+      console.error("[StageService] Error advancing stage:", e);
+    }
+  }
+
+  /**
+   * Get stage completion info - returns details about the just-completed stage
+   */
   async getStageCompletionInfo(
     userId: string,
     targetStage?: RelationshipStage
@@ -402,6 +460,11 @@ export class StageService {
     newlyUnlockedFeatures: string[];
     stageOrder: number;
   } | null> {
+    // Attempt auto-advancement before fetching info
+    if (!targetStage) {
+      await this.advanceStageIfEligible(userId);
+    }
+
     const relationship = await userRepository.getAnyRelationship(userId);
     if (!relationship) return null;
 
@@ -446,10 +509,14 @@ export class StageService {
       if (index > 0) {
         completedStage = stageOrder[index - 1];
         stageOrdVal = index;
-        unlockedFeatures = featuresByStage[currentStageRel] || [];
+        unlockedFeatures = featuresByStage[completedStage] || [];
         console.log(
           "[StageService] Calculated completion data via fallback for stage:",
-          completedStage
+          {
+            completedStage,
+            currentStage: currentStageRel,
+            unlockedFeatures,
+          }
         );
       } else {
         return null; // No previous stage

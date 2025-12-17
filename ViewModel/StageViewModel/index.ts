@@ -55,6 +55,7 @@ export class StageViewModel {
   // Navigation triggers
   shouldNavigateToStageCompleted: boolean = false;
   shouldNavigateToMilestone: boolean = false;
+  shouldNavigateToJourneyCompleted: boolean = false;
   shouldNavigateToJourneyPause: boolean = false;
   isRefreshing: boolean = false;
   journeyStats: JourneyStats | null = null;
@@ -65,6 +66,7 @@ export class StageViewModel {
 
   private relationshipSubscription: any = null;
   private activitiesSubscription: any = null;
+  currentUserId: any;
 
   constructor() {
     makeAutoObservable(this);
@@ -89,21 +91,76 @@ export class StageViewModel {
     const subscriptions = stageService.setupRealtimeSubscriptions(
       relationshipId,
       {
-        onRelationshipChange: (payload: any) =>
-          this.handleRealtimeRelationshipChange(payload),
+        onRelationshipChange: (payload: any) => {
+          console.log("[StageViewModel] onRelationshipChange callback invoked in VM");
+          this.handleRealtimeRelationshipChange(payload);
+        },
         onActivityChange: (payload: any) => {
-          console.log("[Realtime] Activity changed:", payload);
-          if (this.userId) {
-            this.loadStageProgression(this.userId, true);
-            this.loadMilestoneInfo();
-            this.checkMilestoneReached();
-          }
+          console.log("[StageViewModel] onActivityChange callback invoked in VM");
+          this.handleRealtimeActivityChange(payload);
         },
       }
     );
 
     this.relationshipSubscription = subscriptions.relationshipSubscription;
     this.activitiesSubscription = subscriptions.activitiesSubscription;
+    
+    console.log("[StageViewModel] Realtime subscriptions setup complete:", {
+      hasRelationshipSub: !!this.relationshipSubscription,
+      hasActivitiesSub: !!this.activitiesSubscription
+    });
+  }
+
+  private async handleRealtimeActivityChange(payload: any) {
+    console.log("[StageViewModel] handleRealtimeActivityChange called with payload:", payload);
+    try {
+      if (!this.userId) {
+        console.log("[StageViewModel] handleRealtimeActivityChange - no userId, returning");
+        return;
+      }
+
+      console.log("[StageViewModel] Reloading progression and requirements after activity change...");
+      
+      // Refresh progression and requirements to get latest completion state
+      await this.loadStageProgression(this.userId, true);
+      await this.loadCurrentStageRequirements();
+      await this.loadMilestoneInfo();
+      this.checkMilestoneReached();
+
+      // If current stage is the final stage and all requirements are met,
+      // trigger journey-completed navigation and load completion info.
+      const stageOrder: RelationshipStage[] = [
+        "getting_to_know",
+        "trial_period",
+        "official_ceremony",
+        "family_life",
+      ];
+
+      console.log("[StageViewModel] Current stage:", this.currentStage, "Final stage:", stageOrder[stageOrder.length - 1]);
+
+      if (this.currentStage === stageOrder[stageOrder.length - 1]) {
+        console.log("[StageViewModel] On final stage! Checking requirements...", {
+          requirementsCount: this.requirements?.length || 0,
+          requirements: this.requirements
+        });
+        
+        if (this.requirements && this.requirements.length > 0) {
+          const allDone = this.requirements.every((r) => !!r.is_completed);
+          console.log("[StageViewModel] All requirements completed?", allDone);
+          
+          if (allDone) {
+            console.log("[StageViewModel] 🎉 All final stage requirements completed! Setting journey completed flag...");
+            runInAction(() => {
+              this.shouldNavigateToJourneyCompleted = true;
+            });
+            // Load completion info for the final stage
+            await this.loadStageCompletionInfo(this.currentStage || undefined);
+          }
+        }
+      }
+    } catch (err) {
+      console.error("[StageViewModel] handleRealtimeActivityChange error", err);
+    }
   }
 
   private async evaluateJourneyPauseIfNeeded(
@@ -165,19 +222,31 @@ export class StageViewModel {
         console.log(
           `[Realtime] Stage completed: ${this.previousStage} → ${newData.current_stage}`
         );
-        runInAction(() => {
-          this.shouldNavigateToStageCompleted = true;
-        });
-
-        // Also load full stage completion info
-        this.loadStageCompletionInfo();
+        
+        // If advanced TO family_life (final stage), navigate to journey-completed instead of stage-completed
+        if (newData.current_stage === 'family_life') {
+          console.log("[Realtime] Advanced to final stage (family_life) - triggering journey completed!");
+          runInAction(() => {
+            this.shouldNavigateToJourneyCompleted = true;
+          });
+          // Load completion info for the previous stage (official_ceremony)
+          await this.loadStageCompletionInfo(this.previousStage);
+        } else {
+          runInAction(() => {
+            this.shouldNavigateToStageCompleted = true;
+          });
+          // Also load full stage completion info
+          this.loadStageCompletionInfo();
+        }
       } else if (prevIndex !== -1 && newIndex !== -1 && newIndex < prevIndex) {
         console.log(
           "[Realtime] Stage moved backward - skipping completion page"
         );
       }
 
-      this.previousStage = newData.current_stage;
+      runInAction(() => {
+        this.previousStage = newData.current_stage;
+      });
     }
 
     // Detect cooling period
@@ -224,6 +293,36 @@ export class StageViewModel {
     if (pending) {
       runInAction(() => {
         this.shouldNavigateToMilestone = false;
+      });
+    }
+    return pending;
+  }
+
+  consumeStageCompletionNavigation(): boolean {
+    const pending = this.shouldNavigateToStageCompleted;
+    if (pending) {
+      runInAction(() => {
+        this.shouldNavigateToStageCompleted = false;
+      });
+    }
+    return pending;
+  }
+
+  consumeJourneyPauseNavigation(): boolean {
+    const pending = this.shouldNavigateToJourneyPause;
+    if (pending) {
+      runInAction(() => {
+        this.shouldNavigateToJourneyPause = false;
+      });
+    }
+    return pending;
+  }
+
+  consumeJourneyCompletedNavigation(): boolean {
+    const pending = this.shouldNavigateToJourneyCompleted;
+    if (pending) {
+      runInAction(() => {
+        this.shouldNavigateToJourneyCompleted = false;
       });
     }
     return pending;
@@ -319,6 +418,12 @@ export class StageViewModel {
 
       // Load requirements for current stage
       await this.loadCurrentStageRequirements();
+
+      // Check for auto-advancement condition
+      if (this.userId) {
+        void stageService.advanceStageIfEligible(this.userId);
+      }
+
       await this.loadStageFeatures();
     } catch (err: any) {
       runInAction(() => {

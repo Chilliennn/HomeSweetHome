@@ -1,10 +1,13 @@
 export * from './APIService';
 export * from './CoreService/KeywordService';
 export * from './CoreService/SafetyReportService';
+export * from './CoreService/KeywordDetectionService';
+export * from './CoreService/KeywordSuggestionService';
+export * from './CoreService/MessageWithDetectionService';
 export * from './CoreService/ageVerificationService';
 export * from './CoreService/profileCompletionService';
 export * from './CoreService/authService';
 export * from './CoreService/relationshipService';
 export * from './CoreService';
 export * from './CoreService/familyService';
-export * from './CoreService/familyAIService';
+// export * from './CoreService/familyAIService'; // Mobile-only - uses expo-constants

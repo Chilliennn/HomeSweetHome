@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 // View/Web/src/App.tsx
 
 import { useState, useMemo } from 'react';
@@ -39,31 +38,6 @@ function App() {
       {currentPage === 'applications' && <div style={{ padding: '32px' }}>Applications Page (Coming Soon)</div>}
       {currentPage === 'reports' && <div style={{ padding: '32px' }}>Reports Page (Coming Soon)</div>}
     </div>
-=======
-import React, { Suspense } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import AdminLogin from './AdminUI/AdminLogin';
-const AdminPage = React.lazy(() => import('./AdminUI/AdminPage'));
-const ReportPage = React.lazy(() => import('./AdminUI/ReportPage'));
-
-function RequireAuth({ children }: { children: React.ReactElement }) {
-  const loggedIn = typeof window !== 'undefined' && !!localStorage.getItem('adminLoggedIn');
-  if (!loggedIn) return <Navigate to="/" replace />;
-  return children;
-}
-
-function App() {
-  return (
-    <BrowserRouter>
-      <Suspense fallback={<div>Loading...</div>}>
-        <Routes>
-          <Route path="/" element={<AdminLogin />} />
-          <Route path="/admin" element={<RequireAuth><AdminPage /></RequireAuth>} />
-          <Route path="/admin/reports" element={<RequireAuth><ReportPage /></RequireAuth>} />
-        </Routes>
-      </Suspense>
-    </BrowserRouter>
->>>>>>> 6ab05c4d223822c3ae6bf6988dd8d60544db1330
   );
 }
 

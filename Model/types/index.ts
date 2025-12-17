@@ -27,17 +27,6 @@ export interface UserProfileData {
   // Display Identity (stored in profile_data)
   display_name?: string;
   avatar_url?: string;
-<<<<<<< HEAD
-
-  // Real Identity (private)
-  real_photo_url?: string;
-  ic_number?: string;
-
-  // Profile Info
-  interests?: string[];
-  self_introduction?: string;
-  communication_styles?: CommunicationStyle[];
-=======
   avatar_meta?: {
     type?: "default" | "custom";
     selected_avatar_index?: number | null;
@@ -53,20 +42,14 @@ export interface UserProfileData {
   // (languages stored in users table directly)
   interests?: string[];
   self_introduction?: string;
->>>>>>> 6ab05c4d223822c3ae6bf6988dd8d60544db1330
 
   // Verification
   age_verified?: boolean;
   verified_age?: number;
-<<<<<<< HEAD
-
-  // Profile Completion
-=======
   verification_reference?: string;
   verified_at?: string;
 
   // Profile Completion tracking
->>>>>>> 6ab05c4d223822c3ae6bf6988dd8d60544db1330
   profile_completed?: boolean;
   profile_completed_at?: string;
   profile_completion?: {
@@ -78,32 +61,16 @@ export interface UserProfileData {
 }
 
 export type CommunicationStyle =
-<<<<<<< HEAD
-  | 'text_messaging'
-  | 'voice_calls'
-  | 'video_calls'
-  | 'in_person'
-  | 'flexible';
-=======
   | "text_messaging"
   | "voice_calls"
   | "video_calls"
   | "in_person"
   | "flexible";
->>>>>>> 6ab05c4d223822c3ae6bf6988dd8d60544db1330
 
 // ============================================
 // APPLICATION TYPES
 // ============================================
 export type ApplicationStatus =
-<<<<<<< HEAD
-  | 'pending_ngo_review'
-  | 'ngo_approved'
-  | 'pre_chat_active'
-  | 'both_accepted'
-  | 'rejected'
-  | 'withdrawn';
-=======
   | "pending_interest"
   | "pending_review"
   | "info_requested"
@@ -112,7 +79,6 @@ export type ApplicationStatus =
   | "both_accepted"
   | "rejected"
   | "withdrawn";
->>>>>>> 6ab05c4d223822c3ae6bf6988dd8d60544db1330
 
 export type Decision = "pending" | "accept" | "decline";
 
@@ -134,34 +100,19 @@ export interface Application {
 // RELATIONSHIP TYPES
 // ============================================
 export type RelationshipStage =
-<<<<<<< HEAD
-  | 'getting_to_know'
-  | 'trial_period'
-  | 'official_ceremony'
-  | 'family_life';
-=======
   | "getting_to_know"
   | "trial_period"
   | "official_ceremony"
   | "family_life";
->>>>>>> 6ab05c4d223822c3ae6bf6988dd8d60544db1330
 
 export type RelationshipStatus = "active" | "paused" | "ended";
 
 export type EndRequestStatus =
-<<<<<<< HEAD
-  | 'none'
-  | 'pending_cooldown'
-  | 'under_review'
-  | 'approved'
-  | 'rejected';
-=======
   | "none"
   | "pending_cooldown"
   | "under_review"
   | "approved"
   | "rejected";
->>>>>>> 6ab05c4d223822c3ae6bf6988dd8d60544db1330
 
 export interface StageMetrics {
   message_count: number;
@@ -324,21 +275,12 @@ export interface ModerationResult {
 // SAFETY TYPES
 // ============================================
 export type IncidentType =
-<<<<<<< HEAD
-  | 'financial_request'
-  | 'negative_sentiment'
-  | 'harassment'
-  | 'abuse'
-  | 'inappropriate_content'
-  | 'other';
-=======
   | "financial_request"
   | "negative_sentiment"
   | "harassment"
   | "abuse"
   | "inappropriate_content"
   | "other";
->>>>>>> 6ab05c4d223822c3ae6bf6988dd8d60544db1330
 
 export type Severity = "low" | "medium" | "high" | "critical";
 export type IncidentStatus =
@@ -368,14 +310,6 @@ export interface SafetyIncident {
 // NOTIFICATION TYPES
 // ============================================
 export type NotificationType =
-<<<<<<< HEAD
-  | 'stage_milestone'
-  | 'new_message'
-  | 'calendar_reminder'
-  | 'safety_alert'
-  | 'admin_notice'
-  | 'application_update';
-=======
   | "stage_milestone"
   | "new_message"
   | "calendar_reminder"
@@ -394,7 +328,6 @@ export type NotificationType =
   | "relationship_ended"
   | "profile_viewed"
   | "platform_update";
->>>>>>> 6ab05c4d223822c3ae6bf6988dd8d60544db1330
 
 export interface Notification {
   id: string;
@@ -409,11 +342,6 @@ export interface Notification {
 }
 
 // ============================================
-<<<<<<< HEAD
-// SAFETY REPORT TYPES (UC401)
-// ============================================
-export * from './SafetyTypes';
-=======
 // PROFILE SETUP / UC103 TYPES
 // ============================================
 export interface AgeVerificationPayload {
@@ -538,4 +466,3 @@ export interface AISuggestion {
   is_used: boolean;
   generated_at: string;
 }
->>>>>>> 6ab05c4d223822c3ae6bf6988dd8d60544db1330

@@ -3,7 +3,7 @@ export * from './AdminViewModel';
 export * from './SafetyViewModel';
 export * from './MatchingViewModel';
 export * from './CommunicationViewModel';
-export * from './FamilyViewModel';
+// export * from './FamilyViewModel'; // Mobile-only - uses expo-file-system
 // Add more ViewModels here as you create them
 // export * from './StageViewModel';
 // etc.

@@ -5,6 +5,9 @@ import {
     type KeywordSuggestionRecord,
     type KeywordRecord,
 } from "../../Repository/AdminRepository/KeywordRepository";
+import { KeywordDetectionService } from "./KeywordDetectionService";
+import { KeywordDetectionRepository } from "../../Repository/AdminRepository/KeywordDetectionRepository";
+import { supabase } from "../APIService/supabase";
 
 export interface NormalizedSuggestion {
     id: string;
@@ -28,13 +31,26 @@ function getCategoryId(categoryName: string): string {
 
 export class KeywordService {
     private keywordRepo: KeywordRepository;
+    private detectionService: KeywordDetectionService;
 
     constructor(keywordRepo: KeywordRepository) {
         this.keywordRepo = keywordRepo;
+
+        // Initialize detection service
+        const detectionRepo = new KeywordDetectionRepository(supabase);
+        this.detectionService = new KeywordDetectionService(detectionRepo, keywordRepo);
     }
 
     async getDashboardStats(): Promise<KeywordDashboardStats> {
-        return this.keywordRepo.fetchDashboardStats();
+        const baseStats = await this.keywordRepo.fetchDashboardStats();
+
+        // Get real detection count for today
+        const detectionsToday = await this.detectionService.getDetectionsToday();
+
+        return {
+            ...baseStats,
+            detectionsToday
+        };
     }
 
     async getNormalizedSuggestions(): Promise<NormalizedSuggestion[]> {

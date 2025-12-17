@@ -10,4 +10,4 @@ export { relationshipService } from './relationshipService';
 export { profileCompletionService } from './profileCompletionService';
 export { ageVerificationService } from './ageVerificationService';
 export { familyService } from './familyService';
-export { familyAIService } from './familyAIService';
+// export { familyAIService } from './familyAIService'; // Mobile-only - uses expo-constants

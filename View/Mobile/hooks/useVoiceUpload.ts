@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { File } from 'expo-file-system';
+import * as FileSystem from 'expo-file-system';
 import { voiceUploadService, type ChatContext } from '@home-sweet-home/model';
 
 /**
@@ -36,8 +36,9 @@ export function useVoiceUpload() {
     ): Promise<string> => {
         try {
             // Platform-specific: Read file using expo-file-system
-            const file = new File(fileUri);
-            const base64Data = await file.base64();
+            const base64Data = await FileSystem.readAsStringAsync(fileUri, {
+                encoding: FileSystem.EncodingType.Base64,
+            });
 
             // Call Service for business logic and upload
             const publicUrl = await voiceUploadService.uploadVoiceMessage(

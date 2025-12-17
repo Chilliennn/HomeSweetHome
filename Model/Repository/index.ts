@@ -1,10 +1,13 @@
 // User Repository
-export { userRepository } from './UserRepository';
+export { userRepository, storageRepository } from './UserRepository';
 
 // Auth Repository
 export { authRepository, type AuthResult } from './UserRepository';
 
-export type { Interest } from './UserRepository';
+export { Interest } from './UserRepository';
+
+// Matching Repository
+export { matchingRepository } from './UserRepository';
 
 // Admin Repository  
 export { adminRepository, consultationRepository } from './AdminRepository';

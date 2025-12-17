@@ -47,11 +47,9 @@ export class AdminViewModel {
     this.errorMessage = null;
 
     try {
-      // Map UI filter to database status values
       const status = this.filter === 'all' ? undefined :
         this.filter === 'pending' ? 'pending_review' :
-          this.filter === 'info_requested' ? 'info_requested' :
-            this.filter === 'locked' ? 'locked' : undefined;
+          this.filter === 'info_requested' ? 'info_requested' : undefined;
 
       const offset = (this.currentPage - 1) * this.itemsPerPage;
       this.applications = await applicationService.getApplications(
@@ -307,6 +305,7 @@ export class AdminViewModel {
   getDisplayStatus(status: string): string {
     const statusMap: { [key: string]: string } = {
       pending_review: 'Pending Review',
+      approved: 'Approved',
       info_requested: 'Info Requested',
       approved: 'Approved',
       rejected: 'Rejected',

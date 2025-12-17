@@ -1,4 +1,5 @@
-import { authRepository, AuthResult } from '../../Repository/UserRepository';
+import { authRepository } from '../../Repository/UserRepository';
+import type { AuthResult } from '../../Repository/UserRepository';
 import { userRepository } from '../../Repository/UserRepository';
 import type { User, UserType } from '../../types';
 

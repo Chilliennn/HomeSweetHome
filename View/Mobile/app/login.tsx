@@ -45,21 +45,26 @@ export default function LoginScreen() {
     setLoading(true);
 
     try {
-        const user = await userRepository.getByEmail(email.toLowerCase().trim());
-  console.log('userRepository.getByEmail result:', user);
+      const user = await userRepository.getByEmail(email.trim());
+      console.log('userRepository.getByEmail result:', user);
 
-  if (!user) {
-    Alert.alert('Error', 'No account found with this email');
-    setLoading(false);
-    return;
-  }
+      if (!user) {
+        Alert.alert('Error', 'No account found with this email');
+        setLoading(false);
+        return;
+      }
 
-  const relationship = await userRepository.getActiveRelationship(user.id);
-  console.log('userRepository.getActiveRelationship result:', relationship);
+      const relationship = await userRepository.getActiveRelationship(user.id);
+      console.log('userRepository.getActiveRelationship result:', relationship);
 
       if (relationship) {
         router.replace({
           pathname: '/bonding',
+          params: { userId: user.id, userName: user.full_name },
+        });
+
+        router.replace({
+          pathname: '/(main)/bonding',
           params: { userId: user.id, userName: user.full_name },
         });
       } else {

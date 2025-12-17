@@ -148,11 +148,17 @@ export const adminRepository = {
 	},
 
 	async getApplicationStats(): Promise<ApplicationStats> {
-		// Run aggregate queries with individual error handling
-		let pendingCount = 0;
-		let lockedCount = 0;
-		let approvedTodayCount = 0;
-		let avgWaitingHours = 0;
+		// Implement simple aggregate queries
+		const [{ data: pending }, { data: locked }, { data: approvedToday }, { data: avgWait }] = await Promise.all([
+			supabase.from('applications').select('id', { count: 'exact' }).eq('status', 'pending_review'),
+			supabase.from('applications').select('id', { count: 'exact' }).neq('locked_by', null),
+			supabase
+				.from('applications')
+				.select('id', { count: 'exact' })
+				.eq('status', 'approved')
+				.gte('approved_at', new Date().toISOString().slice(0, 10)),
+			supabase.rpc('avg_waiting_time_hours') // optional: a custom Postgres function; fallback handled below
+		]).catch(() => [{ data: null }, { data: null }, { data: null }, { data: null }]);
 
 		try {
 			const [pendingResult, lockedResult, approvedResult, applicationsResult] = await Promise.all([
@@ -196,10 +202,9 @@ export const adminRepository = {
 		};
 	},
 
-	async approveApplication(applicationId: string, _adminId: string, notes?: string): Promise<void> {
-		// Update status only
-		const updates: any = { status: 'approved' };
-		if (notes) updates.ngo_notes = notes;
+	async approveApplication(applicationId: string, adminId: string, notes?: string): Promise<void> {
+		const updates: any = { status: 'approved', approved_by: adminId, approved_at: new Date().toISOString() };
+		if (notes) updates.approval_notes = notes;
 		const { error } = await supabase.from('applications').update(updates).eq('id', applicationId);
 		if (error) throw error;
 	},

@@ -1,9 +1,9 @@
 // ============================================
 // USER TYPES
 // ============================================
-export type UserType = 'youth' | 'elderly' | 'admin';
-export type VerificationStatus = 'pending' | 'verified' | 'rejected';
-export type Gender = 'male' | 'female';
+export type UserType = "youth" | "elderly" | "admin";
+export type VerificationStatus = "pending" | "verified" | "rejected";
+export type Gender = "male" | "female";
 
 export interface User {
   id: string;
@@ -28,7 +28,7 @@ export interface UserProfileData {
   display_name?: string;
   avatar_url?: string;
   avatar_meta?: {
-    type?: 'default' | 'custom';
+    type?: "default" | "custom";
     selected_avatar_index?: number | null;
   };
 
@@ -61,22 +61,26 @@ export interface UserProfileData {
 }
 
 export type CommunicationStyle =
-  | 'text_messaging'
-  | 'voice_calls'
-  | 'video_calls'
-  | 'in_person'
-  | 'flexible';
+  | "text_messaging"
+  | "voice_calls"
+  | "video_calls"
+  | "in_person"
+  | "flexible";
 
 // ============================================
 // APPLICATION TYPES
 // ============================================
 export type ApplicationStatus =
-  | 'pending_review'
-  | 'info_requested'
-  | 'approved'
-  | 'rejected';
+  | "pending_interest"
+  | "pending_review"
+  | "info_requested"
+  | "approved"
+  | "pre_chat_active"
+  | "both_accepted"
+  | "rejected"
+  | "withdrawn";
 
-export type Decision = 'pending' | 'accept' | 'decline';
+export type Decision = "pending" | "accept" | "decline";
 
 export interface Application {
   id: string;
@@ -96,19 +100,19 @@ export interface Application {
 // RELATIONSHIP TYPES
 // ============================================
 export type RelationshipStage =
-  | 'getting_to_know'
-  | 'trial_period'
-  | 'official_ceremony'
-  | 'family_life';
+  | "getting_to_know"
+  | "trial_period"
+  | "official_ceremony"
+  | "family_life";
 
-export type RelationshipStatus = 'active' | 'paused' | 'ended';
+export type RelationshipStatus = "active" | "paused" | "ended";
 
 export type EndRequestStatus =
-  | 'none'
-  | 'pending_cooldown'
-  | 'under_review'
-  | 'approved'
-  | 'rejected';
+  | "none"
+  | "pending_cooldown"
+  | "under_review"
+  | "approved"
+  | "rejected";
 
 export interface StageMetrics {
   message_count: number;
@@ -141,6 +145,12 @@ export interface Relationship {
   ended_at: string | null;
 }
 
+export interface JourneyStats {
+  daysTogether: number;
+  videoCalls: number;
+  homeVisits: number;
+  memories: number;
+}
 
 export interface StageFeatureFlags {
   text: boolean;
@@ -190,7 +200,7 @@ export interface Feature {
 // ============================================
 // MESSAGE TYPES
 // ============================================
-export type MessageType = 'text' | 'voice' | 'image' | 'video' | 'video_call';
+export type MessageType = "text" | "voice" | "image" | "video" | "video_call";
 
 export interface Message {
   id: string;
@@ -212,7 +222,7 @@ export interface Message {
 /**
  * Communication capabilities define what features are enabled
  * for a given stage (pre-match, getting_to_know, trial_period, etc.)
- * 
+ *
  * This allows the Communication module to be reusable across stages
  * by simply changing the capability configuration
  */
@@ -233,9 +243,9 @@ export interface CommunicationCapabilities {
   canShareGallery: boolean;
 
   // Limits (null = unlimited)
-  textMessageLimit?: number | null;         // chars per message
-  voiceMessageLimit?: number | null;        // seconds per message
-  dailyMessageLimit?: number | null;        // messages per day
+  textMessageLimit?: number | null; // chars per message
+  voiceMessageLimit?: number | null; // seconds per message
+  dailyMessageLimit?: number | null; // messages per day
 
   // Moderation
   moderationEnabled: boolean;
@@ -245,8 +255,12 @@ export interface CommunicationCapabilities {
 // ============================================
 // MODERATION TYPES
 // ============================================
-export type ModerationSeverity = 'safe' | 'warning' | 'blocked';
-export type ModerationAction = 'allow' | 'warn_user' | 'block_message' | 'report_admin';
+export type ModerationSeverity = "safe" | "warning" | "blocked";
+export type ModerationAction =
+  | "allow"
+  | "warn_user"
+  | "block_message"
+  | "report_admin";
 
 export interface ModerationResult {
   isAllowed: boolean;
@@ -261,15 +275,19 @@ export interface ModerationResult {
 // SAFETY TYPES
 // ============================================
 export type IncidentType =
-  | 'financial_request'
-  | 'negative_sentiment'
-  | 'harassment'
-  | 'abuse'
-  | 'inappropriate_content'
-  | 'other';
+  | "financial_request"
+  | "negative_sentiment"
+  | "harassment"
+  | "abuse"
+  | "inappropriate_content"
+  | "other";
 
-export type Severity = 'low' | 'medium' | 'high' | 'critical';
-export type IncidentStatus = 'new' | 'under_review' | 'resolved' | 'false_positive';
+export type Severity = "low" | "medium" | "high" | "critical";
+export type IncidentStatus =
+  | "new"
+  | "under_review"
+  | "resolved"
+  | "false_positive";
 
 export interface SafetyIncident {
   id: string;
@@ -292,24 +310,24 @@ export interface SafetyIncident {
 // NOTIFICATION TYPES
 // ============================================
 export type NotificationType =
-  | 'stage_milestone'
-  | 'new_message'
-  | 'calendar_reminder'
-  | 'safety_alert'
-  | 'admin_notice'
-  | 'application_update'
-  | 'new_interest'
-  | 'interest_accepted'
-  | 'interest_rejected'
-  | 'application_submitted'
-  | 'application_under_review'
-  | 'application_approved'
-  | 'application_rejected'
-  | 'pre_chat_ending_soon'
-  | 'relationship_accepted'
-  | 'relationship_ended'
-  | 'profile_viewed'
-  | 'platform_update';
+  | "stage_milestone"
+  | "new_message"
+  | "calendar_reminder"
+  | "safety_alert"
+  | "admin_notice"
+  | "application_update"
+  | "new_interest"
+  | "interest_accepted"
+  | "interest_rejected"
+  | "application_submitted"
+  | "application_under_review"
+  | "application_approved"
+  | "application_rejected"
+  | "pre_chat_ending_soon"
+  | "relationship_accepted"
+  | "relationship_ended"
+  | "profile_viewed"
+  | "platform_update";
 
 export interface Notification {
   id: string;
@@ -349,7 +367,7 @@ export interface RealIdentityPayload {
 
 export interface DisplayIdentityPayload {
   displayName: string;
-  avatarType: 'default' | 'custom';
+  avatarType: "default" | "custom";
   selectedAvatarIndex: number | null;
   customAvatarUrl: string | null;
 }
@@ -368,4 +386,83 @@ export interface ProfileCompletionState {
   displayIdentityCompleted: boolean;
   profileInfoCompleted: boolean;
   profileCompleted: boolean;
+}
+
+// ============================================
+// FAMILY LIFE & MEMORY TYPES (UC300-UC304)
+// ============================================
+export type MoodType =
+  | 'happy'
+  | 'sad'
+  | 'neutral'
+  | 'excited'
+  | 'anxious'
+  | 'grateful';
+
+export type MediaType = 'photo' | 'voice' | 'video' | 'document';
+export type MediaCategory = 'family_album' | 'diary_attachment' | 'chat_media' | 'other';
+
+export interface MediaItem {
+  id: string;
+  uploader_id: string;
+  relationship_id: string;
+  media_type: MediaType;
+  media_category: MediaCategory;
+  file_url: string;
+  caption: string | null;
+  tags: string[] | null;
+  memory_id: string | null;
+  uploaded_at: string;
+}
+
+export interface Memory {
+  id: string;
+  relationship_id: string;
+  uploader_id: string;
+  caption: string | null;
+  thumbnail_url: string;
+  media_count: number;
+  uploaded_at: string;
+  // Optional: populated when fetching with joined media
+  media?: MediaItem[];
+}
+
+export interface DiaryEntry {
+  id: string;
+  user_id: string;
+  relationship_id: string;
+  content: string;
+  mood: MoodType;
+  is_private: boolean;
+  created_at: string;
+}
+
+export type EventType = 'meetup' | 'birthday' | 'anniversary' | 'activity' | 'other';
+
+export interface CalendarEvent {
+  id: string;
+  relationship_id: string;
+  creator_id: string;
+  title: string;
+  description: string | null;
+  event_type: EventType;
+  event_date: string;
+  event_time: string | null;
+  location: string | null;
+  reminder_sent: boolean;
+  created_at: string;
+}
+
+export type AISuggestionType = 'activity' | 'conversation_topic';
+
+export interface AISuggestion {
+  id: string;
+  relationship_id: string;
+  suggestion_type: AISuggestionType;
+  activity_title: string | null;
+  activity_description: string | null;
+  topic_text: string | null;
+  topic_for_stage: string | null;
+  is_used: boolean;
+  generated_at: string;
 }

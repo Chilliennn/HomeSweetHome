@@ -216,14 +216,15 @@ export const ApplicationQueue: React.FC<ApplicationQueueProps> = observer(({ onS
     adminViewModel.setSortBy(sortBy);
   };
 
-  // Status badge colors matching UC499 design
-  const getStatusColor = (status: string): { bg: string; text: string } => {
-    const colors: { [key: string]: { bg: string; text: string } } = {
-      pending_review: { bg: '#FADE9F', text: '#7A4F00' },      // Yellow
-      info_requested: { bg: '#D4E5AE', text: '#4A5D23' },     // Green
-      approved: { bg: '#9DE2D0', text: '#333333' },            // Teal
-      rejected: { bg: '#EB8F80', text: '#FFFFFF' },            // Red
-      locked: { bg: '#C8ADD6', text: '#333333' },              // Purple
+  const getStatusColor = (status: string): string => {
+    const colors: { [key: string]: string } = {
+      pending_review: '#9DE2D0',
+      approved: '#C8ADD6',
+      info_requested: '#D4E5AE',
+      rejected: '#EB8F80',
+      withdrawn: '#FADE9F',
+      pre_chat_active: '#9DE2D0',
+      both_accepted: '#C8ADD6',
     };
     return colors[status] || { bg: '#CCCCCC', text: '#666666' };
   };

@@ -28,22 +28,39 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
   observer(({ userId, initialOpenStage }) => {
     const router = useRouter();
     const vm = stageViewModel;
-    
+
     useEffect(() => {
-      if (userId) {
-        vm.initialize(userId);
-        // Ensure modals are closed to show current stage card by default
-        if (vm.showStageCompleted) vm.closeStageCompleted();
-        if (vm.showLockedStageDetail) vm.closeLockedStageDetail();
-      }
+      let mounted = true;
+      const init = async () => {
+        if (!userId) return;
+        try {
+          await vm.initialize(userId);
+
+          if (!mounted) return;
+
+          if (vm.showStageCompleted) vm.closeStageCompleted();
+          if (vm.showLockedStageDetail) vm.closeLockedStageDetail();
+
+          setTimeout(() => {
+            if (!mounted) return;
+            if (vm.showStageCompleted) vm.closeStageCompleted();
+            if (vm.showLockedStageDetail) vm.closeLockedStageDetail();
+          }, 100);
+        } catch (e) {
+          console.error("[StageProgression] init error:", e);
+        }
+      };
+
+      init();
+
       return () => {
+        mounted = false;
         vm.dispose();
       };
     }, [userId, vm]);
 
     useEffect(() => {
       if (!initialOpenStage) return;
-      // close any inline previews before opening target
       if (vm.showStageCompleted) vm.closeStageCompleted();
       if (vm.showLockedStageDetail) vm.closeLockedStageDetail();
       vm.handleStageClick(initialOpenStage as any, { forceOpen: true }).catch(
@@ -59,11 +76,11 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
           stageJustCompletedName: vm.stageJustCompletedName,
           userId,
         });
-        
+
         vm.loadStageCompletionInfo(vm.stageJustCompleted ?? undefined).catch(
           (err) => console.error("Failed to load stage completion info:", err)
         );
-        
+
         router.push({
           pathname: "/(main)/stage-completed",
           params: { userId, stage: vm.stageJustCompleted ?? "" },
@@ -86,29 +103,31 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
     }, [vm.shouldNavigateToJourneyPause, router, userId, vm]);
 
     const handleStagePress = async (targetStage: RelationshipStage) => {
-    try {
-      // Close any open modals before navigating
-      if (vm.showStageCompleted) vm.closeStageCompleted();
-      if (vm.showLockedStageDetail) vm.closeLockedStageDetail();
-      
-      // If clicking current stage, just close modals to show current stage card
-      const currentStageInfo = vm.stages.find(s => s.is_current);
-      if (currentStageInfo?.stage === targetStage) {
-        // Modals already closed above, current stage card will show
-        return;
-      }
-      
-      await vm.handleStageClick(targetStage, { forceOpen: true });
-    } catch (err) {
-      console.error("[StageProgression] handleStagePress error:", err);
-    }
-  };
+      try {
+        // Close any open modals before navigating
+        if (vm.showStageCompleted) vm.closeStageCompleted();
+        if (vm.showLockedStageDetail) vm.closeLockedStageDetail();
 
-  // Collapse multiple spaces into single spaces for display
-  const collapseSpaces = (text?: string) => {
-    if (!text) return "";
-    return text.replace(/\s+/g, " ").trim();
-  };
+        // If clicking current stage, just close modals to show current stage card
+        const currentStageInfo = vm.stages.find((s) => s.is_current);
+        if (currentStageInfo?.stage === targetStage) {
+          // Modals already closed above, current stage card will show
+          return;
+        }
+
+        await vm.handleStageClick(targetStage, { forceOpen: true });
+      } catch (err) {
+        console.error("[StageProgression] handleStagePress error:", err);
+      }
+    };
+
+    const collapseSpaces = (text?: string) => {
+      if (!text) return "";
+      return text.replace(/\s+/g, " ").trim();
+    };
+
+    const progressPct = vm.progressPercentage ?? 0;
+    const progressWidthPct = progressPct > 0 ? Math.max(progressPct, 2) : 0;
 
     const handleNotificationPress = () => {
       vm.markNotificationsRead();
@@ -117,6 +136,8 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
 
     const handleRefresh = async () => {
       await vm.refresh();
+      if (vm.showStageCompleted) vm.closeStageCompleted();
+      if (vm.showLockedStageDetail) vm.closeLockedStageDetail();
     };
 
     const handleTabPress = (key: string) => {
@@ -264,7 +285,9 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
                     const completedOrder = vm.completedStageOrder ?? 0;
                     const completedStage = vm.stages[completedOrder];
                     const completedNumber = completedOrder + 1;
-                    const completedName = collapseSpaces(completedStage?.display_name || "");
+                    const completedName = collapseSpaces(
+                      completedStage?.display_name || ""
+                    );
                     return `Stage ${completedNumber}: ${completedName}`;
                   })()}
                 </Text>
@@ -274,9 +297,13 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
                     const completedOrder = vm.completedStageOrder ?? 0;
                     const completedStage = vm.stages[completedOrder];
                     const nextStage = vm.stages[completedOrder + 1];
-                    const completedName = collapseSpaces(completedStage?.display_name || "");
+                    const completedName = collapseSpaces(
+                      completedStage?.display_name || ""
+                    );
                     const nextNumber = completedOrder + 2;
-                    const nextName = collapseSpaces(nextStage?.display_name || "");
+                    const nextName = collapseSpaces(
+                      nextStage?.display_name || ""
+                    );
                     return `Congratulations! You've successfully completed "${completedName}" and moved to Stage ${nextNumber}: ${nextName}.`;
                   })()}
                 </Text>
@@ -311,9 +338,9 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
                 <View style={styles.progressBar}>
                   <View
                     style={[
-                      styles.progressFill,
-                      { width: `${vm.progressPercentage}%` },
-                    ]}
+                  styles.progressFill, 
+                  { width: `${progressWidthPct}%` }
+                ]}
                   />
                 </View>
 
@@ -522,10 +549,12 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   progressBar: {
+    width: "100%",
     height: 8,
     backgroundColor: "#F0F0F0",
     borderRadius: 4,
     overflow: "hidden",
+    flexDirection: "row",
     marginBottom: 8,
   },
   progressFill: {

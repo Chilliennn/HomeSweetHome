@@ -261,6 +261,81 @@ const styles: { [key: string]: React.CSSProperties } = {
         color: colors.apricot,
         marginBottom: '20px',
     },
+    // Main layout with sidebar
+    mainLayout: {
+        display: 'grid',
+        gridTemplateColumns: '260px 1fr',
+        gap: '24px',
+    },
+    // Sidebar styles
+    sidebar: {
+        backgroundColor: colors.white,
+        padding: '24px',
+        borderRadius: '12px',
+        boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.04)',
+        height: 'fit-content',
+    },
+    sidebarSection: {
+        marginBottom: '24px',
+    },
+    sectionTitle: {
+        margin: '0 0 12px 0',
+        fontSize: '12px',
+        textTransform: 'uppercase' as const,
+        color: colors.dustyGray,
+        fontWeight: 600,
+        letterSpacing: '0.5px',
+    },
+    filterButtons: {
+        display: 'flex',
+        flexDirection: 'column' as const,
+        gap: '8px',
+    },
+    filterBtn: {
+        padding: '12px 16px',
+        border: '2px solid #e0e0e0',
+        backgroundColor: colors.white,
+        borderRadius: '8px',
+        cursor: 'pointer',
+        fontSize: '14px',
+        fontWeight: 500,
+        fontFamily: 'Inter, sans-serif',
+        color: colors.doveGray,
+        transition: 'all 0.2s ease',
+        textAlign: 'left' as const,
+    },
+    filterBtnActive: {
+        border: `2px solid ${colors.morningGlory}`,
+        backgroundColor: colors.morningGlory,
+        color: colors.mineShaft,
+    },
+    // Main content area
+    mainContent: {
+        backgroundColor: colors.white,
+        padding: '24px',
+        borderRadius: '12px',
+        boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.04)',
+    },
+    mainHeader: {
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: '20px',
+        paddingBottom: '16px',
+        borderBottom: '2px solid #e0e0e0',
+    },
+    mainTitle: {
+        margin: 0,
+        fontSize: '20px',
+        fontWeight: 700,
+        fontFamily: 'Inter, sans-serif',
+        color: colors.mineShaft,
+    },
+    totalCount: {
+        fontSize: '14px',
+        color: colors.morningGlory,
+        fontWeight: 600,
+    },
 };
 
 interface SafetyAlertsDashboardProps {
@@ -277,6 +352,19 @@ export const SafetyAlertsDashboard: React.FC<SafetyAlertsDashboardProps> = obser
         safetyViewModel.loadAlerts();
         safetyViewModel.loadStats();
     }, []);
+
+    // Reload when filter/sort changes
+    useEffect(() => {
+        safetyViewModel.loadAlerts();
+    }, [safetyViewModel.filterSeverity, safetyViewModel.filterStatus, safetyViewModel.sortBy]);
+
+    const handleSeverityFilter = (severity: 'all' | 'critical' | 'high' | 'medium' | 'low') => {
+        safetyViewModel.setFilterSeverity(severity);
+    };
+
+    const handleSortChange = (sortBy: 'newest' | 'oldest') => {
+        safetyViewModel.setSortBy(sortBy);
+    };
 
     const getSeverityBadgeStyle = (severity: string) => {
         switch (severity) {
@@ -395,69 +483,167 @@ export const SafetyAlertsDashboard: React.FC<SafetyAlertsDashboardProps> = obser
                 </div>
             </div>
 
-            {/* Loading State */}
-            {isLoading && (
-                <div style={styles.loadingState}>
-                    Loading safety alerts...
-                </div>
-            )}
-
-            {/* Alerts List */}
-            {!isLoading && (
-                <div style={styles.alertsList}>
-                    {alerts.length === 0 ? (
-                        <div style={styles.emptyState}>
-                            <div style={styles.emptyIcon}>✅</div>
-                            <h3 style={styles.emptyTitle}>No Safety Alerts</h3>
-                            <p style={styles.emptyText}>All safety concerns have been addressed. Great job!</p>
+            {/* Main Layout: Sidebar + Content */}
+            <div style={styles.mainLayout}>
+                {/* Sidebar - Filter & Sort */}
+                <div style={styles.sidebar}>
+                    <div style={styles.sidebarSection}>
+                        <h4 style={styles.sectionTitle}>Filter By Severity</h4>
+                        <div style={styles.filterButtons}>
+                            <button
+                                style={{
+                                    ...styles.filterBtn,
+                                    ...(safetyViewModel.filterSeverity === 'all' ? styles.filterBtnActive : {}),
+                                }}
+                                onClick={() => handleSeverityFilter('all')}
+                            >
+                                All Alerts
+                            </button>
+                            <button
+                                style={{
+                                    ...styles.filterBtn,
+                                    ...(safetyViewModel.filterSeverity === 'critical' ? styles.filterBtnActive : {}),
+                                }}
+                                onClick={() => handleSeverityFilter('critical')}
+                            >
+                                🔴 Critical
+                            </button>
+                            <button
+                                style={{
+                                    ...styles.filterBtn,
+                                    ...(safetyViewModel.filterSeverity === 'high' ? styles.filterBtnActive : {}),
+                                }}
+                                onClick={() => handleSeverityFilter('high')}
+                            >
+                                🟡 High
+                            </button>
+                            <button
+                                style={{
+                                    ...styles.filterBtn,
+                                    ...(safetyViewModel.filterSeverity === 'medium' ? styles.filterBtnActive : {}),
+                                }}
+                                onClick={() => handleSeverityFilter('medium')}
+                            >
+                                🟣 Medium
+                            </button>
+                            <button
+                                style={{
+                                    ...styles.filterBtn,
+                                    ...(safetyViewModel.filterSeverity === 'low' ? styles.filterBtnActive : {}),
+                                }}
+                                onClick={() => handleSeverityFilter('low')}
+                            >
+                                🟢 Low
+                            </button>
                         </div>
-                    ) : (
-                        alerts.map((alert: any) => (
-                            <div key={alert.id} style={styles.alertCard}>
-                                {/* Icon */}
-                                <div style={getIconStyle(alert.severity)}>
-                                    ⚠️
+                    </div>
+
+                    <div style={styles.sidebarSection}>
+                        <h4 style={styles.sectionTitle}>Sort By</h4>
+                        <div style={styles.filterButtons}>
+                            <button
+                                style={{
+                                    ...styles.filterBtn,
+                                    ...(safetyViewModel.sortBy === 'oldest' ? styles.filterBtnActive : {}),
+                                }}
+                                onClick={() => handleSortChange('oldest')}
+                            >
+                                Oldest First
+                            </button>
+                            <button
+                                style={{
+                                    ...styles.filterBtn,
+                                    ...(safetyViewModel.sortBy === 'newest' ? styles.filterBtnActive : {}),
+                                }}
+                                onClick={() => handleSortChange('newest')}
+                            >
+                                Newest First
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Main Content */}
+                <div style={styles.mainContent}>
+                    {/* Header */}
+                    <div style={styles.mainHeader}>
+                        <h2 style={styles.mainTitle}>Safety Alerts Queue</h2>
+                        <span style={styles.totalCount}>Total: {alerts.length}</span>
+                    </div>
+
+                    {/* Loading State */}
+                    {isLoading && (
+                        <div style={styles.loadingState}>
+                            Loading safety alerts...
+                        </div>
+                    )}
+
+                    {/* Alerts List */}
+                    {!isLoading && (
+                        <div style={styles.alertsList}>
+                            {alerts.length === 0 ? (
+                                <div style={styles.emptyState}>
+                                    <div style={styles.emptyIcon}>✅</div>
+                                    <h3 style={styles.emptyTitle}>No Safety Alerts</h3>
+                                    <p style={styles.emptyText}>All safety concerns have been addressed. Great job!</p>
                                 </div>
+                            ) : (
+                                alerts.map((alert: any) => (
+                                    <div key={alert.id} style={styles.alertCard}>
+                                        {/* Profile Icon */}
+                                        {alert.reporter.avatar_url ? (
+                                            <img
+                                                src={alert.reporter.avatar_url}
+                                                alt={alert.reporter.full_name}
+                                                style={{ ...styles.alertIcon, objectFit: 'cover' as const, ...getIconStyle(alert.severity) }}
+                                            />
+                                        ) : (
+                                            <div style={getIconStyle(alert.severity)}>
+                                                {alert.reporter.full_name.charAt(0).toUpperCase()}
+                                            </div>
+                                        )}
 
-                                {/* Content */}
-                                <div style={styles.alertContent}>
-                                    <div style={styles.alertHeader}>
-                                        <p style={styles.reportId}>Report ID: {alert.id}</p>
-                                        <h3 style={styles.reporterName}>{alert.reporter.full_name}</h3>
-                                        <p style={styles.submittedDate}>{formatSubmittedDate(alert.detected_at)}</p>
-                                    </div>
+                                        {/* Content */}
+                                        <div style={styles.alertContent}>
+                                            <div style={styles.alertHeader}>
+                                                <p style={styles.reportId}>Report ID: {alert.id.slice(0, 8)}</p>
+                                                <h3 style={styles.reporterName}>{alert.reporter.full_name}</h3>
+                                                <p style={styles.submittedDate}>{formatSubmittedDate(alert.detected_at)}</p>
+                                            </div>
 
-                                    <div style={styles.alertMeta}>
-                                        <div style={styles.metaItem}>
-                                            <p style={styles.metaLabel}>Reporter Age</p>
-                                            <p style={styles.metaValue}>{alert.reporter.age} years old</p>
+                                            <div style={styles.alertMeta}>
+                                                <div style={styles.metaItem}>
+                                                    <p style={styles.metaLabel}>Reporter Age</p>
+                                                    <p style={styles.metaValue}>{alert.reporter.age} years old</p>
+                                                </div>
+                                                <div style={styles.metaItem}>
+                                                    <p style={styles.metaLabel}>Waiting Time</p>
+                                                    <p style={getWaitingTimeStyle(alert.severity)}>
+                                                        ⏱️ {safetyViewModel.getWaitingTime(alert)} {safetyViewModel.isUrgent(alert) && '(URGENT)'}
+                                                    </p>
+                                                </div>
+                                            </div>
                                         </div>
-                                        <div style={styles.metaItem}>
-                                            <p style={styles.metaLabel}>Waiting Time</p>
-                                            <p style={getWaitingTimeStyle(alert.severity)}>
-                                                ⏱️ {safetyViewModel.getWaitingTime(alert)} {safetyViewModel.isUrgent(alert) && '(URGENT)'}
-                                            </p>
+
+                                        {/* Actions */}
+                                        <div style={styles.alertActions}>
+                                            <span style={getSeverityBadgeStyle(alert.severity)}>
+                                                {getSeverityLabel(alert.severity)}
+                                            </span>
+                                            <button
+                                                style={styles.viewButton}
+                                                onClick={() => handleSelectAlert(alert.id)}
+                                            >
+                                                View Details
+                                            </button>
                                         </div>
                                     </div>
-                                </div>
-
-                                {/* Actions */}
-                                <div style={styles.alertActions}>
-                                    <span style={getSeverityBadgeStyle(alert.severity)}>
-                                        {getSeverityLabel(alert.severity)}
-                                    </span>
-                                    <button
-                                        style={styles.viewButton}
-                                        onClick={() => handleSelectAlert(alert.id)}
-                                    >
-                                        View Details
-                                    </button>
-                                </div>
-                            </div>
-                        ))
+                                ))
+                            )}
+                        </div>
                     )}
                 </div>
-            )}
+            </div>
         </div>
     );
 });

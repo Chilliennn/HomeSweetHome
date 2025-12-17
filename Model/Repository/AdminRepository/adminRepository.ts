@@ -29,6 +29,90 @@ export type ApplicationStats = {
 	avgWaitingTimeHours: number;
 };
 
+export type AdminNotification = {
+	id: string;
+	type: 'application' | 'safety_alert' | 'consultation' | 'relationship' | 'system';
+	title: string;
+	message: string;
+	reference_id: string | null;
+	is_read: boolean;
+	created_at: string;
+};
+
+// Fetch admin notifications (aggregated from various sources)
+export async function getAdminNotifications(limit = 10): Promise<AdminNotification[]> {
+	const notifications: AdminNotification[] = [];
+
+	try {
+		// Get recent pending applications
+		const { data: pendingApps } = await supabase
+			.from('applications')
+			.select('id, youth:users!youth_id(full_name), applied_at')
+			.eq('status', 'pending_review')
+			.order('applied_at', { ascending: false })
+			.limit(3);
+
+		pendingApps?.forEach((app: any) => {
+			notifications.push({
+				id: `app-${app.id}`,
+				type: 'application',
+				title: 'New Application',
+				message: `New application from ${app.youth?.full_name || 'Unknown'}`,
+				reference_id: app.id,
+				is_read: false,
+				created_at: app.applied_at
+			});
+		});
+
+		// Get recent safety incidents
+		const { data: safetyAlerts } = await supabase
+			.from('safety_incidents')
+			.select('id, incident_type, severity, detected_at')
+			.eq('status', 'new')
+			.order('detected_at', { ascending: false })
+			.limit(3);
+
+		safetyAlerts?.forEach((alert: any) => {
+			notifications.push({
+				id: `safety-${alert.id}`,
+				type: 'safety_alert',
+				title: `${alert.severity?.toUpperCase()} Safety Alert`,
+				message: `${alert.incident_type?.replace(/_/g, ' ')} detected`,
+				reference_id: alert.id,
+				is_read: false,
+				created_at: alert.detected_at
+			});
+		});
+
+		// Get recent consultation requests
+		const { data: consultations } = await supabase
+			.from('consultation_requests')
+			.select('id, consultation_type, submitted_at')
+			.eq('status', 'pending_assignment')
+			.order('submitted_at', { ascending: false })
+			.limit(3);
+
+		consultations?.forEach((req: any) => {
+			notifications.push({
+				id: `consult-${req.id}`,
+				type: 'consultation',
+				title: 'Consultation Request',
+				message: `New ${req.consultation_type?.replace(/_/g, ' ')} request`,
+				reference_id: req.id,
+				is_read: false,
+				created_at: req.submitted_at
+			});
+		});
+
+		// Sort by date and limit
+		notifications.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+		return notifications.slice(0, limit);
+	} catch (error) {
+		console.error('Error fetching admin notifications:', error);
+		return [];
+	}
+}
+
 export const adminRepository = {
 	async getApplications(status?: string, sortBy: 'oldest' | 'newest' = 'oldest', limit = 50, offset = 0): Promise<ApplicationWithProfiles[]> {
 		// Valid statuses for Application Review Queue
@@ -372,8 +456,8 @@ export const adminRepository = {
 
 export type SafetyAlertWithProfiles = {
 	id: string;
-	reporter: { id: string; full_name: string; age: number; location: string | null; user_type: 'youth' | 'elderly'; account_created: string; previous_reports: number; };
-	reported_user: { id: string; full_name: string; age: number; occupation: string | null; user_type: 'youth' | 'elderly'; account_status: 'active' | 'suspended' | 'banned'; previous_warnings: number; };
+	reporter: { id: string; full_name: string; age: number; location: string | null; user_type: 'youth' | 'elderly'; account_created: string; previous_reports: number; avatar_url: string | null; };
+	reported_user: { id: string; full_name: string; age: number; occupation: string | null; user_type: 'youth' | 'elderly'; account_status: 'active' | 'suspended' | 'banned'; previous_warnings: number; avatar_url: string | null; };
 	relationship_id: string;
 	incident_type: string;
 	severity: 'critical' | 'high' | 'medium' | 'low';
@@ -435,7 +519,8 @@ function mapRowToSafetyAlert(row: any): SafetyAlertWithProfiles {
 			location: row.reporter?.location,
 			user_type: row.reporter?.user_type || 'elderly',
 			account_created: row.reporter?.created_at || '',
-			previous_reports: 0
+			previous_reports: 0,
+			avatar_url: row.reporter?.profile_photo_url || row.reporter?.avatar_url || null
 		},
 		reported_user: {
 			id: row.reported_user?.id || '',
@@ -444,7 +529,8 @@ function mapRowToSafetyAlert(row: any): SafetyAlertWithProfiles {
 			occupation: row.reported_user?.profile_data?.occupation || null,
 			user_type: row.reported_user?.user_type || 'youth',
 			account_status: row.reported_user?.is_active ? 'active' : 'suspended',
-			previous_warnings: 0
+			previous_warnings: 0,
+			avatar_url: row.reported_user?.profile_photo_url || row.reported_user?.avatar_url || null
 		},
 		relationship_id: row.relationship_id,
 		incident_type: row.incident_type,

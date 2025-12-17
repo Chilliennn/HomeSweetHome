@@ -208,6 +208,21 @@ const ReportPage: React.FC = observer(() => {
         safetyViewModel.loadStats();
     }, []);
 
+    // Check if navigated from notification with a selected item
+    useEffect(() => {
+        if (safetyViewModel.selectedAlert) {
+            setSelectedAlertId(safetyViewModel.selectedAlert.id);
+            setCurrentView('safety-alert-details');
+        }
+    }, [safetyViewModel.selectedAlert]);
+
+    useEffect(() => {
+        if (consultationViewModel.selectedConsultation) {
+            setSelectedRequestId(consultationViewModel.selectedConsultation.id);
+            setCurrentView('consultation-details');
+        }
+    }, [consultationViewModel.selectedConsultation]);
+
     // Get stats from ViewModels with fallback to 0
     const consultationStats = consultationViewModel.stats;
     const safetyStats = safetyViewModel.stats;

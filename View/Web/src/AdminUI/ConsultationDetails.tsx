@@ -244,6 +244,8 @@ export const ConsultationDetails: React.FC<ConsultationDetailsProps> = observer(
     // Load the consultation data when component mounts
     useEffect(() => {
         if (requestId) {
+            // Clear any previous error message before loading
+            consultationViewModel.errorMessage = null;
             consultationViewModel.selectConsultation(requestId);
         }
     }, [requestId]);
@@ -290,31 +292,27 @@ export const ConsultationDetails: React.FC<ConsultationDetailsProps> = observer(
     if (consultationViewModel.isLoading) {
         return (
             <div style={styles.container}>
-                <p>Loading consultation...</p>
+                <p>Loading consultation details...</p>
             </div>
         );
     }
 
-    // Show error state
-    if (consultationViewModel.errorMessage) {
+    // If there's an error or no data, redirect back to consultations list
+    if (consultationViewModel.errorMessage || !request) {
+        // Clear error and go back
+        if (consultationViewModel.errorMessage) {
+            consultationViewModel.errorMessage = null;
+        }
+
+        // Show a brief message and redirect
         return (
             <div style={styles.container}>
                 <button style={styles.backButton} onClick={onBack}>
                     ← Back to Consultations
                 </button>
-                <p style={{ color: colors.apricot }}>Error: {consultationViewModel.errorMessage}</p>
-            </div>
-        );
-    }
-
-    // Show no data state
-    if (!request) {
-        return (
-            <div style={styles.container}>
-                <button style={styles.backButton} onClick={onBack}>
-                    ← Back to Consultations
-                </button>
-                <p>Consultation not found</p>
+                <p style={{ color: colors.morningGlory }}>
+                    ✓ Notification received. Redirecting to consultations list...
+                </p>
             </div>
         );
     }

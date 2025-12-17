@@ -10,7 +10,7 @@ export { Interest } from './UserRepository';
 export { matchingRepository } from './UserRepository';
 
 // Admin Repository  
-export { adminRepository, consultationRepository } from './AdminRepository';
+export { adminRepository, consultationRepository, getAdminNotifications } from './AdminRepository';
 export type {
     ApplicationWithProfiles,
     ApplicationStats,
@@ -19,5 +19,7 @@ export type {
     SafetyAlertStats,
     ConsultationRequest,
     Advisor,
-    ConsultationStats
+    ConsultationStats,
+    AdminNotification
 } from './AdminRepository';
+

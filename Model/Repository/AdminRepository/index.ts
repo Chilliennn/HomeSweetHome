@@ -1,5 +1,5 @@
-import { adminRepository, consultationRepository } from './adminRepository';
+import { adminRepository, consultationRepository, getAdminNotifications } from './adminRepository';
 
-export { adminRepository, consultationRepository };
-export type { ApplicationWithProfiles, ApplicationStats, UserProfile, SafetyAlertWithProfiles, SafetyAlertStats, ConsultationRequest, Advisor, ConsultationStats } from './adminRepository';
+export { adminRepository, consultationRepository, getAdminNotifications };
+export type { ApplicationWithProfiles, ApplicationStats, UserProfile, SafetyAlertWithProfiles, SafetyAlertStats, ConsultationRequest, Advisor, ConsultationStats, AdminNotification } from './adminRepository';
 export default adminRepository; 

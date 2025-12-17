@@ -22,7 +22,23 @@ export const JourneyCompletedScreen = observer(() => {
   }, []);
 
   const handleContinue = () => {
-    router.replace("/(main)/stage" as any); 
+    const userId = vm.currentUserId;
+    
+    if (!userId) {
+      console.error("Cannot navigate: No userId available");
+      return;
+    }
+    
+    try {
+      router.replace({
+        pathname: "/bonding",
+        params: { userId }
+      });
+    } catch (error) {
+      console.error("Navigation error:", error);
+      // Fallback to string path if object notation fails
+      router.replace(`/bonding?userId=${userId}`);
+    }
   };
 
   const StatItem = ({

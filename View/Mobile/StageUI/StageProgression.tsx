@@ -71,20 +71,32 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
     // Watch for auto-navigation to Stage Completed page
     useEffect(() => {
       if (vm.consumeStageCompletionNavigation()) {
-        console.log("[StageProgression] Navigating to stage-completed ->", {
-          stageJustCompleted: vm.stageJustCompleted,
-          stageJustCompletedName: vm.stageJustCompletedName,
-          userId,
-        });
+        (async () => {
+          console.log("[StageProgression] Stage completion detected, loading info ->", {
+            stageJustCompleted: vm.stageJustCompleted,
+            stageJustCompletedName: vm.stageJustCompletedName,
+            userId,
+          });
 
-        vm.loadStageCompletionInfo(vm.stageJustCompleted ?? undefined).catch(
-          (err) => console.error("Failed to load stage completion info:", err)
-        );
+          try {
+            // Ensure VM has the latest completion info
+            await vm.loadStageCompletionInfo(vm.stageJustCompleted ?? undefined);
 
-        router.push({
-          pathname: "/(main)/stage-completed",
-          params: { userId, stage: vm.stageJustCompleted ?? "" },
-        });
+            // If the just completed stage is the final stage (family_life),
+            // navigate to the Journey Completed screen instead.
+            if (vm.stageJustCompleted === ("family_life" as any)) {
+              console.log("[StageProgression] Navigating to journey-completed page");
+              router.push({ pathname: "/(main)/journey-completed", params: { userId } });
+            } else {
+              router.push({
+                pathname: "/(main)/stage-completed",
+                params: { userId, stage: vm.stageJustCompleted ?? "" },
+              });
+            }
+          } catch (err) {
+            console.error("Failed to handle stage completion navigation:", err);
+          }
+        })();
       }
     }, [vm, vm.shouldNavigateToStageCompleted, router, userId]);
 
@@ -101,6 +113,21 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
         router.push({ pathname: "/(main)/journey-pause", params: { userId } });
       }
     }, [vm.shouldNavigateToJourneyPause, router, userId, vm]);
+
+    // Watch for auto-navigation to Journey Completed page (final stage fully completed)
+    useEffect(() => {
+      if (vm.consumeJourneyCompletedNavigation()) {
+        (async () => {
+          try {
+            // Ensure completion info loaded
+            await vm.loadStageCompletionInfo(vm.currentStage ?? undefined);
+            router.push({ pathname: "/(main)/journey-completed", params: { userId } });
+          } catch (err) {
+            console.error("Failed to navigate to journey-completed:", err);
+          }
+        })();
+      }
+    }, [vm.shouldNavigateToJourneyCompleted, router, userId, vm]);
 
     const handleStagePress = async (targetStage: RelationshipStage) => {
       try {

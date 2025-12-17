@@ -11,7 +11,6 @@ import { useRouter } from "expo-router";
 import { observer } from "mobx-react-lite";
 import { vm } from "../../../ViewModel/StageViewModel";
 import { Colors } from "@/constants/theme";
-import { StageCircle } from "../components/ui/StageCircle";
 import { Button } from "../components/ui/Button";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -23,9 +22,23 @@ export const JourneyCompletedScreen = observer(() => {
   }, []);
 
   const handleContinue = () => {
-    // Navigate back to the main stage progression or dashboard
-    // Based on requirements, return to stage 4 page (which is the main progression view for family life)
-    router.replace("/(main)/stage" as any); // Type cast if route is dynamic or not typed yet
+    const userId = vm.currentUserId;
+    
+    if (!userId) {
+      console.error("Cannot navigate: No userId available");
+      return;
+    }
+    
+    try {
+      router.replace({
+        pathname: "/bonding",
+        params: { userId }
+      });
+    } catch (error) {
+      console.error("Navigation error:", error);
+      // Fallback to string path if object notation fails
+      router.replace(`/bonding?userId=${userId}`);
+    }
   };
 
   const StatItem = ({

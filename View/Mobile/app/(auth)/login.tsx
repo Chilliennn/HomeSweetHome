@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from "react";
 import {
   View,
   Text,
@@ -12,61 +12,114 @@ import {
   TouchableWithoutFeedback,
   KeyboardAvoidingView,
   Platform,
-} from 'react-native';
-import { Image } from 'expo-image';
-import { useRouter } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { userRepository } from '@home-sweet-home/model';
+} from "react-native";
+import { Image } from "expo-image";
+import { useRouter } from "expo-router";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { observer } from "mobx-react-lite";
+import { authViewModel } from "@home-sweet-home/viewmodel";
+import { relationshipService } from "@home-sweet-home/model";
 
 /**
  * Login Screen (Route: /(auth)/login)
- * 
- * Entry point for user authentication.
- * After login, checks profile completion status:
- * - Incomplete profile → /(auth)/profile-setup
- * - Complete profile → /(main)/matching or /(main)/bonding
- * 
- * TODO: Refactor to use AuthViewModel for state management
- * TODO: Move UI to AuthUI/LoginScreen.tsx and re-export here
+ *
+ * MVVM Architecture:
+ * - View: This component handles only UI rendering
+ * - ViewModel: authViewModel handles authentication state and logic
+ * - Uses observer() for automatic re-renders when ViewModel state changes
+ *
+ * After login:
+ * 1. Check Relationship -> Bonding
+ * 2. Check Profile -> Profile Setup
+ * 3. Default -> Matching (Browse/ElderlyHome)
  */
-export default function LoginScreen() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
+const LoginScreen = observer(function LoginScreen() {
+  const [email, setEmail] = React.useState("");
+  const [password, setPassword] = React.useState("");
   const router = useRouter();
 
-  const validateEmail = (email: string) => {
+  // Get loading and error state from ViewModel
+  const { isLoading, errorMessage } = authViewModel;
+
+  // Clear error when email/password changes
+  React.useEffect(() => {
+    if (errorMessage) {
+      authViewModel.clearError();
+    }
+  }, [email, errorMessage, password]);
+
+  const validateEmail = (emailToValidate: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
+    const trimmed = emailToValidate.trim();
+    console.log(
+      "Validating email:",
+      trimmed,
+      "Result:",
+      emailRegex.test(trimmed)
+    );
+    return emailRegex.test(trimmed);
   };
 
   const handleLogin = async () => {
-    if (!email.trim()) {
-      Alert.alert('Error', 'Please enter your email');
+    // Basic validation in View (presentation logic)
+    const trimmedEmail = email.trim();
+
+    if (!trimmedEmail) {
+      Alert.alert("Error", "Please enter your email");
       return;
     }
 
-    if (!validateEmail(email)) {
-      Alert.alert('Error', 'Please enter a valid email address');
+    if (!validateEmail(trimmedEmail)) {
+      Alert.alert("Error", "Please enter a valid email address");
       return;
     }
-
-    setLoading(true);
 
     try {
-      const user = await userRepository.getByEmail(email.toLowerCase().trim());
-      console.log('userRepository.getByEmail result:', user);
+      // Delegate to ViewModel - it handles business logic via Service
+      console.log("Calling signIn with email:", trimmedEmail.toLowerCase());
+      const result = await authViewModel.signIn(
+        trimmedEmail.toLowerCase(),
+        password
+      );
+      console.log("SignIn result:", result);
 
-      if (!user) {
-        Alert.alert('Error', 'No account found with this email');
-        setLoading(false);
+      if (!result.appUser) {
+        Alert.alert("Error", "No account found with this email");
         return;
       }
 
+      const user = result.appUser;
+
       // ============================================================================
-      // UC-103: CHECK PROFILE COMPLETION STATUS
-      // If profile is not complete, redirect to profile-setup flow
-      // Profile completion is required before accessing matching/bonding features
+      // 1. CHECK RELATIONSHIP STATUS (including paused)
+      // Prioritize relationship status over profile completion
+      // ============================================================================
+      const relationship = await relationshipService.getAnyRelationship(
+        user.id
+      );
+
+      if (relationship) {
+        // Check if relationship is paused (cooling period)
+        if (relationship.status === "paused") {
+          router.replace({
+            pathname: "/(main)/journey-pause",
+            params: { userId: user.id },
+          });
+          return;
+        }
+
+        // User has active relationship → Go to bonding
+        if (relationship.status === "active") {
+          router.replace({
+            pathname: "/(main)/bonding",
+            params: { userId: user.id, userName: user.full_name },
+          });
+          return;
+        }
+      }
+
+      // ============================================================================
+      // 2. CHECK PROFILE COMPLETION STATUS
       // ============================================================================
       const isProfileComplete = user.profile_data?.profile_completed === true;
       const isAgeVerified = user.profile_data?.age_verified === true;
@@ -74,9 +127,9 @@ export default function LoginScreen() {
       if (!isProfileComplete || !isAgeVerified) {
         // First time user or incomplete profile → Go to profile-setup
         router.replace({
-          pathname: '/(auth)/profile-setup',
-          params: { 
-            userId: user.id, 
+          pathname: "/(auth)/profile-setup",
+          params: {
+            userId: user.id,
             userName: user.full_name,
             userType: user.user_type,
           },
@@ -85,39 +138,34 @@ export default function LoginScreen() {
       }
 
       // ============================================================================
-      // PROFILE COMPLETE: Check relationship status and navigate accordingly
+      // 3. NO RELATIONSHIP & PROFILE COMPLETE -> GO TO MATCHING
       // ============================================================================
-      const relationship = await userRepository.getActiveRelationship(user.id);
-      console.log('userRepository.getActiveRelationship result:', relationship);
-
-      if (relationship) {
-        // User has active relationship → Go to bonding
-        router.replace({
-          pathname: '/(main)/bonding',
-          params: { userId: user.id, userName: user.full_name },
-        });
-      } else {
-        // No relationship yet → Go to matching
-        router.replace({
-          pathname: '/(main)/matching',
-          params: { userId: user.id, userName: user.full_name },
-        });
-      }
-    } catch (error) {
-      setLoading(false);
-      console.error('Login error:', error);
-      Alert.alert('Error', 'An error occurred during login. Please try again.');
+      router.replace({
+        pathname: "/(main)/matching",
+        params: {
+          userId: user.id,
+          userName: user.full_name,
+          userType: user.user_type,
+          isFirstTime: "true", // Trigger walkthrough check if needed
+        },
+      });
+    } catch (error: any) {
+      // Error is already set in ViewModel, show it in Alert
+      const message =
+        authViewModel.errorMessage ||
+        "An error occurred during login. Please try again.";
+      Alert.alert("Error", message);
     }
   };
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
+    <SafeAreaView style={styles.safeArea} edges={["top", "bottom"]}>
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <KeyboardAvoidingView
-          style={{flex:1}}
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          keyboardVerticalOffset={Platform.OS === 'ios' ? 0:20}
-        >  
+          style={{ flex: 1 }}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
+        >
           <View style={styles.container}>
             <ScrollView
               contentContainerStyle={styles.scrollContent}
@@ -126,7 +174,7 @@ export default function LoginScreen() {
             >
               <View style={styles.logoContainer}>
                 <Image
-                  source={require('@/assets/images/logo.png')}
+                  source={require("@/assets/images/logo.png")}
                   style={styles.logo}
                   contentFit="contain"
                 />
@@ -143,7 +191,7 @@ export default function LoginScreen() {
                   keyboardType="email-address"
                   autoCapitalize="none"
                   autoComplete="email"
-                  editable={!loading}
+                  editable={!isLoading}
                 />
 
                 <Text style={styles.label}>Password</Text>
@@ -154,15 +202,15 @@ export default function LoginScreen() {
                   value={password}
                   onChangeText={setPassword}
                   secureTextEntry
-                  editable={!loading}
+                  editable={!isLoading}
                 />
 
                 <TouchableOpacity
-                  style={[styles.button, loading && styles.buttonDisabled]}
+                  style={[styles.button, isLoading && styles.buttonDisabled]}
                   onPress={handleLogin}
-                  disabled={loading}
+                  disabled={isLoading}
                 >
-                  {loading ? (
+                  {isLoading ? (
                     <ActivityIndicator color="#FFF" />
                   ) : (
                     <Text style={styles.buttonText}>Sign in</Text>
@@ -171,27 +219,31 @@ export default function LoginScreen() {
               </View>
             </ScrollView>
 
-            <Text style={styles.footer}>© 2025 HomeSweetHome All rights reserved.</Text>
+            <Text style={styles.footer}>
+              © 2025 HomeSweetHome All rights reserved.
+            </Text>
           </View>
-        </KeyboardAvoidingView>  
+        </KeyboardAvoidingView>
       </TouchableWithoutFeedback>
     </SafeAreaView>
   );
-}
+});
+
+export default LoginScreen;
 
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#FAF9F6',
+    backgroundColor: "#FAF9F6",
   },
   container: {
     flex: 1,
-    backgroundColor: '#FAF9F6',
-    justifyContent: 'center',
+    backgroundColor: "#FAF9F6",
+    justifyContent: "center",
     paddingHorizontal: 40,
   },
   logoContainer: {
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: 60,
   },
   logo: {
@@ -200,44 +252,44 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    justifyContent: 'center',
+    justifyContent: "center",
   },
   formContainer: {
-    width: '100%',
+    width: "100%",
   },
   label: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
+    fontWeight: "600",
+    color: "#333",
     marginBottom: 8,
   },
   input: {
-    backgroundColor: '#F0F0F0',
+    backgroundColor: "#F0F0F0",
     borderRadius: 12,
     paddingHorizontal: 20,
     paddingVertical: 16,
     fontSize: 16,
     marginBottom: 20,
-    color: '#333',
+    color: "#333",
   },
   button: {
-    backgroundColor: '#E89B8E',
+    backgroundColor: "#E89B8E",
     borderRadius: 12,
     paddingVertical: 16,
-    alignItems: 'center',
+    alignItems: "center",
     marginTop: 10,
   },
   buttonDisabled: {
     opacity: 0.6,
   },
   buttonText: {
-    color: '#FFF',
+    color: "#FFF",
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   footer: {
-    textAlign: 'center',
-    color: '#999',
+    textAlign: "center",
+    color: "#999",
     fontSize: 12,
     paddingBottom: 20,
   },

@@ -8,14 +8,37 @@ import { Platform } from 'react-native';
 const tintColorLight = '#0a7ea4';
 const tintColorDark = '#fff';
 
+const Palette = {
+  primary: '#E89B8E', // Warm Pink
+  secondary: '#9DE2D0', // Mint Green
+  tertiary: '#D4E5AE', // Light Green
+  error: '#EB8F80', // Red/Orange
+  warning: '#FADE9F', // Yellow
+  success: '#9DE2D0',
+  text: '#333333',
+  textLight: '#666666',
+  background: '#FFFFFF',
+  surface: '#F5F5F5',
+  border: '#F0F0F0',
+};
+
 export const Colors = {
   light: {
-    text: '#11181C',
-    background: '#fff',
+    text: Palette.text,
+    background: Palette.background,
     tint: tintColorLight,
     icon: '#687076',
     tabIconDefault: '#687076',
     tabIconSelected: tintColorLight,
+    primary: Palette.primary,
+    secondary: Palette.secondary,
+    tertiary: Palette.tertiary,
+    error: Palette.error,
+    warning: Palette.warning,
+    success: Palette.success,
+    border: Palette.border,
+    surface: Palette.surface,
+    textLight: Palette.textLight,
   },
   dark: {
     text: '#ECEDEE',
@@ -24,6 +47,15 @@ export const Colors = {
     icon: '#9BA1A6',
     tabIconDefault: '#9BA1A6',
     tabIconSelected: tintColorDark,
+    primary: Palette.primary, // Keeping same for now, should be adjusted for dark mode
+    secondary: Palette.secondary,
+    tertiary: Palette.tertiary,
+    error: Palette.error,
+    warning: Palette.warning,
+    success: Palette.success,
+    border: '#333333',
+    surface: '#2C2C2E',
+    textLight: '#A1A1A1',
   },
 };
 

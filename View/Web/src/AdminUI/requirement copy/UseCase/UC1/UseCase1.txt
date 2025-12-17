@@ -1,0 +1,9 @@
+Login Page for Admin
+Requierement :
+    1. Need Registered Admin Account ID and Password 
+
+Jump into Admin Main Page (UC500)
+
+UI follow UseCase1UI.png 
+
+

@@ -1,9 +1,9 @@
 // ============================================
 // USER TYPES
 // ============================================
-export type UserType = 'youth' | 'elderly' | 'admin';
-export type VerificationStatus = 'pending' | 'verified' | 'rejected';
-export type Gender = 'male' | 'female';
+export type UserType = "youth" | "elderly" | "admin";
+export type VerificationStatus = "pending" | "verified" | "rejected";
+export type Gender = "male" | "female";
 
 export interface User {
   id: string;
@@ -24,9 +24,10 @@ export interface User {
 }
 
 export interface UserProfileData {
-  // Display Identity
+  // Display Identity (stored in profile_data)
   display_name?: string;
   avatar_url?: string;
+<<<<<<< HEAD
 
   // Real Identity (private)
   real_photo_url?: string;
@@ -36,35 +37,84 @@ export interface UserProfileData {
   interests?: string[];
   self_introduction?: string;
   communication_styles?: CommunicationStyle[];
+=======
+  avatar_meta?: {
+    type?: "default" | "custom";
+    selected_avatar_index?: number | null;
+  };
+
+  // Real Identity - only private photo stored here
+  // (phone & location are stored in users table directly)
+  real_identity?: {
+    real_photo_url?: string | null;
+  };
+
+  // Profile Info - only user-type specific data
+  // (languages stored in users table directly)
+  interests?: string[];
+  self_introduction?: string;
+>>>>>>> 6ab05c4d223822c3ae6bf6988dd8d60544db1330
 
   // Verification
   age_verified?: boolean;
   verified_age?: number;
+<<<<<<< HEAD
 
   // Profile Completion
+=======
+  verification_reference?: string;
+  verified_at?: string;
+
+  // Profile Completion tracking
+>>>>>>> 6ab05c4d223822c3ae6bf6988dd8d60544db1330
   profile_completed?: boolean;
   profile_completed_at?: string;
+  profile_completion?: {
+    real_identity_completed?: boolean;
+    display_identity_completed?: boolean;
+    profile_info_completed?: boolean;
+    profile_completed?: boolean;
+  };
 }
 
 export type CommunicationStyle =
+<<<<<<< HEAD
   | 'text_messaging'
   | 'voice_calls'
   | 'video_calls'
   | 'in_person'
   | 'flexible';
+=======
+  | "text_messaging"
+  | "voice_calls"
+  | "video_calls"
+  | "in_person"
+  | "flexible";
+>>>>>>> 6ab05c4d223822c3ae6bf6988dd8d60544db1330
 
 // ============================================
 // APPLICATION TYPES
 // ============================================
 export type ApplicationStatus =
+<<<<<<< HEAD
   | 'pending_ngo_review'
   | 'ngo_approved'
   | 'pre_chat_active'
   | 'both_accepted'
   | 'rejected'
   | 'withdrawn';
+=======
+  | "pending_interest"
+  | "pending_review"
+  | "info_requested"
+  | "approved"
+  | "pre_chat_active"
+  | "both_accepted"
+  | "rejected"
+  | "withdrawn";
+>>>>>>> 6ab05c4d223822c3ae6bf6988dd8d60544db1330
 
-export type Decision = 'pending' | 'accept' | 'decline';
+export type Decision = "pending" | "accept" | "decline";
 
 export interface Application {
   id: string;
@@ -84,19 +134,34 @@ export interface Application {
 // RELATIONSHIP TYPES
 // ============================================
 export type RelationshipStage =
+<<<<<<< HEAD
   | 'getting_to_know'
   | 'trial_period'
   | 'official_ceremony'
   | 'family_life';
+=======
+  | "getting_to_know"
+  | "trial_period"
+  | "official_ceremony"
+  | "family_life";
+>>>>>>> 6ab05c4d223822c3ae6bf6988dd8d60544db1330
 
-export type RelationshipStatus = 'active' | 'paused' | 'ended';
+export type RelationshipStatus = "active" | "paused" | "ended";
 
 export type EndRequestStatus =
+<<<<<<< HEAD
   | 'none'
   | 'pending_cooldown'
   | 'under_review'
   | 'approved'
   | 'rejected';
+=======
+  | "none"
+  | "pending_cooldown"
+  | "under_review"
+  | "approved"
+  | "rejected";
+>>>>>>> 6ab05c4d223822c3ae6bf6988dd8d60544db1330
 
 export interface StageMetrics {
   message_count: number;
@@ -129,10 +194,62 @@ export interface Relationship {
   ended_at: string | null;
 }
 
+export interface JourneyStats {
+  daysTogether: number;
+  videoCalls: number;
+  homeVisits: number;
+  memories: number;
+}
+
+export interface StageFeatureFlags {
+  text: boolean;
+  diary: boolean;
+  scheduling: boolean;
+  video_call: boolean;
+  photo_share: boolean;
+}
+
+export interface StageRequirement {
+  id: string;
+  title: string;
+  description: string;
+  is_completed: boolean;
+  required_value?: number;
+  current_value?: number;
+}
+
+export interface StageInfo {
+  stage: RelationshipStage;
+  display_name: string;
+  order: number;
+  is_current: boolean;
+  is_completed: boolean;
+  start_date?: string;
+  completion_date?: string;
+}
+
+export interface LockedStageDetail {
+  stage_order: number;
+  stage: RelationshipStage;
+  title: string;
+  description: string;
+  unlock_message: string;
+  preview_requirements: string[];
+}
+
+export interface Feature {
+  key: string;
+  name: string;
+  description: string;
+  is_unlocked: boolean;
+  unlock_stage?: RelationshipStage;
+  unlock_message?: string;
+}
+
 // ============================================
 // MESSAGE TYPES
 // ============================================
-export type MessageType = 'text' | 'voice' | 'image' | 'video' | 'video_call';
+export type MessageType = "text" | "voice" | "image" | "video" | "video_call";
 
 export interface Message {
   id: string;
@@ -149,18 +266,86 @@ export interface Message {
 }
 
 // ============================================
+// COMMUNICATION CAPABILITIES TYPES
+// ============================================
+/**
+ * Communication capabilities define what features are enabled
+ * for a given stage (pre-match, getting_to_know, trial_period, etc.)
+ *
+ * This allows the Communication module to be reusable across stages
+ * by simply changing the capability configuration
+ */
+export interface CommunicationCapabilities {
+  // Messaging
+  canSendText: boolean;
+  canSendVoice: boolean;
+  canSendImage: boolean;
+  canSendVideo: boolean;
+
+  // Calls
+  canVoiceCall: boolean;
+  canVideoCall: boolean;
+
+  // Advanced features
+  canScheduleMeetings: boolean;
+  canShareDiary: boolean;
+  canShareGallery: boolean;
+
+  // Limits (null = unlimited)
+  textMessageLimit?: number | null; // chars per message
+  voiceMessageLimit?: number | null; // seconds per message
+  dailyMessageLimit?: number | null; // messages per day
+
+  // Moderation
+  moderationEnabled: boolean;
+  autoBlockEnabled: boolean;
+}
+
+// ============================================
+// MODERATION TYPES
+// ============================================
+export type ModerationSeverity = "safe" | "warning" | "blocked";
+export type ModerationAction =
+  | "allow"
+  | "warn_user"
+  | "block_message"
+  | "report_admin";
+
+export interface ModerationResult {
+  isAllowed: boolean;
+  severity: ModerationSeverity;
+  reason?: string;
+  detectedIssues?: string[];
+  suggestedAction: ModerationAction;
+  adminNotificationRequired: boolean;
+}
+
+// ============================================
 // SAFETY TYPES
 // ============================================
 export type IncidentType =
+<<<<<<< HEAD
   | 'financial_request'
   | 'negative_sentiment'
   | 'harassment'
   | 'abuse'
   | 'inappropriate_content'
   | 'other';
+=======
+  | "financial_request"
+  | "negative_sentiment"
+  | "harassment"
+  | "abuse"
+  | "inappropriate_content"
+  | "other";
+>>>>>>> 6ab05c4d223822c3ae6bf6988dd8d60544db1330
 
-export type Severity = 'low' | 'medium' | 'high' | 'critical';
-export type IncidentStatus = 'new' | 'under_review' | 'resolved' | 'false_positive';
+export type Severity = "low" | "medium" | "high" | "critical";
+export type IncidentStatus =
+  | "new"
+  | "under_review"
+  | "resolved"
+  | "false_positive";
 
 export interface SafetyIncident {
   id: string;
@@ -183,12 +368,33 @@ export interface SafetyIncident {
 // NOTIFICATION TYPES
 // ============================================
 export type NotificationType =
+<<<<<<< HEAD
   | 'stage_milestone'
   | 'new_message'
   | 'calendar_reminder'
   | 'safety_alert'
   | 'admin_notice'
   | 'application_update';
+=======
+  | "stage_milestone"
+  | "new_message"
+  | "calendar_reminder"
+  | "safety_alert"
+  | "admin_notice"
+  | "application_update"
+  | "new_interest"
+  | "interest_accepted"
+  | "interest_rejected"
+  | "application_submitted"
+  | "application_under_review"
+  | "application_approved"
+  | "application_rejected"
+  | "pre_chat_ending_soon"
+  | "relationship_accepted"
+  | "relationship_ended"
+  | "profile_viewed"
+  | "platform_update";
+>>>>>>> 6ab05c4d223822c3ae6bf6988dd8d60544db1330
 
 export interface Notification {
   id: string;
@@ -196,11 +402,140 @@ export interface Notification {
   type: NotificationType;
   title: string;
   message: string;
+  reference_id?: string;
+  reference_table?: string;
   is_read: boolean;
   created_at: string;
 }
 
 // ============================================
+<<<<<<< HEAD
 // SAFETY REPORT TYPES (UC401)
 // ============================================
 export * from './SafetyTypes';
+=======
+// PROFILE SETUP / UC103 TYPES
+// ============================================
+export interface AgeVerificationPayload {
+  userId: string;
+  userType: UserType;
+  photoUri: string;
+}
+
+export interface AgeVerificationResult {
+  ageVerified: boolean;
+  verifiedAge: number;
+  status: VerificationStatus;
+  referenceId: string;
+  verifiedAt: string;
+  notes?: string;
+}
+
+export interface RealIdentityPayload {
+  phoneNumber: string;
+  location: string;
+  realPhotoUrl: string | null;
+}
+
+export interface DisplayIdentityPayload {
+  displayName: string;
+  avatarType: "default" | "custom";
+  selectedAvatarIndex: number | null;
+  customAvatarUrl: string | null;
+}
+
+export interface ProfileInfoPayload {
+  interests: string[];
+  customInterest?: string;
+  selfIntroduction: string;
+  languages: string[];
+  customLanguage?: string;
+}
+
+export interface ProfileCompletionState {
+  ageVerified: boolean;
+  realIdentityCompleted: boolean;
+  displayIdentityCompleted: boolean;
+  profileInfoCompleted: boolean;
+  profileCompleted: boolean;
+}
+
+// ============================================
+// FAMILY LIFE & MEMORY TYPES (UC300-UC304)
+// ============================================
+export type MoodType =
+  | 'happy'
+  | 'sad'
+  | 'neutral'
+  | 'excited'
+  | 'anxious'
+  | 'grateful';
+
+export type MediaType = 'photo' | 'voice' | 'video' | 'document';
+export type MediaCategory = 'family_album' | 'diary_attachment' | 'chat_media' | 'other';
+
+export interface MediaItem {
+  id: string;
+  uploader_id: string;
+  relationship_id: string;
+  media_type: MediaType;
+  media_category: MediaCategory;
+  file_url: string;
+  caption: string | null;
+  tags: string[] | null;
+  memory_id: string | null;
+  uploaded_at: string;
+}
+
+export interface Memory {
+  id: string;
+  relationship_id: string;
+  uploader_id: string;
+  caption: string | null;
+  thumbnail_url: string;
+  media_count: number;
+  uploaded_at: string;
+  // Optional: populated when fetching with joined media
+  media?: MediaItem[];
+}
+
+export interface DiaryEntry {
+  id: string;
+  user_id: string;
+  relationship_id: string;
+  content: string;
+  mood: MoodType;
+  is_private: boolean;
+  created_at: string;
+}
+
+export type EventType = 'meetup' | 'birthday' | 'anniversary' | 'activity' | 'other';
+
+export interface CalendarEvent {
+  id: string;
+  relationship_id: string;
+  creator_id: string;
+  title: string;
+  description: string | null;
+  event_type: EventType;
+  event_date: string;
+  event_time: string | null;
+  location: string | null;
+  reminder_sent: boolean;
+  created_at: string;
+}
+
+export type AISuggestionType = 'activity' | 'conversation_topic';
+
+export interface AISuggestion {
+  id: string;
+  relationship_id: string;
+  suggestion_type: AISuggestionType;
+  activity_title: string | null;
+  activity_description: string | null;
+  topic_text: string | null;
+  topic_for_stage: string | null;
+  is_used: boolean;
+  generated_at: string;
+}
+>>>>>>> 6ab05c4d223822c3ae6bf6988dd8d60544db1330

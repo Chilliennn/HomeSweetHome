@@ -82,7 +82,7 @@ export const VerifyingLoader: React.FC<VerifyingLoaderProps> = ({
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#FAF9F6',
+    backgroundColor: '#FFFDF5',
   },
   container: {
     flex: 1,
@@ -93,9 +93,9 @@ const styles = StyleSheet.create({
   loaderBox: {
     backgroundColor: '#7ECEC5',
     borderRadius: 20,
-    padding: 48,
+    padding: 20,
     alignItems: 'center',
-    width: '80%',
+    width: '100%',
     marginBottom: 32,
     // Subtle shadow for depth
     shadowColor: '#000',
@@ -118,7 +118,6 @@ const styles = StyleSheet.create({
     marginTop: 12,
     opacity: 0.9,
     lineHeight: 20,
-    paddingHorizontal: 8,
   },
   statusContainer: {
     flexDirection: 'row',

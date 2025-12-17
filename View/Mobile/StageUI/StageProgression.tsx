@@ -28,7 +28,7 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
   observer(({ userId, initialOpenStage }) => {
     const router = useRouter();
     const vm = stageViewModel;
-
+    
     useEffect(() => {
       if (userId) {
         vm.initialize(userId);
@@ -303,7 +303,9 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
               <View style={styles.currentStageCard}>
                 <Text style={styles.cardTitle}>
                   Current Stage:{" "}
-                  {vm.stages.find((s) => s.is_current)?.display_name}
+                  {collapseSpaces(
+                    vm.stages.find((s) => s.is_current)?.display_name
+                  )}
                 </Text>
 
                 <View style={styles.progressBar}>
@@ -506,6 +508,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 20,
     marginBottom: 16,
+    alignItems: "flex-start",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,

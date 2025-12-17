@@ -22,9 +22,7 @@ export const JourneyCompletedScreen = observer(() => {
   }, []);
 
   const handleContinue = () => {
-    // Navigate back to the main stage progression or dashboard
-    // Based on requirements, return to stage 4 page (which is the main progression view for family life)
-    router.replace("/(main)/stage" as any); // Type cast if route is dynamic or not typed yet
+    router.replace("/(main)/stage" as any); 
   };
 
   const StatItem = ({

@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { observer } from 'mobx-react-lite';
+import { consultationViewModel, safetyViewModel } from '@home-sweet-home/viewmodel';
 import { AdminLayout } from '../components/ui';
 import { ConsultationDashboard } from './ConsultationDashboard';
 import { ConsultationDetails } from './ConsultationDetails';
@@ -192,25 +194,46 @@ const styles = {
     },
 };
 
-// Data should come from database - currently showing 0 since no data exists
-const consultationData = {
-    pending: 0,
-    inProgress: 0,
-    completed: 0,
-};
+// Stats are now loaded from ViewModels - no hardcoded data needed
 
-const safetyAlertsData = {
-    critical: 0,
-    highPriority: 0,
-    medium: 0,
-    urgentCount: 0,
-};
-
-const ReportPage: React.FC = () => {
+const ReportPage: React.FC = observer(() => {
     const [hoveredButton, setHoveredButton] = useState<string | null>(null);
     const [currentView, setCurrentView] = useState<'main' | 'consultations' | 'consultation-details' | 'safety-alerts' | 'safety-alert-details'>('main');
     const [selectedRequestId, setSelectedRequestId] = useState<string | null>(null);
     const [selectedAlertId, setSelectedAlertId] = useState<string | null>(null);
+
+    // Load stats and initialize admin on mount
+    useEffect(() => {
+        // Initialize admin ID (in real app, get from auth context)
+        // FORCE VALID ID for debugging - unexpected localStorage values were causing crashes
+        const adminId = '00000000-0000-0000-0000-000000000001';
+        localStorage.setItem('adminId', adminId); // Update storage for other components
+        consultationViewModel.setCurrentAdminId(adminId);
+        safetyViewModel.setCurrentAdminId(adminId);
+
+        consultationViewModel.loadStats();
+        safetyViewModel.loadStats();
+    }, []);
+
+    // Check if navigated from notification with a selected item
+    useEffect(() => {
+        if (safetyViewModel.selectedAlert) {
+            setSelectedAlertId(safetyViewModel.selectedAlert.id);
+            setCurrentView('safety-alert-details');
+        }
+    }, [safetyViewModel.selectedAlert]);
+
+    useEffect(() => {
+        if (consultationViewModel.selectedConsultation) {
+            setSelectedRequestId(consultationViewModel.selectedConsultation.id);
+            setCurrentView('consultation-details');
+        }
+    }, [consultationViewModel.selectedConsultation]);
+
+    // Get stats from ViewModels with fallback to 0
+    const consultationStats = consultationViewModel.stats;
+    const safetyStats = safetyViewModel.stats;
+    const urgentCount = (safetyStats?.critical ?? 0) + (safetyStats?.high ?? 0);
 
     // Handle tab change - resets view back to main when clicking Reports tab
     const handleTabChange = (tab: string) => {
@@ -342,19 +365,19 @@ const ReportPage: React.FC = () => {
                         <div style={styles.statsRow}>
                             <div style={styles.statBox}>
                                 <p style={{ ...styles.statValue, color: colors.corvette }}>
-                                    {consultationData.pending}
+                                    {consultationStats?.pendingAssignment ?? 0}
                                 </p>
                                 <p style={styles.statLabel}>Pending</p>
                             </div>
                             <div style={styles.statBox}>
                                 <p style={{ ...styles.statValue, color: colors.morningGlory }}>
-                                    {consultationData.inProgress}
+                                    {(consultationStats?.assigned ?? 0) + (consultationStats?.inProgress ?? 0)}
                                 </p>
                                 <p style={styles.statLabel}>In Progress</p>
                             </div>
                             <div style={styles.statBox}>
                                 <p style={{ ...styles.statValue, color: colors.caper }}>
-                                    {consultationData.completed}
+                                    {consultationStats?.completedToday ?? 0}
                                 </p>
                                 <p style={styles.statLabel}>Completed</p>
                             </div>
@@ -388,7 +411,7 @@ const ReportPage: React.FC = () => {
                         {/* Title with Badge */}
                         <div style={styles.cardTitleRow}>
                             <h2 style={{ ...styles.cardTitle, margin: 0 }}>Safety Alerts</h2>
-                            <span style={styles.urgentBadge}>{safetyAlertsData.urgentCount} Urgent</span>
+                            <span style={styles.urgentBadge}>{urgentCount} Urgent</span>
                         </div>
 
                         {/* Description */}
@@ -400,19 +423,19 @@ const ReportPage: React.FC = () => {
                         <div style={styles.statsRow}>
                             <div style={styles.statBox}>
                                 <p style={{ ...styles.statValue, color: colors.apricot }}>
-                                    {safetyAlertsData.critical}
+                                    {safetyStats?.critical ?? 0}
                                 </p>
                                 <p style={styles.statLabel}>Critical</p>
                             </div>
                             <div style={styles.statBox}>
                                 <p style={{ ...styles.statValue, color: colors.corvette }}>
-                                    {safetyAlertsData.highPriority}
+                                    {safetyStats?.high ?? 0}
                                 </p>
                                 <p style={styles.statLabel}>High Priority</p>
                             </div>
                             <div style={styles.statBox}>
                                 <p style={{ ...styles.statValue, color: colors.prelude }}>
-                                    {safetyAlertsData.medium}
+                                    {safetyStats?.medium ?? 0}
                                 </p>
                                 <p style={styles.statLabel}>Medium</p>
                             </div>
@@ -439,6 +462,6 @@ const ReportPage: React.FC = () => {
             </div>
         </AdminLayout>
     );
-};
+});
 
 export default ReportPage;

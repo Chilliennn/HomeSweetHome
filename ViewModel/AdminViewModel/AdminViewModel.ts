@@ -85,10 +85,22 @@ export class AdminViewModel {
     this.errorMessage = null;
 
     try {
-      // Lock the application for current admin
-      await applicationService.lockApplication(applicationId, this.currentAdminId);
-      // Then fetch the details
+      // Try to lock the application for current admin (optional - don't fail if lock fails)
+      try {
+        if (this.currentAdminId) {
+          await applicationService.lockApplication(applicationId, this.currentAdminId);
+        }
+      } catch (lockError) {
+        console.warn('Could not lock application (may already be locked):', lockError);
+        // Continue to load the application anyway
+      }
+
+      // Fetch the application details
       this.selectedApplication = await applicationService.getApplicationById(applicationId);
+
+      if (!this.selectedApplication) {
+        this.errorMessage = 'Application not found';
+      }
     } catch (error) {
       this.errorMessage = error instanceof Error ? error.message : 'Failed to load application';
       console.error('Error selecting application:', error);
@@ -139,6 +151,43 @@ export class AdminViewModel {
       console.error('Error approving application:', error);
     } finally {
       this.isApproving = false;
+    }
+  }
+
+  /**
+   * Approve current application and move to next one in the queue
+   */
+  async approveAndReviewNext(notes?: string): Promise<void> {
+    // First approve the current application
+    await this.approveApplication(notes);
+
+    if (this.errorMessage) {
+      return; // Don't proceed if approval failed
+    }
+
+    // Release the current application lock
+    if (this.selectedApplication) {
+      try {
+        await applicationService.releaseApplication(this.selectedApplication.id);
+      } catch (error) {
+        console.error('Error releasing application:', error);
+      }
+    }
+
+    // Reload the applications list
+    await this.loadApplications();
+
+    // Find the next pending application
+    const nextApp = this.applications.find(app =>
+      app.status === 'pending_review' && app.id !== this.selectedApplication?.id
+    );
+
+    if (nextApp) {
+      // Select the next application
+      await this.selectApplication(nextApp.id);
+    } else {
+      // No more pending applications, go back to list
+      this.selectedApplication = null;
     }
   }
 
@@ -259,9 +308,6 @@ export class AdminViewModel {
       approved: 'Approved',
       info_requested: 'Info Requested',
       rejected: 'Rejected',
-      withdrawn: 'Withdrawn',
-      pre_chat_active: 'Pre-Chat Active',
-      both_accepted: 'Both Accepted',
     };
     return statusMap[status] || status;
   }

@@ -1,1 +1,2 @@
-export {adminViewModel, AdminViewModel} from './AdminViewModel';
+export { adminViewModel, AdminViewModel } from './AdminViewModel';
+export { consultationViewModel, ConsultationViewModel } from './consultationViewModel';

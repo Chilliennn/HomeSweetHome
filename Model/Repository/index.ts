@@ -4,12 +4,23 @@ export { userRepository, storageRepository } from './UserRepository';
 // Auth Repository
 export { authRepository, type AuthResult } from './UserRepository';
 
-export { Interest } from './UserRepository';
+export type { Interest } from './UserRepository';
 
 // Matching Repository
 export { matchingRepository } from './UserRepository';
 export type { ElderlyFilters, ElderlyProfilesResult } from './UserRepository/matchingRepository';
 
 // Admin Repository  
-export { adminRepository } from './AdminRepository';
-export type { ApplicationWithProfiles, ApplicationStats } from './AdminRepository';
+export { adminRepository, consultationRepository, getAdminNotifications } from './AdminRepository';
+export type {
+    ApplicationWithProfiles,
+    ApplicationStats,
+    UserProfile,
+    SafetyAlertWithProfiles,
+    SafetyAlertStats,
+    ConsultationRequest,
+    Advisor,
+    ConsultationStats,
+    AdminNotification
+} from './AdminRepository';
+

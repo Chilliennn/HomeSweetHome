@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { observer } from 'mobx-react-lite';
 import { safetyViewModel } from '@home-sweet-home/viewmodel';
+import { Modal, ModalHeader, ModalBody, ModalFooter, Button } from '../components/ui';
 
 // Color constants matching existing design
 const colors = {
@@ -389,6 +390,57 @@ const styles: { [key: string]: React.CSSProperties } = {
         padding: '40px',
         textAlign: 'center' as const,
     },
+    modalContent: {
+        padding: '20px',
+    },
+    modalLabel: {
+        display: 'block',
+        fontFamily: 'Inter, sans-serif',
+        fontSize: '14px',
+        fontWeight: 600,
+        color: colors.mineShaft,
+        marginBottom: '8px',
+    },
+    modalInput: {
+        width: '100%',
+        padding: '12px',
+        borderRadius: '8px',
+        border: `1px solid ${colors.silver}`,
+        marginBottom: '16px',
+        fontFamily: 'Inter, sans-serif',
+        fontSize: '14px',
+        color: colors.mineShaft,
+        backgroundColor: colors.white,
+    },
+    modalSelect: {
+        width: '100%',
+        padding: '12px',
+        borderRadius: '8px',
+        border: `1px solid ${colors.silver}`,
+        marginBottom: '16px',
+        fontFamily: 'Inter, sans-serif',
+        fontSize: '14px',
+        backgroundColor: colors.white,
+        color: colors.mineShaft,
+    },
+    phoneDisplay: {
+        background: colors.linen,
+        padding: '16px',
+        borderRadius: '8px',
+        marginBottom: '16px',
+    },
+    phoneLabel: {
+        fontFamily: 'Inter, sans-serif',
+        fontSize: '12px',
+        color: colors.doveGray,
+        marginBottom: '4px',
+    },
+    phoneNumber: {
+        fontFamily: 'Inter, sans-serif',
+        fontSize: '18px',
+        fontWeight: 700,
+        color: colors.mineShaft,
+    },
 };
 
 interface SafetyAlertDetailsProps {
@@ -398,6 +450,17 @@ interface SafetyAlertDetailsProps {
 
 export const SafetyAlertDetails: React.FC<SafetyAlertDetailsProps> = observer(({ alertId, onBack }) => {
     const [actionSuccess, setActionSuccess] = useState<string | null>(null);
+    const [showContactModal, setShowContactModal] = useState(false);
+    const [showSuspendModal, setShowSuspendModal] = useState(false);
+    const [showWarningModal, setShowWarningModal] = useState(false);
+
+    // Suspension state
+    const [suspendDuration, setSuspendDuration] = useState<'temporary' | 'permanent'>('temporary');
+    const [suspendReason, setSuspendReason] = useState('Safety violation detected');
+
+    // Warning state
+    const [warningType, setWarningType] = useState('First warning - verbal caution');
+    const [warningNotes, setWarningNotes] = useState('');
 
     // Load alert details on mount
     useEffect(() => {
@@ -410,18 +473,23 @@ export const SafetyAlertDetails: React.FC<SafetyAlertDetailsProps> = observer(({
     }, [alertId]);
 
     const handleAction = async (action: string) => {
-        let success = false;
+        if (action === 'contact') {
+            setShowContactModal(true);
+            return;
+        }
 
+        if (action === 'suspend') {
+            setShowSuspendModal(true);
+            return;
+        }
+
+        if (action === 'warning') {
+            setShowWarningModal(true);
+            return;
+        }
+
+        let success = false;
         switch (action) {
-            case 'warning':
-                success = await safetyViewModel.issueWarning('First warning - verbal caution', 'Warning issued for safety concern.');
-                break;
-            case 'suspend':
-                success = await safetyViewModel.suspendUser('User suspended for safety violations detected in the report.', 'temporary');
-                break;
-            case 'contact':
-                success = await safetyViewModel.contactUser('in_app', 'Initiating contact regarding safety concern.');
-                break;
             case 'dismiss':
                 success = await safetyViewModel.dismissReport('False positive - no violation detected');
                 break;
@@ -430,6 +498,22 @@ export const SafetyAlertDetails: React.FC<SafetyAlertDetailsProps> = observer(({
         if (success) {
             setActionSuccess(`Action "${action}" completed successfully`);
             setTimeout(() => setActionSuccess(null), 3000);
+        }
+    };
+
+    const confirmSuspend = async () => {
+        const success = await safetyViewModel.suspendUser(suspendReason, suspendDuration);
+        setShowSuspendModal(false);
+        if (success) {
+            setActionSuccess('User account suspended successfully');
+        }
+    };
+
+    const confirmWarning = async () => {
+        const success = await safetyViewModel.issueWarning(warningType, warningNotes);
+        setShowWarningModal(false);
+        if (success) {
+            setActionSuccess(`Warning issued successfully`);
         }
     };
 
@@ -707,6 +791,115 @@ export const SafetyAlertDetails: React.FC<SafetyAlertDetailsProps> = observer(({
                     </button>
                 </div>
             </div>
+
+            {/* Contact Modal */}
+            <Modal
+                isOpen={showContactModal}
+                onClose={() => setShowContactModal(false)}
+            >
+                <ModalHeader onClose={() => setShowContactModal(false)}>
+                    Contact Parties
+                </ModalHeader>
+                <ModalBody>
+                    <div style={styles.phoneDisplay}>
+                        <p style={styles.phoneLabel}>Reporter ({alert.reporter.full_name})</p>
+                        <p style={styles.phoneNumber}>{alert.reporter.phone_number || '+60 12-345 6789'}</p>
+                    </div>
+                    <div style={styles.phoneDisplay}>
+                        <p style={styles.phoneLabel}>Reported User ({alert.reported_user.full_name})</p>
+                        <p style={styles.phoneNumber}>{alert.reported_user.phone_number || '+60 11-8765 4321'}</p>
+                    </div>
+                </ModalBody>
+                <ModalFooter>
+                    <Button variant="primary" onClick={() => setShowContactModal(false)}>
+                        Close
+                    </Button>
+                </ModalFooter>
+            </Modal>
+
+            {/* Suspend Modal */}
+            <Modal
+                isOpen={showSuspendModal}
+                onClose={() => setShowSuspendModal(false)}
+            >
+                <ModalHeader onClose={() => setShowSuspendModal(false)}>
+                    Suspend User Account
+                </ModalHeader>
+                <ModalBody>
+                    <p style={{ ...styles.detailLabel, marginBottom: '20px' }}>
+                        You are about to suspend <strong>{alert.reported_user.full_name}</strong>. This will prevent them from accessing the platform.
+                    </p>
+
+                    <label style={styles.modalLabel}>Suspension Duration</label>
+                    <select
+                        style={styles.modalSelect}
+                        value={suspendDuration}
+                        onChange={(e) => setSuspendDuration(e.target.value as any)}
+                    >
+                        <option value="temporary">Temporary (7 Days)</option>
+                        <option value="permanent">Permanent Ban</option>
+                    </select>
+
+                    <label style={styles.modalLabel}>Reason for Suspension</label>
+                    <textarea
+                        style={{ ...styles.modalInput, height: '100px', resize: 'vertical' }}
+                        value={suspendReason}
+                        onChange={(e) => setSuspendReason(e.target.value)}
+                        placeholder="Enter notes about this suspension..."
+                    />
+                </ModalBody>
+                <ModalFooter>
+                    <Button variant="ghost" onClick={() => setShowSuspendModal(false)}>
+                        Cancel
+                    </Button>
+                    <Button variant="danger" onClick={confirmSuspend}>
+                        Confirm Suspension
+                    </Button>
+                </ModalFooter>
+            </Modal>
+
+            {/* Warning Modal */}
+            <Modal
+                isOpen={showWarningModal}
+                onClose={() => setShowWarningModal(false)}
+            >
+                <ModalHeader onClose={() => setShowWarningModal(false)}>
+                    Issue Warning
+                </ModalHeader>
+                <ModalBody>
+                    <div style={{ marginBottom: '20px' }}>
+                        <label style={styles.modalLabel}>Warning Type</label>
+                        <select
+                            style={styles.modalSelect}
+                            value={warningType}
+                            onChange={(e) => setWarningType(e.target.value)}
+                        >
+                            {safetyViewModel.warningTypes.map((type) => (
+                                <option key={type} value={type}>
+                                    {type}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                    <div>
+                        <label style={styles.modalLabel}>Warning Notes</label>
+                        <textarea
+                            style={{ ...styles.modalInput, minHeight: '100px', resize: 'vertical' }}
+                            placeholder="Enter specific details about why this warning is being issued..."
+                            value={warningNotes}
+                            onChange={(e) => setWarningNotes(e.target.value)}
+                        />
+                    </div>
+                </ModalBody>
+                <ModalFooter>
+                    <Button variant="ghost" onClick={() => setShowWarningModal(false)}>
+                        Cancel
+                    </Button>
+                    <Button variant="warning" onClick={confirmWarning}>
+                        Issue Warning
+                    </Button>
+                </ModalFooter>
+            </Modal>
         </div>
     );
 });

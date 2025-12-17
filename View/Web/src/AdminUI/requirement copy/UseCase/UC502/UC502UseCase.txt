@@ -1,0 +1,200 @@
+REVIEW AND ASSIGN FAMILY ADVISOR CONSULTATION
+USE CASE NAME
+UC504: Review and Assign Family Advisor Consultation
+USE CASE DESCRIPTION
+This use case describes how admin reviews consultation requests submitted by users (elderly or youth), evaluates the request details, and assigns the request to an available family advisor. Admin manages the consultation workflow from initial review through advisor assignment and notification.
+PRE-CONDITION
+• Admin is logged in to the system
+• Consultation request exists in database (submitted by user via mobile app)
+• Family advisors are registered in the system
+• At least one advisor is available
+POST-CONDITION
+• Consultation request is assigned to family advisor
+• Request status updated to "Assigned" or "Dismissed"
+• User and advisor receive notifications
+• All admin actions are logged
+
+
+BASIC FLOW
+USER (Admin)
+SYSTEM
+1. Admin navigates to Family Advisor Consultations [UC503_1]
+
+
+
+
+2. System displays consultations dashboard [UC503_2]
+   - Statistics row (Pending Assignment, In Progress, Completed Today, Available Advisors)
+   - List of consultation requests sorted by submission time [C4: Request List Display]
+3. Admin views list of consultation requests [UC503_3]
+4. Admin selects a request to review [UC503_4]
+
+
+
+
+5. System displays full request details [UC503_5] [C5: Request Details]
+   - Request ID and timestamp
+   - Requester profile (elderly/youth)
+   - Partner profile (youth/elderly)
+   - Consultation type
+   - Preferred method and time
+   - Detailed concern description
+   - Relationship stage and duration
+6. Admin reviews request content [UC503_6]
+7. Admin evaluates urgency and requirements [UC503_7]
+8. Admin decides action [A1: Dismiss Request] [UC503_8]
+9. Admin clicks "Assign to Advisor" [UC503_9]
+
+
+
+
+10. System displays available advisors list [UC503_10] [A2: No Advisors Available]
+    - Advisor profiles
+    - Specializations
+    - Availability status [C2: Advisor Selection Criteria]
+    - Current workload
+11. Admin reviews advisor options [UC503_11]
+12. Admin selects appropriate advisor [UC503_12]
+13. Admin confirms assignment [UC503_13]
+
+
+
+
+14. System assigns request to selected advisor [UC503_14]
+15. System updates request status to "Assigned" [UC503_15]
+16. System sends notifications [UC503_16] [C6: Notification Requirements]
+    - To advisor: in-app notification, email, SMS
+    - To requester: request status update via UC-501
+17. System logs assignment action [UC503_17] [C3: Action Logging]
+18. System displays success confirmation [UC503_18] [M2: Msg Assignment Success]
+19. Admin returns to consultations list [UC503_19]
+20. Use case ends [UC503_20]
+
+
+ALTERNATIVE FLOW
+A1: Dismiss Request
+A1.1 Admin determines request doesn't require advisor intervention [UC503_21]
+A1.2 Admin clicks "Dismiss Request" button [UC503_22]
+A1.3 System displays dismissal reason form [UC503_23]
+A1.4 Admin enters dismissal reason [UC503_24]
+A1.5 Admin confirms dismissal [UC503_25]
+A1.6 System marks request as "Dismissed" [UC503_26]
+A1.7 System sends notification to requester [UC503_27]
+A1.8 System logs dismissal action with reason [UC503_28] [C3]
+A1.9 System displays dismissal confirmation [UC503_29] [M3: Msg Dismissal]
+A1.10 Continue to step BF:19 
+A2: No Advisors Available
+A2.1 System detects no family advisors are currently available [UC503_30]
+A2.2 System displays "No advisors available" message [UC503_31] [M1: Msg No Advisor]
+A2.3 Request remains in "Pending Assignment" status [UC503_32]
+A2.4 Admin can choose to wait or return to list [UC503_33]
+A2.5 System will notify admin when advisor becomes available [UC503_34]
+A2.6 Continue to step BF:19
+A3: View Consultation History
+A3.1 Admin clicks on assigned or completed request [UC503_35]
+A3.2 System displays full consultation history [UC503_36]
+      - Original request details
+      - Assigned advisor information
+      - Assignment timestamp
+      - Consultation session details (if completed)
+      - Outcome notes (if available)
+A3.3 Admin reviews history [UC503_37]
+A3.4 Admin clicks "Back" to return to list [UC503_38]
+A3.5 Continue to step BF:19
+MESSAGE
+M1: Msg No Advisor = {Currently there are no advisors available. The request will remain pending until an advisor is available. You will be notified when an advisor becomes available.}
+
+M2: Msg Assignment Success = {Consultation request REQ-[RequestID] has been successfully assigned to [Advisor Name]. Notifications have been sent to both the advisor and the requester.}
+
+M3: Msg Dismissal = {Request REQ-[RequestID] has been dismissed. Reason: [DismissalReason]. The requester has been notified.}
+CONSTRAINT
+C1: Response Time Requirements
+Admin must review and assign consultation requests within timeframes:
+High urgency: within 2 hours of submission
+Normal urgency: within 24 hours of submission
+Low urgency: within 48 hours of submission
+
+Urgency is determined by:
+Keywords in concern description (conflict, urgent, emergency)
+User's previous consultation history
+Relationship stage status
+
+C2: Advisor Selection Criteria
+System must display advisors based on:
+Availability status (Online / Available / Busy / Offline)
+Specialization match:
+Relationship Guidance specialists
+Conflict Mediation specialists
+Communication Support specialists
+General Advice (all-around advisors)
+Language capabilities matching user requirements
+Current workload (number of active consultations)
+Fair distribution (avoid overloading single advisor)
+
+C3: Action Logging Requirements
+All admin actions must be logged with:
+Action type (Assigned / Dismissed / Viewed)
+Timestamp of action
+Admin ID performing action
+Request ID affected
+Assigned advisor ID (if applicable)
+Dismissal reason (if applicable)
+Previous status → New status
+
+C4: Request List Display
+Dashboard must show:
+All pending requests sorted by waiting time (longest first)
+Request ID, title, and submission timestamp
+Requester information (name, role, age)
+Consultation type and preferred method
+Current status (Pending Assignment / Assigned / In Progress / Completed / Dismissed)
+Waiting time indicator (visual urgency indicator)
+Preview of concern description
+
+C5: Request Details Display
+Full request view must include:
+Request ID and timestamp
+Current status and assignment history
+Requester Profile:
+Full name, User ID, Age
+Location, Languages
+Current relationship stage
+Relationship duration
+Partner Profile:
+Full name, User ID, Age
+Occupation, Location
+Communication style
+Last active timestamp
+Request Information:
+Consultation Type (dropdown selection)
+Preferred Method (In-Person / Video Call / Phone / Chat)
+Preferred Date & Time
+Subject/Title
+Detailed concern description
+Evidence/Context (if applicable)
+
+C6: Notification Requirements
+System must send notifications within 1 minute of assignment:
+To Advisor:
+In-app notification (immediate)
+Email notification (with request summary)
+SMS notification (for high urgency only)
+To Requester:
+In-app notification via UC-501
+Status update showing:
+Request has been assigned
+Advisor name
+Expected consultation method
+Expected date/time (if available)
+
+Notification content must include:
+Request ID
+Requester/Partner names
+Consultation type
+Preferred method and time
+Brief concern summary
+Direct link to full request details
+
+
+
+

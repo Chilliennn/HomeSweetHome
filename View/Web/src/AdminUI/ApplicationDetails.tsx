@@ -1,7 +1,7 @@
 import React from 'react';
 import { observer } from 'mobx-react-lite';
 import { adminViewModel } from '@home-sweet-home/viewmodel';
-import { Button, Card } from '../components/ui';
+import { Button } from '../components/ui';
 
 interface ApplicationDetailsProps {
   onBack: () => void;
@@ -95,6 +95,7 @@ const styles = {
     maxHeight: '300px',
     overflowY: 'auto' as const,
     marginBottom: '1rem',
+    color: '#333',
   },
   letterStats: {
     display: 'flex',
@@ -104,6 +105,7 @@ const styles = {
     backgroundColor: '#e8f5e9',
     borderRadius: '6px',
     fontSize: '0.9rem',
+    color: '#333',
   },
   valid: {
     color: '#4caf50',
@@ -204,6 +206,32 @@ const styles = {
     gap: '1rem',
   },
 };
+
+// Helper functions
+function calculateCommitmentLevel(app: any): number {
+  const letterLength = app.motivation_letter?.length || 0;
+  if (letterLength < 100) return 1;
+  if (letterLength < 200) return 2;
+  if (letterLength < 400) return 3;
+  if (letterLength < 700) return 4;
+  return 5;
+}
+
+function calculateProfileCompleteness(app: any): number {
+  let complete = 0;
+  let total = 8;
+
+  if (app.youth.full_name) complete++;
+  if (app.youth.age) complete++;
+  if (app.youth.occupation) complete++;
+  if (app.youth.education) complete++;
+  if (app.youth.age_verified) complete++;
+  if (app.elderly.full_name) complete++;
+  if (app.elderly.age) complete++;
+  if (app.motivation_letter) complete++;
+
+  return Math.round((complete / total) * 100);
+}
 
 export const ApplicationDetails: React.FC<ApplicationDetailsProps> = observer(({ onBack, onDecision }) => {
   const app = adminViewModel.selectedApplication;
@@ -418,27 +446,3 @@ export const ApplicationDetails: React.FC<ApplicationDetailsProps> = observer(({
   );
 });
 
-function calculateCommitmentLevel(app: any): number {
-  const letterLength = app.motivation_letter?.length || 0;
-  if (letterLength < 100) return 1;
-  if (letterLength < 200) return 2;
-  if (letterLength < 400) return 3;
-  if (letterLength < 700) return 4;
-  return 5;
-}
-
-function calculateProfileCompleteness(app: any): number {
-  let complete = 0;
-  let total = 8;
-
-  if (app.youth.full_name) complete++;
-  if (app.youth.age) complete++;
-  if (app.youth.occupation) complete++;
-  if (app.youth.education) complete++;
-  if (app.youth.age_verified) complete++;
-  if (app.elderly.full_name) complete++;
-  if (app.elderly.age) complete++;
-  if (app.motivation_letter) complete++;
-
-  return Math.round((complete / total) * 100);
-}

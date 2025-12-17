@@ -1,6 +1,7 @@
 import { supabase } from '../../Service/APIService/supabase';
 import { User, Application } from '../../types';
 import { RealtimeChannel } from '@supabase/supabase-js';
+
 // We map "Interest" to an Application record with specific status
 export interface Interest extends Application {
     youth?: User;

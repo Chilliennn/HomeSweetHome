@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { observer } from 'mobx-react-lite';
 import * as ImagePicker from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system';
 import { familyViewModel } from '@home-sweet-home/viewmodel';
 import { ThemedText } from '@/components/themed-text';
 import { Button } from '@/components/ui/Button';
@@ -53,7 +54,7 @@ export const UploadImageScreen = observer(() => {
     try {
       // Request permission first
       const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      
+
       if (!permissionResult.granted) {
         Alert.alert('Permission Denied', 'Camera roll access is required to pick images');
         return;
@@ -83,7 +84,7 @@ export const UploadImageScreen = observer(() => {
     try {
       // Request permission first
       const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
-      
+
       if (!permissionResult.granted) {
         Alert.alert('Permission Denied', 'Camera access is required to take photos');
         return;
@@ -119,53 +120,72 @@ export const UploadImageScreen = observer(() => {
     }
 
     // Determine MIME type from file extension if type is missing or incomplete
-    // Prepare all files
-    const normalized = selectedFiles.slice(0, 5).map((sf) => {
-      let type: string | undefined = sf.type;
-      const fileName = (sf.fileName || sf.uri || '').toLowerCase();
-      if (!type || type === 'application/octet-stream' || !type.includes('/')) {
-        if (fileName.endsWith('.png')) type = 'image/png';
-        else if (fileName.endsWith('.jpg') || fileName.endsWith('.jpeg')) type = 'image/jpeg';
-        else if (fileName.endsWith('.mp4')) type = 'video/mp4';
-        else {
-          const uriExt = sf.uri.split('.').pop()?.toLowerCase();
-          if (uriExt === 'png') type = 'image/png';
-          else if (uriExt === 'jpg' || uriExt === 'jpeg') type = 'image/jpeg';
-          else if (uriExt === 'mp4') type = 'video/mp4';
-          else if (type?.startsWith('image')) type = 'image/jpeg';
-          else if (type?.startsWith('video')) type = 'video/mp4';
-          else type = 'image/jpeg';
+    // Prepare all files with base64 data (View layer responsibility)
+    setUploadProgress(10);
+
+    const filesData = [];
+    const filesToProcess = selectedFiles.slice(0, 5);
+
+    try {
+      for (let i = 0; i < filesToProcess.length; i++) {
+        const sf = filesToProcess[i];
+
+        // Determine type
+        let type: string | undefined = sf.type;
+        const fileName = (sf.fileName || sf.uri || '').toLowerCase();
+        if (!type || type === 'application/octet-stream' || !type.includes('/')) {
+          if (fileName.endsWith('.png')) type = 'image/png';
+          else if (fileName.endsWith('.jpg') || fileName.endsWith('.jpeg')) type = 'image/jpeg';
+          else if (fileName.endsWith('.mp4')) type = 'video/mp4';
+          else {
+            const uriExt = sf.uri.split('.').pop()?.toLowerCase();
+            if (uriExt === 'png') type = 'image/png';
+            else if (uriExt === 'jpg' || uriExt === 'jpeg') type = 'image/jpeg';
+            else if (uriExt === 'mp4') type = 'video/mp4';
+            else if (type?.startsWith('image')) type = 'image/jpeg';
+            else if (type?.startsWith('video')) type = 'video/mp4';
+            else type = 'image/jpeg';
+          }
         }
+
+        // Read file as base64 (View layer handles platform-specific file reading)
+        const base64 = await FileSystem.readAsStringAsync(sf.uri, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+
+        filesData.push({
+          base64,
+          type: type!,
+          name: sf.fileName || 'upload',
+          size: sf.size || 0,
+        });
+
+        // Update progress during file reading
+        setUploadProgress(10 + Math.round((i + 1) / filesToProcess.length * 40));
       }
-      return {
-        size: sf.size || 0,
-        type: type!,
-        name: sf.fileName || 'upload',
-        uri: sf.uri,
-      };
-    });
-    
-    // Upload files as memory - groups multiple files under one memory entry
-    setUploadProgress(50);
 
-    await familyViewModel.uploadMultipleMediaAsMemory(
-      normalized,
-      caption || undefined
-    );
+      // Upload files as memory - groups multiple files under one memory entry
+      await familyViewModel.uploadMultipleMediaAsMemory(
+        filesData,
+        caption || undefined
+      );
 
-    if (!familyViewModel.errorMessage) {
-      setUploadProgress(100);
-      // Navigate back after success
-      setTimeout(() => {
-        router.back();
-      }, 1500);
+      if (!familyViewModel.errorMessage) {
+        setUploadProgress(100);
+        // Navigate back after success
+        setTimeout(() => {
+          router.back();
+        }, 1500);
+      }
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Failed to read files');
     }
   };
 
   return (
     <View style={styles.container}>
-      <Header 
-        title="Upload Memory" 
+      <Header
+        title="Upload Memory"
         showBackButton={true}
       />
 

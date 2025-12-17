@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useCallback } from 'react';
 import {
   View,
   StyleSheet,
@@ -10,6 +10,7 @@ import {
   Text,
 } from 'react-native';
 import { observer } from 'mobx-react-lite';
+import { useFocusEffect } from '@react-navigation/native';
 import { familyViewModel, authViewModel } from '@home-sweet-home/viewmodel';
 import { ThemedText } from '@/components/themed-text';
 import { Button } from '@/components/ui/Button';
@@ -41,13 +42,19 @@ export const AlbumScreen = observer(() => {
           await familyViewModel.initialize(userId);
         }
       }
-      // Load memories when relationship is available
-      if (familyViewModel.currentRelationship) {
-        familyViewModel.loadMemories();
-      }
     };
     initializeIfNeeded();
-  }, [familyViewModel.currentRelationship?.id]);
+  }, []);
+
+  // Reload memories when screen gains focus (e.g., after saving from chat)
+  useFocusEffect(
+    useCallback(() => {
+      if (familyViewModel.currentRelationship) {
+        console.log('[AlbumScreen] Screen focused, reloading memories...');
+        familyViewModel.loadMemories();
+      }
+    }, [familyViewModel.currentRelationship?.id])
+  );
 
   const handleCalendarPress = () => {
     router.push('/family/calendar');
@@ -120,8 +127,8 @@ export const AlbumScreen = observer(() => {
         </View>
         <Text style={styles.headerTitle}>Family Album</Text>
         <View style={styles.headerRight}>
-          <TouchableOpacity 
-            style={styles.calendarButton} 
+          <TouchableOpacity
+            style={styles.calendarButton}
             onPress={() => router.push('/family/calendar')}
           >
             <Text style={styles.calendarIcon}>📅</Text>

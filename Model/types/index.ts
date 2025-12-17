@@ -324,6 +324,7 @@ export type NotificationType =
   | "application_approved"
   | "application_rejected"
   | "pre_chat_ending_soon"
+  | "prematch_ended"
   | "relationship_accepted"
   | "relationship_ended"
   | "profile_viewed"

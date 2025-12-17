@@ -11,6 +11,8 @@ import {
   TextInput,
 } from 'react-native';
 import { observer } from 'mobx-react-lite';
+import * as FileSystem from 'expo-file-system';
+import * as MediaLibrary from 'expo-media-library';
 import { familyViewModel } from '@home-sweet-home/viewmodel';
 import { ThemedText } from '@/components/themed-text';
 import { Button } from '@/components/ui/Button';
@@ -114,6 +116,68 @@ export const MemoryDetailScreen = observer(() => {
       setEditingCaption(false);
     } catch (error) {
       Alert.alert('Error', 'Failed to save caption');
+    }
+  };
+
+  // Handle download in View layer (platform-specific)
+  const handleDownloadAll = async () => {
+    if (!selectedMemory) return;
+
+    // Request permission
+    const { status } = await MediaLibrary.requestPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission Needed', 'Please grant permission to save files to your gallery.');
+      return;
+    }
+
+    // Get downloadable media URLs from ViewModel
+    const downloadableMedia = await familyViewModel.downloadMemory(selectedMemory.id);
+    if (!downloadableMedia || downloadableMedia.length === 0) {
+      Alert.alert('Error', familyViewModel.errorMessage || 'No media to download');
+      return;
+    }
+
+    let successCount = 0;
+    const failures: string[] = [];
+
+    for (const item of downloadableMedia) {
+      try {
+        const dest = FileSystem.documentDirectory + item.filename;
+
+        // Download file
+        const result = await FileSystem.downloadAsync(item.url, dest, {
+          headers: { Accept: '*/*' },
+        } as any);
+
+        if (!result || result.status !== 200) {
+          failures.push(item.filename);
+          continue;
+        }
+
+        // Verify file exists
+        const fileInfo = await FileSystem.getInfoAsync(dest);
+        if (!fileInfo.exists) {
+          failures.push(item.filename);
+          continue;
+        }
+
+        // Register with gallery
+        try {
+          await MediaLibrary.createAssetAsync(dest);
+        } catch {
+          // Continue even if gallery registration fails
+        }
+
+        successCount++;
+      } catch {
+        failures.push(item.filename);
+      }
+    }
+
+    if (failures.length === 0) {
+      Alert.alert('Success', `Downloaded ${successCount} file(s) to your gallery.`);
+    } else {
+      Alert.alert('Partial Success', `Downloaded ${successCount}/${downloadableMedia.length}. Failed: ${failures.join(', ')}`);
     }
   };
 
@@ -287,10 +351,7 @@ export const MemoryDetailScreen = observer(() => {
         <View style={styles.buttonsContainer}>
           <Button
             title={`Download All (${media.length})`}
-            onPress={async () => {
-              await familyViewModel.downloadMemory(selectedMemory.id);
-            }}
-            loading={familyViewModel.isLoading}
+            onPress={handleDownloadAll}
             variant="primary"
           />
           <Button

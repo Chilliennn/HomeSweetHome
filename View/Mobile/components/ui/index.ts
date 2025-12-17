@@ -31,3 +31,4 @@ export { FeatureCheckItem } from './FeatureCheckItem';
 // Settings components
 export { SettingItem } from './SettingItem';
 export { ToggleSettingItem } from './ToggleSettingItem';
+export { SelectModal } from './SelectModal';

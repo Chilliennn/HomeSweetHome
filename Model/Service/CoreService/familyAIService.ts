@@ -1,6 +1,41 @@
 import { familyRepository } from '../../Repository/UserRepository';
 import type { Relationship as RelationshipType } from '../../types';
-import Constants from 'expo-constants';
+
+// Platform-agnostic config getter
+// For Expo: reads from Constants.expoConfig.extra
+// For Web: reads from process.env or globalThis
+function getConfig(key: string): string | undefined {
+  // Try Expo Constants (React Native)
+  try {
+    const Constants = require('expo-constants').default;
+    const value = Constants?.expoConfig?.extra?.[key] || Constants?.manifest?.extra?.[key];
+    if (value) return value;
+  } catch {
+    // Not in Expo environment
+  }
+
+  // Try process.env (Node.js / React Native)
+  try {
+    if (typeof process !== 'undefined' && process.env) {
+      const value = (process.env as any)[key] || (process.env as any)[`VITE_${key}`];
+      if (value) return value;
+    }
+  } catch {
+    // process not available
+  }
+
+  // Try globalThis for Vite (Web)
+  try {
+    if (typeof globalThis !== 'undefined' && (globalThis as any).__VITE_ENV__) {
+      const value = (globalThis as any).__VITE_ENV__[`VITE_${key}`];
+      if (value) return value;
+    }
+  } catch {
+    // Not in Vite environment
+  }
+
+  return undefined;
+}
 
 /**
  * FamilyAIService - AI integration for activity recommendations
@@ -93,11 +128,10 @@ Keep descriptions concise. Return only the JSON array, nothing else.`;
    * This should be set in the backend environment
    */
   async callGeminiAPI(prompt: string): Promise<AIActivityRecommendation[]> {
-    // Get API key from Expo Constants (configured in app.config.js)
-    const apiKey = Constants.expoConfig?.extra?.GEMINI_API_KEY;
-    // Allow overriding the model and API version; defaults are v1beta + gemini-pro (which work together)
-    const model = Constants.expoConfig?.extra?.GEMINI_MODEL || 'gemini-pro';
-    const apiVersion = Constants.expoConfig?.extra?.GEMINI_API_VERSION || 'v1beta';
+    // Get API key from platform-agnostic config
+    const apiKey = getConfig('GEMINI_API_KEY');
+    const model = getConfig('GEMINI_MODEL') || 'gemini-pro';
+    const apiVersion = getConfig('GEMINI_API_VERSION') || 'v1beta';
 
     console.warn(`[Gemini Debug] API Key present: ${!!apiKey}, starts: ${apiKey?.substring(0, 15)}`);
     console.warn(`[Gemini Debug] Model: ${model}, Version: ${apiVersion}`);
@@ -149,7 +183,7 @@ Keep descriptions concise. Return only the JSON array, nothing else.`;
             maxOutputTokens: 1024,
           }
         };
-        
+
         console.log(`[Gemini] Attempting ${attempt.version}/${attempt.model}...`);
         console.log(`[Gemini] URL: ${url}`);
         console.log(`[Gemini] Has API Key: ${!!apiKey}, Key starts with: ${apiKey?.substring(0, 10)}`);
@@ -189,22 +223,22 @@ Keep descriptions concise. Return only the JSON array, nothing else.`;
         const data = await response.json();
         console.log(`[Gemini] Success with ${attempt.version}/${attempt.model}`);
         console.log(`[Gemini] Response data:`, JSON.stringify(data).substring(0, 500));
-        
+
         const firstCandidate = data.candidates?.[0];
-        
+
         // Check for truncation or blocked content
         if (firstCandidate?.finishReason === 'MAX_TOKENS') {
           console.log(`[Gemini] Response truncated (MAX_TOKENS), trying next model`);
           errors.push(`[${attempt.version}/${attempt.model}] Response truncated (MAX_TOKENS)`);
           continue;
         }
-        
+
         if (!firstCandidate?.content?.parts || firstCandidate.content.parts.length === 0) {
           console.log(`[Gemini] No parts in response. Candidate:`, JSON.stringify(firstCandidate));
           errors.push(`[${attempt.version}/${attempt.model}] No content parts in response (finishReason: ${firstCandidate?.finishReason})`);
           continue;
         }
-        
+
         const responseText = firstCandidate.content.parts
           .map((p: { text?: string }) => p.text)
           .filter(Boolean)
@@ -242,17 +276,17 @@ Keep descriptions concise. Return only the JSON array, nothing else.`;
     }
 
     console.error('Gemini API call failed, attempts:', errors);
-    
+
     // Check if it's a quota/rate limit error (429)
     if (errors.some(e => e.includes('429'))) {
       throw new Error('Gemini API quota exceeded. Please try again later or upgrade your API plan.');
     }
-    
+
     // Check if it's a configuration error (all 404s)
     if (errors.every(e => e.includes('404'))) {
       throw new Error('No Gemini models available for this API key. Please check your Google Cloud project configuration.');
     }
-    
+
     throw new Error(`Gemini API call failed. Attempts: ${errors.join(' | ')}`);
   },
 

@@ -6,7 +6,7 @@
  * 
  * MVVM: View layer - UI only, logic in CommunicationViewModel
  */
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     View,
     Text,
@@ -36,6 +36,15 @@ export const PreMatchExpiredScreen = observer(function PreMatchExpiredScreen() {
     // Get chat data
     const chat = vm.getChatByApplicationId(applicationId);
     const partner = chat?.partnerUser;
+    const application = chat?.application;
+
+    // Redirect if application is already pending review (youth already submitted)
+    useEffect(() => {
+        if (application?.status === 'pending_review') {
+            console.log('[PreMatchExpiredScreen] Application already pending, redirecting to status screen');
+            router.replace({ pathname: '/application-status', params: { applicationId } } as any);
+        }
+    }, [applicationId, application?.status]);
 
     // Handle Apply - navigate to formal application form
     const handleApply = () => {

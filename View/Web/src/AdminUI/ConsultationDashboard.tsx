@@ -112,7 +112,7 @@ const styles = {
     },
     filterButtonActive: {
         background: colors.morningGlory,
-        borderColor: colors.morningGlory,
+        border: `2px solid ${colors.morningGlory}`,
         color: colors.white,
     },
     listContainer: {
@@ -155,7 +155,7 @@ const styles = {
         transition: 'all 0.2s ease',
     },
     requestCardHover: {
-        borderColor: colors.morningGlory,
+        border: `2px solid ${colors.morningGlory}`,
         boxShadow: '0 4px 12px rgba(157, 226, 208, 0.2)',
     },
     requestInfo: {

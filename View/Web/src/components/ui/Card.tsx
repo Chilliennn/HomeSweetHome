@@ -13,6 +13,7 @@ const baseStyle: React.CSSProperties = {
     backgroundColor: '#ffffff',
     borderRadius: '8px',
     boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+    border: '2px solid transparent',
 };
 
 export const Card: React.FC<CardProps> = ({
@@ -32,7 +33,7 @@ export const Card: React.FC<CardProps> = ({
         transition: 'all 0.3s ease',
         ...(hoverable && isHovered ? {
             boxShadow: '0 4px 12px rgba(157, 226, 208, 0.2)',
-            borderColor: '#9DE2D0',
+            border: '2px solid #9DE2D0',
         } : {}),
         ...style,
     };

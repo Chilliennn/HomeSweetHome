@@ -89,7 +89,7 @@ const styles = {
         transition: 'all 0.2s ease',
     },
     advisorCardSelected: {
-        borderColor: colors.morningGlory,
+        border: `2px solid ${colors.morningGlory}`,
         background: colors.white,
         boxShadow: '0 4px 12px rgba(157, 226, 208, 0.3)',
     },

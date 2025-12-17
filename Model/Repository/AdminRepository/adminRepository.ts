@@ -119,27 +119,45 @@ export const adminRepository = {
 	},
 
 	async getApplicationStats(): Promise<ApplicationStats> {
-		// Implement simple aggregate queries
-		const [{ data: pending }, { data: locked }, { data: approvedToday }, { data: avgWait }] = await Promise.all([
-			supabase.from('applications').select('id', { count: 'exact' }).eq('status', 'pending_ngo_review'),
-			supabase.from('applications').select('id', { count: 'exact' }).neq('locked_by', null),
-			supabase
-				.from('applications')
-				.select('id', { count: 'exact' })
-				.eq('status', 'ngo_approved')
-				.gte('approved_at', new Date().toISOString().slice(0, 10)),
-			supabase.rpc('avg_waiting_time_hours') // optional: a custom Postgres function; fallback handled below
-		]).catch(() => [{ data: null }, { data: null }, { data: null }, { data: null }]);
+		// Run aggregate queries with individual error handling
+		let pendingCount = 0;
+		let lockedCount = 0;
+		let approvedTodayCount = 0;
+		let avgWaitingHours = 0;
 
-		// Fallback values if database function not available
-		const stats: ApplicationStats = {
-			pendingReview: pending?.length || 0,
-			lockedByOthers: locked?.length || 0,
-			approvedToday: approvedToday?.length || 0,
-			avgWaitingTimeHours: (avgWait && (avgWait as any).result) || 0,
+		try {
+			const [pendingResult, lockedResult, approvedResult] = await Promise.all([
+				supabase.from('applications').select('*', { count: 'exact', head: true }).eq('status', 'pending_ngo_review'),
+				supabase.from('applications').select('*', { count: 'exact', head: true }).not('locked_by', 'is', null),
+				supabase
+					.from('applications')
+					.select('*', { count: 'exact', head: true })
+					.eq('status', 'ngo_approved')
+					.gte('approved_at', new Date().toISOString().slice(0, 10)),
+			]);
+
+			pendingCount = pendingResult.count || 0;
+			lockedCount = lockedResult.count || 0;
+			approvedTodayCount = approvedResult.count || 0;
+		} catch (error) {
+			console.error('Error fetching application stats:', error);
+		}
+
+		// Optional RPC for average waiting time - may not exist in database
+		try {
+			const { data: avgWait } = await supabase.rpc('avg_waiting_time_hours');
+			avgWaitingHours = (avgWait as number) || 0;
+		} catch {
+			// RPC function may not exist, use fallback
+			avgWaitingHours = 0;
+		}
+
+		return {
+			pendingReview: pendingCount,
+			lockedByOthers: lockedCount,
+			approvedToday: approvedTodayCount,
+			avgWaitingTimeHours: avgWaitingHours,
 		};
-
-		return stats;
 	},
 
 	async approveApplication(applicationId: string, adminId: string, notes?: string): Promise<void> {

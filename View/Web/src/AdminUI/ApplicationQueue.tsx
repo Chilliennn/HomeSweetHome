@@ -63,7 +63,7 @@ const styles = {
     textAlign: 'left' as const,
   },
   filterBtnActive: {
-    borderColor: '#9DE2D0',
+    border: '2px solid #9DE2D0',
     backgroundColor: '#9DE2D0',
     color: '#ffffff',
   },
@@ -354,7 +354,7 @@ export const ApplicationQueue: React.FC<ApplicationQueueProps> = observer(({ onS
         <div style={styles.queueMain}>
           <div style={styles.queueHeader}>
             <h3 style={styles.queueTitle}>Application Review Queue</h3>
-            <div style={styles.totalCount}>Total: {adminViewModel.applications.length}</div>
+            <div style={styles.totalCount}>Total: {adminViewModel.applications?.length ?? 0}</div>
           </div>
 
           {/* Error display - data binding to ViewModel.errorMessage */}
@@ -363,18 +363,18 @@ export const ApplicationQueue: React.FC<ApplicationQueueProps> = observer(({ onS
           )}
 
           {/* Loading state - data binding to ViewModel.isLoading */}
-          {adminViewModel.isLoading && !adminViewModel.applications.length && (
+          {adminViewModel.isLoading && !(adminViewModel.applications?.length) && (
             <div style={styles.emptyState}>Loading applications...</div>
           )}
 
           {/* Empty state */}
-          {!adminViewModel.isLoading && adminViewModel.applications.length === 0 && (
+          {!adminViewModel.isLoading && (adminViewModel.applications?.length ?? 0) === 0 && (
             <div style={styles.emptyState}>No applications to review</div>
           )}
 
           {/* Applications list - data binding to ViewModel.applications */}
           <div style={styles.applicationsList}>
-            {adminViewModel.applications.map(renderApplicationCard)}
+            {(adminViewModel.applications ?? []).map(renderApplicationCard)}
           </div>
         </div>
       </div>

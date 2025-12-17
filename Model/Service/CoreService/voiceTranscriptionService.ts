@@ -31,8 +31,31 @@ const ASSEMBLYAI_UPLOAD_URL = 'https://api.assemblyai.com/v2/upload';
 const ASSEMBLYAI_TRANSCRIPT_URL = 'https://api.assemblyai.com/v2/transcript';
 
 // Get API token from environment variable
-// Set in .env: EXPO_PUBLIC_ASSEMBLYAI_API_KEY=your_token_here
-const ASSEMBLYAI_API_KEY = process.env.EXPO_PUBLIC_ASSEMBLYAI_API_KEY;
+// Get API token from environment variable
+// Support both Node/React Native (process.env) and Vite (import.meta.env)
+const getEnv = (key: string) => {
+  try {
+    // @ts-ignore
+    if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env[key]) {
+      // @ts-ignore
+      return import.meta.env[key];
+    }
+  } catch (e) {
+    // Ignore error
+  }
+
+  try {
+    if (typeof process !== 'undefined' && process.env && process.env[key]) {
+      return process.env[key];
+    }
+  } catch (e) {
+    // Ignore error
+  }
+
+  return '';
+};
+
+const ASSEMBLYAI_API_KEY = getEnv('EXPO_PUBLIC_ASSEMBLYAI_API_KEY');
 
 // ============================================================================
 // SERVICE

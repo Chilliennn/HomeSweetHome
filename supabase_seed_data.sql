@@ -15,32 +15,32 @@
 -- ============================================
 
 -- Admin
-INSERT INTO users (id, user_type, email, full_name, date_of_birth, verification_status, is_active)
+INSERT INTO users (id, user_type, email, full_name, phone, date_of_birth, verification_status, is_active)
 VALUES 
-    ('00000000-0000-0000-0000-000000000001', 'admin', 'admin001@homesweethome.org', 'Admin001', '1985-01-15', 'verified', true),
-    ('00000000-0000-0000-0000-000000000002', 'admin', 'admin002@homesweethome.org', 'Admin002', '1987-05-20', 'verified', true)
+    ('00000000-0000-0000-0000-000000000001', 'admin', 'admin001@homesweethome.org', 'Admin001', '+60 19-111 1111', '1985-01-15', 'verified', true),
+    ('00000000-0000-0000-0000-000000000002', 'admin', 'admin002@homesweethome.org', 'Admin002', '+60 19-222 2222', '1987-05-20', 'verified', true)
 ON CONFLICT (id) DO NOTHING;
 
 -- Youth (6 users)
-INSERT INTO users (id, user_type, email, full_name, date_of_birth, gender, location, verification_status, is_active)
+INSERT INTO users (id, user_type, email, full_name, phone, date_of_birth, gender, location, verification_status, is_active)
 VALUES 
-    ('11111111-1111-1111-1111-111111111101', 'youth', 'sarah@test.com', 'Sarah Chen', '2002-03-15', 'female', 'Kuala Lumpur', 'verified', true),
-    ('11111111-1111-1111-1111-111111111102', 'youth', 'david@test.com', 'David Lim', '2001-08-22', 'male', 'Penang', 'verified', true),
-    ('11111111-1111-1111-1111-111111111103', 'youth', 'maya@test.com', 'Maya Rahman', '2003-11-05', 'female', 'Johor Bahru', 'verified', true),
-    ('11111111-1111-1111-1111-111111111104', 'youth', 'wei@test.com', 'Wei Jian', '2000-07-12', 'male', 'Selangor', 'verified', true),
-    ('11111111-1111-1111-1111-111111111105', 'youth', 'aisyah@test.com', 'Aisyah Binti Hassan', '2002-09-25', 'female', 'Melaka', 'verified', true),
-    ('11111111-1111-1111-1111-111111111106', 'youth', 'ryan@test.com', 'Ryan Tan', '2001-04-18', 'male', 'Kuala Lumpur', 'verified', true)
+    ('11111111-1111-1111-1111-111111111101', 'youth', 'sarah@test.com', 'Sarah Chen', '+60 12-345 6789', '2002-03-15', 'female', 'Kuala Lumpur', 'verified', true),
+    ('11111111-1111-1111-1111-111111111102', 'youth', 'david@test.com', 'David Lim', '+60 13-456 7890', '2001-08-22', 'male', 'Penang', 'verified', true),
+    ('11111111-1111-1111-1111-111111111103', 'youth', 'maya@test.com', 'Maya Rahman', '+60 14-567 8901', '2003-11-05', 'female', 'Johor Bahru', 'verified', true),
+    ('11111111-1111-1111-1111-111111111104', 'youth', 'wei@test.com', 'Wei Jian', '+60 15-678 9012', '2000-07-12', 'male', 'Selangor', 'verified', true),
+    ('11111111-1111-1111-1111-111111111105', 'youth', 'aisyah@test.com', 'Aisyah Binti Hassan', '+60 16-789 0123', '2002-09-25', 'female', 'Melaka', 'verified', true),
+    ('11111111-1111-1111-1111-111111111106', 'youth', 'ryan@test.com', 'Ryan Tan', '+60 17-890 1234', '2001-04-18', 'male', 'Kuala Lumpur', 'verified', true)
 ON CONFLICT (id) DO NOTHING;
 
 -- Elderly (6 users)
-INSERT INTO users (id, user_type, email, full_name, date_of_birth, gender, location, verification_status, is_active)
+INSERT INTO users (id, user_type, email, full_name, phone, date_of_birth, gender, location, verification_status, is_active)
 VALUES 
-    ('22222222-2222-2222-2222-222222222201', 'elderly', 'uncle.tan@test.com', 'Tan Ah Kow', '1955-06-20', 'male', 'Kuala Lumpur', 'verified', true),
-    ('22222222-2222-2222-2222-222222222202', 'elderly', 'auntie.lee@test.com', 'Lee Mei Ling', '1958-02-14', 'female', 'Penang', 'verified', true),
-    ('22222222-2222-2222-2222-222222222203', 'elderly', 'pakcik.ahmad@test.com', 'Ahmad bin Ismail', '1952-09-30', 'male', 'Selangor', 'verified', true),
-    ('22222222-2222-2222-2222-222222222204', 'elderly', 'auntiemary@test.com', 'Mary Fernandez', '1956-12-03', 'female', 'Melaka', 'verified', true),
-    ('22222222-2222-2222-2222-222222222205', 'elderly', 'unclewong@test.com', 'Wong Kam Fook', '1954-08-15', 'male', 'Ipoh', 'verified', true),
-    ('22222222-2222-2222-2222-222222222206', 'elderly', 'makcik.fatimah@test.com', 'Fatimah Binti Ali', '1957-01-28', 'female', 'Kuantan', 'verified', true)
+    ('22222222-2222-2222-2222-222222222201', 'elderly', 'uncle.tan@test.com', 'Tan Ah Kow', '+60 19-321 6549', '1955-06-20', 'male', 'Kuala Lumpur', 'verified', true),
+    ('22222222-2222-2222-2222-222222222202', 'elderly', 'auntie.lee@test.com', 'Lee Mei Ling', '+60 19-654 9870', '1958-02-14', 'female', 'Penang', 'verified', true),
+    ('22222222-2222-2222-2222-222222222203', 'elderly', 'pakcik.ahmad@test.com', 'Ahmad bin Ismail', '+60 19-987 6543', '1952-09-30', 'male', 'Selangor', 'verified', true),
+    ('22222222-2222-2222-2222-222222222204', 'elderly', 'auntiemary@test.com', 'Mary Fernandez', '+60 19-210 5432', '1956-12-03', 'female', 'Melaka', 'verified', true),
+    ('22222222-2222-2222-2222-222222222205', 'elderly', 'unclewong@test.com', 'Wong Kam Fook', '+60 19-543 2109', '1954-08-15', 'male', 'Ipoh', 'verified', true),
+    ('22222222-2222-2222-2222-222222222206', 'elderly', 'makcik.fatimah@test.com', 'Fatimah Binti Ali', '+60 19-876 5432', '1957-01-28', 'female', 'Kuantan', 'verified', true)
 ON CONFLICT (id) DO NOTHING;
 
 -- ============================================

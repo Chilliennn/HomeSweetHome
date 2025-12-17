@@ -244,6 +244,12 @@ export const adminRepository = {
 			supabase.rpc('avg_waiting_time_hours') // optional: a custom Postgres function; fallback handled below
 		]).catch(() => [{ data: null }, { data: null }, { data: null }, { data: null }]);
 
+		// Initialize variables
+		let pendingCount = 0;
+		let lockedCount = 0;
+		let approvedTodayCount = 0;
+		let avgWaitingHours = 0;
+
 		try {
 			const [pendingResult, lockedResult, approvedResult, applicationsResult] = await Promise.all([
 				supabase.from('applications').select('*', { count: 'exact', head: true }).eq('status', 'pending_review'),
@@ -402,16 +408,30 @@ export const adminRepository = {
 			{ count: high },
 			{ count: medium },
 			{ count: low },
-			{ count: pending }
+			{ count: pending },
+			{ data: resolvedIncidents }
 		] = await Promise.all([
-			supabase.from('safety_incidents').select('*', { count: 'exact', head: true }).eq('severity', 'critical'),
-			supabase.from('safety_incidents').select('*', { count: 'exact', head: true }).eq('severity', 'high'),
-			supabase.from('safety_incidents').select('*', { count: 'exact', head: true }).eq('severity', 'medium'),
-			supabase.from('safety_incidents').select('*', { count: 'exact', head: true }).eq('severity', 'low'),
-			supabase.from('safety_incidents').select('*', { count: 'exact', head: true }).eq('status', 'new')
+			supabase.from('safety_incidents').select('*', { count: 'exact', head: true }).eq('severity', 'critical').eq('status', 'new'),
+			supabase.from('safety_incidents').select('*', { count: 'exact', head: true }).eq('severity', 'high').eq('status', 'new'),
+			supabase.from('safety_incidents').select('*', { count: 'exact', head: true }).eq('severity', 'medium').eq('status', 'new'),
+			supabase.from('safety_incidents').select('*', { count: 'exact', head: true }).eq('severity', 'low').eq('status', 'new'),
+			supabase.from('safety_incidents').select('*', { count: 'exact', head: true }).eq('status', 'new'),
+			supabase.from('safety_incidents').select('detected_at, resolved_at').in('status', ['resolved', 'false_positive']).not('resolved_at', 'is', null).limit(100)
 		]);
 
-		return { critical: critical || 0, high: high || 0, medium: medium || 0, low: low || 0, pending: pending || 0, avgResponseTimeMinutes: 15 };
+		// Calculate average response time
+		let avgResponseTime = 0;
+		if (resolvedIncidents && resolvedIncidents.length > 0) {
+			const totalMinutes = resolvedIncidents.reduce((acc: number, incident: any) => {
+				const start = new Date(incident.detected_at).getTime();
+				const end = new Date(incident.resolved_at).getTime();
+				const diffMinutes = Math.round((end - start) / 1000 / 60);
+				return acc + diffMinutes;
+			}, 0);
+			avgResponseTime = Math.round(totalMinutes / resolvedIncidents.length);
+		}
+
+		return { critical: critical || 0, high: high || 0, medium: medium || 0, low: low || 0, pending: pending || 0, avgResponseTimeMinutes: avgResponseTime };
 	},
 
 	async issueWarning(alertId: string, adminId: string, notes: string): Promise<void> {
@@ -456,8 +476,8 @@ export const adminRepository = {
 
 export type SafetyAlertWithProfiles = {
 	id: string;
-	reporter: { id: string; full_name: string; age: number; location: string | null; user_type: 'youth' | 'elderly'; account_created: string; previous_reports: number; avatar_url: string | null; };
-	reported_user: { id: string; full_name: string; age: number; occupation: string | null; user_type: 'youth' | 'elderly'; account_status: 'active' | 'suspended' | 'banned'; previous_warnings: number; avatar_url: string | null; };
+	reporter: { id: string; full_name: string; age: number; location: string | null; user_type: 'youth' | 'elderly'; account_created: string; previous_reports: number; avatar_url: string | null; phone_number: string | null; };
+	reported_user: { id: string; full_name: string; age: number; occupation: string | null; user_type: 'youth' | 'elderly'; account_status: 'active' | 'suspended' | 'banned'; previous_warnings: number; avatar_url: string | null; phone_number: string | null; };
 	relationship_id: string;
 	incident_type: string;
 	severity: 'critical' | 'high' | 'medium' | 'low';
@@ -520,7 +540,8 @@ function mapRowToSafetyAlert(row: any): SafetyAlertWithProfiles {
 			user_type: row.reporter?.user_type || 'elderly',
 			account_created: row.reporter?.created_at || '',
 			previous_reports: 0,
-			avatar_url: row.reporter?.profile_photo_url || row.reporter?.avatar_url || null
+			avatar_url: row.reporter?.profile_photo_url || row.reporter?.avatar_url || null,
+			phone_number: row.reporter?.phone || 'N/A'
 		},
 		reported_user: {
 			id: row.reported_user?.id || '',
@@ -530,7 +551,8 @@ function mapRowToSafetyAlert(row: any): SafetyAlertWithProfiles {
 			user_type: row.reported_user?.user_type || 'youth',
 			account_status: row.reported_user?.is_active ? 'active' : 'suspended',
 			previous_warnings: 0,
-			avatar_url: row.reported_user?.profile_photo_url || row.reported_user?.avatar_url || null
+			avatar_url: row.reported_user?.profile_photo_url || row.reported_user?.avatar_url || null,
+			phone_number: row.reported_user?.phone || 'N/A'
 		},
 		relationship_id: row.relationship_id,
 		incident_type: row.incident_type,

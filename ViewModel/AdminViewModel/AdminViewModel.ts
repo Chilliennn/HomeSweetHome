@@ -307,7 +307,6 @@ export class AdminViewModel {
       pending_review: 'Pending Review',
       approved: 'Approved',
       info_requested: 'Info Requested',
-      approved: 'Approved',
       rejected: 'Rejected',
     };
     return statusMap[status] || status;

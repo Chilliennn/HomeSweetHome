@@ -202,8 +202,15 @@ const ReportPage: React.FC = observer(() => {
     const [selectedRequestId, setSelectedRequestId] = useState<string | null>(null);
     const [selectedAlertId, setSelectedAlertId] = useState<string | null>(null);
 
-    // Load stats on mount
+    // Load stats and initialize admin on mount
     useEffect(() => {
+        // Initialize admin ID (in real app, get from auth context)
+        // FORCE VALID ID for debugging - unexpected localStorage values were causing crashes
+        const adminId = '00000000-0000-0000-0000-000000000001';
+        localStorage.setItem('adminId', adminId); // Update storage for other components
+        consultationViewModel.setCurrentAdminId(adminId);
+        safetyViewModel.setCurrentAdminId(adminId);
+
         consultationViewModel.loadStats();
         safetyViewModel.loadStats();
     }, []);

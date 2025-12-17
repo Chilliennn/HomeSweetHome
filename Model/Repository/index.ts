@@ -4,7 +4,7 @@ export { userRepository, storageRepository } from './UserRepository';
 // Auth Repository
 export { authRepository, type AuthResult } from './UserRepository';
 
-export { Interest } from './UserRepository';
+export type { Interest } from './UserRepository';
 
 // Matching Repository
 export { matchingRepository } from './UserRepository';

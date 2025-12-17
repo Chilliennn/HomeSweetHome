@@ -478,7 +478,7 @@ export const SafetyAlertsDashboard: React.FC<SafetyAlertsDashboardProps> = obser
                 }}>
                     <div style={styles.statLabel}>Avg Response Time</div>
                     <div style={{ ...styles.statValue, color: colors.caper }}>
-                        {stats?.avgResponseTimeMinutes ?? 0}m
+                        {(stats?.avgResponseTimeMinutes ? (stats.avgResponseTimeMinutes / 60).toFixed(1) : '0.0')}h
                     </div>
                 </div>
             </div>

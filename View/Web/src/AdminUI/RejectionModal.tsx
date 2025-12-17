@@ -26,6 +26,7 @@ const styles = {
     border: '2px solid #e0e0e0',
     fontSize: '1rem',
     backgroundColor: '#fff',
+    color: '#333',
   },
   textarea: {
     width: '100%',
@@ -36,6 +37,8 @@ const styles = {
     fontFamily: 'inherit',
     resize: 'vertical' as const,
     boxSizing: 'border-box' as const,
+    backgroundColor: '#fff',
+    color: '#333',
   },
   importantNote: {
     padding: '1rem',

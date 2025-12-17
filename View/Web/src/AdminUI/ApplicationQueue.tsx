@@ -179,13 +179,12 @@ const styles = {
     alignItems: 'flex-end',
   },
   statusBadge: {
-    padding: '0.4rem 0.85rem',
-    borderRadius: '20px',
+    padding: '0.5rem 1rem',
+    borderRadius: '8px',
     fontSize: '0.8rem',
-    fontWeight: 600,
-    color: '#ffffff',
+    fontWeight: 700,
     textAlign: 'center' as const,
-    minWidth: '110px',
+    minWidth: '120px',
   },
 };
 
@@ -209,7 +208,7 @@ export const ApplicationQueue: React.FC<ApplicationQueueProps> = observer(({ onS
     adminViewModel.loadApplications();
   }, [adminViewModel.filter, adminViewModel.sortBy, adminViewModel.currentPage]);
 
-  const handleFilterChange = (filter: 'all' | 'pending' | 'info_requested' | 'locked') => {
+  const handleFilterChange = (filter: 'all' | 'pending' | 'info_requested') => {
     adminViewModel.setFilter(filter);
   };
 
@@ -217,17 +216,16 @@ export const ApplicationQueue: React.FC<ApplicationQueueProps> = observer(({ onS
     adminViewModel.setSortBy(sortBy);
   };
 
-  const getStatusColor = (status: string): string => {
-    const colors: { [key: string]: string } = {
-      pending_ngo_review: '#9DE2D0',
-      ngo_approved: '#C8ADD6',
-      info_requested: '#D4E5AE',
-      rejected: '#EB8F80',
-      withdrawn: '#FADE9F',
-      pre_chat_active: '#9DE2D0',
-      both_accepted: '#C8ADD6',
+  // Status badge colors matching UC499 design
+  const getStatusColor = (status: string): { bg: string; text: string } => {
+    const colors: { [key: string]: { bg: string; text: string } } = {
+      pending_review: { bg: '#FADE9F', text: '#7A4F00' },      // Yellow
+      info_requested: { bg: '#D4E5AE', text: '#4A5D23' },     // Green
+      approved: { bg: '#9DE2D0', text: '#333333' },            // Teal
+      rejected: { bg: '#EB8F80', text: '#FFFFFF' },            // Red
+      locked: { bg: '#C8ADD6', text: '#333333' },              // Purple
     };
-    return colors[status] || '#CCCCCC';
+    return colors[status] || { bg: '#CCCCCC', text: '#666666' };
   };
 
   const formatWaitingTime = (hours: number): string => {
@@ -262,9 +260,37 @@ export const ApplicationQueue: React.FC<ApplicationQueueProps> = observer(({ onS
             </div>
           </div>
           <div style={styles.cardActions}>
-            <div style={{ ...styles.statusBadge, backgroundColor: getStatusColor(app.status) }}>
-              {adminViewModel.getDisplayStatus(app.status)}
-            </div>
+            {(() => {
+              // Check if locked by another admin
+              const isLocked = !!app.locked_by;
+              const displayStatus = isLocked ? 'locked' : app.status;
+              const statusColors = getStatusColor(displayStatus);
+
+              // Map admin IDs to admin names for display
+              const getAdminName = (adminId: string): string => {
+                const adminNames: { [key: string]: string } = {
+                  '00000000-0000-0000-0000-000000000001': 'Admin001',
+                  '00000000-0000-0000-0000-000000000002': 'Admin002',
+                };
+                return adminNames[adminId] || 'Admin';
+              };
+
+              const statusLabel = isLocked
+                ? `🔒 Locked by ${getAdminName(app.locked_by!)}`
+                : adminViewModel.getDisplayStatus(app.status);
+
+              return (
+                <div style={{
+                  ...styles.statusBadge,
+                  backgroundColor: statusColors.bg,
+                  color: statusColors.text
+                }}>
+                  {!isLocked && displayStatus === 'pending_review' && '⏳ '}
+                  {!isLocked && displayStatus === 'info_requested' && '📋 '}
+                  {statusLabel}
+                </div>
+              );
+            })()}
             <Button
               variant="primary"
               onClick={() => onSelectApplication(app.id)}
@@ -287,10 +313,6 @@ export const ApplicationQueue: React.FC<ApplicationQueueProps> = observer(({ onS
           value={adminViewModel.stats?.pendingReview || 0}
         />
         <StatCard
-          label="Locked Applications"
-          value={adminViewModel.stats?.lockedByOthers || 0}
-        />
-        <StatCard
           label="Approved Today"
           value={adminViewModel.stats?.approvedToday || 0}
         />
@@ -308,7 +330,7 @@ export const ApplicationQueue: React.FC<ApplicationQueueProps> = observer(({ onS
           <div style={styles.filterSection}>
             <h4 style={styles.sectionTitle}>Filter By Status</h4>
             <div style={styles.filterButtons}>
-              {(['all', 'pending', 'info_requested', 'locked'] as const).map((f) => (
+              {(['all', 'pending', 'info_requested'] as const).map((f) => (
                 <button
                   key={f}
                   style={{
@@ -318,8 +340,7 @@ export const ApplicationQueue: React.FC<ApplicationQueueProps> = observer(({ onS
                   onClick={() => handleFilterChange(f)}
                 >
                   {f === 'all' ? 'All Applications' :
-                    f === 'pending' ? 'Pending Review' :
-                      f === 'info_requested' ? 'Info Requested' : 'Locked By Others'}
+                    f === 'pending' ? 'Pending Review' : 'Info Requested'}
                 </button>
               ))}
             </div>

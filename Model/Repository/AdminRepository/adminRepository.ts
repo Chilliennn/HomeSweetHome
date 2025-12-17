@@ -31,14 +31,23 @@ export type ApplicationStats = {
 
 export const adminRepository = {
 	async getApplications(status?: string, sortBy: 'oldest' | 'newest' = 'oldest', limit = 50, offset = 0): Promise<ApplicationWithProfiles[]> {
-		// Simple Supabase join query (assuming tables: applications, users)
+		// Valid statuses for Application Review Queue
+		const QUEUE_STATUSES = ['pending_review', 'info_requested'];
+		// Supabase join query with explicit FK references
 		let query = supabase
 			.from('applications')
-			.select(`*, youth:users(*), elderly:users(*)`)
+			.select(`*, youth:users!youth_id(*), elderly:users!elderly_id(*)`)
 			.order('applied_at', { ascending: sortBy === 'oldest' });
 
-		if (status && status !== 'all') {
+		// Handle special 'locked' filter - filter by locked_by not null (among queue statuses)
+		if (status === 'locked') {
+			query = query.in('status', QUEUE_STATUSES).not('locked_by', 'is', null);
+		} else if (status && status !== 'all') {
+			// Specific status filter
 			query = query.eq('status', status);
+		} else {
+			// 'all' or no status - return only queue-relevant statuses
+			query = query.in('status', QUEUE_STATUSES);
 		}
 
 		if (limit) { query = query.range(offset, offset + limit - 1); }
@@ -46,27 +55,37 @@ export const adminRepository = {
 		const { data, error } = await query;
 		if (error) throw error;
 
+		// Helper to calculate age from date_of_birth
+		const calculateAge = (dob: string | null): number => {
+			if (!dob) return 0;
+			const dobDate = new Date(dob);
+			const now = new Date();
+			let age = now.getFullYear() - dobDate.getFullYear();
+			if (now.getMonth() < dobDate.getMonth() || (now.getMonth() === dobDate.getMonth() && now.getDate() < dobDate.getDate())) age--;
+			return age;
+		};
+
 		const results: ApplicationWithProfiles[] = (data || []).map((row: any) => ({
 			id: row.id,
 			youth: {
 				id: row.youth?.id,
 				full_name: row.youth?.full_name,
-				age: row.youth?.age,
-				avatar_url: row.youth?.avatar_url,
-				age_verified: row.youth?.age_verified,
-				occupation: row.youth?.occupation,
-				education: row.youth?.education,
+				age: row.youth?.age || calculateAge(row.youth?.date_of_birth),
+				avatar_url: row.youth?.profile_photo_url || row.youth?.avatar_url,
+				age_verified: row.youth?.profile_data?.age_verified ?? row.youth?.age_verified ?? false,
+				occupation: row.youth?.profile_data?.occupation || row.youth?.occupation || null,
+				education: row.youth?.profile_data?.education || row.youth?.education || null,
 				location: row.youth?.location,
 				created_at: row.youth?.created_at,
 			},
 			elderly: {
 				id: row.elderly?.id,
 				full_name: row.elderly?.full_name,
-				age: row.elderly?.age,
-				avatar_url: row.elderly?.avatar_url,
-				age_verified: row.elderly?.age_verified,
-				occupation: row.elderly?.occupation,
-				education: row.elderly?.education,
+				age: row.elderly?.age || calculateAge(row.elderly?.date_of_birth),
+				avatar_url: row.elderly?.profile_photo_url || row.elderly?.avatar_url,
+				age_verified: row.elderly?.profile_data?.age_verified ?? row.elderly?.age_verified ?? false,
+				occupation: row.elderly?.profile_data?.occupation || row.elderly?.occupation || null,
+				education: row.elderly?.profile_data?.education || row.elderly?.education || null,
 				location: row.elderly?.location,
 			},
 			motivation_letter: row.motivation_letter,
@@ -81,34 +100,44 @@ export const adminRepository = {
 	async getApplicationById(applicationId: string): Promise<ApplicationWithProfiles | null> {
 		const { data, error } = await supabase
 			.from('applications')
-			.select(`*, youth:users(*), elderly:users(*)`)
+			.select(`*, youth:users!youth_id(*), elderly:users!elderly_id(*)`)
 			.eq('id', applicationId)
 			.maybeSingle();
 
 		if (error) throw error;
 		if (!data) return null;
 
+		// Helper to calculate age from date_of_birth
+		const calculateAge = (dob: string | null): number => {
+			if (!dob) return 0;
+			const dobDate = new Date(dob);
+			const now = new Date();
+			let age = now.getFullYear() - dobDate.getFullYear();
+			if (now.getMonth() < dobDate.getMonth() || (now.getMonth() === dobDate.getMonth() && now.getDate() < dobDate.getDate())) age--;
+			return age;
+		};
+
 		return {
 			id: data.id,
 			youth: {
 				id: data.youth?.id,
 				full_name: data.youth?.full_name,
-				age: data.youth?.age,
-				avatar_url: data.youth?.avatar_url,
-				age_verified: data.youth?.age_verified,
-				occupation: data.youth?.occupation,
-				education: data.youth?.education,
+				age: data.youth?.age || calculateAge(data.youth?.date_of_birth),
+				avatar_url: data.youth?.profile_photo_url || data.youth?.avatar_url,
+				age_verified: data.youth?.profile_data?.age_verified ?? data.youth?.age_verified ?? false,
+				occupation: data.youth?.profile_data?.occupation || data.youth?.occupation || null,
+				education: data.youth?.profile_data?.education || data.youth?.education || null,
 				location: data.youth?.location,
 				created_at: data.youth?.created_at,
 			},
 			elderly: {
 				id: data.elderly?.id,
 				full_name: data.elderly?.full_name,
-				age: data.elderly?.age,
-				avatar_url: data.elderly?.avatar_url,
-				age_verified: data.elderly?.age_verified,
-				occupation: data.elderly?.occupation,
-				education: data.elderly?.education,
+				age: data.elderly?.age || calculateAge(data.elderly?.date_of_birth),
+				avatar_url: data.elderly?.profile_photo_url || data.elderly?.avatar_url,
+				age_verified: data.elderly?.profile_data?.age_verified ?? data.elderly?.age_verified ?? false,
+				occupation: data.elderly?.profile_data?.occupation || data.elderly?.occupation || null,
+				education: data.elderly?.profile_data?.education || data.elderly?.education || null,
 				location: data.elderly?.location,
 			},
 			motivation_letter: data.motivation_letter,
@@ -126,30 +155,37 @@ export const adminRepository = {
 		let avgWaitingHours = 0;
 
 		try {
-			const [pendingResult, lockedResult, approvedResult] = await Promise.all([
-				supabase.from('applications').select('*', { count: 'exact', head: true }).eq('status', 'pending_ngo_review'),
+			const [pendingResult, lockedResult, approvedResult, applicationsResult] = await Promise.all([
+				supabase.from('applications').select('*', { count: 'exact', head: true }).eq('status', 'pending_review'),
 				supabase.from('applications').select('*', { count: 'exact', head: true }).not('locked_by', 'is', null),
 				supabase
 					.from('applications')
 					.select('*', { count: 'exact', head: true })
-					.eq('status', 'ngo_approved')
-					.gte('approved_at', new Date().toISOString().slice(0, 10)),
+					.eq('status', 'approved'),
+				// Fetch all applications to calculate average waiting time
+				supabase.from('applications').select('applied_at').in('status', ['pending_review', 'info_requested']),
 			]);
 
 			pendingCount = pendingResult.count || 0;
 			lockedCount = lockedResult.count || 0;
 			approvedTodayCount = approvedResult.count || 0;
+
+			// Calculate average waiting time from applications data
+			const applications = applicationsResult.data || [];
+			if (applications.length > 0) {
+				const now = new Date();
+				let totalWaitingHours = 0;
+
+				for (const app of applications) {
+					const appliedAt = new Date(app.applied_at);
+					const hoursWaiting = Math.floor((now.getTime() - appliedAt.getTime()) / (1000 * 60 * 60));
+					totalWaitingHours += hoursWaiting;
+				}
+
+				avgWaitingHours = Math.round(totalWaitingHours / applications.length);
+			}
 		} catch (error) {
 			console.error('Error fetching application stats:', error);
-		}
-
-		// Optional RPC for average waiting time - may not exist in database
-		try {
-			const { data: avgWait } = await supabase.rpc('avg_waiting_time_hours');
-			avgWaitingHours = (avgWait as number) || 0;
-		} catch {
-			// RPC function may not exist, use fallback
-			avgWaitingHours = 0;
 		}
 
 		return {
@@ -160,27 +196,62 @@ export const adminRepository = {
 		};
 	},
 
-	async approveApplication(applicationId: string, adminId: string, notes?: string): Promise<void> {
-		const updates: any = { status: 'ngo_approved', approved_by: adminId, approved_at: new Date().toISOString() };
-		if (notes) updates.approval_notes = notes;
+	async approveApplication(applicationId: string, _adminId: string, notes?: string): Promise<void> {
+		// Update status only
+		const updates: any = { status: 'approved' };
+		if (notes) updates.ngo_notes = notes;
 		const { error } = await supabase.from('applications').update(updates).eq('id', applicationId);
 		if (error) throw error;
 	},
 
-	async rejectApplication(applicationId: string, adminId: string, reason: string, notes: string): Promise<void> {
+	async rejectApplication(applicationId: string, _adminId: string, reason: string, notes: string, youthId?: string): Promise<void> {
+		// Only update status - store reason in ngo_notes
+		const combinedNotes = `Rejection Reason: ${reason}${notes ? '\nNotes: ' + notes : ''}`;
 		const { error } = await supabase
 			.from('applications')
-			.update({ status: 'rejected', rejected_by: adminId, rejection_reason: reason, rejection_notes: notes, rejected_at: new Date().toISOString() })
+			.update({ status: 'rejected', ngo_notes: combinedNotes })
 			.eq('id', applicationId);
 		if (error) throw error;
+
+		// Send notification to youth applicant if youthId provided
+		if (youthId) {
+			try {
+				await supabase.from('notifications').insert({
+					user_id: youthId,
+					type: 'application_update',
+					title: 'Application Rejected',
+					message: `Your adoption application has been rejected. Reason: ${reason}`,
+					is_read: false,
+				});
+			} catch (notifError) {
+				console.error('Failed to send notification:', notifError);
+			}
+		}
 	},
 
-	async requestMoreInfo(applicationId: string, adminId: string, infoRequested: string, notes: string): Promise<void> {
+	async requestMoreInfo(applicationId: string, _adminId: string, infoRequested: string, notes: string, youthId?: string): Promise<void> {
+		// Only update status - store request in ngo_notes
+		const combinedNotes = `Info Requested: ${infoRequested}${notes ? '\nNotes: ' + notes : ''}`;
 		const { error } = await supabase
 			.from('applications')
-			.update({ status: 'info_requested', info_requested_by: adminId, info_requested: infoRequested, info_notes: notes, info_requested_at: new Date().toISOString() })
+			.update({ status: 'info_requested', ngo_notes: combinedNotes })
 			.eq('id', applicationId);
 		if (error) throw error;
+
+		// Send notification to youth applicant if youthId provided
+		if (youthId) {
+			try {
+				await supabase.from('notifications').insert({
+					user_id: youthId,
+					type: 'application_update',
+					title: 'Additional Information Required',
+					message: `More information is needed for your application: ${infoRequested}`,
+					is_read: false,
+				});
+			} catch (notifError) {
+				console.error('Failed to send notification:', notifError);
+			}
+		}
 	},
 
 	async lockApplication(applicationId: string, adminId: string): Promise<void> {
@@ -400,8 +471,10 @@ export type ConsultationRequest = {
 	requesterName: string;
 	requesterType: 'youth' | 'elderly';
 	requesterAge: number;
+	requesterAvatarUrl: string | null;
 	partnerName: string;
 	partnerAge: number;
+	partnerAvatarUrl: string | null;
 	consultationType: string;
 	preferredMethod: string;
 	preferredDateTime: string;
@@ -568,8 +641,10 @@ function mapRowToConsultation(row: any): ConsultationRequest {
 		requesterName: row.requester?.full_name || 'Unknown',
 		requesterType: row.requester?.user_type || 'elderly',
 		requesterAge: calculateAge(row.requester?.date_of_birth),
+		requesterAvatarUrl: row.requester?.profile_photo_url || row.requester?.avatar_url || null,
 		partnerName: row.partner?.full_name || 'Unknown',
 		partnerAge: calculateAge(row.partner?.date_of_birth),
+		partnerAvatarUrl: row.partner?.profile_photo_url || row.partner?.avatar_url || null,
 		consultationType: row.consultation_type,
 		preferredMethod: row.preferred_method || 'video_call',
 		preferredDateTime: row.preferred_datetime || '',

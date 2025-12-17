@@ -1,7 +1,7 @@
 import React from 'react';
 import { observer } from 'mobx-react-lite';
 import { adminViewModel } from '@home-sweet-home/viewmodel';
-import { Button, Card } from '../components/ui';
+import { Button } from '../components/ui';
 
 interface ApplicationDetailsProps {
   onBack: () => void;
@@ -95,6 +95,7 @@ const styles = {
     maxHeight: '300px',
     overflowY: 'auto' as const,
     marginBottom: '1rem',
+    color: '#333',
   },
   letterStats: {
     display: 'flex',
@@ -104,6 +105,7 @@ const styles = {
     backgroundColor: '#e8f5e9',
     borderRadius: '6px',
     fontSize: '0.9rem',
+    color: '#333',
   },
   valid: {
     color: '#4caf50',

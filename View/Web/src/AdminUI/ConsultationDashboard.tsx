@@ -48,6 +48,7 @@ const styles = {
         fontWeight: 700,
         color: '#333333',
         marginBottom: '20px',
+        width: 'fit-content',
     },
     title: {
         fontFamily: 'Inter, sans-serif',

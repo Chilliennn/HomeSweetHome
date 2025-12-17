@@ -28,6 +28,8 @@ const styles = {
     fontFamily: 'inherit',
     resize: 'vertical' as const,
     boxSizing: 'border-box' as const,
+    backgroundColor: '#fff',
+    color: '#333',
   },
   importantNote: {
     padding: '1rem',

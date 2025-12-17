@@ -194,19 +194,7 @@ const styles = {
     },
 };
 
-// Data should come from database - currently showing 0 since no data exists
-const consultationData = {
-    pending: 0,
-    inProgress: 0,
-    completed: 0,
-};
-
-const safetyAlertsData = {
-    critical: 0,
-    highPriority: 0,
-    medium: 0,
-    urgentCount: 0,
-};
+// Stats are now loaded from ViewModels - no hardcoded data needed
 
 const ReportPage: React.FC = observer(() => {
     const [hoveredButton, setHoveredButton] = useState<string | null>(null);
@@ -223,6 +211,7 @@ const ReportPage: React.FC = observer(() => {
     // Get stats from ViewModels with fallback to 0
     const consultationStats = consultationViewModel.stats;
     const safetyStats = safetyViewModel.stats;
+    const urgentCount = (safetyStats?.critical ?? 0) + (safetyStats?.high ?? 0);
 
     // Handle tab change - resets view back to main when clicking Reports tab
     const handleTabChange = (tab: string) => {
@@ -354,19 +343,19 @@ const ReportPage: React.FC = observer(() => {
                         <div style={styles.statsRow}>
                             <div style={styles.statBox}>
                                 <p style={{ ...styles.statValue, color: colors.corvette }}>
-                                    {consultationData.pending}
+                                    {consultationStats?.pendingAssignment ?? 0}
                                 </p>
                                 <p style={styles.statLabel}>Pending</p>
                             </div>
                             <div style={styles.statBox}>
                                 <p style={{ ...styles.statValue, color: colors.morningGlory }}>
-                                    {consultationData.inProgress}
+                                    {(consultationStats?.assigned ?? 0) + (consultationStats?.inProgress ?? 0)}
                                 </p>
                                 <p style={styles.statLabel}>In Progress</p>
                             </div>
                             <div style={styles.statBox}>
                                 <p style={{ ...styles.statValue, color: colors.caper }}>
-                                    {consultationData.completed}
+                                    {consultationStats?.completedToday ?? 0}
                                 </p>
                                 <p style={styles.statLabel}>Completed</p>
                             </div>
@@ -400,7 +389,7 @@ const ReportPage: React.FC = observer(() => {
                         {/* Title with Badge */}
                         <div style={styles.cardTitleRow}>
                             <h2 style={{ ...styles.cardTitle, margin: 0 }}>Safety Alerts</h2>
-                            <span style={styles.urgentBadge}>{safetyAlertsData.urgentCount} Urgent</span>
+                            <span style={styles.urgentBadge}>{urgentCount} Urgent</span>
                         </div>
 
                         {/* Description */}
@@ -412,19 +401,19 @@ const ReportPage: React.FC = observer(() => {
                         <div style={styles.statsRow}>
                             <div style={styles.statBox}>
                                 <p style={{ ...styles.statValue, color: colors.apricot }}>
-                                    {safetyAlertsData.critical}
+                                    {safetyStats?.critical ?? 0}
                                 </p>
                                 <p style={styles.statLabel}>Critical</p>
                             </div>
                             <div style={styles.statBox}>
                                 <p style={{ ...styles.statValue, color: colors.corvette }}>
-                                    {safetyAlertsData.highPriority}
+                                    {safetyStats?.high ?? 0}
                                 </p>
                                 <p style={styles.statLabel}>High Priority</p>
                             </div>
                             <div style={styles.statBox}>
                                 <p style={{ ...styles.statValue, color: colors.prelude }}>
-                                    {safetyAlertsData.medium}
+                                    {safetyStats?.medium ?? 0}
                                 </p>
                                 <p style={styles.statLabel}>Medium</p>
                             </div>

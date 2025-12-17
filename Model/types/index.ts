@@ -31,24 +31,24 @@ export interface UserProfileData {
     type?: 'default' | 'custom';
     selected_avatar_index?: number | null;
   };
-  
+
   // Real Identity - only private photo stored here
   // (phone & location are stored in users table directly)
   real_identity?: {
     real_photo_url?: string | null;
   };
-  
+
   // Profile Info - only user-type specific data
   // (languages stored in users table directly)
   interests?: string[];
   self_introduction?: string;
-  
+
   // Verification
   age_verified?: boolean;
   verified_age?: number;
   verification_reference?: string;
   verified_at?: string;
-  
+
   // Profile Completion tracking
   profile_completed?: boolean;
   profile_completed_at?: string;
@@ -60,7 +60,7 @@ export interface UserProfileData {
   };
 }
 
-export type CommunicationStyle = 
+export type CommunicationStyle =
   | 'text_messaging'
   | 'voice_calls'
   | 'video_calls'
@@ -70,14 +70,11 @@ export type CommunicationStyle =
 // ============================================
 // APPLICATION TYPES
 // ============================================
-export type ApplicationStatus = 
-  | 'pending_interest'      
-  | 'pending_ngo_review'
-  | 'ngo_approved'
-  | 'pre_chat_active'
-  | 'both_accepted'
-  | 'rejected'
-  | 'withdrawn';
+export type ApplicationStatus =
+  | 'pending_review'
+  | 'info_requested'
+  | 'approved'
+  | 'rejected';
 
 export type Decision = 'pending' | 'accept' | 'decline';
 
@@ -98,7 +95,7 @@ export interface Application {
 // ============================================
 // RELATIONSHIP TYPES
 // ============================================
-export type RelationshipStage = 
+export type RelationshipStage =
   | 'getting_to_know'
   | 'trial_period'
   | 'official_ceremony'
@@ -106,7 +103,7 @@ export type RelationshipStage =
 
 export type RelationshipStatus = 'active' | 'paused' | 'ended';
 
-export type EndRequestStatus = 
+export type EndRequestStatus =
   | 'none'
   | 'pending_cooldown'
   | 'under_review'
@@ -225,21 +222,21 @@ export interface CommunicationCapabilities {
   canSendVoice: boolean;
   canSendImage: boolean;
   canSendVideo: boolean;
-  
+
   // Calls
   canVoiceCall: boolean;
   canVideoCall: boolean;
-  
+
   // Advanced features
   canScheduleMeetings: boolean;
   canShareDiary: boolean;
   canShareGallery: boolean;
-  
+
   // Limits (null = unlimited)
   textMessageLimit?: number | null;         // chars per message
   voiceMessageLimit?: number | null;        // seconds per message
   dailyMessageLimit?: number | null;        // messages per day
-  
+
   // Moderation
   moderationEnabled: boolean;
   autoBlockEnabled: boolean;
@@ -263,7 +260,7 @@ export interface ModerationResult {
 // ============================================
 // SAFETY TYPES
 // ============================================
-export type IncidentType = 
+export type IncidentType =
   | 'financial_request'
   | 'negative_sentiment'
   | 'harassment'
@@ -294,7 +291,7 @@ export interface SafetyIncident {
 // ============================================
 // NOTIFICATION TYPES
 // ============================================
-export type NotificationType = 
+export type NotificationType =
   | 'stage_milestone'
   | 'new_message'
   | 'calendar_reminder'
@@ -320,8 +317,8 @@ export interface Notification {
   type: NotificationType;
   title: string;
   message: string;
-  reference_id?: string;     
-  reference_table?: string;   
+  reference_id?: string;
+  reference_table?: string;
   is_read: boolean;
   created_at: string;
 }

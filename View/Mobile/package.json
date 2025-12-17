@@ -26,7 +26,6 @@
     "@react-navigation/elements": "^2.6.3",
     "@react-navigation/native": "^7.1.8",
     "dotenv": "^17.2.3",
-    "expo": "~54.0.25",
     "expo-av": "~15.0.1",
     "expo-camera": "~15.0.8",
     "expo-constants": "~18.0.10",
@@ -66,6 +65,7 @@
     "dotenv-cli": "^11.0.0",
     "eslint": "^9.25.0",
     "eslint-config-expo": "~10.0.0",
+    "expo": "~54.0.29",
     "typescript": "~5.9.2"
   },
   "private": true

@@ -45,6 +45,10 @@ export const StageRequirementsScreen = observer(() => {
     });
   };
 
+    const collapseSpaces = (text?: string) => {
+      if (!text) return "";
+      return text.replace(/\s+/g, " ").trim();
+    };
   return (
     <SafeAreaView style={styles.safeArea} edges={["top"]}>
       <View style={styles.container}>
@@ -66,7 +70,9 @@ export const StageRequirementsScreen = observer(() => {
         >
           <Text style={styles.stageTitle}>
             Stage {vm.stages.find((s) => s.is_current)?.order}:{" "}
-            {vm.stages.find((s) => s.is_current)?.display_name}
+              {collapseSpaces(
+                vm.stages.find((s) => s.is_current)?.display_name
+              )}
           </Text>
 
           {vm.requirements.some((r) => !r.is_completed) && (

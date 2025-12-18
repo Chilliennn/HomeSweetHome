@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { observer } from 'mobx-react-lite';
 import { elderMatchingViewModel, youthMatchingViewModel, matchingViewModel } from '@home-sweet-home/viewmodel';
+import { notificationRepository } from '@home-sweet-home/model';
 import { Card, Button, IconCircle, LoadingSpinner } from '@/components/ui';
 import { Colors } from '@/constants/theme';
 
@@ -36,6 +37,10 @@ export const NotificationScreen = observer(() => {
     // State for general system notifications (including consultation_assigned)
     // TODO: Uncomment when notification system is fixed
     // const [generalNotifications, setGeneralNotifications] = useState<any[]>([]);
+
+    // NEW: State for advisor/consultation notifications (addon by user)
+    const [advisorNotifications, setAdvisorNotifications] = useState<any[]>([]);
+    const [isLoadingAdvisor, setIsLoadingAdvisor] = useState(false);
 
     // Load notifications based on user type
     useEffect(() => {
@@ -75,6 +80,31 @@ export const NotificationScreen = observer(() => {
     //         console.error('Failed to load general notifications:', error);
     //     }
     // };
+
+    // NEW: Load advisor/consultation notifications (addon by user)
+    const loadAdvisorNotifications = async (userId: string) => {
+        setIsLoadingAdvisor(true);
+        try {
+            console.log('[NotificationScreen] Loading advisor notifications for user:', userId);
+            const notifications = await notificationRepository.getNotifications(userId, 20);
+            const advisorNotifs = notifications.filter(
+                (n: any) => n.type === 'consultation_assigned' || n.type === 'advisor_assigned' || n.type === 'admin_notice'
+            );
+            console.log('[NotificationScreen] Advisor notifications:', advisorNotifs.length);
+            setAdvisorNotifications(advisorNotifs);
+        } catch (error) {
+            console.error('[NotificationScreen] Failed to load advisor notifications:', error);
+        } finally {
+            setIsLoadingAdvisor(false);
+        }
+    };
+
+    // NEW: Load advisor notifications when user is set
+    useEffect(() => {
+        if (currentUserId) {
+            loadAdvisorNotifications(currentUserId);
+        }
+    }, [currentUserId]);
 
     const handleAccept = async (reqId: string, youthId: string) => {
         if (!currentUserId) return;
@@ -333,20 +363,46 @@ export const NotificationScreen = observer(() => {
             </View>
 
             <View style={styles.content}>
+                {/* NEW: Advisor Notifications Section (addon by user) */}
+                {advisorNotifications.length > 0 && (
+                    <View style={styles.advisorSection}>
+                        <Text style={styles.sectionTitle}>📋 Advisor Updates</Text>
+                        {advisorNotifications.map((item) => (
+                            <Card key={item.id} style={[styles.notificationCard, styles.advisorCard]}>
+                                <View style={styles.notifRow}>
+                                    <IconCircle
+                                        icon={item.type === 'consultation_assigned' ? '🎉' : item.type === 'advisor_assigned' ? '👨‍⚕️' : '📢'}
+                                        size={40}
+                                        backgroundColor="#E8F5E9"
+                                    />
+                                    <View style={styles.notifContent}>
+                                        <Text style={styles.notifTitle}>{item.title || 'Advisor Update'}</Text>
+                                        <Text style={styles.notifText}>{item.message}</Text>
+                                        <Text style={styles.timeText}>{formatDate(item.created_at)}</Text>
+                                    </View>
+                                </View>
+                            </Card>
+                        ))}
+                    </View>
+                )}
+
+                {/* Existing Match Notifications */}
                 <FlatList
                     data={data}
                     renderItem={isElderly ? renderElderlyNotification : renderYouthNotification}
                     keyExtractor={item => item.id}
                     contentContainerStyle={styles.list}
                     ListEmptyComponent={
-                        <View style={styles.emptyContainer}>
-                            <Text style={styles.placeholder}>No new notifications.</Text>
-                            <Text style={styles.placeholderSub}>
-                                {isElderly
-                                    ? "When youth express interest, they will appear here."
-                                    : "Updates on your interests will appear here."}
-                            </Text>
-                        </View>
+                        advisorNotifications.length === 0 ? (
+                            <View style={styles.emptyContainer}>
+                                <Text style={styles.placeholder}>No new notifications.</Text>
+                                <Text style={styles.placeholderSub}>
+                                    {isElderly
+                                        ? "When youth express interest, they will appear here."
+                                        : "Updates on your interests will appear here."}
+                                </Text>
+                            </View>
+                        ) : null
                     }
                 />
             </View>
@@ -396,5 +452,10 @@ const styles = StyleSheet.create({
 
     emptyContainer: { alignItems: 'center', marginTop: 50 },
     placeholder: { fontSize: 18, color: '#666', fontWeight: '500', marginBottom: 8 },
-    placeholderSub: { fontSize: 14, color: '#999' }
+    placeholderSub: { fontSize: 14, color: '#999' },
+
+    // NEW: Advisor Notifications styles (addon by user)
+    advisorSection: { paddingHorizontal: 20, paddingTop: 16 },
+    sectionTitle: { fontSize: 16, fontWeight: '700', color: '#333', marginBottom: 12 },
+    advisorCard: { borderLeftWidth: 4, borderLeftColor: '#9DE2D0' },
 });

@@ -1,4 +1,5 @@
 import { consultationRepository } from '../../Repository/AdminRepository/adminRepository';
+import { notificationRepository } from '../../Repository/UserRepository/notificationRepository';
 import type { ConsultationRequest, Advisor, ConsultationStats } from '../../Repository/AdminRepository/adminRepository';
 
 export const consultationService = {
@@ -42,12 +43,42 @@ export const consultationService = {
 
     /**
      * Assign an advisor to a consultation request
+     * Creates a notification for the requesting user
      */
     async assignAdvisor(consultationId: string, advisorId: string, adminId: string): Promise<void> {
         if (!advisorId) {
             throw new Error('Advisor ID is required');
         }
+
+        // First get the consultation to find the requester
+        const consultation = await consultationRepository.getConsultationById(consultationId);
+        if (!consultation) {
+            throw new Error('Consultation not found');
+        }
+
+        // Assign the advisor
         await consultationRepository.assignAdvisor(consultationId, advisorId, adminId);
+
+        // Get advisor info for the notification message
+        const advisors = await consultationRepository.getAdvisors();
+        const advisor = advisors.find((a: Advisor) => a.id === advisorId);
+        const advisorName = advisor?.name || 'A Family Advisor';
+
+        // Create notification for the requester (addon by user)
+        try {
+            await notificationRepository.createNotification({
+                user_id: consultation.requesterId,
+                type: 'consultation_assigned',
+                title: 'Advisor Assigned! 🎉',
+                message: `${advisorName} has been assigned to help with your ${consultation.consultationType} consultation. They will contact you soon.`,
+                reference_id: consultationId,
+                reference_table: 'consultation_requests',
+            });
+            console.log('[consultationService] Created notification for user:', consultation.requesterId);
+        } catch (error) {
+            // Don't fail the assignment if notification fails
+            console.error('[consultationService] Failed to create notification:', error);
+        }
     },
 
     /**

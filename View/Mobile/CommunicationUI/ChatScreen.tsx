@@ -1293,7 +1293,78 @@ const styles = StyleSheet.create({
     marginTop: 4,
     textAlign: 'right',
   },
-<<<<<<< HEAD
+  // Media message styles (from friend)
+  mediaBubbleContainer: {
+    marginVertical: 4,
+    marginHorizontal: 16,
+    maxWidth: '70%',
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+  mediaBubbleOwn: {
+    alignSelf: 'flex-end',
+    backgroundColor: Colors.light.secondary,
+  },
+  mediaBubblePartner: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#F0F0F0',
+  },
+  mediaImage: {
+    width: 250,
+    height: undefined,
+    aspectRatio: 0.75,
+    maxHeight: 350,
+    borderRadius: 12,
+    backgroundColor: '#f0f0f0',
+  },
+  mediaTimestamp: {
+    fontSize: 11,
+    color: '#666',
+    textAlign: 'right',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  videoThumbnail: {
+    width: 220,
+    height: 140,
+    backgroundColor: '#333',
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  videoPlayIcon: {
+    fontSize: 40,
+  },
+  videoLabel: {
+    color: '#FFF',
+    fontSize: 14,
+    marginTop: 8,
+  },
+  callInviteFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: 4,
+    marginTop: 4,
+  },
+  mediaFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  readStatus: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  readStatusRead: {
+    color: '#4A90D9',
+  },
+  readStatusDelivered: {
+    color: '#999',
+  },
   // Modal styles for Advisor Request
   modalOverlay: {
     flex: 1,
@@ -1404,80 +1475,6 @@ const styles = StyleSheet.create({
     padding: 12,
     fontSize: 16,
     marginBottom: 16,
-=======
-  // Media message styles
-  mediaBubbleContainer: {
-    marginVertical: 4,
-    marginHorizontal: 16,
-    maxWidth: '70%',
-    borderRadius: 16,
-    overflow: 'hidden',
-  },
-  mediaBubbleOwn: {
-    alignSelf: 'flex-end',
-    backgroundColor: Colors.light.secondary,
-  },
-  mediaBubblePartner: {
-    alignSelf: 'flex-start',
-    backgroundColor: '#F0F0F0',
-  },
-  mediaImage: {
-    width: 250,
-    height: undefined,
-    aspectRatio: 0.75, // Portrait orientation (3:4)
-    maxHeight: 350,
-    borderRadius: 12,
-    backgroundColor: '#f0f0f0',
-  },
-  mediaTimestamp: {
-    fontSize: 11,
-    color: '#666',
-    textAlign: 'right',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  videoThumbnail: {
-    width: 220,
-    height: 140,
-    backgroundColor: '#333',
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  videoPlayIcon: {
-    fontSize: 40,
-  },
-  videoLabel: {
-    color: '#FFF',
-    fontSize: 14,
-    marginTop: 8,
-  },
-  // Read status styles
-  callInviteFooter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    gap: 4,
-    marginTop: 4,
-  },
-  mediaFooter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  readStatus: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  readStatusRead: {
-    color: '#4A90D9', // Blue for read (like WhatsApp)
-  },
-  readStatusDelivered: {
-    color: '#999', // Gray for delivered but not read
->>>>>>> e146b2ec3406693cb74ad186ab303f6b70fe2b23
   },
 });
 

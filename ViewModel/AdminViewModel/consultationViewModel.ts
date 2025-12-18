@@ -125,6 +125,26 @@ export class ConsultationViewModel {
     }
 
     /**
+     * Mark a consultation request as completed
+     */
+    async completeRequest(consultationId: string, notes: string): Promise<void> {
+        this.isLoading = true;
+        this.errorMessage = null;
+
+        try {
+            await consultationService.completeRequest(consultationId, notes);
+            await this.loadConsultations();
+            await this.loadStats();
+            this.selectedConsultation = null;
+        } catch (error) {
+            this.errorMessage = error instanceof Error ? error.message : 'Failed to complete request';
+            console.error('Error completing request:', error);
+        } finally {
+            this.isLoading = false;
+        }
+    }
+
+    /**
      * Set filter
      */
     setFilter(filter: 'all' | 'pending_assignment' | 'assigned' | 'in_progress' | 'completed' | 'dismissed'): void {

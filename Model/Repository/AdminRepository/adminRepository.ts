@@ -602,6 +602,7 @@ export type ConsultationRequest = {
 	requesterType: 'youth' | 'elderly';
 	requesterAge: number;
 	requesterAvatarUrl: string | null;
+	partnerId: string;
 	partnerName: string;
 	partnerAge: number;
 	partnerAvatarUrl: string | null;
@@ -652,7 +653,13 @@ export const consultationRepository = {
 			`)
 			.order('submitted_at', { ascending: sortBy === 'oldest' });
 
-		if (status && status !== 'all') query = query.eq('status', status);
+		// For 'all' view, exclude completed and dismissed - they should only show when filtered explicitly
+		if (status && status !== 'all') {
+			query = query.eq('status', status);
+		} else {
+			// 'all' shows only active requests (pending, assigned, in_progress)
+			query = query.in('status', ['pending_assignment', 'assigned', 'in_progress']);
+		}
 		if (urgency) query = query.eq('urgency', urgency);
 		if (limit) query = query.range(offset, offset + limit - 1);
 
@@ -855,6 +862,7 @@ function mapRowToConsultation(row: any): ConsultationRequest {
 	return {
 		id: row.id,
 		requesterId: row.requester_id,
+		partnerId: row.partner_id,
 		requesterName: row.requester?.full_name || 'Unknown',
 		requesterType: row.requester?.user_type || 'elderly',
 		requesterAge: calculateAge(row.requester?.date_of_birth),
@@ -875,5 +883,22 @@ function mapRowToConsultation(row: any): ConsultationRequest {
 		assignedAdvisorName: row.advisor?.name || null
 	};
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 export default adminRepository;

@@ -1,40 +1,16 @@
 import { familyRepository } from '../../Repository/UserRepository';
 import type { Relationship as RelationshipType } from '../../types';
 
-// Platform-agnostic config getter
-// For Expo: reads from Constants.expoConfig.extra
-// For Web: reads from process.env or globalThis
+/**
+ * Platform-agnostic config getter
+ * - React Native (Expo): Uses EXPO_PUBLIC_* prefix, automatically injected by Expo
+ * - Web (Vite): Uses VITE_* prefix, mapped to EXPO_PUBLIC_* via vite.config.ts define
+ */
 function getConfig(key: string): string | undefined {
-  // Try Expo Constants (React Native)
-  try {
-    const Constants = require('expo-constants').default;
-    const value = Constants?.expoConfig?.extra?.[key] || Constants?.manifest?.extra?.[key];
-    if (value) return value;
-  } catch {
-    // Not in Expo environment
-  }
-
-  // Try process.env (Node.js / React Native)
-  try {
-    if (typeof process !== 'undefined' && process.env) {
-      const value = (process.env as any)[key] || (process.env as any)[`VITE_${key}`];
-      if (value) return value;
-    }
-  } catch {
-    // process not available
-  }
-
-  // Try globalThis for Vite (Web)
-  try {
-    if (typeof globalThis !== 'undefined' && (globalThis as any).__VITE_ENV__) {
-      const value = (globalThis as any).__VITE_ENV__[`VITE_${key}`];
-      if (value) return value;
-    }
-  } catch {
-    // Not in Vite environment
-  }
-
-  return undefined;
+  // Process.env works for both platforms:
+  // - Expo injects EXPO_PUBLIC_* at build time
+  // - Vite's define config maps VITE_* to process.env.EXPO_PUBLIC_*
+  return process.env[`EXPO_PUBLIC_${key}`] || process.env[key] || undefined;
 }
 
 /**

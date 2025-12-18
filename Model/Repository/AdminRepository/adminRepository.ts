@@ -293,8 +293,25 @@ export const adminRepository = {
 	},
 
 	async approveApplication(applicationId: string, adminId: string, notes?: string): Promise<void> {
-		const updates: any = { status: 'approved', approved_by: adminId, approved_at: new Date().toISOString() };
-		if (notes) updates.approval_notes = notes;
+		// Use correct field names matching the database schema:
+		// status options: 'pending_interest', 'pre_chat_active', 'pending_review', 'info_requested', 'approved', 'both_accepted', 'rejected', 'withdrawn'
+
+		// UUID validation regex
+		const isValidUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(adminId);
+
+		const updates: any = {
+			status: 'approved',
+			reviewed_at: new Date().toISOString()
+		};
+
+		// Only set ngo_reviewer_id if adminId is a valid UUID
+		if (isValidUUID) {
+			updates.ngo_reviewer_id = adminId;
+		} else {
+			console.warn('[adminRepository] adminId is not a valid UUID, skipping ngo_reviewer_id:', adminId);
+		}
+
+		if (notes) updates.ngo_notes = notes;
 		const { error } = await supabase.from('applications').update(updates).eq('id', applicationId);
 		if (error) throw error;
 	},

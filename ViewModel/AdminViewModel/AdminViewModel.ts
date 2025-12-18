@@ -133,6 +133,20 @@ export class AdminViewModel {
       return;
     }
 
+    // Debug: log the values being used
+    console.log('[AdminVM] approveApplication called with:', {
+      applicationId: this.selectedApplication.id,
+      adminId: this.currentAdminId,
+      notes: notes
+    });
+
+    // Validate adminId
+    if (!this.currentAdminId) {
+      this.errorMessage = 'Admin ID not set. Please ensure you are logged in.';
+      console.error('[AdminVM] currentAdminId is empty!');
+      return;
+    }
+
     this.isApproving = true;
     this.errorMessage = null;
 
@@ -146,9 +160,17 @@ export class AdminViewModel {
       this.selectedApplication.status = 'approved';
       // Reload stats
       await this.loadStats();
-    } catch (error) {
-      this.errorMessage = error instanceof Error ? error.message : 'Failed to approve application';
-      console.error('Error approving application:', error);
+      console.log('[AdminVM] Application approved successfully');
+    } catch (error: any) {
+      // Enhanced error logging
+      console.error('[AdminVM] Error approving application:');
+      console.error('  - Error type:', typeof error);
+      console.error('  - Error message:', error?.message);
+      console.error('  - Error code:', error?.code);
+      console.error('  - Error details:', error?.details);
+      console.error('  - Full error:', JSON.stringify(error, null, 2));
+
+      this.errorMessage = error?.message || error?.details || 'Failed to approve application';
     } finally {
       this.isApproving = false;
     }

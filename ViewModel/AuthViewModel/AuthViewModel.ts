@@ -1,4 +1,5 @@
 import { makeAutoObservable, runInAction } from 'mobx';
+// Force update
 import {
   AgeVerificationPayload,
   AgeVerificationResult,
@@ -62,7 +63,7 @@ export class AuthViewModel {
   // =============================================================
   // Observable State - UI binds to these properties
   // =============================================================
-  
+
   // Authentication state
   authState: AuthState = {
     isAuthenticated: false,
@@ -476,16 +477,16 @@ export class AuthViewModel {
       const user = await profileCompletionService.loadUser(userId);
       runInAction(() => {
         this.profileCompletion = profileCompletionService.getCompletionState(user);
-        
+
         if (user?.profile_data?.verified_age) {
           this.verifiedAge = user.profile_data.verified_age;
           this.profileCompletion.ageVerified = !!user.profile_data.age_verified;
         }
-        
+
         if (user?.user_type) {
           this.userType = user.user_type;
         }
-        
+
         // Real Identity: phone & location from users table, real_photo from profile_data
         if (user?.phone || user?.location || user?.profile_data?.real_identity) {
           this.profileData.realIdentity = {
@@ -494,7 +495,7 @@ export class AuthViewModel {
             realPhotoUrl: user.profile_data?.real_identity?.real_photo_url || null,
           };
         }
-        
+
         // Display Identity: all from profile_data
         if (user?.profile_data?.avatar_meta || user?.profile_data?.display_name) {
           this.profileData.displayIdentity = {
@@ -504,7 +505,7 @@ export class AuthViewModel {
             customAvatarUrl: user.profile_data.avatar_url || null,
           };
         }
-        
+
         // Profile Info: languages from users table, interests & intro from profile_data
         if (user?.languages || user?.profile_data?.interests) {
           this.profileData.profileInfo = {
@@ -536,7 +537,7 @@ export class AuthViewModel {
    */
   private mapAuthError(error: any): string {
     const message = error?.message?.toLowerCase() || '';
-    
+
     if (message.includes('invalid login credentials')) {
       return 'Invalid email or password';
     }
@@ -552,7 +553,7 @@ export class AuthViewModel {
     if (message.includes('email')) {
       return 'Please enter a valid email address';
     }
-    
+
     return error?.message || 'Authentication failed. Please try again.';
   }
 
@@ -561,7 +562,7 @@ export class AuthViewModel {
    */
   private mapVerificationError(error: any): string {
     const message = error?.message?.toLowerCase() || '';
-    
+
     if (message.includes('below minimum')) {
       if (this.userType === 'youth') {
         return 'You must be at least 18 years old to register as a youth';
@@ -574,7 +575,7 @@ export class AuthViewModel {
       }
       return 'Age verification failed';
     }
-    
+
     return error?.message || 'Age verification failed. Please try again.';
   }
 }

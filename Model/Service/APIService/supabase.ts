@@ -3,9 +3,10 @@ import { createClient } from '@supabase/supabase-js';
 function getEnvVar(name: 'SUPABASE_URL' | 'SUPABASE_ANON_KEY'): string {
   // 1. Try Expo Constants (for React Native)
   try {
-    // runtime require so bundlers don't parse web-only code
+    // Obfuscate require so Vite/esbuild doesn't try to bundle 'react-native' code
     // @ts-ignore
-    const Constants = require('expo-constants').default;
+    const packageName = 'expo-constants';
+    const Constants = require(packageName).default;
     const val = Constants?.expoConfig?.extra?.[name] || Constants?.manifest?.extra?.[name];
     if (val) {
       console.log(`[env] found ${name} in expo extras`);
@@ -15,27 +16,24 @@ function getEnvVar(name: 'SUPABASE_URL' | 'SUPABASE_ANON_KEY'): string {
     /* not running in Expo runtime */
   }
 
-  // 2. Try process.env (for Node.js / React Native)
-  if (typeof process !== 'undefined' && process.env) {
-    const v = process.env[`EXPO_PUBLIC_${name}`] || process.env[`VITE_${name}`] || process.env[name] || '';
-    if (v) {
-      console.log(`[env] found ${name} in process.env`);
-      return v;
+  // 2. Try process.env (Explicit access for Vite replacement compatibility)
+  // We cannot use dynamic keys process.env[name] because Vite replaces strings statically.
+  try {
+    if (name === 'SUPABASE_URL') {
+      return process.env.EXPO_PUBLIC_SUPABASE_URL || process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || '';
     }
-  }
-
-  // 3. Try import.meta.env (for Vite/Web)
-  if (typeof import.meta !== 'undefined' && import.meta.env) {
-    const v = (import.meta.env as any)[`VITE_${name}`] || '';
-    if (v) {
-      console.log(`[env] found ${name} in import.meta.env`);
-      return v;
+    if (name === 'SUPABASE_ANON_KEY') {
+      return process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || '';
     }
+  } catch (e) {
+    // Ignore error if process is not defined
   }
 
   console.warn(`[env] ${name} not found in any environment`);
   return '';
 }
+
+
 
 const supabaseUrl = getEnvVar('SUPABASE_URL');
 const supabaseAnonKey = getEnvVar('SUPABASE_ANON_KEY');

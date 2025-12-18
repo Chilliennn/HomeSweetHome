@@ -89,6 +89,23 @@ export class KeywordManagementViewModel {
         }
     }
 
+    async generateSuggestions() {
+        this.isMutating = true;
+        this.errorMessage = null;
+        try {
+            await this.keywordService.generateSuggestions();
+            await this.loadSuggestions();
+        } catch (err: any) {
+            runInAction(() => {
+                this.errorMessage = "Failed to generate suggestions.";
+            });
+        } finally {
+            runInAction(() => {
+                this.isMutating = false;
+            });
+        }
+    }
+
     async refreshAll() {
         await Promise.all([this.loadDashboard(), this.loadSuggestions()]);
     }

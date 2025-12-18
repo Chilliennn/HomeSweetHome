@@ -4,6 +4,7 @@ export * from './CoreService/SafetyReportService';
 export * from './CoreService/KeywordDetectionService';
 export * from './CoreService/KeywordSuggestionService';
 export * from './CoreService/MessageWithDetectionService';
+export * from './CoreService/SentimentAnalysisService';
 export * from './CoreService/ageVerificationService';
 export * from './CoreService/profileCompletionService';
 export * from './CoreService/authService';

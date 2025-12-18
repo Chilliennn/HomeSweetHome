@@ -377,8 +377,17 @@ export const ChatScreen = observer(function ChatScreen() {
         {
           text: 'Safety Concern',
           onPress: () => {
-            // TODO: Navigate to safety report
-            Alert.alert('Report', 'Safety concern report feature coming soon!');
+            // Navigate to safety report with context
+            router.push({
+              pathname: '/safety-feedback',
+              params: {
+                userId: currentUserId,
+                reportedUserId: partnerUser?.id,
+                reportedUserName: partnerUser?.full_name || 'Partner',
+                chatContext: isRelationshipChat ? 'relationship' : 'pre-match',
+                contextId: isRelationshipChat ? relationshipId : applicationId,
+              }
+            } as any);
           },
           style: 'destructive'
         },

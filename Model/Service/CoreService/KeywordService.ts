@@ -8,6 +8,7 @@ import {
 import { KeywordDetectionService } from "./KeywordDetectionService";
 import { KeywordDetectionRepository } from "../../Repository/AdminRepository/KeywordDetectionRepository";
 import { supabase } from "../APIService/supabase";
+import { KeywordSuggestionService } from "./KeywordSuggestionService";
 
 export interface NormalizedSuggestion {
     id: string;
@@ -32,6 +33,7 @@ function getCategoryId(categoryName: string): string {
 export class KeywordService {
     private keywordRepo: KeywordRepository;
     private detectionService: KeywordDetectionService;
+    private suggestionService: KeywordSuggestionService;
 
     constructor(keywordRepo: KeywordRepository) {
         this.keywordRepo = keywordRepo;
@@ -39,6 +41,13 @@ export class KeywordService {
         // Initialize detection service
         const detectionRepo = new KeywordDetectionRepository(supabase);
         this.detectionService = new KeywordDetectionService(detectionRepo, keywordRepo);
+
+        // Initialize suggestion service
+        this.suggestionService = new KeywordSuggestionService(keywordRepo);
+    }
+
+    async generateSuggestions(): Promise<number> {
+        return this.suggestionService.runSuggestionGeneration();
     }
 
     async getDashboardStats(): Promise<KeywordDashboardStats> {

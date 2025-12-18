@@ -195,10 +195,30 @@ export const KeywordManagementScreen: React.FC<Props> = observer(({ vm, onNaviga
 
                 {/* AI Suggestions Tab */}
                 {activeTab === 'new' && (
-                    <div style={{ backgroundColor: '#D4F4E7', borderRadius: '12px', padding: '24px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
-                            <span style={{ fontSize: '20px' }}>🤖</span>
-                            <h2 style={{ fontSize: '18px', fontWeight: 600, color: '#333333' }}>AI Keyword Suggestions</h2>
+                    <div style={{ backgroundColor: '#9DE2D0', borderRadius: '12px', padding: '24px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <span style={{ fontSize: '20px' }}>🤖</span>
+                                <h2 style={{ fontSize: '18px', fontWeight: 600, color: '#333333' }}>AI Keyword Suggestions</h2>
+                            </div>
+                            <button
+                                onClick={() => vm.generateSuggestions()}
+                                disabled={vm.isMutating}
+                                style={{
+                                    backgroundColor: '#9DE2D0',
+                                    color: '#ffffff',
+                                    border: 'none',
+                                    borderRadius: '8px',
+                                    padding: '8px 16px',
+                                    fontWeight: 600,
+                                    fontSize: '14px',
+                                    cursor: vm.isMutating ? 'not-allowed' : 'pointer',
+                                    opacity: vm.isMutating ? 0.7 : 1,
+                                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                                }}
+                            >
+                                {vm.isMutating ? 'Analyzing...' : '✨ Analyze Chats'}
+                            </button>
                         </div>
                         <p style={{ fontSize: '14px', color: '#666666', marginBottom: '24px' }}>
                             Based on recent safety alerts and detected patterns, we recommend adding the following keywords to enhance monitoring effectiveness.

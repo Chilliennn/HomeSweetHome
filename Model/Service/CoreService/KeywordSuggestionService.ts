@@ -34,7 +34,12 @@ export class KeywordSuggestionService {
             .gte('sent_at', cutoffDate.toISOString())
             .not('content', 'is', null);
 
-        if (error) throw error;
+        if (error) {
+            console.error('[AI Debug] Error fetching messages:', error);
+            throw error;
+        }
+
+        console.log(`[AI Debug] Found ${messages?.length || 0} messages to analyze.`);
 
         // Get existing keywords to avoid duplicates
         const existingKeywords = await this.keywordRepo.fetchKeywords();
@@ -47,6 +52,7 @@ export class KeywordSuggestionService {
 
         messages?.forEach(msg => {
             if (!msg.content) return;
+            // console.log('[AI Debug] Analyzing message:', msg.content); 
 
             const content = msg.content.toLowerCase();
 
@@ -58,6 +64,7 @@ export class KeywordSuggestionService {
 
                     // Filter out common phrases and existing keywords
                     if (this.isDangerousPhrase(phrase) && !existingPhrases.has(phrase)) {
+                        console.log(`[AI Debug] MATCH! Found suspicious phrase: "${phrase}"`);
                         const current = phraseCounts.get(phrase) || { count: 0, examples: [] };
                         current.count++;
                         if (current.examples.length < 3) {
@@ -73,8 +80,8 @@ export class KeywordSuggestionService {
         const suggestions: SuggestionCandidate[] = [];
 
         for (const [phrase, data] of phraseCounts.entries()) {
-            // Only suggest if detected multiple times
-            if (data.count >= 3) {
+            // Only suggest if detected multiple times (Lowered to 1 for testing)
+            if (data.count >= 1) {
                 const analysis = this.analyzePhrase(phrase);
 
                 suggestions.push({
@@ -178,11 +185,10 @@ export class KeywordSuggestionService {
                     .from('keyword_suggestions')
                     .insert({
                         keyword: suggestion.phrase,
-                        category_id: categoryMap[suggestion.category] || '1',
+                        category: suggestion.category, // Schema uses 'category' string, not ID
                         severity: suggestion.severity,
-                        reason: suggestion.reason,
                         status: 'pending',
-                        detection_count: suggestion.frequency
+                        detection_count_last_7_days: suggestion.frequency // Schema uses this specific name
                     });
             } catch (error) {
                 console.error('[KeywordSuggestionService] Error saving suggestion:', error);

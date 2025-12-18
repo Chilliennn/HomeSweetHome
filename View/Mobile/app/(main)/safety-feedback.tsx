@@ -9,12 +9,15 @@ import {
     ScrollView,
     StyleSheet,
     Alert,
-    Modal,
     ActivityIndicator,
+    Image,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { observer } from 'mobx-react-lite';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
+import * as DocumentPicker from 'expo-document-picker';
 import { SafetyFeedbackViewModel } from '@home-sweet-home/viewmodel';
 import { SafetyReportService } from '@home-sweet-home/model';
 import { SafetyReportRepository } from '@home-sweet-home/model';
@@ -23,28 +26,35 @@ import { supabase } from '@home-sweet-home/model';
 /**
  * Safety Feedback Screen (UC401: Report Safety Concern)
  * 
- * Allows elderly users to submit safety reports or positive feedback.
+ * Allows elderly users to submit safety reports from chat conversations.
  * Features:
+ * - Auto-detected reported user from chat context
  * - Report type selection (Positive Feedback / Safety Concern)
  * - Subject and description input
- * - File attachment support
+ * - Camera, gallery, and PDF file attachment
  * - AI-powered severity detection
  * - Critical alert notifications
  */
 
 const SafetyFeedbackScreen = observer(() => {
     const router = useRouter();
+    const params = useLocalSearchParams();
+
+    // Get navigation params from ChatScreen
+    const userId = params.userId as string;
+    const reportedUserId = params.reportedUserId as string;
+    const reportedUserName = params.reportedUserName as string;
+    const chatContext = params.chatContext as string;
+    const contextId = params.contextId as string;
 
     // Initialize ViewModel
     const [vm] = useState(() => {
         const repository = new SafetyReportRepository(supabase);
         const service = new SafetyReportService(repository);
-        // TODO: Get actual user ID from auth context
-        const userId = 'user-123';
-        return new SafetyFeedbackViewModel(service, userId);
+        return new SafetyFeedbackViewModel(service, userId || 'user-123');
     });
 
-    // UC401_12 & UC401_13: Show success modal when report is submitted
+    // Show success modal when report is submitted
     useEffect(() => {
         if (vm.submitSuccess && vm.submittedReportId) {
             Alert.alert(
@@ -53,14 +63,17 @@ const SafetyFeedbackScreen = observer(() => {
                 [
                     {
                         text: 'OK',
-                        onPress: () => vm.closeSuccessModal(),
+                        onPress: () => {
+                            vm.closeSuccessModal();
+                            router.back();
+                        },
                     },
                 ]
             );
         }
     }, [vm.submitSuccess]);
 
-    // UC401 M1: Error loading form
+    // Show error alerts
     useEffect(() => {
         if (vm.submitError) {
             Alert.alert('Error', vm.submitError, [
@@ -73,16 +86,105 @@ const SafetyFeedbackScreen = observer(() => {
         vm.submitReport();
     };
 
+    const handleFileUpload = () => {
+        Alert.alert(
+            'Select Source',
+            'Choose how to add evidence',
+            [
+                {
+                    text: 'Camera',
+                    onPress: async () => {
+                        const { status } = await ImagePicker.requestCameraPermissionsAsync();
+                        if (status !== 'granted') {
+                            Alert.alert('Permission Denied', 'Camera access is required to take photos.');
+                            return;
+                        }
+
+                        const result = await ImagePicker.launchCameraAsync({
+                            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                            quality: 0.8,
+                            allowsEditing: true,
+                        });
+
+                        if (!result.canceled && result.assets[0]) {
+                            vm.addEvidenceFile({
+                                name: `camera-${Date.now()}.jpg`,
+                                uri: result.assets[0].uri,
+                                type: 'image/jpeg',
+                                size: result.assets[0].fileSize || 0,
+                            } as any);
+                        }
+                    }
+                },
+                {
+                    text: 'Gallery',
+                    onPress: async () => {
+                        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+                        if (status !== 'granted') {
+                            Alert.alert('Permission Denied', 'Gallery access is required to select photos.');
+                            return;
+                        }
+
+                        const result = await ImagePicker.launchImageLibraryAsync({
+                            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                            quality: 0.8,
+                            allowsMultipleSelection: false,
+                        });
+
+                        if (!result.canceled && result.assets[0]) {
+                            const asset = result.assets[0];
+                            vm.addEvidenceFile({
+                                name: asset.fileName || `gallery-${Date.now()}.jpg`,
+                                uri: asset.uri,
+                                type: 'image/jpeg',
+                                size: asset.fileSize || 0,
+                            } as any);
+                        }
+                    }
+                },
+                {
+                    text: 'Files (PDF)',
+                    onPress: async () => {
+                        try {
+                            const result = await DocumentPicker.getDocumentAsync({
+                                type: ['application/pdf', 'image/*'],
+                                copyToCacheDirectory: true,
+                            });
+
+                            if (!result.canceled && result.assets[0]) {
+                                const asset = result.assets[0];
+                                if (asset.size && asset.size > 10 * 1024 * 1024) {
+                                    Alert.alert('File Too Large', 'Please select a file smaller than 10MB.');
+                                    return;
+                                }
+                                vm.addEvidenceFile({
+                                    name: asset.name,
+                                    uri: asset.uri,
+                                    type: asset.mimeType || 'application/pdf',
+                                    size: asset.size || 0,
+                                } as any);
+                            }
+                        } catch (error) {
+                            console.error('[FileUpload] Error:', error);
+                            Alert.alert('Error', 'Failed to select file. Please try again.');
+                        }
+                    }
+                },
+                { text: 'Cancel', style: 'cancel' }
+            ]
+        );
+    };
+
     return (
-        <View style={styles.container}>
+        <SafeAreaView style={styles.container} edges={['top']}>
             {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                    <Ionicons name="arrow-back" size={24} color="#333" />
+                    <Text style={styles.backIcon}>←</Text>
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>Safety Feedback</Text>
                 <TouchableOpacity style={styles.notificationButton}>
-                    <Ionicons name="notifications-outline" size={24} color="#333" />
+                    <Ionicons name="notifications-outline" size={20} color="#000" />
                 </TouchableOpacity>
             </View>
 
@@ -94,47 +196,55 @@ const SafetyFeedbackScreen = observer(() => {
                 {/* Form Description */}
                 <Text style={styles.formDescription}>Tell us about your experience</Text>
 
-                {/* Report Type - UC401_4 */}
+                {/* Auto-detected context (if available) */}
+                {reportedUserName && (
+                    <View style={styles.contextCard}>
+                        <Ionicons name="person-outline" size={16} color="#666" />
+                        <Text style={styles.contextText}>
+                            Reporting about: <Text style={styles.contextBold}>{reportedUserName}</Text>
+                        </Text>
+                    </View>
+                )}
+
+                {/* Report Type */}
                 <View style={styles.fieldContainer}>
                     <Text style={styles.label}>
                         Report Type <Text style={styles.required}>*</Text>
                     </Text>
-                    <View style={styles.dropdownContainer}>
-                        <TouchableOpacity
-                            style={[
-                                styles.dropdown,
-                                vm.errors.reportType && styles.inputError,
-                            ]}
-                            onPress={() => {
-                                Alert.alert(
-                                    'Select Report Type',
-                                    '',
-                                    [
-                                        {
-                                            text: 'Positive Feedback',
-                                            onPress: () => vm.setReportType('Positive Feedback'),
-                                        },
-                                        {
-                                            text: 'Safety Concern',
-                                            onPress: () => vm.setReportType('Safety Concern'),
-                                        },
-                                        { text: 'Cancel', style: 'cancel' },
-                                    ]
-                                );
-                            }}
-                        >
-                            <Text style={vm.reportType ? styles.dropdownText : styles.dropdownPlaceholder}>
-                                {vm.reportType || 'Select Report Type'}
-                            </Text>
-                            <Ionicons name="chevron-down" size={20} color="#666" />
-                        </TouchableOpacity>
-                    </View>
+                    <TouchableOpacity
+                        style={[
+                            styles.dropdown,
+                            vm.errors.reportType && styles.inputError,
+                        ]}
+                        onPress={() => {
+                            Alert.alert(
+                                'Select Report Type',
+                                '',
+                                [
+                                    {
+                                        text: 'Positive Feedback',
+                                        onPress: () => vm.setReportType('Positive Feedback'),
+                                    },
+                                    {
+                                        text: 'Safety Concern',
+                                        onPress: () => vm.setReportType('Safety Concern'),
+                                    },
+                                    { text: 'Cancel', style: 'cancel' },
+                                ]
+                            );
+                        }}
+                    >
+                        <Text style={vm.reportType ? styles.dropdownText : styles.dropdownPlaceholder}>
+                            {vm.reportType || 'Select Report Type'}
+                        </Text>
+                        <Ionicons name="chevron-down" size={20} color="#666" />
+                    </TouchableOpacity>
                     {vm.errors.reportType && (
                         <Text style={styles.errorText}>{vm.errors.reportType}</Text>
                     )}
                 </View>
 
-                {/* Subject - UC401_4 */}
+                {/* Subject */}
                 <View style={styles.fieldContainer}>
                     <Text style={styles.label}>
                         Subject <Text style={styles.required}>*</Text>
@@ -154,7 +264,7 @@ const SafetyFeedbackScreen = observer(() => {
                     )}
                 </View>
 
-                {/* Description - UC401_4 */}
+                {/* Description */}
                 <View style={styles.fieldContainer}>
                     <Text style={styles.label}>
                         Description <Text style={styles.required}>*</Text>
@@ -177,25 +287,18 @@ const SafetyFeedbackScreen = observer(() => {
                     )}
                 </View>
 
-                {/* File Upload - UC401_4 & UC401_6 */}
+                {/* File Upload */}
                 <View style={styles.fieldContainer}>
                     <TouchableOpacity
                         style={styles.fileUploadContainer}
-                        onPress={() => {
-                            Alert.alert(
-                                'File Upload',
-                                'File upload functionality will be implemented with expo-document-picker',
-                                [{ text: 'OK' }]
-                            );
-                        }}
+                        onPress={handleFileUpload}
                     >
-                        <Ionicons name="cloud-upload-outline" size={48} color="#9DE2D0" />
+                        <View style={styles.uploadIconContainer}>
+                            <Ionicons name="cloud-upload-outline" size={40} color="#000" />
+                        </View>
                         <Text style={styles.fileUploadText}>Tap to select files</Text>
                         <Text style={styles.fileUploadSubtext}>JPG, PNG, PDF, Max 10MB</Text>
                     </TouchableOpacity>
-                    {vm.errors.evidenceFiles && (
-                        <Text style={styles.errorText}>{vm.errors.evidenceFiles}</Text>
-                    )}
 
                     {/* Display selected files */}
                     {vm.evidenceFiles.length > 0 && (
@@ -215,7 +318,7 @@ const SafetyFeedbackScreen = observer(() => {
                     )}
                 </View>
 
-                {/* Submit Button - UC401_7 */}
+                {/* Submit Button */}
                 <TouchableOpacity
                     style={[
                         styles.submitButton,
@@ -236,54 +339,81 @@ const SafetyFeedbackScreen = observer(() => {
                     Your report will be reviewed by our team. If marked as critical, NGO admins will be notified immediately.
                 </Text>
             </ScrollView>
-        </View>
+        </SafeAreaView>
     );
 });
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#FAF9F6',
+        backgroundColor: '#FFFDF5', // Figma warm cream background
     },
     header: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
         paddingHorizontal: 20,
-        paddingTop: 50,
-        paddingBottom: 20,
+        paddingVertical: 16,
         backgroundColor: '#FFF',
         borderBottomWidth: 1,
-        borderBottomColor: '#E5E5E5',
+        borderBottomColor: '#F5E6D3',
     },
     backButton: {
-        padding: 8,
-        backgroundColor: '#9DE2D0',
+        width: 40,
+        height: 40,
         borderRadius: 20,
+        backgroundColor: '#9DE2D0', // Mint green circular button
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    backIcon: {
+        fontSize: 20,
+        color: '#000',
     },
     headerTitle: {
-        fontSize: 20,
+        fontSize: 18,
         fontWeight: '600',
-        color: '#333',
+        color: '#000',
     },
     notificationButton: {
-        padding: 8,
-        backgroundColor: '#9DE2D0',
+        width: 40,
+        height: 40,
         borderRadius: 20,
+        backgroundColor: '#9DE2D0',
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     scrollView: {
         flex: 1,
     },
     scrollContent: {
         padding: 20,
+        paddingBottom: 40,
     },
     formDescription: {
         fontSize: 14,
         color: '#666',
-        marginBottom: 24,
+        marginBottom: 20,
+    },
+    contextCard: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#F0F9F6',
+        padding: 12,
+        borderRadius: 12,
+        marginBottom: 20,
+        gap: 8,
+    },
+    contextText: {
+        fontSize: 14,
+        color: '#666',
+    },
+    contextBold: {
+        fontWeight: '600',
+        color: '#333',
     },
     fieldContainer: {
-        marginBottom: 24,
+        marginBottom: 20,
     },
     label: {
         fontSize: 14,
@@ -294,17 +424,14 @@ const styles = StyleSheet.create({
     required: {
         color: '#E89B8E',
     },
-    dropdownContainer: {
-        position: 'relative',
-    },
     dropdown: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
         backgroundColor: '#FFF',
-        borderWidth: 1,
-        borderColor: '#E5E5E5',
-        borderRadius: 12,
+        borderWidth: 1.5,
+        borderColor: '#F5E6D3',
+        borderRadius: 16, // Softer corners
         paddingHorizontal: 16,
         paddingVertical: 14,
     },
@@ -318,9 +445,9 @@ const styles = StyleSheet.create({
     },
     input: {
         backgroundColor: '#FFF',
-        borderWidth: 1,
-        borderColor: '#E5E5E5',
-        borderRadius: 12,
+        borderWidth: 1.5,
+        borderColor: '#F5E6D3',
+        borderRadius: 16,
         paddingHorizontal: 16,
         paddingVertical: 14,
         fontSize: 16,
@@ -328,9 +455,9 @@ const styles = StyleSheet.create({
     },
     textArea: {
         backgroundColor: '#FFF',
-        borderWidth: 1,
-        borderColor: '#E5E5E5',
-        borderRadius: 12,
+        borderWidth: 1.5,
+        borderColor: '#F5E6D3',
+        borderRadius: 16,
         paddingHorizontal: 16,
         paddingVertical: 14,
         fontSize: 16,
@@ -349,18 +476,21 @@ const styles = StyleSheet.create({
     fileUploadContainer: {
         backgroundColor: '#FFF',
         borderWidth: 2,
-        borderColor: '#E5E5E5',
+        borderColor: '#F5E6D3',
         borderStyle: 'dashed',
-        borderRadius: 12,
+        borderRadius: 16,
         paddingVertical: 40,
         alignItems: 'center',
         justifyContent: 'center',
+    },
+    uploadIconContainer: {
+        marginBottom: 8,
     },
     fileUploadText: {
         fontSize: 16,
         fontWeight: '600',
         color: '#333',
-        marginTop: 12,
+        marginTop: 8,
     },
     fileUploadSubtext: {
         fontSize: 12,
@@ -375,7 +505,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         backgroundColor: '#F5F5F5',
         padding: 12,
-        borderRadius: 8,
+        borderRadius: 12,
         marginBottom: 8,
     },
     fileName: {
@@ -386,12 +516,17 @@ const styles = StyleSheet.create({
         marginRight: 8,
     },
     submitButton: {
-        backgroundColor: '#E89B8E',
-        borderRadius: 12,
+        backgroundColor: '#E89B8E', // Coral pink
+        borderRadius: 16,
         paddingVertical: 16,
         alignItems: 'center',
         justifyContent: 'center',
         marginTop: 8,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 3,
     },
     submitButtonDisabled: {
         opacity: 0.6,

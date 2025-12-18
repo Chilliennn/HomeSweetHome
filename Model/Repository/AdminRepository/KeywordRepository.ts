@@ -107,18 +107,42 @@ export class KeywordRepository {
     }
 
     async acceptSuggestion(id: string): Promise<void> {
-        // Update suggestion status to accepted
+        // 1. Get the suggestion details first
+        const { data: suggestion, error: fetchError } = await this.supabase
+            .from('keyword_suggestions')
+            .select('*')
+            .eq('id', id)
+            .single();
+
+        if (fetchError || !suggestion) {
+            console.error('Error fetching suggestion to accept:', fetchError);
+            throw new Error('Suggestion not found.');
+        }
+
+        // 2. Add to keywords table
+        // Map category name to ID (Simple mapping for MVP)
+        const categoryMap: Record<string, string> = {
+            'Financial Exploitation': '1',
+            'Personal Information': '2',
+            'Inappropriate Content': '3',
+            'Abuse & Harassment': '4'
+        };
+        const categoryId = categoryMap[suggestion.category] || '1';
+
+        await this.addKeyword(suggestion.keyword, categoryId, suggestion.severity);
+
+        // 3. Mark suggestion as accepted
         const { error } = await this.supabase
             .from('keyword_suggestions')
             .update({ status: 'accepted' })
             .eq('id', id);
 
         if (error) {
-            console.error('Error accepting suggestion:', error);
-            throw new Error('Failed to accept suggestion. Please try again.');
+            console.error('Error marking suggestion accepted:', error);
+            // We already added the keyword, so this is a minor state sync issue.
+            // But we should throw to verify.
+            throw new Error('Failed to update suggestion status.');
         }
-
-        // TODO: Optionally add the keyword to the keywords table
     }
 
     async rejectSuggestion(id: string): Promise<void> {

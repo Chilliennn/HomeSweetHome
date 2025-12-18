@@ -475,5 +475,129 @@ export const matchingService = {
     async getPendingApplicationsForElderly(elderlyId: string): Promise<Interest[]> {
         const allApplications = await matchingRepository.getElderlyApplications(elderlyId);
         return allApplications.filter(app => app.status === 'pending_review');
+    },
+
+    /**
+     * Get applications pending elderly review (status = 'approved')
+     * Called after admin approves, waiting for elderly decision
+     */
+    async getApplicationsPendingElderlyReview(elderlyId: string): Promise<Interest[]> {
+        return await matchingRepository.getApplicationsPendingElderlyReview(elderlyId);
+    },
+
+    /**
+     * Elderly responds to admin-approved application
+     * Called when application status is 'approved' (after admin approval)
+     * 
+     * @param applicationId - Application ID
+     * @param elderlyId - Elderly user ID (for verification)
+     * @param decision - 'accept' or 'reject'
+     * @param rejectReason - Optional rejection reason
+     */
+    async elderlyRespondToApprovedApplication(
+        applicationId: string,
+        elderlyId: string,
+        decision: 'accept' | 'reject',
+        rejectReason?: string
+    ): Promise<Interest> {
+        console.log('[matchingService] elderlyRespondToApprovedApplication', { applicationId, elderlyId, decision });
+
+        // Verify the application
+        const application = await matchingRepository.getApplicationById(applicationId);
+        if (!application) {
+            throw new Error('Application not found');
+        }
+        if (application.elderly_id !== elderlyId) {
+            throw new Error('You are not authorized to review this application');
+        }
+        if (application.status !== 'approved') {
+            throw new Error(`This application is not awaiting your review. Current status: ${application.status}`);
+        }
+
+        // Update application via repository
+        const updated = await matchingRepository.elderlyRespondToApprovedApplication(
+            applicationId,
+            decision === 'accept' ? 'accept' : 'decline',
+            rejectReason
+        );
+
+        const elderlyName = application.elderly?.full_name || 'The Elderly';
+        const youthName = application.youth?.full_name || 'The Youth';
+
+        if (decision === 'accept') {
+            // Notify youth of success
+            await notificationRepository.createNotification({
+                user_id: application.youth_id,
+                type: 'application_approved',
+                title: 'Application Approved! 🎉',
+                message: `${elderlyName} has accepted your application. Welcome to the bonding stage!`,
+                reference_id: applicationId,
+                reference_table: 'applications',
+            });
+
+            // Create relationship record
+            console.log('[matchingService] Creating relationship for approved application');
+            try {
+                const { supabase } = await import('../APIService/supabase');
+                await supabase.from('relationships').insert({
+                    youth_id: application.youth_id,
+                    elderly_id: application.elderly_id,
+                    application_id: applicationId,
+                    current_stage: 'getting_to_know',
+                    status: 'active',
+                });
+                console.log('[matchingService] Relationship created successfully');
+            } catch (error) {
+                console.error('[matchingService] Failed to create relationship:', error);
+            }
+
+            // Auto-end other pre-matches for this youth
+            await this.endOtherPreMatchesOnApproval(application.youth_id, applicationId, youthName);
+
+        } else {
+            // Notify youth of rejection with optional reason
+            const reasonText = rejectReason
+                ? `Reason: ${rejectReason}`
+                : 'Please confirm to close this chat.';
+
+            await notificationRepository.createNotification({
+                user_id: application.youth_id,
+                type: 'application_rejected',
+                title: 'Application Not Approved',
+                message: `${elderlyName} has decided not to proceed with your application. ${reasonText}`,
+                reference_id: applicationId,
+                reference_table: 'applications',
+            });
+        }
+
+        console.log('[matchingService] Elderly response processed:', decision);
+        return updated;
+    },
+
+    /**
+     * Youth confirms rejection and deletes the application/chat
+     * Called after youth sees rejection notification
+     */
+    async confirmAndDeleteRejectedApplication(
+        applicationId: string,
+        youthId: string
+    ): Promise<void> {
+        console.log('[matchingService] confirmAndDeleteRejectedApplication', { applicationId, youthId });
+
+        // Verify the application
+        const application = await matchingRepository.getApplicationById(applicationId);
+        if (!application) {
+            throw new Error('Application not found');
+        }
+        if (application.youth_id !== youthId) {
+            throw new Error('You are not authorized to delete this application');
+        }
+        if (application.status !== 'rejected') {
+            throw new Error('This application is not in rejected status');
+        }
+
+        // Delete application and messages
+        await matchingRepository.deleteApplication(applicationId);
+        console.log('[matchingService] Application deleted successfully');
     }
 };

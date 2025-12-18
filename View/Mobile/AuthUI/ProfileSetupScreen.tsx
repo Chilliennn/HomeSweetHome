@@ -43,7 +43,7 @@ const ProfileSetupScreenComponent: React.FC = () => {
   const router = useRouter();
   const params = useLocalSearchParams();
   const initializedRef = useRef(false);
-  
+
   // Extract user info from login
   const userId = params.userId as string | undefined;
   const userName = params.userName as string | undefined;
@@ -128,23 +128,31 @@ const ProfileSetupScreenComponent: React.FC = () => {
   /**
    * Called after camera capture completes. For prototype we immediately
    * consider verification successful and show loader before success state.
-   * TODO: Replace with authViewModel.uploadAndVerifyAge(photoUri)
    */
-  const handlePhotoCaptured = (photoUri: string) => {
-    // TODO: Pass photoUri to ViewModel when backend wiring is ready
+  const handlePhotoCaptured = async (photoUri: string) => {
+    console.log('[ProfileSetupScreen] handlePhotoCaptured called with:', photoUri?.substring(0, 50));
+
     if (!userId) {
+      console.error('[ProfileSetupScreen] Missing userId!');
       authViewModel.setError('Missing user context');
       authViewModel.setStep('age-verification');
       return;
     }
 
     const effectiveUserType: 'youth' | 'elderly' = userType === 'elderly' ? 'elderly' : 'youth';
+    console.log('[ProfileSetupScreen] effectiveUserType:', effectiveUserType);
 
-    authViewModel.verifyAgeWithCapture({
-      userId,
-      userType: effectiveUserType,
-      photoUri,
-    });
+    try {
+      await authViewModel.verifyAgeWithCapture({
+        userId,
+        userType: effectiveUserType,
+        photoUri,
+      });
+      console.log('[ProfileSetupScreen] verifyAgeWithCapture completed successfully');
+    } catch (error) {
+      console.error('[ProfileSetupScreen] verifyAgeWithCapture failed:', error);
+      // Error is already handled by ViewModel, just log here
+    }
   };
 
   /**
@@ -208,8 +216,8 @@ const ProfileSetupScreenComponent: React.FC = () => {
     const effectiveUserType: 'youth' | 'elderly' = userType === 'elderly' ? 'elderly' : 'youth';
     router.replace({
       pathname: '/(main)/matching',
-      params: { 
-        userId, 
+      params: {
+        userId,
         userName,
         userType: effectiveUserType,
         verifiedAge: (verifiedAge ?? '').toString(),
@@ -228,8 +236,8 @@ const ProfileSetupScreenComponent: React.FC = () => {
     // TODO: Navigate to profile screen when implemented
     router.replace({
       pathname: '/(main)/matching',
-      params: { 
-        userId, 
+      params: {
+        userId,
         userName,
         userType: effectiveUserType,
         verifiedAge: (verifiedAge ?? '').toString(),
@@ -252,37 +260,42 @@ const ProfileSetupScreenComponent: React.FC = () => {
         const age = authViewModel.verifiedAge ?? 0;
         const data = authViewModel.profileData;
 
+        // Debug: log every render
+        console.log('[ProfileSetupScreen] RENDER - step:', step, 'age:', age, 'loading:', loading);
+
         const realIdentityInitial: RealIdentityData | undefined = data.realIdentity
           ? {
-              phoneNumber: data.realIdentity.phoneNumber,
-              location: data.realIdentity.location,
-              realPhotoUri: data.realIdentity.realPhotoUrl,
-            }
+            phoneNumber: data.realIdentity.phoneNumber,
+            location: data.realIdentity.location,
+            realPhotoUri: data.realIdentity.realPhotoUrl,
+          }
           : undefined;
 
         const displayIdentityInitial: DisplayIdentityData | undefined = data.displayIdentity
           ? {
-              displayName: data.displayIdentity.displayName,
-              avatarType: data.displayIdentity.avatarType,
-              selectedAvatarIndex: data.displayIdentity.selectedAvatarIndex,
-              customAvatarUri: data.displayIdentity.customAvatarUrl,
-            }
+            displayName: data.displayIdentity.displayName,
+            avatarType: data.displayIdentity.avatarType,
+            selectedAvatarIndex: data.displayIdentity.selectedAvatarIndex,
+            customAvatarUri: data.displayIdentity.customAvatarUrl,
+          }
           : undefined;
 
         const profileInfoInitial: ProfileInfoData | undefined = data.profileInfo
           ? {
-              interests: data.profileInfo.interests,
-              customInterest: data.profileInfo.customInterest,
-              selfIntroduction: data.profileInfo.selfIntroduction,
-              languages: data.profileInfo.languages,
-              customLanguage: data.profileInfo.customLanguage,
-            }
+            interests: data.profileInfo.interests,
+            customInterest: data.profileInfo.customInterest,
+            selfIntroduction: data.profileInfo.selfIntroduction,
+            languages: data.profileInfo.languages,
+            customLanguage: data.profileInfo.customLanguage,
+          }
           : undefined;
 
         switch (step) {
           case 'welcome':
+            console.log('[ProfileSetupScreen] Rendering: ProfileWelcome');
             return <ProfileWelcome onStart={handleStart} isLoading={loading} />;
           case 'age-verification':
+            console.log('[ProfileSetupScreen] Rendering: AgeVerification');
             return (
               <AgeVerification
                 onStartVerification={handleStartVerification}
@@ -291,8 +304,10 @@ const ProfileSetupScreenComponent: React.FC = () => {
               />
             );
           case 'camera':
+            console.log('[ProfileSetupScreen] Rendering: AgeVerificationCamera');
             return <AgeVerificationCamera onCaptured={handlePhotoCaptured} onCancel={handleBack} />;
           case 'verifying':
+            console.log('[ProfileSetupScreen] Rendering: VerifyingLoader');
             return (
               <VerifyingLoader
                 title="Verifying..."
@@ -301,6 +316,7 @@ const ProfileSetupScreenComponent: React.FC = () => {
               />
             );
           case 'verified':
+            console.log('[ProfileSetupScreen] Rendering: VerifiedSuccess with age:', age);
             return (
               <VerifiedSuccess
                 verifiedAge={age}
@@ -346,7 +362,15 @@ const ProfileSetupScreenComponent: React.FC = () => {
               />
             );
           default:
-            return null;
+            console.warn('[ProfileSetupScreen] UNKNOWN STEP:', step, '- showing fallback');
+            // Return a loading state instead of null to avoid white screen
+            return (
+              <VerifyingLoader
+                title="Loading..."
+                message="Please wait..."
+                status="processing"
+              />
+            );
         }
       })()}
     </View>

@@ -851,7 +851,47 @@ export class CommunicationViewModel {
       return false;
     }
   }
+
+  // =============================================================
+  // Rejection Confirmation (Youth confirms elderly rejection)
+  // =============================================================
+
+  /**
+   * Youth confirms rejection and deletes the application/chat
+   * Called after youth sees rejection notification
+   */
+  async confirmRejectionAndDeleteChat(applicationId: string): Promise<boolean> {
+    if (!this.currentUser) {
+      this.errorMessage = 'User not logged in';
+      return false;
+    }
+
+    this.isLoading = true;
+    try {
+      // Import matchingService dynamically to avoid circular dependency
+      const { matchingService } = await import('../../Model/Service/CoreService/matchingService');
+
+      await matchingService.confirmAndDeleteRejectedApplication(applicationId, this.currentUser);
+
+      // Remove from active chats
+      runInAction(() => {
+        this.activePreMatchChats = this.activePreMatchChats.filter(
+          chat => chat.application.id !== applicationId
+        );
+        this.isLoading = false;
+      });
+
+      return true;
+    } catch (error) {
+      runInAction(() => {
+        this.errorMessage = error instanceof Error ? error.message : 'Failed to delete chat';
+        this.isLoading = false;
+      });
+      return false;
+    }
+  }
 }
 
 // Singleton instance
 export const communicationViewModel = new CommunicationViewModel();
+

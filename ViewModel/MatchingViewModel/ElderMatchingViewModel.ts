@@ -140,6 +140,78 @@ export class ElderMatchingViewModel {
             });
         }
     }
+
+    // ============================================
+    // NEW: Elderly responds to admin-approved applications
+    // ============================================
+
+    pendingElderlyReviewApplications: Interest[] = [];
+
+    /**
+     * Load applications pending elderly review (admin already approved)
+     */
+    async loadPendingElderlyReview(elderlyId: string) {
+        console.log('[ElderVM] Loading pending elderly review for:', elderlyId);
+        try {
+            const data = await matchingService.getApplicationsPendingElderlyReview(elderlyId);
+            runInAction(() => {
+                this.pendingElderlyReviewApplications = data;
+                console.log('[ElderVM] Loaded:', data.length, 'pending review applications');
+            });
+        } catch (e: any) {
+            console.error('[ElderVM] Failed to load pending review:', e);
+        }
+    }
+
+    /**
+     * Elderly responds to admin-approved application
+     * @param applicationId - Application ID
+     * @param decision - 'accept' or 'reject'
+     * @param rejectReason - Optional rejection reason
+     */
+    async respondToApprovedApplication(
+        applicationId: string,
+        decision: 'accept' | 'reject',
+        rejectReason?: string
+    ): Promise<boolean> {
+        this.isLoading = true;
+        this.error = null;
+        this.successMessage = null;
+
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) {
+                throw new Error('User not logged in');
+            }
+
+            await matchingService.elderlyRespondToApprovedApplication(
+                applicationId,
+                user.id,
+                decision,
+                rejectReason
+            );
+
+            runInAction(() => {
+                this.successMessage = decision === 'accept'
+                    ? 'Application accepted! Relationship started.'
+                    : 'Application declined.';
+                // Remove from pending list
+                this.pendingElderlyReviewApplications =
+                    this.pendingElderlyReviewApplications.filter(app => app.id !== applicationId);
+            });
+            return true;
+        } catch (e: any) {
+            runInAction(() => {
+                this.error = e.message || 'Failed to process response';
+            });
+            return false;
+        } finally {
+            runInAction(() => {
+                this.isLoading = false;
+            });
+        }
+    }
 }
 
 export const elderMatchingViewModel = new ElderMatchingViewModel();
+

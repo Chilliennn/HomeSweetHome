@@ -272,19 +272,35 @@ export const profileCompletionService = {
   },
 
   async verifyAgeAndPersist(payload: AgeVerificationPayload): Promise<AgeVerificationResult> {
-    const result = await ageVerificationService.verify(payload);
-    const user = await userRepository.getById(payload.userId);
-    const mergedProfile = mergeProfileData(user?.profile_data || null, {
-      age_verified: result.ageVerified,
-      verified_age: result.verifiedAge,
-      verification_reference: result.referenceId,
-      verified_at: result.verifiedAt,
-    });
+    console.log('[profileCompletionService] verifyAgeAndPersist START:', payload.userId);
 
-    await userRepository.updateVerificationStatus(payload.userId, result.status);
-    await userRepository.updateProfileData(payload.userId, mergedProfile);
+    try {
+      const result = await ageVerificationService.verify(payload);
+      console.log('[profileCompletionService] verification result:', result);
 
-    return result;
+      const user = await userRepository.getById(payload.userId);
+      console.log('[profileCompletionService] got user:', user?.id);
+
+      const mergedProfile = mergeProfileData(user?.profile_data || null, {
+        age_verified: result.ageVerified,
+        verified_age: result.verifiedAge,
+        verification_reference: result.referenceId,
+        verified_at: result.verifiedAt,
+      });
+      console.log('[profileCompletionService] merged profile ready');
+
+      await userRepository.updateVerificationStatus(payload.userId, result.status);
+      console.log('[profileCompletionService] verification status updated');
+
+      await userRepository.updateProfileData(payload.userId, mergedProfile);
+      console.log('[profileCompletionService] profile data updated');
+
+      console.log('[profileCompletionService] verifyAgeAndPersist COMPLETE');
+      return result;
+    } catch (error) {
+      console.error('[profileCompletionService] verifyAgeAndPersist ERROR:', error);
+      throw error;
+    }
   },
 
   async saveRealIdentity(userId: string, data: RealIdentityPayload): Promise<User> {
@@ -295,7 +311,7 @@ export const profileCompletionService = {
     }
 
     const user = await userRepository.getById(userId);
-    
+
     // real_photo_url goes to profile_data (private, only revealed after match)
     const mergedProfile = mergeProfileData(user?.profile_data || null, {
       real_identity: {
@@ -347,7 +363,7 @@ export const profileCompletionService = {
     }
 
     const user = await userRepository.getById(userId);
-    
+
     // interests and self_introduction go to profile_data (user-type specific presentation)
     const mergedProfile = mergeProfileData(user?.profile_data || null, {
       interests: data.interests,

@@ -16,18 +16,43 @@ function validateAgeForUserType(age: number, userType: UserType): void {
   }
 }
 
-function simulateVerification(payload: AgeVerificationPayload): AgeVerificationResult {
-  const simulatedAge = payload.userType === 'elderly' ? 62 : 25;
-  validateAgeForUserType(simulatedAge, payload.userType);
+/**
+ * Generate random age based on user type
+ * Youth: 18-40
+ * Elderly: 41-100 (changed from 60+ per user request)
+ */
+function getRandomAge(userType: 'youth' | 'elderly' | 'admin'): number {
+  if (userType === 'youth') {
+    // Random age between 18 and 40 (inclusive)
+    return Math.floor(Math.random() * (40 - 18 + 1)) + 18;
+  } else if (userType === 'elderly') {
+    // Random age between 41 and 100 (inclusive)
+    return Math.floor(Math.random() * (100 - 41 + 1)) + 41;
+  }
+  // Admin: default to 30
+  return 30;
+}
 
-  return {
+function simulateVerification(payload: AgeVerificationPayload): AgeVerificationResult {
+  console.log('[ageVerificationService] simulateVerification called with:', payload.userType);
+
+  const simulatedAge = getRandomAge(payload.userType);
+  console.log('[ageVerificationService] Generated random age:', simulatedAge);
+
+  // Skip validation for prototype - allow any age
+  // validateAgeForUserType(simulatedAge, payload.userType);
+
+  const result = {
     ageVerified: true,
     verifiedAge: simulatedAge,
-    status: 'verified',
+    status: 'verified' as const,
     referenceId: `sim-${Date.now()}`,
     verifiedAt: new Date().toISOString(),
     notes: 'Prototype verification: camera capture accepted.',
   };
+
+  console.log('[ageVerificationService] Returning result:', result);
+  return result;
 }
 
 export const ageVerificationService = {

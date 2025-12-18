@@ -1,4 +1,5 @@
 import { consultationRepository } from '../../Repository/AdminRepository/adminRepository';
+import { notificationRepository } from '../../Repository/UserRepository/notificationRepository';
 import type { ConsultationRequest, Advisor, ConsultationStats } from '../../Repository/AdminRepository/adminRepository';
 
 export const consultationService = {
@@ -42,12 +43,59 @@ export const consultationService = {
 
     /**
      * Assign an advisor to a consultation request
+     * Creates a notification for the requesting user
      */
     async assignAdvisor(consultationId: string, advisorId: string, adminId: string): Promise<void> {
         if (!advisorId) {
             throw new Error('Advisor ID is required');
         }
+
+        // First get the consultation to find the requester
+        const consultation = await consultationRepository.getConsultationById(consultationId);
+        if (!consultation) {
+            throw new Error('Consultation not found');
+        }
+
+        // Assign the advisor
         await consultationRepository.assignAdvisor(consultationId, advisorId, adminId);
+
+        // Get advisor info for the notification message
+        const advisors = await consultationRepository.getAdvisors();
+        const advisor = advisors.find((a: Advisor) => a.id === advisorId);
+        const advisorName = advisor?.name || 'A Family Advisor';
+
+        // Create notifications for BOTH parties (addon by user)
+        // Notify the requester
+        try {
+            await notificationRepository.createNotification({
+                user_id: consultation.requesterId,
+                type: 'consultation_assigned',
+                title: 'Advisor Assigned! 🎉',
+                message: `${advisorName} has been assigned to help with your ${consultation.consultationType} consultation. They will contact you soon.`,
+                reference_id: consultationId,
+                reference_table: 'consultation_requests',
+            });
+            console.log('[consultationService] Created notification for requester:', consultation.requesterId);
+        } catch (error) {
+            console.error('[consultationService] Failed to create notification for requester:', error);
+        }
+
+        // Notify the partner
+        if (consultation.partnerId && consultation.partnerId !== consultation.requesterId) {
+            try {
+                await notificationRepository.createNotification({
+                    user_id: consultation.partnerId,
+                    type: 'consultation_assigned',
+                    title: 'Advisor Assigned! 🎉',
+                    message: `${advisorName} has been assigned to help with your partner's ${consultation.consultationType} consultation request. They will contact you soon.`,
+                    reference_id: consultationId,
+                    reference_table: 'consultation_requests',
+                });
+                console.log('[consultationService] Created notification for partner:', consultation.partnerId);
+            } catch (error) {
+                console.error('[consultationService] Failed to create notification for partner:', error);
+            }
+        }
     },
 
     /**
@@ -94,5 +142,40 @@ export const consultationService = {
         const days = Math.floor(hours / 24);
         const remainingHours = hours % 24;
         return `${days}d ${remainingHours}h`;
+    },
+
+    /**
+     * Submit a new consultation request (for mobile users)
+     */
+    async submitRequest(
+        requesterId: string,
+        partnerId: string,
+        relationshipId: string | null,
+        consultationType: string,
+        concernDescription: string,
+        urgency: 'normal' | 'high' = 'normal',
+        preferredMethod: 'video_call' | 'phone' | 'chat' = 'video_call',
+        preferredDateTime: string = ''
+    ): Promise<string> {
+        if (!requesterId || !partnerId) {
+            throw new Error('Requester and partner IDs are required');
+        }
+        if (!consultationType) {
+            throw new Error('Consultation type is required');
+        }
+        if (!concernDescription || concernDescription.trim().length < 10) {
+            throw new Error('Please provide a description (at least 10 characters)');
+        }
+
+        return consultationRepository.submitConsultationRequest(
+            requesterId,
+            partnerId,
+            relationshipId,
+            consultationType,
+            concernDescription.trim(),
+            urgency,
+            preferredMethod,
+            preferredDateTime
+        );
     }
 };

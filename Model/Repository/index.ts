@@ -1,5 +1,5 @@
 // User Repository
-export { userRepository, storageRepository } from './UserRepository';
+export { userRepository, storageRepository, notificationRepository } from './UserRepository';
 
 // Auth Repository
 export { authRepository, type AuthResult } from './UserRepository';

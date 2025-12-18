@@ -1,5 +1,6 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 // Stub for expo-media-library on web
-export const createAssetAsync = async (localUri: string) => {
+export const createAssetAsync = async (_localUri: string) => {
     throw new Error('expo-media-library is not supported on web');
 };
 

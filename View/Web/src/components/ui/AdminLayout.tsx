@@ -268,8 +268,16 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
         setAdminName(name);
         setAdminId(id);
 
-        // Fetch real notifications
-        getAdminNotifications(10).then(setNotifications).catch(console.error);
+        // Fetch notifications initially
+        const fetchNotifications = () => {
+            getAdminNotifications(10).then(setNotifications).catch(console.error);
+        };
+        fetchNotifications();
+
+        // Poll for new notifications every 30 seconds
+        const pollInterval = setInterval(fetchNotifications, 30000);
+
+        return () => clearInterval(pollInterval);
     }, []);
 
     // Close dropdowns when clicking outside

@@ -107,9 +107,9 @@ ON CONFLICT (id) DO NOTHING;
 -- 3. RELATIONSHIPS (Required for Consultations)
 -- ============================================
 
-INSERT INTO relationships (id, youth_id, elderly_id, current_stage, created_at)
+INSERT INTO relationships (id, youth_id, elderly_id, current_stage, status, created_at)
 VALUES 
-    ('44444444-4444-4444-4444-444444444401', '11111111-1111-1111-1111-111111111103', '22222222-2222-2222-2222-222222222203', 'connected', NOW() - INTERVAL '25 days')
+    ('44444444-4444-4444-4444-444444444401', '11111111-1111-1111-1111-111111111103', '22222222-2222-2222-2222-222222222203', 'getting_to_know', 'active', NOW() - INTERVAL '25 days')
 ON CONFLICT (id) DO NOTHING;
 
 -- ============================================

@@ -117,6 +117,10 @@ const styles = {
         border: `2px solid ${colors.apricot}`,
         color: colors.apricot,
     },
+    completeButton: {
+        background: colors.caper,
+        color: colors.mineShaft,
+    },
     mainContent: {
         display: 'grid',
         gridTemplateColumns: '1fr 1fr',
@@ -240,6 +244,8 @@ interface ConsultationDetailsProps {
 export const ConsultationDetails: React.FC<ConsultationDetailsProps> = observer(({ requestId, onBack }) => {
     const [showAssignModal, setShowAssignModal] = useState(false);
     const [showDismissModal, setShowDismissModal] = useState(false);
+    const [showCompleteModal, setShowCompleteModal] = useState(false);
+    const [completionNotes, setCompletionNotes] = useState('');
 
     // Load the consultation data when component mounts
     useEffect(() => {
@@ -287,6 +293,16 @@ export const ConsultationDetails: React.FC<ConsultationDetailsProps> = observer(
             await consultationViewModel.dismissRequest(request.id, `${reason}: ${notes}`);
         }
         setShowDismissModal(false);
+        onBack?.();
+    };
+
+    const handleComplete = async () => {
+        if (request && completionNotes.trim()) {
+            await consultationViewModel.completeRequest(request.id, completionNotes);
+            alert('✅ Consultation marked as completed!');
+        }
+        setShowCompleteModal(false);
+        setCompletionNotes('');
         onBack?.();
     };
 
@@ -348,12 +364,22 @@ export const ConsultationDetails: React.FC<ConsultationDetailsProps> = observer(
                     >
                         Dismiss Request
                     </button>
-                    <button
-                        style={{ ...styles.actionButton, ...styles.assignButton }}
-                        onClick={() => setShowAssignModal(true)}
-                    >
-                        Assign to Advisor
-                    </button>
+                    {(request.status === 'assigned' || request.status === 'in_progress') && (
+                        <button
+                            style={{ ...styles.actionButton, ...styles.completeButton }}
+                            onClick={() => setShowCompleteModal(true)}
+                        >
+                            ✓ Mark as Complete
+                        </button>
+                    )}
+                    {request.status === 'pending_assignment' && (
+                        <button
+                            style={{ ...styles.actionButton, ...styles.assignButton }}
+                            onClick={() => setShowAssignModal(true)}
+                        >
+                            Assign to Advisor
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -496,6 +522,87 @@ export const ConsultationDetails: React.FC<ConsultationDetailsProps> = observer(
                     onDismiss={handleDismiss}
                     requestId={request.id}
                 />
+            )}
+
+            {/* Completion Modal */}
+            {showCompleteModal && (
+                <div style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    background: 'rgba(0,0,0,0.5)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 1000,
+                }}>
+                    <div style={{
+                        background: colors.white,
+                        borderRadius: '16px',
+                        padding: '32px',
+                        width: '500px',
+                        maxWidth: '90%',
+                    }}>
+                        <h2 style={{ margin: '0 0 24px 0', fontFamily: 'Inter, sans-serif', color: colors.mineShaft }}>
+                            ✓ Complete Consultation
+                        </h2>
+                        <p style={{ fontFamily: 'Inter, sans-serif', color: colors.doveGray, marginBottom: '16px' }}>
+                            Please provide resolution notes for this consultation:
+                        </p>
+                        <textarea
+                            value={completionNotes}
+                            onChange={(e) => setCompletionNotes(e.target.value)}
+                            placeholder="Enter resolution notes, outcome summary, and any follow-up actions..."
+                            style={{
+                                width: '100%',
+                                minHeight: '120px',
+                                padding: '12px',
+                                borderRadius: '8px',
+                                border: `1px solid ${colors.silver}`,
+                                fontFamily: 'Inter, sans-serif',
+                                fontSize: '14px',
+                                resize: 'vertical',
+                                boxSizing: 'border-box',
+                                background: colors.white,
+                                color: colors.mineShaft,
+                            }}
+                        />
+                        <div style={{ display: 'flex', gap: '12px', marginTop: '24px', justifyContent: 'flex-end' }}>
+                            <button
+                                onClick={() => { setShowCompleteModal(false); setCompletionNotes(''); }}
+                                style={{
+                                    padding: '12px 24px',
+                                    borderRadius: '8px',
+                                    border: `1px solid ${colors.silver}`,
+                                    background: 'transparent',
+                                    cursor: 'pointer',
+                                    fontFamily: 'Inter, sans-serif',
+                                    fontWeight: 600,
+                                }}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleComplete}
+                                disabled={!completionNotes.trim()}
+                                style={{
+                                    padding: '12px 24px',
+                                    borderRadius: '8px',
+                                    border: 'none',
+                                    background: completionNotes.trim() ? colors.caper : colors.silver,
+                                    color: colors.mineShaft,
+                                    cursor: completionNotes.trim() ? 'pointer' : 'not-allowed',
+                                    fontFamily: 'Inter, sans-serif',
+                                    fontWeight: 700,
+                                }}
+                            >
+                                Complete Consultation
+                            </button>
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     );

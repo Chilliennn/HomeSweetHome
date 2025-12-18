@@ -114,6 +114,30 @@ export class StageService {
     return await this.getCurrentStageRequirements(relationship.id, stage);
   }
 
+  async signOffActivity(activityId: string, userId: string): Promise<void> {
+    const relationship = await userRepository.getActiveRelationship(userId);
+    if (!relationship) throw new Error("No active relationship found");
+
+    const activity = await userRepository.getActivityById(activityId);
+    if (!activity) throw new Error("Activity not found");
+
+    const role = relationship.youth_id === userId ? "youth" : "elderly";
+    const updates: Partial<StageRequirement> = {
+      [role === "youth" ? "youth_signed" : "elderly_signed"]: true,
+    };
+
+    // Check if both will be signed after this update
+    const youthSigned = role === "youth" || activity.youth_signed;
+    const elderlySigned = role === "elderly" || activity.elderly_signed;
+
+    if (youthSigned && elderlySigned) {
+      updates.is_completed = true;
+      updates.completed_at = new Date().toISOString();
+    }
+
+    await userRepository.updateActivity(activityId, updates);
+  }
+
   async getLockedStageDetails(
     targetStage: RelationshipStage
   ): Promise<LockedStageDetail | null> {

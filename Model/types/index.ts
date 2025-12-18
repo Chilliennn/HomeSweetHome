@@ -167,6 +167,10 @@ export interface StageRequirement {
   is_completed: boolean;
   required_value?: number;
   current_value?: number;
+  completion_mode?: "ai" | "manual" | "hybrid";
+  youth_signed?: boolean;
+  elderly_signed?: boolean;
+  completed_at?: string;
 }
 
 export interface StageInfo {
@@ -393,15 +397,19 @@ export interface ProfileCompletionState {
 // FAMILY LIFE & MEMORY TYPES (UC300-UC304)
 // ============================================
 export type MoodType =
-  | 'happy'
-  | 'sad'
-  | 'neutral'
-  | 'excited'
-  | 'anxious'
-  | 'grateful';
+  | "happy"
+  | "sad"
+  | "neutral"
+  | "excited"
+  | "anxious"
+  | "grateful";
 
-export type MediaType = 'photo' | 'voice' | 'video' | 'document';
-export type MediaCategory = 'family_album' | 'diary_attachment' | 'chat_media' | 'other';
+export type MediaType = "photo" | "voice" | "video" | "document";
+export type MediaCategory =
+  | "family_album"
+  | "diary_attachment"
+  | "chat_media"
+  | "other";
 
 export interface MediaItem {
   id: string;
@@ -438,7 +446,12 @@ export interface DiaryEntry {
   created_at: string;
 }
 
-export type EventType = 'meetup' | 'birthday' | 'anniversary' | 'activity' | 'other';
+export type EventType =
+  | "meetup"
+  | "birthday"
+  | "anniversary"
+  | "activity"
+  | "other";
 
 export interface CalendarEvent {
   id: string;
@@ -454,7 +467,7 @@ export interface CalendarEvent {
   created_at: string;
 }
 
-export type AISuggestionType = 'activity' | 'conversation_topic';
+export type AISuggestionType = "activity" | "conversation_topic";
 
 export interface AISuggestion {
   id: string;

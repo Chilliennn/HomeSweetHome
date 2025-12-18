@@ -257,13 +257,35 @@ export const userRepository = {
 
     const { data: activities, error } = await supabase
       .from("activities")
-      .select("id, title, description, is_completed, created_at, completed_at")
+      .select(
+        "id, title, description, is_completed, created_at, completed_at, completion_mode, youth_signed, elderly_signed"
+      )
       .eq("relationship_id", relationshipId)
       .eq("stage", dbStage)
       .order("created_at", { ascending: true });
 
     if (error) throw error;
     return activities || [];
+  },
+
+  async getActivityById(id: string): Promise<StageRequirement | null> {
+    const { data, error } = await supabase
+      .from("activities")
+      .select("*")
+      .eq("id", id)
+      .single();
+
+    if (error && error.code !== "PGRST116") throw error;
+    return data;
+  },
+
+  async updateActivity(id: string, updates: Partial<StageRequirement>) {
+    const { error } = await supabase
+      .from("activities")
+      .update(updates)
+      .eq("id", id);
+
+    if (error) throw error;
   },
 
   async getStageFeatures(stage: RelationshipStage): Promise<StageFeatureFlags> {

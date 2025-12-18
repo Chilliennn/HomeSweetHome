@@ -60,6 +60,10 @@ export class StageViewModel {
   isRefreshing: boolean = false;
   journeyStats: JourneyStats | null = null;
 
+  // Manual sign-off observables
+  showManualSignOffModal: boolean = false;
+  selectedActivity: StageRequirement | null = null;
+
   // Tracking state for realtime detection
   private previousStage: RelationshipStage | null = null;
   private shownMilestones: number[] = [];
@@ -92,11 +96,15 @@ export class StageViewModel {
       relationshipId,
       {
         onRelationshipChange: (payload: any) => {
-          console.log("[StageViewModel] onRelationshipChange callback invoked in VM");
+          console.log(
+            "[StageViewModel] onRelationshipChange callback invoked in VM"
+          );
           this.handleRealtimeRelationshipChange(payload);
         },
         onActivityChange: (payload: any) => {
-          console.log("[StageViewModel] onActivityChange callback invoked in VM");
+          console.log(
+            "[StageViewModel] onActivityChange callback invoked in VM"
+          );
           this.handleRealtimeActivityChange(payload);
         },
       }
@@ -104,23 +112,30 @@ export class StageViewModel {
 
     this.relationshipSubscription = subscriptions.relationshipSubscription;
     this.activitiesSubscription = subscriptions.activitiesSubscription;
-    
+
     console.log("[StageViewModel] Realtime subscriptions setup complete:", {
       hasRelationshipSub: !!this.relationshipSubscription,
-      hasActivitiesSub: !!this.activitiesSubscription
+      hasActivitiesSub: !!this.activitiesSubscription,
     });
   }
 
   private async handleRealtimeActivityChange(payload: any) {
-    console.log("[StageViewModel] handleRealtimeActivityChange called with payload:", payload);
+    console.log(
+      "[StageViewModel] handleRealtimeActivityChange called with payload:",
+      payload
+    );
     try {
       if (!this.userId) {
-        console.log("[StageViewModel] handleRealtimeActivityChange - no userId, returning");
+        console.log(
+          "[StageViewModel] handleRealtimeActivityChange - no userId, returning"
+        );
         return;
       }
 
-      console.log("[StageViewModel] Reloading progression and requirements after activity change...");
-      
+      console.log(
+        "[StageViewModel] Reloading progression and requirements after activity change..."
+      );
+
       // Refresh progression and requirements to get latest completion state
       await this.loadStageProgression(this.userId, true);
       await this.loadCurrentStageRequirements();
@@ -136,20 +151,30 @@ export class StageViewModel {
         "family_life",
       ];
 
-      console.log("[StageViewModel] Current stage:", this.currentStage, "Final stage:", stageOrder[stageOrder.length - 1]);
+      console.log(
+        "[StageViewModel] Current stage:",
+        this.currentStage,
+        "Final stage:",
+        stageOrder[stageOrder.length - 1]
+      );
 
       if (this.currentStage === stageOrder[stageOrder.length - 1]) {
-        console.log("[StageViewModel] On final stage! Checking requirements...", {
-          requirementsCount: this.requirements?.length || 0,
-          requirements: this.requirements
-        });
-        
+        console.log(
+          "[StageViewModel] On final stage! Checking requirements...",
+          {
+            requirementsCount: this.requirements?.length || 0,
+            requirements: this.requirements,
+          }
+        );
+
         if (this.requirements && this.requirements.length > 0) {
           const allDone = this.requirements.every((r) => !!r.is_completed);
           console.log("[StageViewModel] All requirements completed?", allDone);
-          
+
           if (allDone) {
-            console.log("[StageViewModel] 🎉 All final stage requirements completed! Setting journey completed flag...");
+            console.log(
+              "[StageViewModel] 🎉 All final stage requirements completed! Setting journey completed flag..."
+            );
             runInAction(() => {
               this.shouldNavigateToJourneyCompleted = true;
             });
@@ -222,10 +247,12 @@ export class StageViewModel {
         console.log(
           `[Realtime] Stage completed: ${this.previousStage} → ${newData.current_stage}`
         );
-        
+
         // If advanced TO family_life (final stage), navigate to journey-completed instead of stage-completed
-        if (newData.current_stage === 'family_life') {
-          console.log("[Realtime] Advanced to final stage (family_life) - triggering journey completed!");
+        if (newData.current_stage === "family_life") {
+          console.log(
+            "[Realtime] Advanced to final stage (family_life) - triggering journey completed!"
+          );
           runInAction(() => {
             this.shouldNavigateToJourneyCompleted = true;
           });
@@ -989,6 +1016,44 @@ export class StageViewModel {
     }" and moved to Stage ${this.completedStageOrder + 1}: ${
       this.currentStageDisplayName
     }.`;
+  }
+
+  // ============================================================================
+  // MANUAL SIGN-OFF METHODS
+  // ============================================================================
+
+  openManualSignOff(activity: StageRequirement) {
+    runInAction(() => {
+      this.selectedActivity = activity;
+      this.showManualSignOffModal = true;
+    });
+  }
+
+  closeManualSignOff() {
+    runInAction(() => {
+      this.showManualSignOffModal = false;
+      this.selectedActivity = null;
+    });
+  }
+
+  async confirmManualSignOff() {
+    if (!this.selectedActivity || !this.userId) return;
+
+    this.isLoading = true;
+    try {
+      await stageService.signOffActivity(this.selectedActivity.id, this.userId);
+      await this.refresh();
+      this.closeManualSignOff();
+    } catch (err: any) {
+      console.error("[StageViewModel] signOffActivity error", err);
+      runInAction(() => {
+        this.error = err.message;
+      });
+    } finally {
+      runInAction(() => {
+        this.isLoading = false;
+      });
+    }
   }
 }
 

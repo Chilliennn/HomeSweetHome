@@ -8,6 +8,7 @@ export type { Interest } from './UserRepository';
 
 // Matching Repository
 export { matchingRepository } from './UserRepository';
+export type { ElderlyFilters, ElderlyProfilesResult } from './UserRepository/matchingRepository';
 
 // Admin Repository  
 export { adminRepository, consultationRepository, getAdminNotifications } from './AdminRepository';

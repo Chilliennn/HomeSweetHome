@@ -1,14 +1,15 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
   StyleSheet,
   FlatList,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { observer } from 'mobx-react-lite';
-import { youthMatchingViewModel } from '@home-sweet-home/viewmodel';
+import { youthMatchingViewModel, communicationViewModel } from '@home-sweet-home/viewmodel';
 import { authViewModel } from '@home-sweet-home/viewmodel';
 import { User } from '@home-sweet-home/model';
 import { useTabNavigation } from '../hooks/use-tab-navigation';
@@ -23,6 +24,7 @@ import {
   LoadingSpinner,
 } from '@/components/ui';
 import { Colors } from '@/constants/theme';
+import { FilterModal } from './FilterModal';
 
 interface BrowseElderlyProps {
   /** Called when notification bell is pressed */
@@ -72,10 +74,13 @@ export const BrowseElderly: React.FC<BrowseElderlyProps> = observer(({
   const vm = youthMatchingViewModel;
   const authVM = authViewModel;
   const currentUserId = authVM.authState.currentUserId;
-  
+
+  // Filter modal state
+  const [showFilterModal, setShowFilterModal] = useState(false);
+
   // Use activeTab from prop or default to 'matching'
   const activeTab = propActiveTab || 'matching';
-  
+
   // Use tab navigation hook
   const { handleTabPress: hookHandleTabPress } = useTabNavigation(activeTab);
 
@@ -85,7 +90,7 @@ export const BrowseElderly: React.FC<BrowseElderlyProps> = observer(({
     if (currentUserId) {
       vm.loadNotifications(currentUserId);
     }
-    return () =>{
+    return () => {
       vm.dispose();
     }
   }, [currentUserId]);
@@ -101,6 +106,13 @@ export const BrowseElderly: React.FC<BrowseElderlyProps> = observer(({
       hookHandleTabPress(key);
     }
   };
+
+  // Count active filters
+  const activeFilterCount = Object.keys(vm.filters).filter(key => {
+    const value = (vm.filters as any)[key];
+    if (Array.isArray(value)) return value.length > 0;
+    return value !== undefined && value !== null && value !== '';
+  }).length;
 
   const notificationCount = propNotificationCount ?? vm.activeMatches.length;
 
@@ -128,13 +140,13 @@ export const BrowseElderly: React.FC<BrowseElderlyProps> = observer(({
           {/* Info */}
           <View style={styles.cardInfoContainer}>
             <Text style={[styles.cardName, hasExpressed && styles.textDisabled]}>{profile.name}
-                          {hasExpressed && (
-              <View style={styles.expressedBadge}>
-                <Text style={styles.expressedText}>✓ Interest Sent</Text>
-              </View>
-            )}
+              {hasExpressed && (
+                <View style={styles.expressedBadge}>
+                  <Text style={styles.expressedText}>✓ Interest Sent</Text>
+                </View>
+              )}
             </Text>
-                        {/* Expressed Badge */}
+            {/* Expressed Badge */}
             <Text style={[styles.cardDetails, hasExpressed && styles.textDisabled]}>
               {profile.age} years • {profile.location}
             </Text>
@@ -152,7 +164,7 @@ export const BrowseElderly: React.FC<BrowseElderlyProps> = observer(({
                 ))}
               </View>
             )}
-      
+
           </View>
 
           {/* Arrow or Check */}
@@ -182,11 +194,13 @@ export const BrowseElderly: React.FC<BrowseElderlyProps> = observer(({
           size={48}
         />
         <TouchableOpacity
-          style={styles.filterButton}
-          onPress={onFilterPress}
+          style={[styles.filterButton, activeFilterCount > 0 && styles.filterButtonActive]}
+          onPress={() => setShowFilterModal(true)}
           activeOpacity={0.7}
         >
-          <Text style={styles.filterText}>Filter</Text>
+          <Text style={styles.filterText}>
+            Filter {activeFilterCount > 0 && `(${activeFilterCount})`}
+          </Text>
         </TouchableOpacity>
       </View>
 
@@ -194,14 +208,14 @@ export const BrowseElderly: React.FC<BrowseElderlyProps> = observer(({
       <View style={styles.titleSection}>
         <Text style={styles.title}>Find Your Grandparent</Text>
         <Text style={styles.subtitle}>
-          {vm.profiles.length} elders available near you
+          {vm.profiles.length} of {vm.totalProfileCount} elders
         </Text>
       </View>
 
       {/* Journey Progress Dropdown */}
       <View style={styles.journeySection}>
         <JourneyProgressDropdown
-          currentStep={currentJourneyStep}
+          currentStep={communicationViewModel.currentJourneyStep}
           currentDescription="Browse elders to find your match"
           nextDescription="Choose & chat anonymously for 7-14 days"
           onLearnMore={onLearnMorePress}
@@ -216,6 +230,31 @@ export const BrowseElderly: React.FC<BrowseElderlyProps> = observer(({
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
+        ListFooterComponent={() => (
+          <View style={styles.footerContainer}>
+            {vm.hasMoreProfiles && (
+              <TouchableOpacity
+                style={styles.loadMoreButton}
+                onPress={() => vm.loadMoreProfiles()}
+                disabled={vm.isLoading}
+              >
+                {vm.isLoading ? (
+                  <ActivityIndicator size="small" color={Colors.light.primary} />
+                ) : (
+                  <Text style={styles.loadMoreText}>Load More Elders</Text>
+                )}
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
+      />
+
+      {/* Filter Modal */}
+      <FilterModal
+        visible={showFilterModal}
+        onClose={() => setShowFilterModal(false)}
+        onApply={(filters) => vm.setFilters(filters)}
+        currentFilters={vm.filters}
       />
 
       {/* Bottom Tab Bar */}
@@ -342,6 +381,27 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '600',
     color: '#4A7C23',
+  },
+  // New styles for filter and pagination
+  filterButtonActive: {
+    backgroundColor: Colors.light.primary,
+  },
+  footerContainer: {
+    paddingVertical: 20,
+    alignItems: 'center',
+  },
+  loadMoreButton: {
+    backgroundColor: '#F0F0F0',
+    paddingHorizontal: 32,
+    paddingVertical: 14,
+    borderRadius: 24,
+    minWidth: 180,
+    alignItems: 'center',
+  },
+  loadMoreText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.light.primary,
   },
 });
 

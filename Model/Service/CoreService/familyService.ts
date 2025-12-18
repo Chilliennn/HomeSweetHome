@@ -206,6 +206,56 @@ export const familyService = {
   },
 
   /**
+   * Save chat media to family album as a memory
+   * Creates Memory wrapper + Media entry from existing chat-media URL (no re-upload needed)
+   * Called by CommunicationViewModel for "Save to Memories" feature
+   * 
+   * @param uploaderId - Current user ID
+   * @param relationshipId - Active relationship ID (must exist)
+   * @param mediaUrl - Existing chat media URL
+   * @param mediaType - 'photo' or 'video'
+   * @param caption - Optional caption
+   */
+  async saveChatMediaToMemory(
+    uploaderId: string,
+    relationshipId: string,
+    mediaUrl: string,
+    mediaType: 'photo' | 'video',
+    caption?: string
+  ): Promise<MediaItem> {
+    // Validate caption if provided (reuse existing validation)
+    if (caption) {
+      const captionValidation = this.validateCaption(caption);
+      if (!captionValidation.valid) {
+        throw new Error(captionValidation.error);
+      }
+    }
+
+    // Step 1: Create a Memory wrapper first (so it appears in AlbumScreen)
+    const memory = await familyRepository.createMemory(
+      relationshipId,
+      uploaderId,
+      mediaUrl, // Use chat media URL as thumbnail
+      caption || 'Saved from chat'
+    );
+
+    // Step 2: Create media entry from existing URL and link to memory
+    const mediaItem = await familyRepository.createMediaFromUrl(
+      uploaderId,
+      relationshipId,
+      mediaType,
+      mediaUrl,
+      caption
+    );
+
+    // Step 3: Link media to memory
+    await familyRepository.linkMediaToMemory(memory.id, [mediaItem.id]);
+
+    console.log('[familyService] Chat media saved as memory:', memory.id);
+    return mediaItem;
+  },
+
+  /**
    * Upload multiple media files as a single memory
    * Groups multiple files under one memory entry with shared metadata
    * FR 3.1.1, 3.1.9 (batch upload support)
@@ -284,7 +334,7 @@ export const familyService = {
 
         // Link media to memory
         await familyRepository.linkMediaToMemory(memory.id, [mediaItem.id]);
-        
+
         // Set thumbnail from first file
         if (i === 0) {
           await familyRepository.updateMemory(memory.id, {

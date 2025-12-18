@@ -1,5 +1,6 @@
 import { makeAutoObservable, runInAction } from 'mobx';
 import { communicationService, type PreMatchChat } from '../../Model/Service/CoreService/communicationService';
+import { familyService } from '../../Model/Service/CoreService/familyService';
 import { relationshipRepository, type Relationship } from '../../Model/Repository/UserRepository/relationshipRepository';
 import { messageRepository } from '../../Model/Repository/UserRepository/messageRepository';
 import type { Message } from '../../Model/types';
@@ -387,6 +388,122 @@ export class CommunicationViewModel {
   }
 
   /**
+   * Send an image message
+   * @param mediaUrl - Public URL of the uploaded image
+   */
+  async sendImageMessage(mediaUrl: string): Promise<boolean> {
+    try {
+      if (!this.currentUser) {
+        throw new Error('No current user');
+      }
+
+      if (!this.currentChatContext) {
+        throw new Error('No active chat');
+      }
+
+      let context: { applicationId: string } | { relationshipId: string };
+      let receiverId: string;
+
+      if (this.currentChatContext === 'preMatch' && this.currentApplicationId) {
+        context = { applicationId: this.currentApplicationId };
+        receiverId = this.currentChat?.partnerUser?.id || '';
+      } else if (this.currentChatContext === 'relationship' && this.currentRelationshipId) {
+        context = { relationshipId: this.currentRelationshipId };
+        const rel = this.currentRelationship;
+        receiverId = rel?.youth_id === this.currentUser ? rel?.elderly_id : rel?.youth_id || '';
+      } else {
+        throw new Error('Invalid chat context');
+      }
+
+      if (!receiverId) {
+        throw new Error('Could not determine receiver');
+      }
+
+      // Send image message via Service
+      const message = await communicationService.sendMediaMessage(
+        this.currentUser,
+        receiverId,
+        context,
+        'image',
+        mediaUrl
+      );
+
+      // Optimistic UI update
+      runInAction(() => {
+        const exists = this.currentChatMessages.some(m => m.id === message.id);
+        if (!exists) {
+          this.currentChatMessages.push(message);
+        }
+      });
+
+      return true;
+    } catch (error) {
+      runInAction(() => {
+        this.errorMessage = error instanceof Error ? error.message : 'Failed to send image';
+      });
+      return false;
+    }
+  }
+
+  /**
+   * Send a video message
+   * @param mediaUrl - Public URL of the uploaded video
+   */
+  async sendVideoMessage(mediaUrl: string): Promise<boolean> {
+    try {
+      if (!this.currentUser) {
+        throw new Error('No current user');
+      }
+
+      if (!this.currentChatContext) {
+        throw new Error('No active chat');
+      }
+
+      let context: { applicationId: string } | { relationshipId: string };
+      let receiverId: string;
+
+      if (this.currentChatContext === 'preMatch' && this.currentApplicationId) {
+        context = { applicationId: this.currentApplicationId };
+        receiverId = this.currentChat?.partnerUser?.id || '';
+      } else if (this.currentChatContext === 'relationship' && this.currentRelationshipId) {
+        context = { relationshipId: this.currentRelationshipId };
+        const rel = this.currentRelationship;
+        receiverId = rel?.youth_id === this.currentUser ? rel?.elderly_id : rel?.youth_id || '';
+      } else {
+        throw new Error('Invalid chat context');
+      }
+
+      if (!receiverId) {
+        throw new Error('Could not determine receiver');
+      }
+
+      // Send video message via Service
+      const message = await communicationService.sendMediaMessage(
+        this.currentUser,
+        receiverId,
+        context,
+        'video',
+        mediaUrl
+      );
+
+      // Optimistic UI update
+      runInAction(() => {
+        const exists = this.currentChatMessages.some(m => m.id === message.id);
+        if (!exists) {
+          this.currentChatMessages.push(message);
+        }
+      });
+
+      return true;
+    } catch (error) {
+      runInAction(() => {
+        this.errorMessage = error instanceof Error ? error.message : 'Failed to send video';
+      });
+      return false;
+    }
+  }
+
+  /**
    * Close current chat and clean up subscriptions
    */
   closeChat(): void {
@@ -487,6 +604,34 @@ export class CommunicationViewModel {
    */
   clearPendingIncomingCall(): void {
     this.pendingIncomingCall = null;
+  }
+
+  /**
+   * Get current journey step based on user's application status
+   * Step 1: Browse/Wait (no pre-matches)
+   * Step 2: Pre-Match (has active pre-match with status pre_chat_active)
+   * Step 3: Application/Review (has pending_review application)
+   * Note: Step 4 not needed - both_accepted goes directly to bonding stage
+   */
+  get currentJourneyStep(): number {
+    // Check for pending_review applications (Step 3)
+    const hasPendingApplication = this.activePreMatchChats.some(
+      chat => chat.application.status === 'pending_review'
+    );
+    if (hasPendingApplication) {
+      return 3;
+    }
+
+    // Check for active pre-match (Step 2)
+    const hasActivePreMatch = this.activePreMatchChats.some(
+      chat => chat.application.status === 'pre_chat_active'
+    );
+    if (hasActivePreMatch) {
+      return 2;
+    }
+
+    // Default: Browse/Wait (Step 1)
+    return 1;
   }
 
   /**
@@ -654,6 +799,56 @@ export class CommunicationViewModel {
         this.isLoading = false;
       });
       return null;
+    }
+  }
+
+  /**
+   * Save chat media to family album (memories)
+   * Only available in relationship context (not pre-match)
+   * 
+   * @param mediaUrl - Existing chat media URL
+   * @param mediaType - 'image' or 'video'
+   * @param caption - Optional caption
+   */
+  async saveChatMediaToMemory(
+    mediaUrl: string,
+    mediaType: 'image' | 'video',
+    caption?: string
+  ): Promise<boolean> {
+    // Check if in relationship context (not pre-match)
+    if (!this.currentRelationshipId) {
+      runInAction(() => {
+        this.errorMessage = 'Save to Memories is only available after formal adoption.';
+      });
+      return false;
+    }
+
+    if (!this.currentUser) {
+      runInAction(() => {
+        this.errorMessage = 'User not logged in.';
+      });
+      return false;
+    }
+
+    try {
+      // Map 'image' to 'photo' for service
+      const serviceMediaType = mediaType === 'image' ? 'photo' : 'video';
+
+      await familyService.saveChatMediaToMemory(
+        this.currentUser,
+        this.currentRelationshipId,
+        mediaUrl,
+        serviceMediaType,
+        caption
+      );
+
+      console.log('[CommunicationViewModel] Chat media saved to memories successfully');
+      return true;
+    } catch (error) {
+      runInAction(() => {
+        this.errorMessage = error instanceof Error ? error.message : 'Failed to save to memories';
+      });
+      return false;
     }
   }
 }

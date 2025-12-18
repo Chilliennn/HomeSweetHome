@@ -6,3 +6,4 @@ export * from './CoreService/relationshipService';
 export * from './CoreService';
 export * from './CoreService/familyService';
 export * from './CoreService/familyAIService';
+export * from './CoreService/mediaUploadHelper';

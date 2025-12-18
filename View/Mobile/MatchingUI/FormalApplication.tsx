@@ -21,7 +21,7 @@ import {
 } from 'react-native';
 import { observer } from 'mobx-react-lite';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { Header, Button, AlertBanner, FormField, Card, IconCircle } from '../components/ui';
+import { Header, Button, AlertBanner, FormField, Card, IconCircle, SelectModal } from '../components/ui';
 import { youthMatchingViewModel, communicationViewModel } from '@home-sweet-home/viewmodel';
 import { Colors } from '@/constants/theme';
 
@@ -43,6 +43,24 @@ export const FormalApplication = observer(function FormalApplication() {
   const [whatCanOffer, setWhatCanOffer] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Modal visibility state
+  const [showAvailabilityModal, setShowAvailabilityModal] = useState(false);
+  const [showCommitmentModal, setShowCommitmentModal] = useState(false);
+
+  // Dropdown options
+  const AVAILABILITY_OPTIONS = [
+    { label: 'Weekday evenings (6-9pm)', value: 'Weekday evenings (6-9pm)' },
+    { label: 'Weekends (full day)', value: 'Weekends (full day)' },
+    { label: 'Flexible schedule', value: 'Flexible schedule' },
+    { label: 'Weekday mornings', value: 'Weekday mornings' },
+  ];
+
+  const COMMITMENT_OPTIONS = [
+    { label: 'Long-term (6+ months)', value: 'Long-term (6+ months)' },
+    { label: 'Medium-term (3-6 months)', value: 'Medium-term (3-6 months)' },
+    { label: 'Short-term (1-3 months)', value: 'Short-term (1-3 months)' },
+  ];
+
   // Get application data
   const chat = commVM.getChatByApplicationId(applicationId);
   const partner = chat?.partnerUser;
@@ -61,52 +79,61 @@ export const FormalApplication = observer(function FormalApplication() {
   };
 
   const handleSubmit = async () => {
+    console.log('🟢 [View] handleSubmit called, isValid:', isValid);
     if (!isValid) return;
 
+    // Get user ID from communicationViewModel (set during app initialization)
+    const youthId = commVM.currentUser;
+    console.log('🟢 [View] youthId from commVM:', youthId);
+    if (!youthId) {
+      Alert.alert('Error', 'User not logged in');
+      return;
+    }
+
+    console.log('🟢 [View] Setting isSubmitting=true');
     setIsSubmitting(true);
     try {
-      // Submit via ViewModel/Service
-      await vm.submitFormalApplication(applicationId, {
+      console.log('🟢 [View] Calling vm.submitFormalApplication...');
+      console.log('🟢 [View] applicationId:', applicationId);
+      console.log('🟢 [View] formData:', { motivationLetter: motivationLetter.length + ' chars', availability, commitmentLevel, whatCanOffer: whatCanOffer.length + ' chars' });
+
+      // Submit via ViewModel/Service - pass youthId explicitly
+      const success = await vm.submitFormalApplication(applicationId, youthId, {
         motivationLetter,
         availability,
         commitmentLevel,
         whatCanOffer,
       });
 
-      // Navigate to success screen
-      router.replace({
-        pathname: '/application-submitted',
-        params: { applicationId }
-      } as any);
+      console.log('🟢 [View] vm.submitFormalApplication returned:', success);
+
+      if (success) {
+        console.log('🟢 [View] Success! Navigating to success screen...');
+        // Navigate to success screen
+        router.replace({
+          pathname: '/application-submitted',
+          params: { applicationId }
+        } as any);
+      } else {
+        console.log('🟢 [View] Submit returned false. vm.error:', vm.error);
+        // ViewModel returned false, show error from ViewModel
+        Alert.alert('Error', vm.error || 'Failed to submit application');
+      }
     } catch (error) {
+      console.error('❌ [View] handleSubmit catch error:', error);
       Alert.alert('Error', error instanceof Error ? error.message : 'Failed to submit application');
     } finally {
+      console.log('🟢 [View] handleSubmit finally block, setting isSubmitting=false');
       setIsSubmitting(false);
     }
   };
 
   const handleAvailabilitySelect = () => {
-    // For now, cycle through options
-    const options = [
-      'Weekday evenings (6-9pm)',
-      'Weekends (full day)',
-      'Flexible schedule',
-      'Weekday mornings',
-    ];
-    const currentIndex = options.indexOf(availability);
-    const nextIndex = (currentIndex + 1) % options.length;
-    setAvailability(options[nextIndex]);
+    setShowAvailabilityModal(true);
   };
 
   const handleCommitmentSelect = () => {
-    const options = [
-      'Long-term (6+ months)',
-      'Medium-term (3-6 months)',
-      'Short-term (1-3 months)',
-    ];
-    const currentIndex = options.indexOf(commitmentLevel);
-    const nextIndex = (currentIndex + 1) % options.length;
-    setCommitmentLevel(options[nextIndex]);
+    setShowCommitmentModal(true);
   };
 
   return (
@@ -203,6 +230,26 @@ export const FormalApplication = observer(function FormalApplication() {
           />
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Availability Selection Modal */}
+      <SelectModal
+        visible={showAvailabilityModal}
+        title="Select Availability"
+        options={AVAILABILITY_OPTIONS}
+        selectedValue={availability}
+        onSelect={setAvailability}
+        onClose={() => setShowAvailabilityModal(false)}
+      />
+
+      {/* Commitment Level Selection Modal */}
+      <SelectModal
+        visible={showCommitmentModal}
+        title="Select Commitment Level"
+        options={COMMITMENT_OPTIONS}
+        selectedValue={commitmentLevel}
+        onSelect={setCommitmentLevel}
+        onClose={() => setShowCommitmentModal(false)}
+      />
     </View>
   );
 });

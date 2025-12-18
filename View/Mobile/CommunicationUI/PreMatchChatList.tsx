@@ -72,6 +72,11 @@ export const PreMatchChatList = observer(function PreMatchChatList() {
     router.push({ pathname: '/pre-match-decision', params: { applicationId } } as any);
   };
 
+  // Handler: View application status - for submitted applications
+  const handleViewStatus = (applicationId: string) => {
+    router.push({ pathname: '/application-status', params: { applicationId } } as any);
+  };
+
   // Handler: End pre-match - navigate to end confirmation
   const handleEnd = (applicationId: string) => {
     router.push({ pathname: '/end-pre-match', params: { applicationId } } as any);
@@ -110,6 +115,9 @@ export const PreMatchChatList = observer(function PreMatchChatList() {
 
     // For elderly: lock chat when youth has submitted formal application
     const isChatLocked = isElderly && isPendingReview;
+
+    // For youth: show status tracking when they have submitted application
+    const isYouthApplicationPending = isYouth && isPendingReview;
 
     return (
       <Card style={styles.chatCard}>
@@ -200,9 +208,16 @@ export const PreMatchChatList = observer(function PreMatchChatList() {
             disabled={isChatLocked}
           />
 
-          {/* Youth side: View Details or End button */}
+          {/* Youth side: View Status (if pending), View Details (if can apply), or End button */}
           {isYouth && (
-            canApply ? (
+            isYouthApplicationPending ? (
+              <Button
+                title="View Status"
+                onPress={() => handleViewStatus(application.id)}
+                variant="secondary"
+                style={styles.actionButton}
+              />
+            ) : canApply ? (
               <Button
                 title="View Details"
                 onPress={() => handleViewDetails(application.id)}

@@ -40,7 +40,7 @@ const CAPABILITY_PRESETS: Record<string, CommunicationCapabilities> = {
     canScheduleMeetings: false,
     canShareDiary: false,
     canShareGallery: false,
-    textMessageLimit: 1000,
+    textMessageLimit: 500, // UC104 C2: max 500 characters
     voiceMessageLimit: 120,
     dailyMessageLimit: null,
     moderationEnabled: true,
@@ -426,6 +426,44 @@ export const communicationService = {
   },
 
   /**
+   * Send an image or video message (pre-match or relationship)
+   */
+  async sendMediaMessage(
+    senderId: string,
+    receiverId: string,
+    context: { applicationId: string } | { relationshipId: string },
+    mediaType: 'image' | 'video',
+    mediaUrl: string
+  ): Promise<Message> {
+    let message: Message;
+
+    // Verify pre-match application if applicable
+    if ('applicationId' in context) {
+      await this.verifyActivePreMatch(context.applicationId, senderId);
+
+      message = await messageRepository.sendMessage({
+        senderId,
+        receiverId,
+        applicationId: context.applicationId,
+        messageType: mediaType,
+        mediaUrl,
+      });
+    } else {
+      // Relationship media message
+      message = await messageRepository.sendMessage({
+        senderId,
+        receiverId,
+        relationshipId: context.relationshipId,
+        messageType: mediaType,
+        mediaUrl,
+      });
+    }
+
+    console.log(`[communicationService] ${mediaType} message sent:`, message.id);
+    return message;
+  },
+
+  /**
    * Mark messages as read when user opens chat
    */
   async markMessagesAsRead(userId: string, applicationId: string): Promise<void> {
@@ -658,5 +696,45 @@ export const communicationService = {
       roomUrl: room.url,
       message,
     };
+  },
+
+  /**
+   * Batch expire overdue pre-matches (14+ days)
+   * UC104 A7: System detects 14-day maximum duration reached
+   * 
+   * This can be called by:
+   * - A Supabase Edge Function on a schedule
+   * - An admin API endpoint
+   * - App startup check
+   * 
+   * @returns Number of expired pre-matches
+   */
+  async expireOverduePreMatches(): Promise<number> {
+    try {
+      // Get all active pre-match applications
+      const activeApplications = await matchingRepository.getActivePreMatchApplications();
+
+      let expiredCount = 0;
+
+      for (const app of activeApplications) {
+        const status = this.calcPreMatchStatus(app.applied_at);
+
+        if (status.isExpired) {
+          // Auto-expire this pre-match
+          await matchingRepository.updateApplicationStatus(app.id, 'withdrawn');
+
+          // Send notifications to both parties (future enhancement)
+          console.log(`[communicationService] Auto-expired pre-match ${app.id} after ${status.daysPassed} days`);
+
+          expiredCount++;
+        }
+      }
+
+      console.log(`[communicationService] Batch expiration complete: ${expiredCount} pre-matches expired`);
+      return expiredCount;
+    } catch (error) {
+      console.error('[communicationService] Error in batch expiration:', error);
+      throw error;
+    }
   },
 };

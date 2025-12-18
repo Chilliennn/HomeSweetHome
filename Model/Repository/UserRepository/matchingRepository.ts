@@ -8,25 +8,102 @@ export interface Interest extends Application {
     elderly?: User;
 }
 
+/**
+ * Filter options for elderly profiles (UC101_C6)
+ */
+export interface ElderlyFilters {
+    interests?: string[];
+    location?: string;
+    languages?: string[];
+    ageRange?: { min: number; max: number };
+    offset?: number;
+    limit?: number;
+}
+
+/**
+ * Result with pagination info
+ */
+export interface ElderlyProfilesResult {
+    profiles: User[];
+    totalCount: number;
+    hasMore: boolean;
+}
+
 export const matchingRepository = {
     /**
-     * Fetch available elderly profiles
+     * Fetch available elderly profiles with filters and pagination
+     * Excludes elderly users who are already in active relationships
      */
-    async getAvailableElderlyProfiles(filters?: any): Promise<User[]> {
+    async getAvailableElderlyProfiles(
+        filters?: ElderlyFilters,
+        youthProfile?: User
+    ): Promise<ElderlyProfilesResult> {
+        const limit = filters?.limit || 10;
+        const offset = filters?.offset || 0;
+
+        // First, get elderly IDs that are in active relationships (to exclude)
+        const { data: activeRelationships, error: relError } = await supabase
+            .from('relationships')
+            .select('elderly_id')
+            .eq('status', 'active');
+
+        if (relError) throw relError;
+        const excludedElderlyIds = (activeRelationships || []).map(r => r.elderly_id);
+
+        // Build main query
         let query = supabase
             .from('users')
-            .select('*')
+            .select('*', { count: 'exact' })
             .eq('user_type', 'elderly')
             .eq('is_active', true);
 
-        // placeholder for filter
-        if (filters?.location) {
-            // query = query.eq('location', filters.location);
+        // Exclude elderly in active relationships
+        if (excludedElderlyIds.length > 0) {
+            query = query.not('id', 'in', `(${excludedElderlyIds.join(',')})`);
         }
 
-        const { data, error } = await query;
+        // Apply location filter
+        if (filters?.location) {
+            query = query.ilike('location', `%${filters.location}%`);
+        }
+
+        // Apply language filter (contains any of the selected languages)
+        if (filters?.languages && filters.languages.length > 0) {
+            query = query.overlaps('languages', filters.languages);
+        }
+
+        // Pagination
+        query = query.range(offset, offset + limit - 1);
+
+        const { data, error, count } = await query;
         if (error) throw error;
-        return data || [];
+
+        let profiles = data || [];
+
+        // Post-query filtering for interests (in profile_data jsonb)
+        if (filters?.interests && filters.interests.length > 0) {
+            profiles = profiles.filter(user => {
+                const userInterests = user.profile_data?.interests || [];
+                return filters.interests!.some(interest =>
+                    userInterests.includes(interest)
+                );
+            });
+        }
+
+        // Post-query filtering for age range (based on verified_age)
+        if (filters?.ageRange) {
+            profiles = profiles.filter(user => {
+                const age = user.profile_data?.verified_age;
+                if (!age) return true; // Include if age unknown
+                return age >= filters.ageRange!.min && age <= filters.ageRange!.max;
+            });
+        }
+
+        return {
+            profiles,
+            totalCount: count || 0,
+            hasMore: (offset + profiles.length) < (count || 0)
+        };
     },
 
     /**
@@ -156,6 +233,24 @@ export const matchingRepository = {
 
         if (error) throw error;
         return count || 0;
+    },
+
+    /**
+     * Get all active pre-match applications (for batch expiration)
+     * UC104 A7: Used by expireOverduePreMatches service function
+     */
+    async getActivePreMatchApplications(): Promise<Interest[]> {
+        const { data, error } = await supabase
+            .from('applications')
+            .select('*, youth:youth_id(*), elderly:elderly_id(*)')
+            .eq('status', 'pre_chat_active');
+
+        if (error) {
+            console.error('[matchingRepository] Error fetching active pre-matches:', error);
+            throw error;
+        }
+
+        return data || [];
     },
     /**
      *  Subscribe to incoming interests for elderly
@@ -302,6 +397,8 @@ export const matchingRepository = {
             whatCanOffer?: string;
         }
     ): Promise<Interest> {
+        console.log('🔵 [Repo] submitFormalApplication START', { applicationId, motivationLetterLength: motivationLetter.length });
+
         const { data, error } = await supabase
             .from('applications')
             .update({
@@ -314,7 +411,29 @@ export const matchingRepository = {
             .select('*, youth:youth_id(*), elderly:elderly_id(*)')
             .single();
 
-        if (error) throw error;
+        console.log('🔵 [Repo] submitFormalApplication supabase result:', { data: data?.id, error });
+
+        if (error) {
+            console.error('❌ [Repo] submitFormalApplication error:', error);
+            throw error;
+        }
+
+        console.log('✅ [Repo] submitFormalApplication SUCCESS');
         return data as Interest;
+    },
+
+    /**
+     * Get youth's pending applications (status = pending_review)
+     * Used to prevent multiple simultaneous applications
+     */
+    async getYouthPendingApplications(youthId: string): Promise<Interest[]> {
+        const { data, error } = await supabase
+            .from('applications')
+            .select('*, elderly:elderly_id(*)')
+            .eq('youth_id', youthId)
+            .eq('status', 'pending_review');
+
+        if (error) throw error;
+        return data || [];
     }
 };

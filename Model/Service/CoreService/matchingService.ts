@@ -1,7 +1,7 @@
-import { matchingRepository } from '../../Repository/UserRepository/matchingRepository';
+import { matchingRepository, ElderlyFilters, ElderlyProfilesResult } from '../../Repository/UserRepository/matchingRepository';
 import { notificationRepository } from '../../Repository/UserRepository/notificationRepository';
 import type { RealtimeChannel } from '@supabase/supabase-js';
-import { UserType } from '../../types';
+import { User, UserType } from '../../types';
 import type { Interest } from '../../Repository/UserRepository/matchingRepository';
 
 // ============================================================================
@@ -12,6 +12,14 @@ const PRE_MATCH_LIMITS = {
     elderly: 5,
 };
 
+// Match scoring weights
+const MATCH_SCORE_WEIGHTS = {
+    SAME_INTEREST: 10,      // +10 per shared interest
+    SAME_LANGUAGE: 15,      // +15 per shared language
+    SAME_LOCATION: 20,      // +20 for same location
+    AGE_PREFERENCE: 10,     // +10 if within preferred age range
+};
+
 // ============================================================================
 // SERVICE
 // ============================================================================
@@ -19,8 +27,66 @@ export const matchingService = {
     // ============================================
     // READ OPERATIONS
     // ============================================
-    async getAvailableElderlyProfiles(filters?: any) {
-        return await matchingRepository.getAvailableElderlyProfiles(filters);
+
+    /**
+     * Calculate match score between youth and elderly
+     */
+    calculateMatchScore(youthProfile: User | null, elderlyProfile: User): number {
+        if (!youthProfile) return 0;
+
+        let score = 0;
+
+        // Match interests
+        const youthInterests = youthProfile.profile_data?.interests || [];
+        const elderlyInterests = elderlyProfile.profile_data?.interests || [];
+        for (const interest of youthInterests) {
+            if (elderlyInterests.includes(interest)) {
+                score += MATCH_SCORE_WEIGHTS.SAME_INTEREST;
+            }
+        }
+
+        // Match languages
+        const youthLanguages = youthProfile.languages || [];
+        const elderlyLanguages = elderlyProfile.languages || [];
+        for (const lang of youthLanguages) {
+            if (elderlyLanguages.includes(lang)) {
+                score += MATCH_SCORE_WEIGHTS.SAME_LANGUAGE;
+            }
+        }
+
+        // Match location
+        if (youthProfile.location && elderlyProfile.location) {
+            if (youthProfile.location.toLowerCase() === elderlyProfile.location.toLowerCase()) {
+                score += MATCH_SCORE_WEIGHTS.SAME_LOCATION;
+            }
+        }
+
+        return score;
+    },
+
+    /**
+     * Get available elderly profiles with filtering, scoring, and pagination
+     * UC101_1, UC101_3, UC101_4: Display and filter elderly profiles
+     */
+    async getAvailableElderlyProfiles(
+        filters?: ElderlyFilters,
+        youthProfile?: User
+    ): Promise<ElderlyProfilesResult> {
+        const result = await matchingRepository.getAvailableElderlyProfiles(filters, youthProfile);
+
+        // Calculate match scores and sort by score (highest first)
+        const profilesWithScores = result.profiles.map(profile => ({
+            profile,
+            score: this.calculateMatchScore(youthProfile || null, profile)
+        }));
+
+        profilesWithScores.sort((a, b) => b.score - a.score);
+
+        return {
+            profiles: profilesWithScores.map(p => p.profile),
+            totalCount: result.totalCount,
+            hasMore: result.hasMore
+        };
     },
 
     async getIncomingInterests(elderlyId: string) {
@@ -222,28 +288,49 @@ export const matchingService = {
             whatCanOffer?: string;
         }
     ): Promise<Interest> {
-        console.log('[matchingService] submitFormalApplication', { applicationId, youthId });
+        console.log('🔵 [matchingService] submitFormalApplication START', { applicationId, youthId });
+
+        // NEW: Check if youth already has a pending application
+        console.log('🔵 [matchingService] Step 0: Checking for existing pending applications...');
+        const existingPending = await matchingRepository.getYouthPendingApplications(youthId);
+        if (existingPending.length > 0) {
+            console.error('❌ [matchingService] Youth already has pending application');
+            throw new Error('You already have a pending application. Please wait for the decision before submitting another.');
+        }
 
         // Verify the application belongs to this youth
+        console.log('🔵 [matchingService] Step 1: Getting application by ID...');
         const application = await matchingRepository.getApplicationById(applicationId);
+        console.log('🔵 [matchingService] Step 1 complete, application:', application?.id, 'status:', application?.status);
+
         if (!application) {
+            console.error('❌ [matchingService] Application not found');
             throw new Error('Application not found');
         }
         if (application.youth_id !== youthId) {
+            console.error('❌ [matchingService] Unauthorized - youth_id mismatch');
             throw new Error('You are not authorized to submit this application');
         }
         if (application.status !== 'pre_chat_active') {
-            throw new Error('This pre-match is not active');
+            console.error('❌ [matchingService] Status is not pre_chat_active, got:', application.status);
+            throw new Error(`This pre-match is not active. Current status: ${application.status}`);
         }
 
-        // Check minimum duration (7 days)
-        const { communicationService } = await import('./communicationService');
-        const status = communicationService.calcPreMatchStatus(application.applied_at);
-        if (!status.canApply) {
-            throw new Error(`Minimum pre-match period not met. ${7 - status.daysPassed} days remaining.`);
+        // Check minimum duration (7 days) - inline calculation to avoid circular import
+        console.log('🔵 [matchingService] Step 2: Calculating pre-match status...');
+        const applicationDate = new Date(application.applied_at);
+        const now = new Date();
+        const daysPassed = Math.floor((now.getTime() - applicationDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+        const canApply = daysPassed >= 7;
+        console.log('🔵 [matchingService] Pre-match status:', { daysPassed, canApply });
+
+        if (!canApply) {
+            console.error('❌ [matchingService] Minimum duration not met');
+            throw new Error(`Minimum pre-match period not met. ${7 - daysPassed} days remaining.`);
         }
 
         // Update application with motivation letter and change status
+        console.log('🔵 [matchingService] Step 3: Submitting to repository...');
         const updated = await matchingRepository.submitFormalApplication(
             applicationId,
             formData.motivationLetter,
@@ -253,8 +340,10 @@ export const matchingService = {
                 whatCanOffer: formData.whatCanOffer,
             }
         );
+        console.log('🔵 [matchingService] Step 3 complete, updated application:', updated?.id);
 
         // Create notification for elderly
+        console.log('🔵 [matchingService] Step 4: Creating notification for elderly...');
         const youthName = application.youth?.full_name || 'A Youth';
         await notificationRepository.createNotification({
             user_id: application.elderly_id,
@@ -265,7 +354,7 @@ export const matchingService = {
             reference_table: 'applications',
         });
 
-        console.log('[matchingService] Formal application submitted successfully');
+        console.log('✅ [matchingService] Formal application submitted successfully');
         return updated;
     },
 
@@ -303,6 +392,8 @@ export const matchingService = {
 
         // Create notification for youth
         const elderlyName = application.elderly?.full_name || 'The Elderly';
+        const youthName = application.youth?.full_name || 'The Youth';
+
         if (decision === 'approve') {
             await notificationRepository.createNotification({
                 user_id: application.youth_id,
@@ -312,6 +403,10 @@ export const matchingService = {
                 reference_id: applicationId,
                 reference_table: 'applications',
             });
+
+            // Auto-end other pre-matches for this youth and notify those elderly
+            console.log('[matchingService] Auto-ending other pre-matches for youth:', application.youth_id);
+            await this.endOtherPreMatchesOnApproval(application.youth_id, applicationId, youthName);
 
             // TODO: Create relationship record (handled by DB trigger or separate function)
         } else {
@@ -327,6 +422,43 @@ export const matchingService = {
 
         console.log('[matchingService] Application reviewed:', decision);
         return updated;
+    },
+
+    /**
+     * End other pre-matches when an application is approved
+     * Sends apology notification to other elderly and removes chat from their list
+     */
+    async endOtherPreMatchesOnApproval(youthId: string, approvedApplicationId: string, youthName: string): Promise<void> {
+        // Get all active pre-matches for this youth (excluding the approved one)
+        const allApplications = await matchingRepository.getYouthApplications(youthId);
+        const otherActivePreMatches = allApplications.filter(app =>
+            app.id !== approvedApplicationId &&
+            (app.status === 'pre_chat_active' || app.status === 'pending_review')
+        );
+
+        console.log('[matchingService] Found', otherActivePreMatches.length, 'other pre-matches to end');
+
+        // End each pre-match and notify the elderly
+        for (const app of otherActivePreMatches) {
+            try {
+                // Update application status to 'ended'
+                await matchingRepository.updateApplicationStatus(app.id, 'ended');
+
+                // Send apology notification to elderly
+                await notificationRepository.createNotification({
+                    user_id: app.elderly_id,
+                    type: 'prematch_ended',
+                    title: 'Pre-Match Ended',
+                    message: `${youthName} has been matched with another elderly and is no longer available. Thank you for your understanding! 💙`,
+                    reference_id: app.id,
+                    reference_table: 'applications',
+                });
+
+                console.log('[matchingService] Ended pre-match and notified elderly:', app.elderly_id);
+            } catch (error) {
+                console.error('[matchingService] Failed to end pre-match:', app.id, error);
+            }
+        }
     },
 
     /**

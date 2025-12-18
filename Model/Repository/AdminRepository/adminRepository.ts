@@ -862,7 +862,6 @@ function mapRowToConsultation(row: any): ConsultationRequest {
 	return {
 		id: row.id,
 		requesterId: row.requester_id,
-		partnerId: row.partner_id,
 		requesterName: row.requester?.full_name || 'Unknown',
 		requesterType: row.requester?.user_type || 'elderly',
 		requesterAge: calculateAge(row.requester?.date_of_birth),

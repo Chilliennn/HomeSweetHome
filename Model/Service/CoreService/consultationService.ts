@@ -64,7 +64,8 @@ export const consultationService = {
         const advisor = advisors.find((a: Advisor) => a.id === advisorId);
         const advisorName = advisor?.name || 'A Family Advisor';
 
-        // Create notification for the requester (addon by user)
+        // Create notifications for BOTH parties (addon by user)
+        // Notify the requester
         try {
             await notificationRepository.createNotification({
                 user_id: consultation.requesterId,
@@ -74,10 +75,26 @@ export const consultationService = {
                 reference_id: consultationId,
                 reference_table: 'consultation_requests',
             });
-            console.log('[consultationService] Created notification for user:', consultation.requesterId);
+            console.log('[consultationService] Created notification for requester:', consultation.requesterId);
         } catch (error) {
-            // Don't fail the assignment if notification fails
-            console.error('[consultationService] Failed to create notification:', error);
+            console.error('[consultationService] Failed to create notification for requester:', error);
+        }
+
+        // Notify the partner
+        if (consultation.partnerId && consultation.partnerId !== consultation.requesterId) {
+            try {
+                await notificationRepository.createNotification({
+                    user_id: consultation.partnerId,
+                    type: 'consultation_assigned',
+                    title: 'Advisor Assigned! 🎉',
+                    message: `${advisorName} has been assigned to help with your partner's ${consultation.consultationType} consultation request. They will contact you soon.`,
+                    reference_id: consultationId,
+                    reference_table: 'consultation_requests',
+                });
+                console.log('[consultationService] Created notification for partner:', consultation.partnerId);
+            } catch (error) {
+                console.error('[consultationService] Failed to create notification for partner:', error);
+            }
         }
     },
 

@@ -33,6 +33,10 @@ export const NotificationScreen = observer(() => {
     const currentUserId = rootMatchVM.currentUserId;
     const isElderly = rootMatchVM.currentUserType === 'elderly';
 
+    // State for general system notifications (including consultation_assigned)
+    // TODO: Uncomment when notification system is fixed
+    // const [generalNotifications, setGeneralNotifications] = useState<any[]>([]);
+
     // Load notifications based on user type
     useEffect(() => {
         if (currentUserId) {
@@ -41,6 +45,9 @@ export const NotificationScreen = observer(() => {
             } else {
                 youthVM.loadNotifications(currentUserId);
             }
+
+            // TODO: Uncomment when notification system is fixed
+            // loadGeneralNotifications(currentUserId);
         }
         return () => {
             if (isElderly) {
@@ -50,6 +57,24 @@ export const NotificationScreen = observer(() => {
             }
         };
     }, [isElderly, currentUserId]);
+
+    // TODO: Uncomment when notification system is fixed
+    // Load general notifications from notifications table
+    // const loadGeneralNotifications = async (userId: string) => {
+    //     try {
+    //         console.log('[NotificationScreen] Loading notifications for user:', userId);
+    //         const { notificationRepository } = require('@home-sweet-home/model');
+    //         const notifications = await notificationRepository.getNotifications(userId, 20);
+    //         console.log('[NotificationScreen] All notifications:', notifications.length, notifications);
+    //         const consultationNotifs = notifications.filter(
+    //             (n: any) => n.type === 'consultation_assigned' || n.type === 'admin_notice'
+    //         );
+    //         console.log('[NotificationScreen] Filtered notifications:', consultationNotifs.length);
+    //         setGeneralNotifications(consultationNotifs);
+    //     } catch (error) {
+    //         console.error('Failed to load general notifications:', error);
+    //     }
+    // };
 
     const handleAccept = async (reqId: string, youthId: string) => {
         if (!currentUserId) return;
@@ -231,8 +256,55 @@ export const NotificationScreen = observer(() => {
         }
     };
 
+    /**
+     * Render: General System Notifications (e.g., Advisor Assigned)
+     */
+    const renderGeneralNotification = ({ item }: { item: any }) => {
+        const date = item.created_at ? formatDate(item.created_at) : 'Just now';
+
+        // Get icon based on notification type
+        const getIcon = () => {
+            switch (item.type) {
+                case 'consultation_assigned': return '🎉';
+                case 'admin_notice': return '📢';
+                default: return '🔔';
+            }
+        };
+
+        return (
+            <Card style={[styles.notificationCard, styles.acceptedCard]}>
+                <View style={styles.notifRow}>
+                    <IconCircle icon={getIcon()} size={40} backgroundColor="#E8F5E9" />
+                    <View style={styles.notifContent}>
+                        <Text style={styles.notifTitle}>{item.title}</Text>
+                        <Text style={styles.notifText}>{item.message}</Text>
+                        <Text style={styles.timeText}>{date}</Text>
+                    </View>
+                </View>
+            </Card>
+        );
+    };
+
     const isLoading = isElderly ? matchVM.isLoading : youthVM.isLoading;
     const data = isElderly ? matchVM.incomingRequests : youthVM.activeMatches;
+
+    // TODO: Uncomment when notification system is fixed
+    // Combine match data with general notifications
+    // const allNotifications = [
+    //     ...generalNotifications.map(n => ({ ...n, _isGeneral: true })),
+    //     ...matchData.map((m: any) => ({ ...m, _isGeneral: false }))
+    // ].sort((a, b) => {
+    //     const dateA = new Date(a.created_at || a.applied_at || 0).getTime();
+    //     const dateB = new Date(b.created_at || b.applied_at || 0).getTime();
+    //     return dateB - dateA;
+    // });
+    //
+    // const renderNotification = ({ item }: { item: any }) => {
+    //     if (item._isGeneral) {
+    //         return renderGeneralNotification({ item });
+    //     }
+    //     return isElderly ? renderElderlyNotification({ item }) : renderYouthNotification({ item });
+    // };
 
     // Loading State
     if (isLoading) {

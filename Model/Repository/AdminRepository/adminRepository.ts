@@ -712,6 +712,48 @@ export const consultationRepository = {
 		} catch {
 			// RPC may not exist in database
 		}
+
+		// TODO: Uncomment when notification system is fixed
+		// Create notification for the requester (UC504: user notification on advisor assignment)
+		// try {
+		// 	const { data: request, error: reqError } = await supabase
+		// 		.from('consultation_requests')
+		// 		.select('requester_id')
+		// 		.eq('id', consultationId)
+		// 		.single();
+		// 
+		// 	if (reqError) {
+		// 		console.error('Failed to fetch requester:', reqError);
+		// 		return;
+		// 	}
+		// 
+		// 	const { data: advisor } = await supabase
+		// 		.from('advisors')
+		// 		.select('name')
+		// 		.eq('id', advisorId)
+		// 		.single();
+		// 
+		// 	if (request?.requester_id) {
+		// 		const advisorName = advisor?.name || 'a Family Advisor';
+		// 		const { error: insertError } = await supabase.from('notifications').insert({
+		// 			user_id: request.requester_id,
+		// 			type: 'admin_notice',
+		// 			title: 'Advisor Assigned! 🎉',
+		// 			message: `${advisorName} has been assigned to your consultation request. They will contact you soon.`,
+		// 			reference_id: consultationId,
+		// 			reference_table: 'consultation_requests',
+		// 			is_read: false
+		// 		});
+		// 
+		// 		if (insertError) {
+		// 			console.error('Failed to insert notification:', insertError);
+		// 		} else {
+		// 			console.log('✅ Notification created for user:', request.requester_id);
+		// 		}
+		// 	}
+		// } catch (notifError) {
+		// 	console.error('Failed to create user notification:', notifError);
+		// }
 	},
 
 	async dismissRequest(consultationId: string, _adminId: string, reason: string): Promise<void> {
@@ -728,6 +770,40 @@ export const consultationRepository = {
 			.update({ status: 'completed', resolution_notes: notes, completed_at: new Date().toISOString() })
 			.eq('id', consultationId);
 		if (error) throw error;
+	},
+
+	async submitConsultationRequest(
+		requesterId: string,
+		partnerId: string,
+		relationshipId: string | null,
+		consultationType: string,
+		concernDescription: string,
+		urgency: 'normal' | 'high' = 'normal',
+		preferredMethod: 'video_call' | 'phone' | 'chat' = 'video_call',
+		preferredDateTime: string = ''
+	): Promise<string> {
+		// Append preferred datetime to description if provided (since DB expects TIMESTAMPTZ)
+		const fullDescription = preferredDateTime
+			? `${concernDescription}\n\nPreferred time: ${preferredDateTime}`
+			: concernDescription;
+
+		const { data, error } = await supabase
+			.from('consultation_requests')
+			.insert({
+				requester_id: requesterId,
+				partner_id: partnerId,
+				relationship_id: relationshipId,
+				consultation_type: consultationType,
+				concern_description: fullDescription,
+				urgency: urgency,
+				preferred_method: preferredMethod,
+				status: 'pending_assignment',
+				submitted_at: new Date().toISOString()
+			})
+			.select('id')
+			.single();
+		if (error) throw error;
+		return data.id;
 	}
 };
 
@@ -748,6 +824,17 @@ function mapRowToConsultation(row: any): ConsultationRequest {
 		relationshipDuration = `${days} days`;
 	}
 
+	// Parse preferred time from description (since we append it there due to TIMESTAMPTZ constraint)
+	let concernDescription = row.concern_description || '';
+	let preferredDateTime = row.preferred_datetime || '';
+
+	// Check if preferred time is embedded in description
+	const preferredTimeMatch = concernDescription.match(/\n\nPreferred time: (.+)$/);
+	if (preferredTimeMatch) {
+		preferredDateTime = preferredTimeMatch[1];
+		concernDescription = concernDescription.replace(/\n\nPreferred time: .+$/, '');
+	}
+
 	return {
 		id: row.id,
 		requesterId: row.requester_id,
@@ -760,8 +847,8 @@ function mapRowToConsultation(row: any): ConsultationRequest {
 		partnerAvatarUrl: row.partner?.profile_photo_url || row.partner?.avatar_url || null,
 		consultationType: row.consultation_type,
 		preferredMethod: row.preferred_method || 'video_call',
-		preferredDateTime: row.preferred_datetime || '',
-		concernDescription: row.concern_description,
+		preferredDateTime: preferredDateTime,
+		concernDescription: concernDescription,
 		status: row.status,
 		submittedAt: row.submitted_at,
 		urgency: row.urgency || 'normal',

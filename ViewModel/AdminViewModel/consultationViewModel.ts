@@ -164,6 +164,43 @@ export class ConsultationViewModel {
     isWaitingTimeAlert(submittedAt: string): boolean {
         return consultationService.isWaitingTimeAlert(submittedAt);
     }
+
+    /**
+     * Submit a new consultation request (for mobile users)
+     */
+    async submitConsultationRequest(
+        requesterId: string,
+        partnerId: string,
+        relationshipId: string | null,
+        consultationType: string,
+        concernDescription: string,
+        urgency: 'normal' | 'high' = 'normal',
+        preferredMethod: 'video_call' | 'phone' | 'chat' = 'video_call',
+        preferredDateTime: string = ''
+    ): Promise<boolean> {
+        this.isLoading = true;
+        this.errorMessage = null;
+
+        try {
+            await consultationService.submitRequest(
+                requesterId,
+                partnerId,
+                relationshipId,
+                consultationType,
+                concernDescription,
+                urgency,
+                preferredMethod,
+                preferredDateTime
+            );
+            return true;
+        } catch (error) {
+            this.errorMessage = error instanceof Error ? error.message : 'Failed to submit request';
+            console.error('Error submitting consultation request:', error);
+            return false;
+        } finally {
+            this.isLoading = false;
+        }
+    }
 }
 
 export const consultationViewModel = new ConsultationViewModel();

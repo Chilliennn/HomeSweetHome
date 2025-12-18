@@ -276,8 +276,10 @@ export const ConsultationDetails: React.FC<ConsultationDetailsProps> = observer(
     const handleAssign = async (advisorId: string) => {
         if (request) {
             await consultationViewModel.assignAdvisor(request.id, advisorId);
+            alert('✅ Advisor assigned successfully! The user has been notified.');
         }
         setShowAssignModal(false);
+        onBack?.();
     };
 
     const handleDismiss = async (reason: string, notes: string) => {

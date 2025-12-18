@@ -11,11 +11,12 @@ import {
   Image,
   Keyboard,
   Animated,
+  Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { observer } from 'mobx-react-lite';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { communicationViewModel } from '@home-sweet-home/viewmodel';
+import { communicationViewModel, consultationViewModel } from '@home-sweet-home/viewmodel';
 import { IconCircle, ChatBubble } from '@/components/ui';
 import { Colors } from '@/constants/theme';
 import { useVoiceRecording } from '@/hooks/useVoiceRecording';
@@ -50,6 +51,14 @@ export const ChatScreen = observer(function ChatScreen() {
   const [messageInput, setMessageInput] = useState('');
   const [isSendingVoice, setIsSendingVoice] = useState(false);
   const keyboardHeight = useRef(new Animated.Value(0)).current;
+
+  // Advisor Request Modal State
+  const [showAdvisorModal, setShowAdvisorModal] = useState(false);
+  const [advisorConsultationType, setAdvisorConsultationType] = useState('');
+  const [advisorDescription, setAdvisorDescription] = useState('');
+  const [advisorPreferredMethod, setAdvisorPreferredMethod] = useState<'video_call' | 'phone' | 'chat'>('video_call');
+  const [advisorPreferredDateTime, setAdvisorPreferredDateTime] = useState('');
+  const [isSubmittingAdvisor, setIsSubmittingAdvisor] = useState(false);
 
   // Voice recording, playback, and upload hooks
   const { isRecording, duration: recordingDuration, startRecording, stopRecording, cancelRecording } = useVoiceRecording();
@@ -387,6 +396,59 @@ export const ChatScreen = observer(function ChatScreen() {
     );
   };
 
+  // Handler: Request Family Advisor
+  const handleRequestAdvisor = () => {
+    Alert.alert(
+      '📋 Request Family Advisor',
+      'What type of consultation do you need?',
+      [
+        { text: 'General Advice', onPress: () => openAdvisorModal('General Advice') },
+        { text: 'Conflict Resolution', onPress: () => openAdvisorModal('Conflict Resolution') },
+        { text: 'Communication Support', onPress: () => openAdvisorModal('Communication Support') },
+        { text: 'Cancel', style: 'cancel' }
+      ]
+    );
+  };
+
+  const openAdvisorModal = (consultationType: string) => {
+    setAdvisorConsultationType(consultationType);
+    setAdvisorDescription('');
+    setAdvisorPreferredMethod('video_call');
+    setAdvisorPreferredDateTime('');
+    setShowAdvisorModal(true);
+  };
+
+  const submitAdvisorRequest = async () => {
+    if (advisorDescription.trim().length < 10) {
+      Alert.alert('Error', 'Please provide a description (at least 10 characters)');
+      return;
+    }
+    const partnerId = partnerUser?.id;
+    const relId = relationship?.id || null;
+    if (!currentUserId || !partnerId) {
+      Alert.alert('Error', 'Unable to identify users');
+      return;
+    }
+    setIsSubmittingAdvisor(true);
+    const success = await consultationViewModel.submitConsultationRequest(
+      currentUserId,
+      partnerId,
+      relId,
+      advisorConsultationType,
+      advisorDescription,
+      'normal',
+      advisorPreferredMethod,
+      advisorPreferredDateTime
+    );
+    setIsSubmittingAdvisor(false);
+    setShowAdvisorModal(false);
+    if (success) {
+      Alert.alert('Success! ✅', 'Your request has been submitted. An admin will assign an advisor soon.');
+    } else {
+      Alert.alert('Error', consultationViewModel.errorMessage || 'Failed to submit request');
+    }
+  };
+
   // Render message item using ChatBubble from components/ui
   const renderMessage = ({ item }: { item: any }) => {
     const isOwn = item.sender_id === currentUserId;
@@ -531,6 +593,11 @@ export const ChatScreen = observer(function ChatScreen() {
                 style={styles.headerIcon}
               />
             </TouchableOpacity>
+
+            {/* Request Advisor Button */}
+            <TouchableOpacity onPress={handleRequestAdvisor} style={styles.headerButton}>
+              <Text style={{ fontSize: 18 }}>📋</Text>
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -651,6 +718,86 @@ export const ChatScreen = observer(function ChatScreen() {
           )}
         </Animated.View>
       </View>
+
+      {/* Advisor Request Modal */}
+      <Modal
+        visible={showAdvisorModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowAdvisorModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>📋 {advisorConsultationType}</Text>
+
+            {/* Description */}
+            <Text style={styles.modalSubtitle}>
+              Describe what you need help with:
+            </Text>
+            <TextInput
+              style={styles.modalTextInput}
+              placeholder="Enter your concern (min 10 characters)..."
+              placeholderTextColor="#999"
+              value={advisorDescription}
+              onChangeText={setAdvisorDescription}
+              multiline
+              numberOfLines={3}
+              maxLength={500}
+            />
+
+            {/* Preferred Method */}
+            <Text style={styles.modalLabel}>Preferred Method:</Text>
+            <View style={styles.methodButtonsRow}>
+              {(['video_call', 'phone', 'chat'] as const).map((method) => (
+                <TouchableOpacity
+                  key={method}
+                  style={[
+                    styles.methodButton,
+                    advisorPreferredMethod === method && styles.methodButtonActive
+                  ]}
+                  onPress={() => setAdvisorPreferredMethod(method)}
+                >
+                  <Text style={[
+                    styles.methodButtonText,
+                    advisorPreferredMethod === method && styles.methodButtonTextActive
+                  ]}>
+                    {method === 'video_call' ? '📹 Video' : method === 'phone' ? '📞 Phone' : '💬 Chat'}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {/* Preferred Date & Time */}
+            <Text style={styles.modalLabel}>Preferred Date & Time (optional):</Text>
+            <TextInput
+              style={styles.modalDateInput}
+              placeholder="e.g., Tomorrow 3pm, Weekday evenings"
+              placeholderTextColor="#999"
+              value={advisorPreferredDateTime}
+              onChangeText={setAdvisorPreferredDateTime}
+              maxLength={100}
+            />
+
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={styles.modalCancelButton}
+                onPress={() => setShowAdvisorModal(false)}
+              >
+                <Text style={styles.modalCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalSubmitButton, isSubmittingAdvisor && styles.modalButtonDisabled]}
+                onPress={submitAdvisorRequest}
+                disabled={isSubmittingAdvisor}
+              >
+                <Text style={styles.modalSubmitText}>
+                  {isSubmittingAdvisor ? 'Submitting...' : 'Submit'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 });
@@ -971,6 +1118,117 @@ const styles = StyleSheet.create({
     color: '#999',
     marginTop: 4,
     textAlign: 'right',
+  },
+  // Modal styles for Advisor Request
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContent: {
+    backgroundColor: '#FFF',
+    borderRadius: 16,
+    padding: 24,
+    width: '100%',
+    maxWidth: 400,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#333',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  modalSubtitle: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  modalTextInput: {
+    borderWidth: 1,
+    borderColor: '#DDD',
+    borderRadius: 12,
+    padding: 12,
+    fontSize: 16,
+    minHeight: 100,
+    textAlignVertical: 'top',
+    marginBottom: 16,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  modalCancelButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 12,
+    backgroundColor: '#F0F0F0',
+    alignItems: 'center',
+  },
+  modalCancelText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#666',
+  },
+  modalSubmitButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 12,
+    backgroundColor: Colors.light.secondary,
+    alignItems: 'center',
+  },
+  modalSubmitText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+  },
+  modalButtonDisabled: {
+    opacity: 0.5,
+  },
+  modalLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 8,
+  },
+  methodButtonsRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 16,
+  },
+  methodButton: {
+    flex: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: '#DDD',
+    alignItems: 'center',
+    backgroundColor: '#FFF',
+  },
+  methodButtonActive: {
+    borderColor: Colors.light.secondary,
+    backgroundColor: Colors.light.secondary + '20',
+  },
+  methodButtonText: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#666',
+  },
+  methodButtonTextActive: {
+    color: '#333',
+    fontWeight: '600',
+  },
+  modalDateInput: {
+    borderWidth: 1,
+    borderColor: '#DDD',
+    borderRadius: 12,
+    padding: 12,
+    fontSize: 16,
+    marginBottom: 16,
   },
 });
 

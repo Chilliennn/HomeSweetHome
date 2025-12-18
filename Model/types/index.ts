@@ -327,7 +327,8 @@ export type NotificationType =
   | "relationship_accepted"
   | "relationship_ended"
   | "profile_viewed"
-  | "platform_update";
+  | "platform_update"
+  | "consultation_assigned";
 
 export interface Notification {
   id: string;

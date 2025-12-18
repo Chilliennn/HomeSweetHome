@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { observer } from 'mobx-react-lite';
+import { consultationViewModel } from '../../../../ViewModel/AdminViewModel/consultationViewModel';
 
 // Color constants
 const colors = {
@@ -22,14 +24,6 @@ interface Advisor {
     currentWorkload: number;
     languages: string[];
 }
-
-// Mock advisors
-const mockAdvisors: Advisor[] = [
-    { id: 'adv-1', name: 'Dr. Wong Li Mei', specialization: 'Relationship Guidance', status: 'available', currentWorkload: 2, languages: ['English', 'Mandarin', 'Cantonese'] },
-    { id: 'adv-2', name: 'Encik Razak bin Abdullah', specialization: 'Conflict Mediation', status: 'available', currentWorkload: 3, languages: ['English', 'Malay'] },
-    { id: 'adv-3', name: 'Ms. Priya Ramasamy', specialization: 'Communication Support', status: 'busy', currentWorkload: 5, languages: ['English', 'Tamil', 'Malay'] },
-    { id: 'adv-4', name: 'Mr. Lim Kah Seng', specialization: 'General Advice', status: 'available', currentWorkload: 1, languages: ['English', 'Mandarin', 'Hokkien'] },
-];
 
 const styles = {
     overlay: {
@@ -214,13 +208,27 @@ interface AdvisorAssignmentModalProps {
     requestId: string;
 }
 
-export const AdvisorAssignmentModal: React.FC<AdvisorAssignmentModalProps> = ({
+export const AdvisorAssignmentModal: React.FC<AdvisorAssignmentModalProps> = observer(({
     onClose,
     onAssign,
     requestId,
 }) => {
     const [selectedAdvisor, setSelectedAdvisor] = useState<string | null>(null);
-    const [advisors] = useState<Advisor[]>(mockAdvisors);
+
+    // Load advisors from database on mount
+    useEffect(() => {
+        consultationViewModel.loadAdvisors();
+    }, []);
+
+    // Map ViewModel advisors to component format
+    const advisors = consultationViewModel.advisors.map(a => ({
+        id: a.id,
+        name: a.name,
+        specialization: a.specialization || 'General Advice',
+        status: a.status as 'available' | 'busy' | 'offline',
+        currentWorkload: a.currentWorkload,
+        languages: a.languages || ['English'],
+    }));
 
     const availableAdvisors = advisors.filter(a => a.status === 'available');
 
@@ -313,6 +321,6 @@ export const AdvisorAssignmentModal: React.FC<AdvisorAssignmentModalProps> = ({
             </div>
         </div>
     );
-};
+});
 
 export default AdvisorAssignmentModal;

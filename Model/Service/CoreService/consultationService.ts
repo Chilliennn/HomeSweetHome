@@ -94,5 +94,40 @@ export const consultationService = {
         const days = Math.floor(hours / 24);
         const remainingHours = hours % 24;
         return `${days}d ${remainingHours}h`;
+    },
+
+    /**
+     * Submit a new consultation request (for mobile users)
+     */
+    async submitRequest(
+        requesterId: string,
+        partnerId: string,
+        relationshipId: string | null,
+        consultationType: string,
+        concernDescription: string,
+        urgency: 'normal' | 'high' = 'normal',
+        preferredMethod: 'video_call' | 'phone' | 'chat' = 'video_call',
+        preferredDateTime: string = ''
+    ): Promise<string> {
+        if (!requesterId || !partnerId) {
+            throw new Error('Requester and partner IDs are required');
+        }
+        if (!consultationType) {
+            throw new Error('Consultation type is required');
+        }
+        if (!concernDescription || concernDescription.trim().length < 10) {
+            throw new Error('Please provide a description (at least 10 characters)');
+        }
+
+        return consultationRepository.submitConsultationRequest(
+            requesterId,
+            partnerId,
+            relationshipId,
+            consultationType,
+            concernDescription.trim(),
+            urgency,
+            preferredMethod,
+            preferredDateTime
+        );
     }
 };

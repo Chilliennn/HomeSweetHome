@@ -867,6 +867,7 @@ function mapRowToConsultation(row: any): ConsultationRequest {
 		requesterType: row.requester?.user_type || 'elderly',
 		requesterAge: calculateAge(row.requester?.date_of_birth),
 		requesterAvatarUrl: row.requester?.profile_photo_url || row.requester?.avatar_url || null,
+		partnerId: row.partner_id,
 		partnerName: row.partner?.full_name || 'Unknown',
 		partnerAge: calculateAge(row.partner?.date_of_birth),
 		partnerAvatarUrl: row.partner?.profile_photo_url || row.partner?.avatar_url || null,

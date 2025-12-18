@@ -525,13 +525,20 @@ export class FamilyViewModel {
    * Remove a memory and all associated media
    */
   async removeMemory(memoryId: string) {
+    if (!this.currentUserId) {
+      runInAction(() => {
+        this.errorMessage = 'You must be signed in to remove memories';
+      });
+      return;
+    }
+
     runInAction(() => {
       this.isLoading = true;
       this.errorMessage = null;
     });
 
     try {
-      await familyService.removeMemory(memoryId);
+      await familyService.removeMemory(memoryId, this.currentUserId);
       runInAction(() => {
         this.memories = this.memories.filter(m => m.id !== memoryId);
         if (this.selectedMemory?.id === memoryId) {
@@ -972,13 +979,20 @@ export class FamilyViewModel {
       location?: string;
     }
   ) {
+    if (!this.currentUserId) {
+      runInAction(() => {
+        this.errorMessage = 'You must be signed in to update events';
+      });
+      return;
+    }
+
     runInAction(() => {
       this.isLoading = true;
       this.errorMessage = null;
     });
 
     try {
-      const updated = await familyService.updateCalendarEvent(id, updates);
+      const updated = await familyService.updateCalendarEvent(id, this.currentUserId, updates);
       runInAction(() => {
         const index = this.calendarEvents.findIndex(e => e.id === id);
         if (index !== -1) {
@@ -1007,13 +1021,20 @@ export class FamilyViewModel {
    * FR 3.2.1, 3.2.11, 3.2.12
    */
   async deleteCalendarEvent(id: string) {
+    if (!this.currentUserId) {
+      runInAction(() => {
+        this.errorMessage = 'You must be signed in to delete events';
+      });
+      return;
+    }
+
     runInAction(() => {
       this.isLoading = true;
       this.errorMessage = null;
     });
 
     try {
-      await familyService.deleteCalendarEvent(id);
+      await familyService.deleteCalendarEvent(id, this.currentUserId);
       runInAction(() => {
         this.calendarEvents = this.calendarEvents.filter(e => e.id !== id);
         if (this.selectedEvent?.id === id) {

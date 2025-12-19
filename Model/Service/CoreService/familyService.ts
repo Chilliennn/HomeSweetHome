@@ -1,4 +1,7 @@
 import { familyRepository } from '../../Repository/UserRepository';
+import { relationshipRepository } from '../../Repository/UserRepository/relationshipRepository';
+import { notificationRepository } from '../../Repository/UserRepository/notificationRepository';
+import { notificationService } from './notificationService';
 import type {
   MediaItem,
   DiaryEntry,
@@ -7,7 +10,8 @@ import type {
   Memory,
   MoodType,
   EventType,
-  Relationship
+  Relationship,
+  NotificationType
 } from '../../types';
 
 /**
@@ -31,6 +35,56 @@ const ALLOWED_VIDEO_FORMATS = ['video/mp4'];
 const MAX_CAPTION_LENGTH = 500;
 const MAX_DIARY_LENGTH = 10000;
 const MIN_DIARY_LENGTH = 1;
+
+async function getPartnerUserId(
+  relationshipId: string,
+  actorUserId: string
+): Promise<string | null> {
+  const relationship = await relationshipRepository.getRelationshipById(relationshipId);
+  if (!relationship) return null;
+
+  if (relationship.youth_id === actorUserId) return relationship.elderly_id;
+  if (relationship.elderly_id === actorUserId) return relationship.youth_id;
+  return null;
+}
+
+async function notifyPartner(
+  relationshipId: string,
+  actorUserId: string,
+  payload: {
+    type: NotificationType;
+    title: string;
+    message: string;
+    reference_id?: string;
+    reference_table?: string;
+  }
+): Promise<void> {
+  try {
+    const partnerId = await getPartnerUserId(relationshipId, actorUserId);
+    if (!partnerId) {
+      console.warn('[familyService] Partner not found for relationship', relationshipId);
+      return;
+    }
+
+    await notificationRepository.createNotification({
+      user_id: partnerId,
+      ...payload,
+    });
+
+    await notificationService.sendPushNotification(
+      partnerId,
+      payload.title,
+      payload.message,
+      {
+        reference_id: payload.reference_id,
+        reference_table: payload.reference_table,
+        type: payload.type,
+      }
+    );
+  } catch (error) {
+    console.error('[familyService] Failed to notify partner:', error);
+  }
+}
 
 export const familyService = {
   // ===========================
@@ -252,6 +306,15 @@ export const familyService = {
     await familyRepository.linkMediaToMemory(memory.id, [mediaItem.id]);
 
     console.log('[familyService] Chat media saved as memory:', memory.id);
+
+    await notifyPartner(relationshipId, uploaderId, {
+      type: 'stage_milestone',
+      title: 'New memory added',
+      message: caption ? caption : 'A new memory was added to your album.',
+      reference_id: memory.id,
+      reference_table: 'memories',
+    });
+
     return mediaItem;
   },
 
@@ -348,6 +411,14 @@ export const familyService = {
       // Update memory media count
       await familyRepository.updateMemoryMediaCount(memory.id, mediaItems.length);
 
+      await notifyPartner(relationship_id, uploader_id, {
+        type: 'stage_milestone',
+        title: 'New memory added',
+        message: caption ? caption : 'A new memory was added to your album.',
+        reference_id: memory.id,
+        reference_table: 'memories',
+      });
+
       return {
         memory: {
           ...memory,
@@ -385,8 +456,21 @@ export const familyService = {
    * Remove a memory and all associated media
    * FR 3.1.2 (batch delete)
    */
-  async removeMemory(memory_id: string): Promise<void> {
-    return familyRepository.deleteMemory(memory_id);
+  async removeMemory(memory_id: string, actor_id: string): Promise<void> {
+    const existing = await familyRepository.getMemoryById(memory_id);
+    if (!existing) {
+      throw new Error('Memory not found');
+    }
+
+    await familyRepository.deleteMemory(memory_id);
+
+    await notifyPartner(existing.relationship_id, actor_id, {
+      type: 'stage_milestone',
+      title: 'Memory removed',
+      message: existing.caption ? existing.caption : 'A memory was removed from your album.',
+      reference_id: memory_id,
+      reference_table: 'memories',
+    });
   },
 
   /**
@@ -558,7 +642,7 @@ export const familyService = {
       throw new Error(dateValidation.error);
     }
 
-    return familyRepository.createCalendarEvent(
+    const event = await familyRepository.createCalendarEvent(
       relationship_id,
       creator_id,
       title,
@@ -568,6 +652,16 @@ export const familyService = {
       description,
       location
     );
+
+    await notifyPartner(relationship_id, creator_id, {
+      type: 'calendar_reminder',
+      title: 'New event scheduled',
+      message: `${title} on ${event_date}${event_time ? ` at ${event_time}` : ''}`,
+      reference_id: event.id,
+      reference_table: 'calendar_events',
+    });
+
+    return event;
   },
 
   /**
@@ -576,6 +670,7 @@ export const familyService = {
    */
   async updateCalendarEvent(
     id: string,
+    actor_id: string,
     updates: {
       title?: string;
       description?: string;
@@ -593,15 +688,43 @@ export const familyService = {
       }
     }
 
-    return familyRepository.updateCalendarEvent(id, updates);
+    const existing = await familyRepository.getCalendarEventById(id);
+    if (!existing) {
+      throw new Error('Event not found');
+    }
+
+    const updated = await familyRepository.updateCalendarEvent(id, updates);
+
+    await notifyPartner(existing.relationship_id, actor_id, {
+      type: 'calendar_reminder',
+      title: 'Event updated',
+      message: `${updated.title || existing.title} has been updated`,
+      reference_id: updated.id,
+      reference_table: 'calendar_events',
+    });
+
+    return updated;
   },
 
   /**
    * Delete calendar event
    * FR 3.2.1, 3.2.11, 3.2.12
    */
-  async deleteCalendarEvent(id: string): Promise<void> {
-    return familyRepository.deleteCalendarEvent(id);
+  async deleteCalendarEvent(id: string, actor_id: string): Promise<void> {
+    const existing = await familyRepository.getCalendarEventById(id);
+    if (!existing) {
+      throw new Error('Event not found');
+    }
+
+    await familyRepository.deleteCalendarEvent(id);
+
+    await notifyPartner(existing.relationship_id, actor_id, {
+      type: 'calendar_reminder',
+      title: 'Event cancelled',
+      message: `${existing.title} was cancelled`,
+      reference_id: id,
+      reference_table: 'calendar_events',
+    });
   },
 
   /**

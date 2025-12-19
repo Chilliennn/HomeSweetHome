@@ -26,6 +26,7 @@ export class StageViewModel {
   selectedFeature: Feature | null = null;
   showFeatureLockModal: boolean = false;
   isLoading: boolean = false;
+  hasInitialized: boolean = false;
   error: string | null = null;
   showWithdrawModal: boolean = false;
   withdrawalReason: string = "";
@@ -374,6 +375,14 @@ export class StageViewModel {
       if (this.relationshipId) {
         this.setupRealtimeSubscription(this.relationshipId);
       }
+
+      runInAction(() => {
+        // After everything is loaded, check if we need to be on pause screen
+        if (this.isInCoolingPeriod) {
+          this.shouldNavigateToJourneyPause = true;
+        }
+        this.hasInitialized = true;
+      });
     } catch (err: any) {
       runInAction(() => {
         this.error = err.message;

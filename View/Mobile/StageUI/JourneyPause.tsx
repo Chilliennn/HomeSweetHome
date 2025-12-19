@@ -48,6 +48,9 @@ export const JourneyPauseScreen: React.FC<JourneyPauseScreenProps> = observer(
 
     // Reactive redirect when cooling period ends
     useEffect(() => {
+      // Only evaluate redirect if we have actually loaded the cooling info
+      if (!vm.hasInitialized) return;
+
       // Check if cooling period ended (either flag turned off or timer reached 0)
       const shouldRedirect =
         !vm.isInCoolingPeriod ||
@@ -59,9 +62,14 @@ export const JourneyPauseScreen: React.FC<JourneyPauseScreenProps> = observer(
           "[JourneyPause] Cooling period ended, redirecting to bonding..."
         );
         // Use replace to prevent "GO_BACK" errors if stack is empty/weird
-        router.replace("/bonding");
+        router.replace("/(main)/bonding");
       }
-    }, [vm.isInCoolingPeriod, vm.coolingRemainingSeconds, router]);
+    }, [
+      vm.isInCoolingPeriod,
+      vm.coolingRemainingSeconds,
+      vm.hasInitialized,
+      router,
+    ]);
 
     const handleNotificationPress = () => {
       vm.markNotificationsRead();

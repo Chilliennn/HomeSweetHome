@@ -199,7 +199,11 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
       }
     };
 
-    if (vm.isLoading && !vm.stages.length && !vm.error) {
+    if (
+      (vm.isLoading || !vm.hasInitialized) &&
+      !vm.stages.length &&
+      !vm.error
+    ) {
       return <LoadingSpinner />;
     }
 

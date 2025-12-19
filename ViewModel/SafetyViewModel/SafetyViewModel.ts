@@ -166,8 +166,8 @@ export class SafetyViewModel {
             await this.loadStats();
 
             return true;
-        } catch (error) {
-            this.errorMessage = error instanceof Error ? error.message : 'Failed to suspend user';
+        } catch (error: any) {
+            this.errorMessage = error.message || (typeof error === 'string' ? error : 'Failed to suspend user');
             console.error('Error suspending user:', error);
             return false;
         } finally {

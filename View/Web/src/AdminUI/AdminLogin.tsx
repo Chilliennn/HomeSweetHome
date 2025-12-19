@@ -81,7 +81,7 @@ const styles = {
     transition: 'border-color 0.2s ease',
   },
   inputFocused: {
-    borderColor: '#9DE2D0',
+    border: '5px solid #9DE2D0',
   },
   inputPlaceholder: {
     color: '#8B8B8B',

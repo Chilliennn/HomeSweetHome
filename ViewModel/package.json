@@ -10,7 +10,9 @@
   },
   "dependencies": {
     "@home-sweet-home/model": "workspace:*",
-    "mobx": "^6.15.0"
+    "mobx": "^6.15.0",
+    "expo-file-system": "~18.0.1",
+    "expo-media-library": "~17.0.0"
   },
   "devDependencies": {
     "@types/node": "^24.10.1",

@@ -38,6 +38,8 @@ function getEnvVar(name: 'SUPABASE_URL' | 'SUPABASE_ANON_KEY'): string {
 const supabaseUrl = getEnvVar('SUPABASE_URL');
 const supabaseAnonKey = getEnvVar('SUPABASE_ANON_KEY');
 
+console.log('[supabase] URL present?', !!supabaseUrl, 'Key present?', !!supabaseAnonKey);
+
 if (!supabaseUrl || !supabaseAnonKey) {
   console.warn('⚠️ Supabase credentials not found. Check your .env file.');
   console.warn('Expected: VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in View/Web/.env');

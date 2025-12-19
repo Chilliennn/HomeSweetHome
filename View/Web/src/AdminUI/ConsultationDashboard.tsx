@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { observer } from 'mobx-react-lite';
+import { consultationViewModel } from '@home-sweet-home/viewmodel';
 import { StatCard } from '../components/ui';
 
 // Color constants matching existing AdminUI design
@@ -14,40 +16,6 @@ const colors = {
     caper: '#D4E5AE',
     silver: '#9B9B9B',
 };
-
-// Types for consultation data
-interface ConsultationRequest {
-    id: string;
-    requesterId: string;
-    requesterName: string;
-    requesterType: 'youth' | 'elderly';
-    requesterAge: number;
-    partnerName: string;
-    partnerAge: number;
-    consultationType: string;
-    preferredMethod: string;
-    preferredDateTime: string;
-    concernDescription: string;
-    status: 'pending_assignment' | 'assigned' | 'in_progress' | 'completed' | 'dismissed';
-    submittedAt: string;
-    urgency: 'low' | 'normal' | 'high';
-    relationshipStage: string;
-    relationshipDuration: string;
-}
-
-interface Advisor {
-    id: string;
-    name: string;
-    specialization: string;
-    status: 'available' | 'busy' | 'offline';
-    currentWorkload: number;
-    languages: string[];
-}
-
-// Data should come from database via ViewModel/Service/Repository
-// Currently empty - will be populated when database is connected
-const mockConsultations: ConsultationRequest[] = [];
-const mockAdvisors: Advisor[] = [];
 
 const styles = {
     container: {
@@ -80,6 +48,7 @@ const styles = {
         fontWeight: 700,
         color: '#333333',
         marginBottom: '20px',
+        width: 'fit-content',
     },
     title: {
         fontFamily: 'Inter, sans-serif',
@@ -144,7 +113,7 @@ const styles = {
     },
     filterButtonActive: {
         background: colors.morningGlory,
-        borderColor: colors.morningGlory,
+        border: `2px solid ${colors.morningGlory}`,
         color: colors.white,
     },
     listContainer: {
@@ -187,7 +156,7 @@ const styles = {
         transition: 'all 0.2s ease',
     },
     requestCardHover: {
-        borderColor: colors.morningGlory,
+        border: `2px solid ${colors.morningGlory}`,
         boxShadow: '0 4px 12px rgba(157, 226, 208, 0.2)',
     },
     requestInfo: {
@@ -319,33 +288,28 @@ interface ConsultationDashboardProps {
     onSelectRequest?: (requestId: string) => void;
 }
 
-export const ConsultationDashboard: React.FC<ConsultationDashboardProps> = ({
+export const ConsultationDashboard: React.FC<ConsultationDashboardProps> = observer(({
     onBack,
     onSelectRequest
 }) => {
-    const [filter, setFilter] = useState<'all' | 'pending_assignment' | 'assigned' | 'in_progress' | 'completed' | 'dismissed'>('all');
     const [hoveredCard, setHoveredCard] = useState<string | null>(null);
-    const [consultations] = useState<ConsultationRequest[]>(mockConsultations);
 
-    // Calculate stats
-    const stats = {
-        pendingAssignment: consultations.filter(c => c.status === 'pending_assignment').length,
-        inProgress: consultations.filter(c => c.status === 'in_progress' || c.status === 'assigned').length,
-        completedToday: consultations.filter(c => c.status === 'completed').length,
-        availableAdvisors: mockAdvisors.filter(a => a.status === 'available').length,
-    };
+    // Load data on mount
+    useEffect(() => {
+        consultationViewModel.loadConsultations();
+        consultationViewModel.loadStats();
+    }, []);
 
-    // Filter consultations
+    // Get data from ViewModel
+    const { consultations, stats, filter } = consultationViewModel;
+
+    // Filter consultations locally for display
     const filteredConsultations = filter === 'all'
         ? consultations
         : consultations.filter(c => c.status === filter);
 
     const getWaitingTime = (submittedAt: string): string => {
-        const submitted = new Date(submittedAt);
-        const now = new Date();
-        const hours = Math.floor((now.getTime() - submitted.getTime()) / (1000 * 60 * 60));
-        if (hours < 24) return `${hours}h`;
-        return `${Math.floor(hours / 24)}d ${hours % 24}h`;
+        return consultationViewModel.getWaitingTime(submittedAt);
     };
 
     const isWaitingTimeAlert = (submittedAt: string): boolean => {
@@ -404,10 +368,10 @@ export const ConsultationDashboard: React.FC<ConsultationDashboardProps> = ({
 
             {/* Stats Row */}
             <div style={styles.statsRow}>
-                <StatCard label="Pending Assignment" value={stats.pendingAssignment} />
-                <StatCard label="In Progress" value={stats.inProgress} />
-                <StatCard label="Completed Today" value={stats.completedToday} />
-                <StatCard label="Available Advisors" value={stats.availableAdvisors} />
+                <StatCard label="Pending Assignment" value={stats?.pendingAssignment ?? 0} />
+                <StatCard label="In Progress" value={(stats?.assigned ?? 0) + (stats?.inProgress ?? 0)} />
+                <StatCard label="Completed Today" value={stats?.completedToday ?? 0} />
+                <StatCard label="Available Advisors" value={stats?.availableAdvisors ?? 0} />
             </div>
 
             {/* Main Content: Sidebar + List */}
@@ -430,7 +394,7 @@ export const ConsultationDashboard: React.FC<ConsultationDashboardProps> = ({
                                     ...styles.filterButton,
                                     ...(filter === f.key ? styles.filterButtonActive : {}),
                                 }}
-                                onClick={() => setFilter(f.key as any)}
+                                onClick={() => consultationViewModel.setFilter(f.key as any)}
                             >
                                 {f.label}
                             </button>
@@ -509,6 +473,6 @@ export const ConsultationDashboard: React.FC<ConsultationDashboardProps> = ({
             </div>
         </div>
     );
-};
+});
 
 export default ConsultationDashboard;

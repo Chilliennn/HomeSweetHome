@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { observer } from 'mobx-react-lite';
+import { consultationViewModel } from '@home-sweet-home/viewmodel';
 import { AdvisorAssignmentModal } from './AdvisorAssignmentModal';
 import { DismissalModal } from './DismissalModal';
 
@@ -14,64 +16,6 @@ const colors = {
     corvette: '#FADE9F',
     caper: '#D4E5AE',
     silver: '#9B9B9B',
-};
-
-interface ConsultationRequest {
-    id: string;
-    requesterId: string;
-    requesterName: string;
-    requesterType: 'youth' | 'elderly';
-    requesterAge: number;
-    requesterLocation: string;
-    requesterLanguages: string[];
-    partnerName: string;
-    partnerAge: number;
-    partnerOccupation: string;
-    partnerLocation: string;
-    partnerCommunicationStyle: string;
-    partnerLastActive: string;
-    consultationType: string;
-    preferredMethod: string;
-    preferredDateTime: string;
-    concernDescription: string;
-    status: 'pending_assignment' | 'assigned' | 'in_progress' | 'completed' | 'dismissed';
-    submittedAt: string;
-    urgency: 'low' | 'normal' | 'high';
-    relationshipStage: string;
-    relationshipDuration: string;
-    assignedAdvisor?: string;
-}
-
-// Mock data
-const mockRequest: ConsultationRequest = {
-    id: 'REQ-001',
-    requesterId: 'user-101',
-    requesterName: 'Sarah Chen',
-    requesterType: 'youth',
-    requesterAge: 22,
-    requesterLocation: 'Kuala Lumpur',
-    requesterLanguages: ['English', 'Mandarin'],
-    partnerName: 'Uncle Tan Ah Kow',
-    partnerAge: 68,
-    partnerOccupation: 'Retired Teacher',
-    partnerLocation: 'Kuala Lumpur',
-    partnerCommunicationStyle: 'Patient, Prefers phone calls',
-    partnerLastActive: '2 hours ago',
-    consultationType: 'Relationship Guidance',
-    preferredMethod: 'Video Call',
-    preferredDateTime: '2025-12-15 10:00 AM',
-    concernDescription: `I feel like we have been drifting apart lately. Uncle Tan seems distant and I am not sure how to reconnect with him.
-
-We used to have weekly video calls but now it has become more sporadic. I understand he might be busy with his health check-ups but I want to find a way to maintain our bond.
-
-Sometimes I feel like I might have said something wrong during our last conversation about my career plans. He seemed disappointed when I mentioned wanting to work overseas temporarily.
-
-I really value this relationship and want to work through this. I think speaking with a family advisor could help us communicate better and understand each other's perspectives.`,
-    status: 'pending_assignment',
-    submittedAt: '2025-12-11T08:30:00Z',
-    urgency: 'normal',
-    relationshipStage: 'Family Life',
-    relationshipDuration: '8 months',
 };
 
 const styles = {
@@ -105,11 +49,13 @@ const styles = {
         fontWeight: 700,
         color: colors.mineShaft,
         marginBottom: '20px',
+        width: 'fit-content',
     },
     titleRow: {
         display: 'flex',
         alignItems: 'center',
-        gap: '16px',
+        gap: '12px',
+        flexWrap: 'wrap' as const,
     },
     title: {
         fontFamily: 'Inter, sans-serif',
@@ -170,6 +116,10 @@ const styles = {
         background: 'transparent',
         border: `2px solid ${colors.apricot}`,
         color: colors.apricot,
+    },
+    completeButton: {
+        background: colors.caper,
+        color: colors.mineShaft,
     },
     mainContent: {
         display: 'grid',
@@ -287,14 +237,26 @@ const styles = {
 };
 
 interface ConsultationDetailsProps {
-    requestId?: string;
+    requestId: string;
     onBack?: () => void;
 }
 
-export const ConsultationDetails: React.FC<ConsultationDetailsProps> = ({ requestId: _requestId, onBack }) => {
-    const [request] = useState<ConsultationRequest>(mockRequest);
+export const ConsultationDetails: React.FC<ConsultationDetailsProps> = observer(({ requestId, onBack }) => {
     const [showAssignModal, setShowAssignModal] = useState(false);
     const [showDismissModal, setShowDismissModal] = useState(false);
+    const [showCompleteModal, setShowCompleteModal] = useState(false);
+    const [completionNotes, setCompletionNotes] = useState('');
+
+    // Load the consultation data when component mounts
+    useEffect(() => {
+        if (requestId) {
+            // Clear any previous error message before loading
+            consultationViewModel.errorMessage = null;
+            consultationViewModel.selectConsultation(requestId);
+        }
+    }, [requestId]);
+
+    const request = consultationViewModel.selectedConsultation;
 
     const formatDate = (dateString: string) => {
         return new Date(dateString).toLocaleString('en-MY', {
@@ -306,17 +268,72 @@ export const ConsultationDetails: React.FC<ConsultationDetailsProps> = ({ reques
         });
     };
 
-    const handleAssign = (advisorId: string) => {
-        console.log('Assigned to advisor:', advisorId);
-        setShowAssignModal(false);
-        // TODO: Update status and send notifications
+    const getStatusLabel = (status: string) => {
+        switch (status) {
+            case 'pending_assignment': return 'Pending Assignment';
+            case 'assigned': return 'Assigned';
+            case 'in_progress': return 'In Progress';
+            case 'completed': return 'Completed';
+            case 'dismissed': return 'Dismissed';
+            default: return status;
+        }
     };
 
-    const handleDismiss = (reason: string, notes: string) => {
-        console.log('Dismissed with reason:', reason, notes);
-        setShowDismissModal(false);
-        // TODO: Update status and notify requester
+    const handleAssign = async (advisorId: string) => {
+        if (request) {
+            await consultationViewModel.assignAdvisor(request.id, advisorId);
+            alert('✅ Advisor assigned successfully! The user has been notified.');
+        }
+        setShowAssignModal(false);
+        onBack?.();
     };
+
+    const handleDismiss = async (reason: string, notes: string) => {
+        if (request) {
+            await consultationViewModel.dismissRequest(request.id, `${reason}: ${notes}`);
+        }
+        setShowDismissModal(false);
+        onBack?.();
+    };
+
+    const handleComplete = async () => {
+        if (request && completionNotes.trim()) {
+            await consultationViewModel.completeRequest(request.id, completionNotes);
+            alert('✅ Consultation marked as completed!');
+        }
+        setShowCompleteModal(false);
+        setCompletionNotes('');
+        onBack?.();
+    };
+
+    // Show loading state
+    if (consultationViewModel.isLoading) {
+        return (
+            <div style={styles.container}>
+                <p>Loading consultation details...</p>
+            </div>
+        );
+    }
+
+    // If there's an error or no data, redirect back to consultations list
+    if (consultationViewModel.errorMessage || !request) {
+        // Clear error and go back
+        if (consultationViewModel.errorMessage) {
+            consultationViewModel.errorMessage = null;
+        }
+
+        // Show a brief message and redirect
+        return (
+            <div style={styles.container}>
+                <button style={styles.backButton} onClick={onBack}>
+                    ← Back to Consultations
+                </button>
+                <p style={{ color: colors.morningGlory }}>
+                    ✓ Notification received. Redirecting to consultations list...
+                </p>
+            </div>
+        );
+    }
 
     return (
         <div style={styles.container}>
@@ -327,8 +344,8 @@ export const ConsultationDetails: React.FC<ConsultationDetailsProps> = ({ reques
                         ← Back to Consultations
                     </button>
                     <div style={styles.titleRow}>
-                        <h1 style={styles.title}>Request {request.id}</h1>
-                        <span style={styles.statusBadge}>Pending Assignment</span>
+                        <h1 style={styles.title}>Request #{request.id.slice(0, 8)}</h1>
+                        <span style={styles.statusBadge}>{getStatusLabel(request.status)}</span>
                         <span style={{
                             ...styles.urgencyBadge,
                             ...(request.urgency === 'high' ? styles.urgencyHigh : styles.urgencyNormal),
@@ -347,12 +364,22 @@ export const ConsultationDetails: React.FC<ConsultationDetailsProps> = ({ reques
                     >
                         Dismiss Request
                     </button>
-                    <button
-                        style={{ ...styles.actionButton, ...styles.assignButton }}
-                        onClick={() => setShowAssignModal(true)}
-                    >
-                        Assign to Advisor
-                    </button>
+                    {(request.status === 'assigned' || request.status === 'in_progress') && (
+                        <button
+                            style={{ ...styles.actionButton, ...styles.completeButton }}
+                            onClick={() => setShowCompleteModal(true)}
+                        >
+                            ✓ Mark as Complete
+                        </button>
+                    )}
+                    {request.status === 'pending_assignment' && (
+                        <button
+                            style={{ ...styles.actionButton, ...styles.assignButton }}
+                            onClick={() => setShowAssignModal(true)}
+                        >
+                            Assign to Advisor
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -362,9 +389,17 @@ export const ConsultationDetails: React.FC<ConsultationDetailsProps> = ({ reques
                 <div style={styles.card}>
                     <h3 style={styles.cardTitle}>👤 Requester Profile</h3>
                     <div style={styles.profileRow}>
-                        <div style={styles.avatar}>
-                            {request.requesterType === 'youth' ? '👧' : '👴'}
-                        </div>
+                        {request.requesterAvatarUrl ? (
+                            <img
+                                src={request.requesterAvatarUrl}
+                                alt={request.requesterName}
+                                style={{ ...styles.avatar, objectFit: 'cover' as const }}
+                            />
+                        ) : (
+                            <div style={styles.avatar}>
+                                {request.requesterName.charAt(0).toUpperCase()}
+                            </div>
+                        )}
                         <div style={styles.profileInfo}>
                             <h4 style={styles.profileName}>{request.requesterName}</h4>
                             <p style={styles.profileMeta}>ID: {request.requesterId}</p>
@@ -382,16 +417,16 @@ export const ConsultationDetails: React.FC<ConsultationDetailsProps> = ({ reques
                             <p style={styles.infoValue}>{request.requesterAge} years old</p>
                         </div>
                         <div style={styles.infoItem}>
-                            <p style={styles.infoLabel}>Location</p>
-                            <p style={styles.infoValue}>{request.requesterLocation}</p>
-                        </div>
-                        <div style={styles.infoItem}>
-                            <p style={styles.infoLabel}>Languages</p>
-                            <p style={styles.infoValue}>{request.requesterLanguages.join(', ')}</p>
+                            <p style={styles.infoLabel}>Type</p>
+                            <p style={styles.infoValue}>{request.requesterType === 'youth' ? 'Youth' : 'Elderly'}</p>
                         </div>
                         <div style={styles.infoItem}>
                             <p style={styles.infoLabel}>Relationship Stage</p>
                             <p style={styles.infoValue}>{request.relationshipStage}</p>
+                        </div>
+                        <div style={styles.infoItem}>
+                            <p style={styles.infoLabel}>Duration</p>
+                            <p style={styles.infoValue}>{request.relationshipDuration}</p>
                         </div>
                     </div>
                 </div>
@@ -400,12 +435,20 @@ export const ConsultationDetails: React.FC<ConsultationDetailsProps> = ({ reques
                 <div style={styles.card}>
                     <h3 style={styles.cardTitle}>👥 Partner Profile</h3>
                     <div style={styles.profileRow}>
-                        <div style={styles.avatar}>
-                            {request.requesterType === 'youth' ? '👴' : '👧'}
-                        </div>
+                        {request.partnerAvatarUrl ? (
+                            <img
+                                src={request.partnerAvatarUrl}
+                                alt={request.partnerName}
+                                style={{ ...styles.avatar, objectFit: 'cover' as const }}
+                            />
+                        ) : (
+                            <div style={styles.avatar}>
+                                {request.partnerName.charAt(0).toUpperCase()}
+                            </div>
+                        )}
                         <div style={styles.profileInfo}>
                             <h4 style={styles.profileName}>{request.partnerName}</h4>
-                            <p style={styles.profileMeta}>{request.partnerOccupation}</p>
+                            <p style={styles.profileMeta}>{request.partnerAge} years old</p>
                         </div>
                         <span style={{
                             ...styles.roleBadge,
@@ -420,16 +463,8 @@ export const ConsultationDetails: React.FC<ConsultationDetailsProps> = ({ reques
                             <p style={styles.infoValue}>{request.partnerAge} years old</p>
                         </div>
                         <div style={styles.infoItem}>
-                            <p style={styles.infoLabel}>Location</p>
-                            <p style={styles.infoValue}>{request.partnerLocation}</p>
-                        </div>
-                        <div style={styles.infoItem}>
-                            <p style={styles.infoLabel}>Communication Style</p>
-                            <p style={styles.infoValue}>{request.partnerCommunicationStyle}</p>
-                        </div>
-                        <div style={styles.infoItem}>
-                            <p style={styles.infoLabel}>Last Active</p>
-                            <p style={styles.infoValue}>{request.partnerLastActive}</p>
+                            <p style={styles.infoLabel}>Role</p>
+                            <p style={styles.infoValue}>{request.requesterType === 'youth' ? 'Elderly' : 'Youth'}</p>
                         </div>
                     </div>
                 </div>
@@ -488,8 +523,89 @@ export const ConsultationDetails: React.FC<ConsultationDetailsProps> = ({ reques
                     requestId={request.id}
                 />
             )}
+
+            {/* Completion Modal */}
+            {showCompleteModal && (
+                <div style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    background: 'rgba(0,0,0,0.5)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 1000,
+                }}>
+                    <div style={{
+                        background: colors.white,
+                        borderRadius: '16px',
+                        padding: '32px',
+                        width: '500px',
+                        maxWidth: '90%',
+                    }}>
+                        <h2 style={{ margin: '0 0 24px 0', fontFamily: 'Inter, sans-serif', color: colors.mineShaft }}>
+                            ✓ Complete Consultation
+                        </h2>
+                        <p style={{ fontFamily: 'Inter, sans-serif', color: colors.doveGray, marginBottom: '16px' }}>
+                            Please provide resolution notes for this consultation:
+                        </p>
+                        <textarea
+                            value={completionNotes}
+                            onChange={(e) => setCompletionNotes(e.target.value)}
+                            placeholder="Enter resolution notes, outcome summary, and any follow-up actions..."
+                            style={{
+                                width: '100%',
+                                minHeight: '120px',
+                                padding: '12px',
+                                borderRadius: '8px',
+                                border: `1px solid ${colors.silver}`,
+                                fontFamily: 'Inter, sans-serif',
+                                fontSize: '14px',
+                                resize: 'vertical',
+                                boxSizing: 'border-box',
+                                background: colors.white,
+                                color: colors.mineShaft,
+                            }}
+                        />
+                        <div style={{ display: 'flex', gap: '12px', marginTop: '24px', justifyContent: 'flex-end' }}>
+                            <button
+                                onClick={() => { setShowCompleteModal(false); setCompletionNotes(''); }}
+                                style={{
+                                    padding: '12px 24px',
+                                    borderRadius: '8px',
+                                    border: `1px solid ${colors.silver}`,
+                                    background: 'transparent',
+                                    cursor: 'pointer',
+                                    fontFamily: 'Inter, sans-serif',
+                                    fontWeight: 600,
+                                }}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleComplete}
+                                disabled={!completionNotes.trim()}
+                                style={{
+                                    padding: '12px 24px',
+                                    borderRadius: '8px',
+                                    border: 'none',
+                                    background: completionNotes.trim() ? colors.caper : colors.silver,
+                                    color: colors.mineShaft,
+                                    cursor: completionNotes.trim() ? 'pointer' : 'not-allowed',
+                                    fontFamily: 'Inter, sans-serif',
+                                    fontWeight: 700,
+                                }}
+                            >
+                                Complete Consultation
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
-};
+});
 
 export default ConsultationDetails;

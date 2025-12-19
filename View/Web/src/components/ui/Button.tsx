@@ -1,6 +1,6 @@
 import React from 'react';
 
-type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'warning' | 'outline';
+type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'warning' | 'outline' | 'ghost' | 'outline-danger';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
     variant?: ButtonVariant;
@@ -30,6 +30,16 @@ const variantStyles: Record<ButtonVariant, React.CSSProperties> = {
         border: '2px solid #9DE2D0',
         color: '#9DE2D0',
     },
+    ghost: {
+        backgroundColor: 'transparent',
+        border: '2px solid #999999',
+        color: '#666666',
+    },
+    'outline-danger': {
+        backgroundColor: 'transparent',
+        border: '2px solid #EB8F80',
+        color: '#EB8F80',
+    }
 };
 
 const baseStyle: React.CSSProperties = {

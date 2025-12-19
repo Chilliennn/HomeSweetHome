@@ -1,11 +1,14 @@
 // User Repository
-export { userRepository, storageRepository } from './UserRepository';
+export { userRepository, storageRepository, notificationRepository } from './UserRepository';
 
 // Auth Repository
 export { authRepository, type AuthResult } from './UserRepository';
 
+export type { Interest } from './UserRepository';
+
 // Matching Repository
 export { matchingRepository } from './UserRepository';
+export type { ElderlyFilters, ElderlyProfilesResult } from './UserRepository/matchingRepository';
 
 // Relationship Repository
 export { relationshipRepository } from './UserRepository';
@@ -16,6 +19,15 @@ export * from './AdminRepository/KeywordRepository';
 export * from './AdminRepository/SafetyReportRepository';
 export * from './AdminRepository/KeywordDetectionRepository';
 export * from './AdminRepository/SentimentAnalyticsRepository';
-export { adminRepository } from './AdminRepository';
-export type { ApplicationWithProfiles, ApplicationStats } from './AdminRepository';
-
+export { adminRepository, consultationRepository, getAdminNotifications } from './AdminRepository';
+export type {
+    ApplicationWithProfiles,
+    ApplicationStats,
+    UserProfile,
+    SafetyAlertWithProfiles,
+    SafetyAlertStats,
+    ConsultationRequest,
+    Advisor,
+    ConsultationStats,
+    AdminNotification
+} from './AdminRepository';

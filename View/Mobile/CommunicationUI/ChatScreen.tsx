@@ -11,16 +11,20 @@ import {
   Image,
   Keyboard,
   Animated,
+  Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { observer } from 'mobx-react-lite';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { communicationViewModel } from '@home-sweet-home/viewmodel';
+import { communicationViewModel, consultationViewModel } from '@home-sweet-home/viewmodel';
 import { IconCircle, ChatBubble } from '@/components/ui';
 import { Colors } from '@/constants/theme';
 import { useVoiceRecording } from '@/hooks/useVoiceRecording';
 import { useAudioPlayer } from '@/hooks/useAudioPlayer';
 import { useVoiceUpload } from '@/hooks/useVoiceUpload';
+import * as ImagePicker from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system';
+import { uploadChatImage, uploadChatVideo } from '@home-sweet-home/model';
 
 /**
  * ChatScreen - UC104: Pre-match and relationship chat interface
@@ -50,6 +54,14 @@ export const ChatScreen = observer(function ChatScreen() {
   const [messageInput, setMessageInput] = useState('');
   const [isSendingVoice, setIsSendingVoice] = useState(false);
   const keyboardHeight = useRef(new Animated.Value(0)).current;
+
+  // Advisor Request Modal State
+  const [showAdvisorModal, setShowAdvisorModal] = useState(false);
+  const [advisorConsultationType, setAdvisorConsultationType] = useState('');
+  const [advisorDescription, setAdvisorDescription] = useState('');
+  const [advisorPreferredMethod, setAdvisorPreferredMethod] = useState<'video_call' | 'phone' | 'chat'>('video_call');
+  const [advisorPreferredDateTime, setAdvisorPreferredDateTime] = useState('');
+  const [isSubmittingAdvisor, setIsSubmittingAdvisor] = useState(false);
 
   // Voice recording, playback, and upload hooks
   const { isRecording, duration: recordingDuration, startRecording, stopRecording, cancelRecording } = useVoiceRecording();
@@ -337,12 +349,79 @@ export const ChatScreen = observer(function ChatScreen() {
   };
 
   // Handler: Photo sharing
-  const handlePhotoShare = () => {
+  const handlePhotoShare = async () => {
     if (!features.photoSharing) {
       handleLockedFeature('Photo Sharing', 'official_ceremony');
       return;
     }
-    Alert.alert('Photo Share', 'Photo sharing feature coming soon!');
+
+    try {
+      // Request permissions
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Required', 'Please allow access to your media library to share photos.');
+        return;
+      }
+
+      // Show picker with both photo and video options
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.All,
+        allowsEditing: true,
+        quality: 0.8,
+        base64: false,
+      });
+
+      if (result.canceled || !result.assets || result.assets.length === 0) {
+        return;
+      }
+
+      const selectedAsset = result.assets[0];
+      const isVideo = selectedAsset.type === 'video';
+
+      // Show uploading indicator
+      Alert.alert('Uploading...', 'Please wait while your media is being sent.');
+
+      // Determine context
+      const uploadContext = vm.currentChatContext === 'preMatch' && vm.currentApplicationId
+        ? { type: 'preMatch' as const, applicationId: vm.currentApplicationId }
+        : vm.currentRelationshipId
+          ? { type: 'relationship' as const, relationshipId: vm.currentRelationshipId }
+          : null;
+
+      if (!uploadContext) {
+        Alert.alert('Error', 'No active chat context');
+        return;
+      }
+
+      // Read file as base64
+      const base64Data = await FileSystem.readAsStringAsync(selectedAsset.uri, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+
+      // Get file extension
+      const uriParts = selectedAsset.uri.split('.');
+      const fileExtension = uriParts[uriParts.length - 1] || (isVideo ? 'mp4' : 'jpg');
+
+      let mediaUrl: string;
+
+      if (isVideo) {
+        mediaUrl = await uploadChatVideo(base64Data, uploadContext, currentUserId!, fileExtension);
+        const success = await vm.sendVideoMessage(mediaUrl);
+        if (!success) {
+          Alert.alert('Error', vm.errorMessage || 'Failed to send video');
+        }
+      } else {
+        mediaUrl = await uploadChatImage(base64Data, uploadContext, currentUserId!, fileExtension);
+        const success = await vm.sendImageMessage(mediaUrl);
+        if (!success) {
+          Alert.alert('Error', vm.errorMessage || 'Failed to send image');
+        }
+      }
+
+    } catch (error) {
+      console.error('[ChatScreen] Photo share error:', error);
+      Alert.alert('Error', 'Failed to share media. Please try again.');
+    }
   };
 
   // Handler: Locked feature alert
@@ -394,6 +473,59 @@ export const ChatScreen = observer(function ChatScreen() {
         { text: 'Cancel', style: 'cancel' },
       ]
     );
+  };
+
+  // Handler: Request Family Advisor
+  const handleRequestAdvisor = () => {
+    Alert.alert(
+      '📋 Request Family Advisor',
+      'What type of consultation do you need?',
+      [
+        { text: 'General Advice', onPress: () => openAdvisorModal('General Advice') },
+        { text: 'Conflict Resolution', onPress: () => openAdvisorModal('Conflict Resolution') },
+        { text: 'Communication Support', onPress: () => openAdvisorModal('Communication Support') },
+        { text: 'Cancel', style: 'cancel' }
+      ]
+    );
+  };
+
+  const openAdvisorModal = (consultationType: string) => {
+    setAdvisorConsultationType(consultationType);
+    setAdvisorDescription('');
+    setAdvisorPreferredMethod('video_call');
+    setAdvisorPreferredDateTime('');
+    setShowAdvisorModal(true);
+  };
+
+  const submitAdvisorRequest = async () => {
+    if (advisorDescription.trim().length < 10) {
+      Alert.alert('Error', 'Please provide a description (at least 10 characters)');
+      return;
+    }
+    const partnerId = partnerUser?.id;
+    const relId = relationship?.id || null;
+    if (!currentUserId || !partnerId) {
+      Alert.alert('Error', 'Unable to identify users');
+      return;
+    }
+    setIsSubmittingAdvisor(true);
+    const success = await consultationViewModel.submitConsultationRequest(
+      currentUserId,
+      partnerId,
+      relId,
+      advisorConsultationType,
+      advisorDescription,
+      'normal',
+      advisorPreferredMethod,
+      advisorPreferredDateTime
+    );
+    setIsSubmittingAdvisor(false);
+    setShowAdvisorModal(false);
+    if (success) {
+      Alert.alert('Success! ✅', 'Your request has been submitted. An admin will assign an advisor soon.');
+    } else {
+      Alert.alert('Error', consultationViewModel.errorMessage || 'Failed to submit request');
+    }
   };
 
   // Render message item using ChatBubble from components/ui
@@ -458,7 +590,111 @@ export const ChatScreen = observer(function ChatScreen() {
               </Text>
             </View>
           </View>
-          <Text style={styles.callInviteTime}>{timestamp}</Text>
+          <View style={styles.callInviteFooter}>
+            <Text style={styles.callInviteTime}>{timestamp}</Text>
+            {isOwn && (
+              <Text style={[styles.readStatus, item.is_read ? styles.readStatusRead : styles.readStatusDelivered]}>
+                {item.is_read ? '✓✓' : '✓'}
+              </Text>
+            )}
+          </View>
+        </TouchableOpacity>
+      );
+    }
+
+    // Render image message
+    if (item.message_type === 'image' && item.media_url) {
+      const handleImagePress = () => {
+        // Open full-screen image viewer (future enhancement)
+        Alert.alert('Image', 'Tap and hold to save to memories');
+      };
+
+      const handleSaveToMemory = async () => {
+        // Check if in relationship context before showing dialog
+        console.log('[ChatScreen] Save to Memory - context:', vm.currentChatContext, 'relationshipId:', vm.currentRelationshipId);
+
+        if (!vm.currentRelationshipId) {
+          Alert.alert(
+            'Not Available',
+            'Save to Memories is only available after completing formal adoption. This feature will be available once you become officially matched!'
+          );
+          return;
+        }
+
+        Alert.alert(
+          'Save to Memories',
+          'Would you like to save this photo to your shared family album?',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            {
+              text: 'Save',
+              onPress: async () => {
+                console.log('[ChatScreen] Saving media:', item.media_url, 'type:', item.message_type);
+                const success = await vm.saveChatMediaToMemory(
+                  item.media_url,
+                  item.message_type as 'image' | 'video'
+                );
+                if (success) {
+                  Alert.alert('Saved!', 'Photo has been added to your Family Album.');
+                } else {
+                  console.log('[ChatScreen] Save failed:', vm.errorMessage);
+                  Alert.alert('Error', vm.errorMessage || 'Failed to save to memories.');
+                }
+              }
+            }
+          ]
+        );
+      };
+
+      return (
+        <TouchableOpacity
+          onPress={handleImagePress}
+          onLongPress={handleSaveToMemory}
+          delayLongPress={500}
+          style={[
+            styles.mediaBubbleContainer,
+            isOwn ? styles.mediaBubbleOwn : styles.mediaBubblePartner
+          ]}
+        >
+          <Image
+            source={{ uri: item.media_url }}
+            style={styles.mediaImage}
+            resizeMode="contain"
+          />
+          <View style={styles.mediaFooter}>
+            <Text style={styles.mediaTimestamp}>{timestamp}</Text>
+            {isOwn && (
+              <Text style={[styles.readStatus, item.is_read ? styles.readStatusRead : styles.readStatusDelivered]}>
+                {item.is_read ? '✓✓' : '✓'}
+              </Text>
+            )}
+          </View>
+        </TouchableOpacity>
+      );
+    }
+
+    // Render video message
+    if (item.message_type === 'video' && item.media_url) {
+      return (
+        <TouchableOpacity
+          onPress={() => Alert.alert('Video', 'Video playback coming soon!')}
+          style={[
+            styles.mediaBubbleContainer,
+            isOwn ? styles.mediaBubbleOwn : styles.mediaBubblePartner
+          ]}
+        >
+          <View style={styles.videoThumbnail}>
+            <Text style={styles.videoPlayIcon}>▶️</Text>
+            <Text style={styles.videoLabel}>Video</Text>
+          </View>
+          <View style={styles.mediaFooter}>
+            <Text style={styles.mediaTimestamp}>{timestamp}</Text>
+            {isOwn && (
+              <Text style={[styles.readStatus, item.is_read ? styles.readStatusRead : styles.readStatusDelivered]}>
+                {item.is_read ? '✓✓' : '✓'}
+              </Text>
+            )}
+          </View>
         </TouchableOpacity>
       );
     }
@@ -539,6 +775,11 @@ export const ChatScreen = observer(function ChatScreen() {
                 source={require('@/assets/images/icon-warning.png')}
                 style={styles.headerIcon}
               />
+            </TouchableOpacity>
+
+            {/* Request Advisor Button */}
+            <TouchableOpacity onPress={handleRequestAdvisor} style={styles.headerButton}>
+              <Text style={{ fontSize: 18 }}>📋</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -660,6 +901,86 @@ export const ChatScreen = observer(function ChatScreen() {
           )}
         </Animated.View>
       </View>
+
+      {/* Advisor Request Modal */}
+      <Modal
+        visible={showAdvisorModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowAdvisorModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>📋 {advisorConsultationType}</Text>
+
+            {/* Description */}
+            <Text style={styles.modalSubtitle}>
+              Describe what you need help with:
+            </Text>
+            <TextInput
+              style={styles.modalTextInput}
+              placeholder="Enter your concern (min 10 characters)..."
+              placeholderTextColor="#999"
+              value={advisorDescription}
+              onChangeText={setAdvisorDescription}
+              multiline
+              numberOfLines={3}
+              maxLength={500}
+            />
+
+            {/* Preferred Method */}
+            <Text style={styles.modalLabel}>Preferred Method:</Text>
+            <View style={styles.methodButtonsRow}>
+              {(['video_call', 'phone', 'chat'] as const).map((method) => (
+                <TouchableOpacity
+                  key={method}
+                  style={[
+                    styles.methodButton,
+                    advisorPreferredMethod === method && styles.methodButtonActive
+                  ]}
+                  onPress={() => setAdvisorPreferredMethod(method)}
+                >
+                  <Text style={[
+                    styles.methodButtonText,
+                    advisorPreferredMethod === method && styles.methodButtonTextActive
+                  ]}>
+                    {method === 'video_call' ? '📹 Video' : method === 'phone' ? '📞 Phone' : '💬 Chat'}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {/* Preferred Date & Time */}
+            <Text style={styles.modalLabel}>Preferred Date & Time (optional):</Text>
+            <TextInput
+              style={styles.modalDateInput}
+              placeholder="e.g., Tomorrow 3pm, Weekday evenings"
+              placeholderTextColor="#999"
+              value={advisorPreferredDateTime}
+              onChangeText={setAdvisorPreferredDateTime}
+              maxLength={100}
+            />
+
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={styles.modalCancelButton}
+                onPress={() => setShowAdvisorModal(false)}
+              >
+                <Text style={styles.modalCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalSubmitButton, isSubmittingAdvisor && styles.modalButtonDisabled]}
+                onPress={submitAdvisorRequest}
+                disabled={isSubmittingAdvisor}
+              >
+                <Text style={styles.modalSubmitText}>
+                  {isSubmittingAdvisor ? 'Submitting...' : 'Submit'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 });
@@ -980,6 +1301,189 @@ const styles = StyleSheet.create({
     color: '#999',
     marginTop: 4,
     textAlign: 'right',
+  },
+  // Media message styles (from friend)
+  mediaBubbleContainer: {
+    marginVertical: 4,
+    marginHorizontal: 16,
+    maxWidth: '70%',
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+  mediaBubbleOwn: {
+    alignSelf: 'flex-end',
+    backgroundColor: Colors.light.secondary,
+  },
+  mediaBubblePartner: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#F0F0F0',
+  },
+  mediaImage: {
+    width: 250,
+    height: undefined,
+    aspectRatio: 0.75,
+    maxHeight: 350,
+    borderRadius: 12,
+    backgroundColor: '#f0f0f0',
+  },
+  mediaTimestamp: {
+    fontSize: 11,
+    color: '#666',
+    textAlign: 'right',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  videoThumbnail: {
+    width: 220,
+    height: 140,
+    backgroundColor: '#333',
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  videoPlayIcon: {
+    fontSize: 40,
+  },
+  videoLabel: {
+    color: '#FFF',
+    fontSize: 14,
+    marginTop: 8,
+  },
+  callInviteFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: 4,
+    marginTop: 4,
+  },
+  mediaFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  readStatus: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  readStatusRead: {
+    color: '#4A90D9',
+  },
+  readStatusDelivered: {
+    color: '#999',
+  },
+  // Modal styles for Advisor Request
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContent: {
+    backgroundColor: '#FFF',
+    borderRadius: 16,
+    padding: 24,
+    width: '100%',
+    maxWidth: 400,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#333',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  modalSubtitle: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  modalTextInput: {
+    borderWidth: 1,
+    borderColor: '#DDD',
+    borderRadius: 12,
+    padding: 12,
+    fontSize: 16,
+    minHeight: 100,
+    textAlignVertical: 'top',
+    marginBottom: 16,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  modalCancelButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 12,
+    backgroundColor: '#F0F0F0',
+    alignItems: 'center',
+  },
+  modalCancelText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#666',
+  },
+  modalSubmitButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 12,
+    backgroundColor: Colors.light.secondary,
+    alignItems: 'center',
+  },
+  modalSubmitText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+  },
+  modalButtonDisabled: {
+    opacity: 0.5,
+  },
+  modalLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 8,
+  },
+  methodButtonsRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 16,
+  },
+  methodButton: {
+    flex: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: '#DDD',
+    alignItems: 'center',
+    backgroundColor: '#FFF',
+  },
+  methodButtonActive: {
+    borderColor: Colors.light.secondary,
+    backgroundColor: Colors.light.secondary + '20',
+  },
+  methodButtonText: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#666',
+  },
+  methodButtonTextActive: {
+    color: '#333',
+    fontWeight: '600',
+  },
+  modalDateInput: {
+    borderWidth: 1,
+    borderColor: '#DDD',
+    borderRadius: 12,
+    padding: 12,
+    fontSize: 16,
+    marginBottom: 16,
   },
 });
 

@@ -100,7 +100,7 @@ const styles = {
         transition: 'border-color 0.2s ease',
     },
     selectFocused: {
-        borderColor: colors.morningGlory,
+        border: `2px solid ${colors.morningGlory}`,
     },
     textarea: {
         width: '100%',
@@ -118,7 +118,7 @@ const styles = {
         boxSizing: 'border-box' as const,
     },
     textareaFocused: {
-        borderColor: colors.morningGlory,
+        border: `2px solid ${colors.morningGlory}`,
     },
     helperText: {
         fontFamily: 'Inter, sans-serif',

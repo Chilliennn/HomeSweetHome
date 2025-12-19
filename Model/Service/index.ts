@@ -11,4 +11,5 @@ export * from './CoreService/authService';
 export * from './CoreService/relationshipService';
 export * from './CoreService';
 export * from './CoreService/familyService';
-// export * from './CoreService/familyAIService'; // Mobile-only - uses expo-constants
+export * from './CoreService/familyAIService';
+export * from './CoreService/mediaUploadHelper';

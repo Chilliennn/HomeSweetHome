@@ -46,10 +46,10 @@ export const familyRepository = {
     try {
       // Upload file to Supabase Storage with base64 data
       console.log('[familyRepository] Starting file upload to storage...');
-      
+
       const folderPath = `relationships/${relationship_id}/media`;
       const bucket = storageService.getMediaBucket();
-      
+
       const publicUrl = await storageService.uploadMediaFileWithRetry(
         bucket,
         fileData,
@@ -74,11 +74,49 @@ export const familyRepository = {
         .single();
 
       if (error) throw error;
-      
+
       console.log('[familyRepository] Media metadata saved successfully');
       return data;
     } catch (error: any) {
       console.error('[familyRepository] Media upload failed:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Create media entry from existing URL (no file upload needed)
+   * Used for saving chat media to family album
+   * Reuses existing URL from chat-media bucket
+   */
+  async createMediaFromUrl(
+    uploader_id: string,
+    relationship_id: string,
+    media_type: MediaType,
+    file_url: string,
+    caption?: string
+  ): Promise<MediaItem> {
+    try {
+      console.log('[familyRepository] Creating media from existing URL...');
+
+      const { data, error } = await supabase
+        .from('media')
+        .insert({
+          uploader_id,
+          relationship_id,
+          media_type,
+          media_category: 'family_album',
+          file_url,
+          caption: caption || null,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      console.log('[familyRepository] Media created from URL successfully');
+      return data;
+    } catch (error: any) {
+      console.error('[familyRepository] createMediaFromUrl failed:', error);
       throw error;
     }
   },

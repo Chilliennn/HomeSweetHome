@@ -1,4 +1,5 @@
-import { adminRepository, ApplicationWithProfiles, ApplicationStats } from '../../Repository/AdminRepository/adminRepository';
+import { adminRepository } from '../../Repository/AdminRepository/adminRepository';
+import type { ApplicationWithProfiles, ApplicationStats } from '../../Repository/AdminRepository/adminRepository';
 
 const REJECTION_REASONS = [
   'Insufficient motivation letter',
@@ -134,7 +135,9 @@ export const applicationService = {
       throw new Error('Detailed explanation required for "Other" reason');
     }
 
-    await adminRepository.rejectApplication(applicationId, adminId, rejectionReason, notes);
+    // Get the application to find youthId for notification
+    const application = await this.getApplicationById(applicationId);
+    await adminRepository.rejectApplication(applicationId, adminId, rejectionReason, notes, application.youth.id);
   },
 
   /**
@@ -150,7 +153,9 @@ export const applicationService = {
       throw new Error('Information request cannot be empty');
     }
 
-    await adminRepository.requestMoreInfo(applicationId, adminId, infoRequested, notes);
+    // Get the application to find youthId for notification
+    const application = await this.getApplicationById(applicationId);
+    await adminRepository.requestMoreInfo(applicationId, adminId, infoRequested, notes, application.youth.id);
   },
 
   /**

@@ -31,8 +31,9 @@ const ASSEMBLYAI_UPLOAD_URL = 'https://api.assemblyai.com/v2/upload';
 const ASSEMBLYAI_TRANSCRIPT_URL = 'https://api.assemblyai.com/v2/transcript';
 
 // Get API token from environment variable
-// Set in .env: EXPO_PUBLIC_ASSEMBLYAI_API_KEY=your_token_here
-const ASSEMBLYAI_API_KEY = process.env.EXPO_PUBLIC_ASSEMBLYAI_API_KEY;
+// - React Native (Expo): Uses EXPO_PUBLIC_* prefix, automatically injected by Expo
+// - Web (Vite): Uses VITE_* prefix, mapped to EXPO_PUBLIC_* via vite.config.ts define
+const ASSEMBLYAI_API_KEY = process.env.EXPO_PUBLIC_ASSEMBLYAI_API_KEY || '';
 
 // ============================================================================
 // SERVICE

@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { observer } from 'mobx-react-lite';
 import { elderMatchingViewModel, youthMatchingViewModel, matchingViewModel } from '@home-sweet-home/viewmodel';
+import { notificationRepository } from '@home-sweet-home/model';
 import { Card, Button, IconCircle, LoadingSpinner } from '@/components/ui';
 import { Colors } from '@/constants/theme';
 
@@ -33,6 +34,14 @@ export const NotificationScreen = observer(() => {
     const currentUserId = rootMatchVM.currentUserId;
     const isElderly = rootMatchVM.currentUserType === 'elderly';
 
+    // State for general system notifications (calendar, memories, etc.)
+    const [generalNotifications, setGeneralNotifications] = useState<any[]>([]);
+    const [isLoadingGeneral, setIsLoadingGeneral] = useState(false);
+
+    // NEW: State for advisor/consultation notifications (addon by user)
+    const [advisorNotifications, setAdvisorNotifications] = useState<any[]>([]);
+    const [isLoadingAdvisor, setIsLoadingAdvisor] = useState(false);
+
     // Load notifications based on user type
     useEffect(() => {
         if (currentUserId) {
@@ -41,6 +50,9 @@ export const NotificationScreen = observer(() => {
             } else {
                 youthVM.loadNotifications(currentUserId);
             }
+
+            // Load general notifications (calendar, memories, etc.)
+            loadGeneralNotifications(currentUserId);
         }
         return () => {
             if (isElderly) {
@@ -50,6 +62,71 @@ export const NotificationScreen = observer(() => {
             }
         };
     }, [isElderly, currentUserId]);
+
+    // Load general notifications from notifications table
+    const loadGeneralNotifications = async (userId: string) => {
+        setIsLoadingGeneral(true);
+        try {
+            console.log('[NotificationScreen] Loading general notifications for user:', userId);
+            const notifications = await notificationRepository.getNotifications(userId, 50);
+            console.log('[NotificationScreen] All notifications:', notifications.length, notifications);
+            
+            // Filter out consultation_assigned (those go in advisor section)
+            const generalNotifs = notifications.filter(
+                (n: any) => n.type !== 'consultation_assigned'
+            );
+            console.log('[NotificationScreen] Filtered general notifications:', generalNotifs.length);
+            setGeneralNotifications(generalNotifs);
+        } catch (error) {
+            console.error('[NotificationScreen] Failed to load general notifications:', error);
+        } finally {
+            setIsLoadingGeneral(false);
+        }
+    };
+
+    // NEW: Load advisor/consultation notifications (addon by user)
+    const loadAdvisorNotifications = async (userId: string) => {
+        setIsLoadingAdvisor(true);
+        try {
+            console.log('[NotificationScreen] Loading advisor notifications for user:', userId);
+            const notifications = await notificationRepository.getNotifications(userId, 20);
+            const advisorNotifs = notifications.filter(
+                (n: any) => n.type === 'consultation_assigned' || n.type === 'advisor_assigned' || n.type === 'admin_notice'
+            );
+            console.log('[NotificationScreen] Advisor notifications:', advisorNotifs.length);
+            setAdvisorNotifications(advisorNotifs);
+        } catch (error) {
+            console.error('[NotificationScreen] Failed to load advisor notifications:', error);
+        } finally {
+            setIsLoadingAdvisor(false);
+        }
+    };
+
+    // NEW: Load advisor notifications when user is set
+    useEffect(() => {
+        if (currentUserId) {
+            loadAdvisorNotifications(currentUserId);
+        }
+    }, [currentUserId]);
+
+    // Setup real-time subscription for general notifications
+    useEffect(() => {
+        if (!currentUserId) return;
+
+        const subscription = notificationRepository.subscribeToNotifications(
+            currentUserId,
+            (notification) => {
+                console.log('[NotificationScreen] New notification received:', notification);
+                // Reload all notifications to get fresh data
+                loadGeneralNotifications(currentUserId);
+                loadAdvisorNotifications(currentUserId);
+            }
+        );
+
+        return () => {
+            notificationRepository.unsubscribe(subscription);
+        };
+    }, [currentUserId]);
 
     const handleAccept = async (reqId: string, youthId: string) => {
         if (!currentUserId) return;
@@ -231,8 +308,55 @@ export const NotificationScreen = observer(() => {
         }
     };
 
+    /**
+     * Render: General System Notifications (e.g., Advisor Assigned)
+     */
+    const renderGeneralNotification = ({ item }: { item: any }) => {
+        const date = item.created_at ? formatDate(item.created_at) : 'Just now';
+
+        // Get icon based on notification type
+        const getIcon = () => {
+            switch (item.type) {
+                case 'consultation_assigned': return '🎉';
+                case 'admin_notice': return '📢';
+                default: return '🔔';
+            }
+        };
+
+        return (
+            <Card style={[styles.notificationCard, styles.acceptedCard]}>
+                <View style={styles.notifRow}>
+                    <IconCircle icon={getIcon()} size={40} backgroundColor="#E8F5E9" />
+                    <View style={styles.notifContent}>
+                        <Text style={styles.notifTitle}>{item.title}</Text>
+                        <Text style={styles.notifText}>{item.message}</Text>
+                        <Text style={styles.timeText}>{date}</Text>
+                    </View>
+                </View>
+            </Card>
+        );
+    };
+
     const isLoading = isElderly ? matchVM.isLoading : youthVM.isLoading;
     const data = isElderly ? matchVM.incomingRequests : youthVM.activeMatches;
+
+    // TODO: Uncomment when notification system is fixed
+    // Combine match data with general notifications
+    // const allNotifications = [
+    //     ...generalNotifications.map(n => ({ ...n, _isGeneral: true })),
+    //     ...matchData.map((m: any) => ({ ...m, _isGeneral: false }))
+    // ].sort((a, b) => {
+    //     const dateA = new Date(a.created_at || a.applied_at || 0).getTime();
+    //     const dateB = new Date(b.created_at || b.applied_at || 0).getTime();
+    //     return dateB - dateA;
+    // });
+    //
+    // const renderNotification = ({ item }: { item: any }) => {
+    //     if (item._isGeneral) {
+    //         return renderGeneralNotification({ item });
+    //     }
+    //     return isElderly ? renderElderlyNotification({ item }) : renderYouthNotification({ item });
+    // };
 
     // Loading State
     if (isLoading) {
@@ -260,13 +384,74 @@ export const NotificationScreen = observer(() => {
                 <Text style={styles.title}>Notifications</Text>
             </View>
 
-            <View style={styles.content}>
-                <FlatList
-                    data={data}
-                    renderItem={isElderly ? renderElderlyNotification : renderYouthNotification}
-                    keyExtractor={item => item.id}
-                    contentContainerStyle={styles.list}
-                    ListEmptyComponent={
+            <FlatList
+                data={data}
+                renderItem={isElderly ? renderElderlyNotification : renderYouthNotification}
+                keyExtractor={item => item.id}
+                contentContainerStyle={styles.list}
+                ListHeaderComponent={() => (
+                    <View>
+                        {/* General Notifications Section (Calendar, Memories, etc.) */}
+                        {generalNotifications.length > 0 && (
+                            <View style={styles.generalSection}>
+                                <Text style={styles.sectionTitle}>🔔 Recent Activity</Text>
+                                {generalNotifications.map((item) => {
+                                    const iconMap: Record<string, string> = {
+                                        'calendar_reminder': '📅',
+                                        'stage_milestone': '📸',
+                                        'new_message': '💬',
+                                        'safety_alert': '⚠️',
+                                        'admin_notice': '📢',
+                                        'application_update': '📋',
+                                    };
+                                    const icon = iconMap[item.type] || '🔔';
+
+                                    return (
+                                        <Card key={item.id} style={[styles.notificationCard, !item.is_read && styles.unreadCard]}>
+                                            <View style={styles.notifRow}>
+                                                <IconCircle
+                                                    icon={icon}
+                                                    size={40}
+                                                    backgroundColor={!item.is_read ? '#E3F2FD' : '#F5F5F5'}
+                                                />
+                                                <View style={styles.notifContent}>
+                                                    <Text style={styles.notifTitle}>{item.title}</Text>
+                                                    <Text style={styles.notifText}>{item.message}</Text>
+                                                    <Text style={styles.timeText}>{formatDate(item.created_at)}</Text>
+                                                </View>
+                                            </View>
+                                        </Card>
+                                    );
+                                })}
+                            </View>
+                        )}
+
+                        {/* Advisor/Consultation Notifications */}
+                        {advisorNotifications.length > 0 && (
+                            <View style={styles.advisorSection}>
+                                <Text style={styles.sectionTitle}>📋 Advisor Updates</Text>
+                                {advisorNotifications.map((item) => (
+                                    <Card key={item.id} style={[styles.notificationCard, styles.advisorCard]}>
+                                        <View style={styles.notifRow}>
+                                            <IconCircle
+                                                icon={item.type === 'consultation_assigned' ? '🎉' : item.type === 'advisor_assigned' ? '👨‍⚕️' : '📢'}
+                                                size={40}
+                                                backgroundColor="#E8F5E9"
+                                            />
+                                            <View style={styles.notifContent}>
+                                                <Text style={styles.notifTitle}>{item.title || 'Advisor Update'}</Text>
+                                                <Text style={styles.notifText}>{item.message}</Text>
+                                                <Text style={styles.timeText}>{formatDate(item.created_at)}</Text>
+                                            </View>
+                                        </View>
+                                    </Card>
+                                ))}
+                            </View>
+                        )}
+                    </View>
+                )}
+                ListEmptyComponent={
+                    advisorNotifications.length === 0 && generalNotifications.length === 0 ? (
                         <View style={styles.emptyContainer}>
                             <Text style={styles.placeholder}>No new notifications.</Text>
                             <Text style={styles.placeholderSub}>
@@ -275,9 +460,9 @@ export const NotificationScreen = observer(() => {
                                     : "Updates on your interests will appear here."}
                             </Text>
                         </View>
-                    }
-                />
-            </View>
+                    ) : null
+                }
+            />
         </SafeAreaView>
     );
 });
@@ -324,5 +509,14 @@ const styles = StyleSheet.create({
 
     emptyContainer: { alignItems: 'center', marginTop: 50 },
     placeholder: { fontSize: 18, color: '#666', fontWeight: '500', marginBottom: 8 },
-    placeholderSub: { fontSize: 14, color: '#999' }
+    placeholderSub: { fontSize: 14, color: '#999' },
+
+    // General Notifications styles
+    generalSection: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 8 },
+    unreadCard: { borderLeftWidth: 4, borderLeftColor: '#2196F3' },
+
+    // NEW: Advisor Notifications styles (addon by user)
+    advisorSection: { paddingHorizontal: 20, paddingTop: 16 },
+    sectionTitle: { fontSize: 16, fontWeight: '700', color: '#333', marginBottom: 12 },
+    advisorCard: { borderLeftWidth: 4, borderLeftColor: '#9DE2D0' },
 });

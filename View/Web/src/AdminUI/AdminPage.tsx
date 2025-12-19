@@ -39,7 +39,7 @@ export const AdminPage: React.FC = observer(() => {
   };
 
   const handleApproveConfirm = async () => {
-    await adminViewModel.approveApplication();
+    await adminViewModel.approveAndReviewNext();
     setShowApprovalModal(false);
     if (adminViewModel.errorMessage) {
       alert('Error: ' + adminViewModel.errorMessage);

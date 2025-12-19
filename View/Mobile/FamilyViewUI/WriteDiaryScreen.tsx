@@ -106,7 +106,6 @@ export const WriteDiaryScreen = observer(() => {
         playsInSilentModeIOS: true,
         staysActiveInBackground: false,
         shouldDuckAndroid: true,
-        playThroughEarpiece: false,
       });
 
       // Create and start recording
@@ -137,7 +136,7 @@ export const WriteDiaryScreen = observer(() => {
         // Use hook to read file and ViewModel to transcribe
         try {
           const result = await transcribeAudio(uri);
-          
+
           // Append transcribed text to content
           setContent(prev => {
             const newContent = prev.trim() ? prev + '\n' + result.text : result.text;
@@ -216,7 +215,7 @@ export const WriteDiaryScreen = observer(() => {
           <View style={styles.inputMethodButtons}>
             <Button
               title="✏️ Text Input"
-              onPress={() => {}}
+              onPress={() => { }}
               variant="primary"
             />
             {!isRecording ? (

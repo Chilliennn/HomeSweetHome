@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { getAdminNotifications, type AdminNotification } from '@home-sweet-home/model';
+import { adminViewModel, safetyViewModel, consultationViewModel } from '@home-sweet-home/viewmodel';
 
 type NavTab = 'relationship' | 'application' | 'reports' | 'keyword';
 
@@ -9,14 +11,6 @@ interface AdminLayoutProps {
     activeTab?: NavTab;
     onTabChange?: (tab: NavTab) => void;
 }
-
-// Mock notifications for demonstration
-const mockNotifications = [
-    { id: 1, type: 'application', message: 'New application from Sarah Chen', time: '2 min ago', read: false },
-    { id: 2, type: 'relationship', message: 'Relationship milestone reached', time: '15 min ago', read: false },
-    { id: 3, type: 'advisor', message: 'New family advisor consultation request', time: '1 hour ago', read: true },
-    { id: 4, type: 'application', message: 'Application #REQ-042 updated', time: '3 hours ago', read: true },
-];
 
 const styles = {
     layout: {
@@ -261,17 +255,29 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
     const [showProfile, setShowProfile] = useState(false);
     const [adminName, setAdminName] = useState('');
     const [adminId, setAdminId] = useState('');
+    const [notifications, setNotifications] = useState<AdminNotification[]>([]);
     const notificationRef = useRef<HTMLDivElement>(null);
     const profileRef = useRef<HTMLDivElement>(null);
     const navigate = useNavigate();
     const location = useLocation();
 
-    // Get admin info from localStorage
+    // Get admin info from localStorage and fetch notifications
     useEffect(() => {
         const name = localStorage.getItem('adminName') || 'Admin';
         const id = localStorage.getItem('adminId') || 'admin001';
         setAdminName(name);
         setAdminId(id);
+
+        // Fetch notifications initially
+        const fetchNotifications = () => {
+            getAdminNotifications(10).then(setNotifications).catch(console.error);
+        };
+        fetchNotifications();
+
+        // Poll for new notifications every 30 seconds
+        const pollInterval = setInterval(fetchNotifications, 30000);
+
+        return () => clearInterval(pollInterval);
     }, []);
 
     // Close dropdowns when clicking outside
@@ -314,13 +320,69 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
         navigate('/');
     };
 
-    const unreadCount = mockNotifications.filter(n => !n.read).length;
+    const unreadCount = notifications.filter(n => !n.is_read).length;
+
+    const formatTimeAgo = (dateString: string) => {
+        const date = new Date(dateString);
+        const now = new Date();
+        const diffMs = now.getTime() - date.getTime();
+        const diffMins = Math.floor(diffMs / 60000);
+        if (diffMins < 60) return `${diffMins} min ago`;
+        const diffHours = Math.floor(diffMins / 60);
+        if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+        const diffDays = Math.floor(diffHours / 24);
+        return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+    };
+
+    const handleNotificationClick = async (notification: AdminNotification) => {
+        setShowNotifications(false);
+
+        // Remove this notification from the list (mark as read/handled)
+        setNotifications(prev => prev.filter(n => n.id !== notification.id));
+
+        try {
+            switch (notification.type) {
+                case 'application':
+                    // Navigate to admin page and select the application
+                    if (notification.reference_id) {
+                        await adminViewModel.selectApplication(notification.reference_id);
+                    }
+                    navigate('/admin');
+                    break;
+                case 'safety_alert':
+                    // Navigate to reports and select the alert
+                    if (notification.reference_id) {
+                        await safetyViewModel.selectAlert(notification.reference_id);
+                    }
+                    navigate('/admin/reports');
+                    break;
+                case 'consultation':
+                    // Navigate to reports page and select the consultation
+                    if (notification.reference_id) {
+                        await consultationViewModel.selectConsultation(notification.reference_id);
+                    }
+                    navigate('/admin/reports');
+                    break;
+                default:
+                    navigate('/admin');
+            }
+        } catch (error) {
+            console.error('Error handling notification:', error);
+            // Still navigate even if selection fails
+            if (notification.type === 'application') {
+                navigate('/admin');
+            } else {
+                navigate('/admin/reports');
+            }
+        }
+    };
 
     const getNotificationIcon = (type: string) => {
         switch (type) {
             case 'application': return { icon: '📋', bg: '#D4E5AE' };
+            case 'safety_alert': return { icon: '⚠️', bg: '#EB8F80' };
+            case 'consultation': return { icon: '👨‍👩‍👧', bg: '#9DE2D0' };
             case 'relationship': return { icon: '💕', bg: '#C8ADD6' };
-            case 'advisor': return { icon: '👨‍👩‍👧', bg: '#9DE2D0' };
             default: return { icon: '🔔', bg: '#FADE9F' };
         }
     };
@@ -372,23 +434,33 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
                                 <div style={styles.dropdownHeader}>
                                     Notifications ({unreadCount} unread)
                                 </div>
-                                {mockNotifications.map(notification => {
-                                    const iconStyle = getNotificationIcon(notification.type);
-                                    return (
-                                        <div key={notification.id} style={styles.dropdownItem}>
-                                            <div style={styles.notificationItem}>
-                                                <div style={{ ...styles.notificationIcon, background: iconStyle.bg }}>
-                                                    {iconStyle.icon}
+                                {notifications.length === 0 ? (
+                                    <div style={{ padding: '20px', textAlign: 'center', color: '#999' }}>
+                                        No new notifications
+                                    </div>
+                                ) : (
+                                    notifications.map(notification => {
+                                        const iconStyle = getNotificationIcon(notification.type);
+                                        return (
+                                            <div
+                                                key={notification.id}
+                                                style={{ ...styles.dropdownItem, cursor: 'pointer' }}
+                                                onClick={() => handleNotificationClick(notification)}
+                                            >
+                                                <div style={styles.notificationItem}>
+                                                    <div style={{ ...styles.notificationIcon, background: iconStyle.bg }}>
+                                                        {iconStyle.icon}
+                                                    </div>
+                                                    <div style={styles.notificationContent}>
+                                                        <p style={styles.notificationMessage}>{notification.message}</p>
+                                                        <div style={styles.notificationTime}>{formatTimeAgo(notification.created_at)}</div>
+                                                    </div>
+                                                    {!notification.is_read && <div style={styles.unreadDot} />}
                                                 </div>
-                                                <div style={styles.notificationContent}>
-                                                    <p style={styles.notificationMessage}>{notification.message}</p>
-                                                    <div style={styles.notificationTime}>{notification.time}</div>
-                                                </div>
-                                                {!notification.read && <div style={styles.unreadDot} />}
                                             </div>
-                                        </div>
-                                    );
-                                })}
+                                        );
+                                    })
+                                )}
                             </div>
                         )}
                     </div>

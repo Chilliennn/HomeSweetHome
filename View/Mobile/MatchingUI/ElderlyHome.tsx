@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, ImageSourcePropType, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { observer } from 'mobx-react-lite';
-import { elderMatchingViewModel } from '@home-sweet-home/viewmodel';
+import { elderMatchingViewModel, communicationViewModel } from '@home-sweet-home/viewmodel';
 import { authViewModel } from '@home-sweet-home/viewmodel';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTabNavigation } from '@/hooks/use-tab-navigation';
@@ -52,10 +52,10 @@ export const ElderlyHome: React.FC<ElderlyHomeProps> = observer(({
 }) => {
   const router = useRouter();
   const vm = elderMatchingViewModel;
-  
+
   // Use activeTab from prop or default to 'matching'
   const activeTab = propActiveTab || 'matching';
-  
+
   // Use tab navigation hook
   const { handleTabPress: hookHandleTabPress } = useTabNavigation(activeTab);
   const handleTabPress = onTabPress || hookHandleTabPress;
@@ -156,7 +156,7 @@ export const ElderlyHome: React.FC<ElderlyHomeProps> = observer(({
 
         {/* Journey Progress Dropdown */}
         <JourneyProgressDropdown
-          currentStep={currentStep}
+          currentStep={communicationViewModel.currentJourneyStep}
           steps={ELDERLY_JOURNEY_STEPS}
           currentDescription="Waiting for youth to express interest"
           nextDescription="Review & decide to connect"
@@ -186,7 +186,7 @@ export const ElderlyHome: React.FC<ElderlyHomeProps> = observer(({
               <Text style={styles.profileStatus}>{getProfileStatusMessage()}</Text>
             </View>
           </View>
-        </View>  
+        </View>
         {/* Safety Card */}
         <Card style={styles.safetyCard}>
           <Text style={styles.safetyTitle}>🛡️ Your Safety</Text>
@@ -204,7 +204,7 @@ export const ElderlyHome: React.FC<ElderlyHomeProps> = observer(({
       <BottomTabBar
         tabs={DEFAULT_TABS}
         activeTab={activeTab}
-        onTabPress={onTabPress || (() => {})}
+        onTabPress={onTabPress || (() => { })}
       />
     </SafeAreaView>
   )

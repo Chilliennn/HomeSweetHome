@@ -1,6 +1,4 @@
 import { makeAutoObservable, runInAction } from 'mobx';
-import * as FileSystem from 'expo-file-system';
-import * as MediaLibrary from 'expo-media-library';
 import { familyService, familyAIService, relationshipService, voiceTranscriptionService } from '@home-sweet-home/model';
 import type {
   MediaItem,
@@ -12,6 +10,28 @@ import type {
   EventType,
   Relationship
 } from '@home-sweet-home/model';
+
+/**
+ * File data interface for uploads
+ * View layer is responsible for reading files as base64 before calling ViewModel methods
+ */
+export interface FileData {
+  base64: string;
+  name: string;
+  type: string;
+  size: number;
+}
+
+/**
+ * Download result interface
+ * ViewModel returns URLs, View layer handles actual download to device
+ */
+export interface DownloadableMedia {
+  id: string;
+  url: string;
+  mediaType: 'photo' | 'video';
+  filename: string;
+}
 
 /**
  * FamilyViewModel - MVVM state management for Family Life & Memory features
@@ -163,9 +183,12 @@ export class FamilyViewModel {
   /**
    * Upload media
    * FR 3.1.1, 3.1.5, 3.1.6, 3.1.8, 3.1.9, 3.1.10
+   * 
+   * @param fileData - File data with base64 already read (View layer responsibility)
+   * @param caption - Optional caption
    */
   async uploadMedia(
-    file: { size: number; type: string; name: string; uri: string },
+    fileData: FileData,
     caption?: string
   ) {
     if (!this.currentRelationship) {
@@ -185,20 +208,7 @@ export class FamilyViewModel {
     });
 
     try {
-      // Read file as base64 in ViewModel (platform-specific code)
-      console.log('[FamilyViewModel] Reading file as base64:', file.uri);
-      const base64Data = await FileSystem.readAsStringAsync(file.uri, {
-        encoding: FileSystem.EncodingType.Base64,
-      });
-      console.log('[FamilyViewModel] Base64 read, length:', base64Data.length);
-
-      // Pass base64 data to service instead of file URI
-      const fileData = {
-        base64: base64Data,
-        name: file.name,
-        type: file.type,
-        size: file.size, // Include size for validation
-      };
+      console.log('[FamilyViewModel] Uploading media, base64 length:', fileData.base64.length);
 
       const media = await familyService.uploadMedia(
         this.currentUserId,
@@ -230,9 +240,12 @@ export class FamilyViewModel {
   /**
    * Upload up to 5 media files at once
    * Processes sequentially to avoid device/network overload
+   * 
+   * @param filesData - Array of FileData (View layer reads files as base64 before calling)
+   * @param caption - Optional caption for all files
    */
   async uploadMultipleMedia(
-    files: Array<{ size: number; type: string; name: string; uri: string }>,
+    filesData: FileData[],
     caption?: string
   ) {
     if (!this.currentRelationship) {
@@ -245,7 +258,7 @@ export class FamilyViewModel {
       return;
     }
 
-    const limited = files.slice(0, 5);
+    const limited = filesData.slice(0, 5);
 
     runInAction(() => {
       this.isUploading = true;
@@ -259,20 +272,8 @@ export class FamilyViewModel {
     const failures: { name: string; error: string }[] = [];
 
     for (let i = 0; i < total; i++) {
-      const file = limited[i];
+      const fileData = limited[i];
       try {
-        // Read file as base64 in ViewModel (platform-specific code)
-        const base64Data = await FileSystem.readAsStringAsync(file.uri, {
-          encoding: FileSystem.EncodingType.Base64,
-        });
-
-        const fileData = {
-          base64: base64Data,
-          name: file.name,
-          type: file.type,
-          size: file.size,
-        };
-
         const media = await familyService.uploadMedia(
           this.currentUserId!,
           this.currentRelationship!.id,
@@ -285,7 +286,7 @@ export class FamilyViewModel {
         });
         successes.push(i);
       } catch (err: any) {
-        failures.push({ name: file.name, error: err?.message || 'Upload failed' });
+        failures.push({ name: fileData.name, error: err?.message || 'Upload failed' });
       } finally {
         runInAction(() => {
           this.uploadProgress = Math.round(((i + 1) / total) * 100);
@@ -379,10 +380,12 @@ export class FamilyViewModel {
 
   /**
    * Upload multiple media files as a single memory
-   * Reads base64 data from files, delegates grouping to service
+   * 
+   * @param filesData - Array of FileData (View layer reads files as base64 before calling)
+   * @param caption - Optional caption for the memory
    */
   async uploadMultipleMediaAsMemory(
-    files: Array<{ size: number; type: string; name: string; uri: string }>,
+    filesData: FileData[],
     caption?: string
   ) {
     if (!this.currentRelationship) {
@@ -395,7 +398,7 @@ export class FamilyViewModel {
       return;
     }
 
-    const limited = files.slice(0, 5);
+    const limited = filesData.slice(0, 5);
 
     runInAction(() => {
       this.isUploading = true;
@@ -405,39 +408,13 @@ export class FamilyViewModel {
     });
 
     const total = limited.length;
-    const failures: { name: string; error: string }[] = [];
-    const filesData: Array<{
-      base64: string;
-      type: string;
-      name: string;
-      size: number;
-    }> = [];
 
-    // Read all files as base64 first
     try {
-      for (let i = 0; i < total; i++) {
-        const file = limited[i];
-        const base64Data = await FileSystem.readAsStringAsync(file.uri, {
-          encoding: FileSystem.EncodingType.Base64,
-        });
-
-        filesData.push({
-          base64: base64Data,
-          name: file.name,
-          type: file.type,
-          size: file.size,
-        });
-
-        runInAction(() => {
-          this.uploadProgress = Math.round(((i + 1) / total) * 50);
-        });
-      }
-
-      // All files read, now upload as memory
+      // Upload as memory (View already read files as base64)
       const result = await familyService.uploadMultipleMediaAsMemory(
         this.currentUserId!,
         this.currentRelationship!.id,
-        filesData,
+        limited,
         caption
       );
 
@@ -548,13 +525,20 @@ export class FamilyViewModel {
    * Remove a memory and all associated media
    */
   async removeMemory(memoryId: string) {
+    if (!this.currentUserId) {
+      runInAction(() => {
+        this.errorMessage = 'You must be signed in to remove memories';
+      });
+      return;
+    }
+
     runInAction(() => {
       this.isLoading = true;
       this.errorMessage = null;
     });
 
     try {
-      await familyService.removeMemory(memoryId);
+      await familyService.removeMemory(memoryId, this.currentUserId);
       runInAction(() => {
         this.memories = this.memories.filter(m => m.id !== memoryId);
         if (this.selectedMemory?.id === memoryId) {
@@ -581,94 +565,30 @@ export class FamilyViewModel {
   async downloadMemory(memoryId: string) {
     if (!this.selectedMemory || !this.selectedMemory.media) {
       this.errorMessage = 'No memory selected';
-      return;
+      return [];
     }
 
     const media = this.selectedMemory.media;
-    runInAction(() => {
-      this.isLoading = true;
-      this.uploadProgress = 0;
-      this.errorMessage = null;
-    });
 
-    const total = media.length;
-    let successCount = 0;
-    const failures: string[] = [];
-
-    try {
-      for (let i = 0; i < total; i++) {
-        const item = media[i];
-        try {
-          // Determine file extension
-          const url = item.file_url || '';
-          const urlExt = (url.split('?')[0].split('.').pop() || '').toLowerCase();
-          let ext = urlExt;
-          if (!ext) {
-            ext = item.media_type === 'video' ? 'mp4' : 'jpg';
-          }
-
-          const filename = `HomeSweetHome_${item.id}.${ext}`;
-          const dest = FileSystem.documentDirectory + filename;
-
-          // Download file
-          const result = await FileSystem.downloadAsync(
-            item.file_url,
-            dest,
-            {
-              headers: { Accept: '*/*' },
-            } as any
-          );
-
-          if (!result || result.status !== 200) {
-            failures.push(filename);
-            continue;
-          }
-
-          // Verify file exists
-          const fileInfo = await FileSystem.getInfoAsync(dest);
-          if (!fileInfo.exists) {
-            failures.push(filename);
-            continue;
-          }
-
-          // Register with gallery (silently)
-          try {
-            await MediaLibrary.createAssetAsync(dest);
-          } catch (err) {
-            // Continue even if gallery registration fails
-          }
-
-          successCount++;
-        } catch (err) {
-          failures.push(item.id);
-        }
-
-        runInAction(() => {
-          this.uploadProgress = Math.round(((i + 1) / total) * 100);
-        });
+    // Build list of downloadable media for View layer to handle
+    const downloadableMedia: DownloadableMedia[] = media.map(item => {
+      const url = item.file_url || '';
+      const urlExt = (url.split('?')[0].split('.').pop() || '').toLowerCase();
+      let ext = urlExt;
+      if (!ext) {
+        ext = item.media_type === 'video' ? 'mp4' : 'jpg';
       }
 
-      runInAction(() => {
-        this.isLoading = false;
-        if (failures.length === 0) {
-          this.successMessage = `Downloaded ${successCount}/${total} file(s) successfully`;
-        } else {
-          this.errorMessage = `Downloaded ${successCount}/${total}. Failed: ${failures.join(', ')}`;
-        }
-      });
+      return {
+        id: item.id,
+        url: item.file_url,
+        mediaType: item.media_type as 'photo' | 'video',
+        filename: `HomeSweetHome_${item.id}.${ext}`
+      };
+    });
 
-      setTimeout(() => {
-        runInAction(() => {
-          this.successMessage = null;
-          this.errorMessage = null;
-        });
-      }, 5000);
-    } catch (error: any) {
-      runInAction(() => {
-        this.errorMessage = error.message || 'Failed to download memory';
-        this.isLoading = false;
-      });
-    }
+    console.log(`[FamilyViewModel] Returning ${downloadableMedia.length} media items for download`);
+    return downloadableMedia;
   }
 
   // =============================================================
@@ -968,13 +888,13 @@ export class FamilyViewModel {
     try {
       // First try to find in already loaded events
       let event = this.calendarEvents.find(e => e.id === eventId);
-      
+
       // If not found and we have a relationship, load all events
       if (!event && this.currentRelationship) {
         await this.loadCalendarEvents(this.currentRelationship.id);
         event = this.calendarEvents.find(e => e.id === eventId);
       }
-      
+
       runInAction(() => {
         this.selectedEvent = event || null;
         this.isLoading = false;
@@ -1059,13 +979,20 @@ export class FamilyViewModel {
       location?: string;
     }
   ) {
+    if (!this.currentUserId) {
+      runInAction(() => {
+        this.errorMessage = 'You must be signed in to update events';
+      });
+      return;
+    }
+
     runInAction(() => {
       this.isLoading = true;
       this.errorMessage = null;
     });
 
     try {
-      const updated = await familyService.updateCalendarEvent(id, updates);
+      const updated = await familyService.updateCalendarEvent(id, this.currentUserId, updates);
       runInAction(() => {
         const index = this.calendarEvents.findIndex(e => e.id === id);
         if (index !== -1) {
@@ -1094,13 +1021,20 @@ export class FamilyViewModel {
    * FR 3.2.1, 3.2.11, 3.2.12
    */
   async deleteCalendarEvent(id: string) {
+    if (!this.currentUserId) {
+      runInAction(() => {
+        this.errorMessage = 'You must be signed in to delete events';
+      });
+      return;
+    }
+
     runInAction(() => {
       this.isLoading = true;
       this.errorMessage = null;
     });
 
     try {
-      await familyService.deleteCalendarEvent(id);
+      await familyService.deleteCalendarEvent(id, this.currentUserId);
       runInAction(() => {
         this.calendarEvents = this.calendarEvents.filter(e => e.id !== id);
         if (this.selectedEvent?.id === id) {

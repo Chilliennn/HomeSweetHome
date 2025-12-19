@@ -11,6 +11,7 @@ import {
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { userRepository } from '@home-sweet-home/model/Repository/UserRepository/userRepository';
+import { authViewModel } from '@home-sweet-home/viewmodel';
 import { useNavigation } from '@react-navigation/native';
 
 export default function LoginScreen() {
@@ -18,7 +19,7 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
-  
+
   const navigation = useNavigation();
   useEffect(() => {
     const sub = navigation.addListener('state', () => {
@@ -53,6 +54,14 @@ export default function LoginScreen() {
         setLoading(false);
         return;
       }
+
+      // ✅ Set authViewModel state for other ViewModels to access
+      authViewModel.setAuthState({
+        isLoggedIn: true,
+        currentUserId: user.id,
+        isProfileComplete: true,
+      });
+      authViewModel.setUserType(user.user_type as 'youth' | 'elderly');
 
       const relationship = await userRepository.getActiveRelationship(user.id);
       console.log('userRepository.getActiveRelationship result:', relationship);
@@ -114,11 +123,11 @@ export default function LoginScreen() {
           secureTextEntry
           editable={!loading}
           onFocus={() => {
-      console.log('Password input onFocus', { route: 'login', time: Date.now() });
-    }}
-    onBlur={() => {
-      console.log('Password input onBlur', { time: Date.now() });
-    }}
+            console.log('Password input onFocus', { route: 'login', time: Date.now() });
+          }}
+          onBlur={() => {
+            console.log('Password input onBlur', { time: Date.now() });
+          }}
         />
 
         <TouchableOpacity

@@ -17,7 +17,7 @@ const baseStyle: React.CSSProperties = {
 };
 
 const alertStyle: React.CSSProperties = {
-    borderLeftColor: '#EB8F80',
+    borderLeft: '4px solid #EB8F80',
     backgroundColor: '#fff5f5',
 };
 

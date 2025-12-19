@@ -117,6 +117,45 @@ class NotificationService implements INotificationService {
     await notificationRepository.updateNotificationPreferences(userId, enabled);
     console.log(`✅ Notification preferences updated for user ${userId}: ${enabled}`);
   }
+
+  // ============================================================================
+  // Notification Count & Subscription Methods (for ViewModel use)
+  // ============================================================================
+
+  /**
+   * Get unread notification count for a user
+   * Used by ViewModels for bell icon count
+   */
+  async getUnreadCount(userId: string): Promise<number> {
+    if (!userId) return 0;
+
+    try {
+      return await notificationRepository.getUnreadCount(userId);
+    } catch (error) {
+      console.error('[NotificationService] Failed to get unread count:', error);
+      return 0;
+    }
+  }
+
+  /**
+   * Subscribe to realtime notification updates
+   * Used by ViewModels for realtime bell icon count
+   */
+  subscribeToNotifications(
+    userId: string,
+    onInsert: (notification: any) => void
+  ): any {
+    return notificationRepository.subscribeToNotifications(userId, onInsert);
+  }
+
+  /**
+   * Unsubscribe from a notification channel
+   */
+  unsubscribe(channel: any): void {
+    if (channel) {
+      notificationRepository.unsubscribe(channel);
+    }
+  }
 }
 
 // Export singleton instance

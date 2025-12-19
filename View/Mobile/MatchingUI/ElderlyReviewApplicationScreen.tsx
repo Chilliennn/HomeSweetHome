@@ -54,7 +54,7 @@ export const ElderlyReviewApplicationScreen = observer(function ElderlyReviewApp
                         const success = await vm.respondToApprovedApplication(applicationId, 'accept');
                         if (success) {
                             Alert.alert('Success', 'Application accepted! Relationship started.', [
-                                { text: 'OK', onPress: () => router.replace('/(main)/chat' as any) }
+                                { text: 'OK', onPress: () => router.replace('/welcome-stage-1' as any) }
                             ]);
                         } else {
                             Alert.alert('Error', vm.error || 'Failed to accept application');

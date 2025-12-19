@@ -185,8 +185,10 @@ export const ChatScreen = observer(function ChatScreen() {
   const isRelationshipChat = vm.currentChatContext === 'relationship';
 
   // Get partner based on context
+  // For relationship chat, use relationshipPartnerUser which is loaded in checkActiveRelationship
+  // For pre-match chat, use chat.partnerUser
   const partnerUser = isRelationshipChat
-    ? (relationship?.youth_id === currentUserId ? relationship?.elderly : relationship?.youth)
+    ? vm.relationshipPartnerUser
     : chat?.partnerUser;
 
   const messages = vm.currentChatMessages;

@@ -1,5 +1,6 @@
 import { makeAutoObservable, runInAction } from 'mobx';
 import { matchingService } from '../../Model/Service/CoreService/matchingService';
+import { notificationService } from '../../Model/Service/CoreService/notificationService';
 import { supabase, Interest } from '@home-sweet-home/model';
 import type { RealtimeChannel } from '@home-sweet-home/model';
 
@@ -11,6 +12,12 @@ export class ElderMatchingViewModel {
     private subscription: RealtimeChannel | null = null;
     private notificationSubscription: RealtimeChannel | null = null;
 
+    // ✅ Store current elderly ID for later use
+    private currentElderlyId: string | null = null;
+
+    // ✅ Unread notification count for bell icon
+    unreadNotificationCount: number = 0;
+
     constructor() {
         makeAutoObservable(this);
     }
@@ -21,6 +28,9 @@ export class ElderMatchingViewModel {
      */
     async loadRequests(elderlyId: string) {
         console.log('🔵 [ElderVM] Loading requests for:', elderlyId);
+
+        // ✅ Save elderly ID for later use
+        this.currentElderlyId = elderlyId;
 
         const data = await matchingService.getIncomingInterests(elderlyId);
         runInAction(() => {
@@ -52,15 +62,22 @@ export class ElderMatchingViewModel {
         if (!this.notificationSubscription) {
             console.log('🟢 [ElderVM] Setting up realtime for notifications...');
 
-            this.notificationSubscription = matchingService.subscribeToNotifications(
+            this.notificationSubscription = notificationService.subscribeToNotifications(
                 elderlyId,
                 (notification) => {
                     console.log('🔔 [ElderVM] New notification:', notification.type);
+                    // ✅ Increment unread count immediately
+                    runInAction(() => {
+                        this.unreadNotificationCount += 1;
+                    });
                     // Reload requests to get updated data with youth details
                     this.loadRequests(elderlyId);
                 }
             );
         }
+
+        // ✅ Load initial unread count
+        await this.loadUnreadNotificationCount(elderlyId);
     }
 
     /**
@@ -97,13 +114,34 @@ export class ElderMatchingViewModel {
             this.subscription = null;
         }
         if (this.notificationSubscription) {
-            matchingService.unsubscribe(this.notificationSubscription);
+            notificationService.unsubscribe(this.notificationSubscription);
             this.notificationSubscription = null;
         }
     }
     clearMessages() {
         this.error = null;
         this.successMessage = null;
+    }
+
+    /**
+     * Load unread notification count from database
+     */
+    async loadUnreadNotificationCount(userId: string) {
+        try {
+            const count = await notificationService.getUnreadCount(userId);
+            runInAction(() => {
+                this.unreadNotificationCount = count;
+            });
+        } catch (e) {
+            console.error('[ElderVM] Failed to load notification count', e);
+        }
+    }
+
+    /**
+     * Reset notification count (call when user visits notification screen)
+     */
+    resetNotificationCount() {
+        this.unreadNotificationCount = 0;
     }
 
     /**
@@ -115,13 +153,18 @@ export class ElderMatchingViewModel {
         this.error = null;
 
         try {
-            // Get elderly ID from auth
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) {
+            // ✅ Use cached ID, fallback to supabase.auth.getUser
+            let elderlyId = this.currentElderlyId;
+            if (!elderlyId) {
+                const { data: { user } } = await supabase.auth.getUser();
+                elderlyId = user?.id || null;
+            }
+
+            if (!elderlyId) {
                 throw new Error('User not logged in');
             }
 
-            await matchingService.reviewFormalApplication(applicationId, user.id, decision);
+            await matchingService.reviewFormalApplication(applicationId, elderlyId, decision);
 
             runInAction(() => {
                 this.successMessage = decision === 'approve'
@@ -152,6 +195,10 @@ export class ElderMatchingViewModel {
      */
     async loadPendingElderlyReview(elderlyId: string) {
         console.log('[ElderVM] Loading pending elderly review for:', elderlyId);
+
+        // ✅ Save elderly ID for later use
+        this.currentElderlyId = elderlyId;
+
         try {
             const data = await matchingService.getApplicationsPendingElderlyReview(elderlyId);
             runInAction(() => {
@@ -179,14 +226,22 @@ export class ElderMatchingViewModel {
         this.successMessage = null;
 
         try {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) {
+            // ✅ Use cached ID, fallback to supabase.auth.getUser
+            let elderlyId = this.currentElderlyId;
+            if (!elderlyId) {
+                const { data: { user } } = await supabase.auth.getUser();
+                elderlyId = user?.id || null;
+            }
+
+            if (!elderlyId) {
                 throw new Error('User not logged in');
             }
 
+            console.log('[ElderVM] respondToApprovedApplication using elderlyId:', elderlyId);
+
             await matchingService.elderlyRespondToApprovedApplication(
                 applicationId,
-                user.id,
+                elderlyId,
                 decision,
                 rejectReason
             );
@@ -214,4 +269,3 @@ export class ElderMatchingViewModel {
 }
 
 export const elderMatchingViewModel = new ElderMatchingViewModel();
-

@@ -411,27 +411,28 @@ export const matchingRepository = {
             .select('*, youth:youth_id(*), elderly:elderly_id(*)')
             .single();
 
-        console.log('🔵 [Repo] submitFormalApplication supabase result:', { data: data?.id, error });
+        console.log('🔵 [Repo] submitFormalApplication supabase result:', { data: data?.id, status: data?.status, error });
 
         if (error) {
             console.error('❌ [Repo] submitFormalApplication error:', error);
             throw error;
         }
 
-        console.log('✅ [Repo] submitFormalApplication SUCCESS');
+        console.log('✅ [Repo] submitFormalApplication SUCCESS - new status:', data?.status);
         return data as Interest;
     },
 
     /**
-     * Get youth's pending applications (status = pending_review)
+     * Get youth's applications under review (status = pending_review OR approved)
      * Used to prevent multiple simultaneous applications
+     * Youth can only have ONE application under review at a time
      */
     async getYouthPendingApplications(youthId: string): Promise<Interest[]> {
         const { data, error } = await supabase
             .from('applications')
             .select('*, elderly:elderly_id(*)')
             .eq('youth_id', youthId)
-            .eq('status', 'pending_review');
+            .in('status', ['pending_review', 'approved']);
 
         if (error) throw error;
         return data || [];

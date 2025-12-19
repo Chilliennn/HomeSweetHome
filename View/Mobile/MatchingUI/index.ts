@@ -5,8 +5,8 @@ export { ElderlyProfileDetail } from './ElderlyProfileDetail';
 export { InterestSent } from './InterestSent';
 export { PreMatchStarted } from './PreMatchStarted';
 export { FormalApplication } from './FormalApplication';
-export { ApplicationSubmitted } from './ApplicationSubmitted';
 export { MatchApproved } from './MatchApproved';
+export { ApplicationStatusScreen } from './ApplicationStatusScreen';
 
 // Elderly side components
 export { ElderlyHome } from './ElderlyHome';

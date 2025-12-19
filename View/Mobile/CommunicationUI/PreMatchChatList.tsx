@@ -103,6 +103,7 @@ export const PreMatchChatList = observer(function PreMatchChatList() {
     const messagesExchanged = item.messages.length;
     const voiceCalls = item.messages.filter((m: any) => m.message_type === 'voice').length;
     const canApply = daysPassed >= 7;
+    const isExpired = daysPassed >= 14;
 
     // Check if this is youth or elderly side
     const isYouth = currentUserType === 'youth';
@@ -124,6 +125,9 @@ export const PreMatchChatList = observer(function PreMatchChatList() {
 
     // For youth: show rejection confirmation when status is rejected
     const isYouthRejected = isYouth && isRejected;
+
+    // For elderly: pre-match expired, waiting for youth decision
+    const isElderlyExpired = isElderly && isExpired && application.status === 'pre_chat_active';
 
     return (
       <Card style={styles.chatCard}>
@@ -237,6 +241,21 @@ export const PreMatchChatList = observer(function PreMatchChatList() {
           </View>
         )}
 
+        {/* Elderly: Pre-match period expired, waiting for youth decision */}
+        {isElderlyExpired && (
+          <View style={[styles.pendingBanner, { backgroundColor: '#FFF3E0' }]}>
+            <Text style={styles.pendingIcon}>⏰</Text>
+            <View style={styles.pendingTextContainer}>
+              <Text style={[styles.pendingTitle, { color: '#FF9800' }]}>Pre-Match Period Ended</Text>
+              <Text style={styles.pendingSubtext}>
+                The 14-day pre-match period has ended.
+                Please wait for {partner.full_name || 'the youth'}'s decision.
+                You can "End" this chat if there is no response.
+              </Text>
+            </View>
+          </View>
+        )}
+
         {/* Action Buttons */}
         <View style={styles.buttonRow}>
           {/* Chat Button - disabled for elderly if pending review or for rejected apps */}
@@ -317,6 +336,16 @@ export const PreMatchChatList = observer(function PreMatchChatList() {
               disabled
             />
           )}
+
+          {/* Elderly side: End button if pre_chat_active (no formal application yet) */}
+          {isElderly && !isPendingReview && !isApproved && !isRejected && !isBothAccepted && (
+            <Button
+              title="End"
+              onPress={() => handleEnd(application.id)}
+              variant="destructive"
+              style={styles.actionButton}
+            />
+          )}
         </View>
       </Card>
     );
@@ -329,7 +358,7 @@ export const PreMatchChatList = observer(function PreMatchChatList() {
         <View style={styles.headerSpacer} />
         <Text style={styles.headerTitle}>Pre-Match Chats</Text>
         <NotificationBell
-          count={vm.unreadCount}
+          count={vm.unreadNotificationCount}
           onPress={handleNotificationPress}
         />
       </View>

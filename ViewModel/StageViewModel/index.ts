@@ -1,5 +1,6 @@
 import { makeAutoObservable, runInAction } from "mobx";
 import { stageService } from "../../Model/Service/CoreService/stage";
+import { notificationService } from "../../Model/Service/CoreService/notificationService";
 import type {
   Feature,
   LockedStageDetail,
@@ -66,6 +67,7 @@ export class StageViewModel {
 
   private relationshipSubscription: any = null;
   private activitiesSubscription: any = null;
+  private notificationSubscription: any = null;
   currentUserId: any;
 
   constructor() {
@@ -104,7 +106,7 @@ export class StageViewModel {
 
     this.relationshipSubscription = subscriptions.relationshipSubscription;
     this.activitiesSubscription = subscriptions.activitiesSubscription;
-    
+
     console.log("[StageViewModel] Realtime subscriptions setup complete:", {
       hasRelationshipSub: !!this.relationshipSubscription,
       hasActivitiesSub: !!this.activitiesSubscription
@@ -120,7 +122,7 @@ export class StageViewModel {
       }
 
       console.log("[StageViewModel] Reloading progression and requirements after activity change...");
-      
+
       // Refresh progression and requirements to get latest completion state
       await this.loadStageProgression(this.userId, true);
       await this.loadCurrentStageRequirements();
@@ -143,11 +145,11 @@ export class StageViewModel {
           requirementsCount: this.requirements?.length || 0,
           requirements: this.requirements
         });
-        
+
         if (this.requirements && this.requirements.length > 0) {
           const allDone = this.requirements.every((r) => !!r.is_completed);
           console.log("[StageViewModel] All requirements completed?", allDone);
-          
+
           if (allDone) {
             console.log("[StageViewModel] 🎉 All final stage requirements completed! Setting journey completed flag...");
             runInAction(() => {
@@ -198,6 +200,33 @@ export class StageViewModel {
       this.relationshipSubscription = null;
       this.activitiesSubscription = null;
     }
+    // Cleanup notification subscription
+    if (this.notificationSubscription) {
+      notificationService.unsubscribe(this.notificationSubscription);
+      this.notificationSubscription = null;
+    }
+  }
+
+  /**
+   * Setup notification realtime subscription
+   */
+  private setupNotificationSubscription(userId: string) {
+    if (this.notificationSubscription) {
+      console.log('[StageViewModel] Notification subscription already active');
+      return;
+    }
+
+    console.log('[StageViewModel] Setting up notification subscription for:', userId);
+    this.notificationSubscription = notificationService.subscribeToNotifications(
+      userId,
+      (notification) => {
+        console.log('[StageViewModel] New notification received:', notification.type);
+        // Reload notification count when new notification arrives
+        runInAction(() => {
+          this.unreadNotificationCount += 1;
+        });
+      }
+    );
   }
 
   /**
@@ -222,7 +251,7 @@ export class StageViewModel {
         console.log(
           `[Realtime] Stage completed: ${this.previousStage} → ${newData.current_stage}`
         );
-        
+
         // If advanced TO family_life (final stage), navigate to journey-completed instead of stage-completed
         if (newData.current_stage === 'family_life') {
           console.log("[Realtime] Advanced to final stage (family_life) - triggering journey completed!");
@@ -353,6 +382,12 @@ export class StageViewModel {
       if (this.relationshipId) {
         this.setupRealtimeSubscription(this.relationshipId);
       }
+
+      // Setup notification realtime subscription
+      this.setupNotificationSubscription(userId);
+
+      // Load initial notification count
+      await this.loadUnreadNotifications();
     } catch (err: any) {
       runInAction(() => {
         this.error = err.message;
@@ -984,11 +1019,9 @@ export class StageViewModel {
     if (!this.stageJustCompletedName || !this.currentStageDisplayName) {
       return "Congratulations on your progress!";
     }
-    return `Congratulations! You've successfully completed "${
-      this.stageJustCompletedName
-    }" and moved to Stage ${this.completedStageOrder + 1}: ${
-      this.currentStageDisplayName
-    }.`;
+    return `Congratulations! You've successfully completed "${this.stageJustCompletedName
+      }" and moved to Stage ${this.completedStageOrder + 1}: ${this.currentStageDisplayName
+      }.`;
   }
 }
 

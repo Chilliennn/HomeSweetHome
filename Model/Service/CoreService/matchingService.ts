@@ -249,17 +249,6 @@ export const matchingService = {
     },
 
     /**
-     * Subscribe to notifications through Repository
-     * UC101_4: Real-time notification updates
-     */
-    subscribeToNotifications(
-        userId: string,
-        callback: (notification: any) => void
-    ): RealtimeChannel {
-        return matchingRepository.subscribeToNotifications(userId, callback);
-    },
-
-    /**
      * ✅ Unsubscribe from realtime channel
      */
     unsubscribe(channel: RealtimeChannel): void {
@@ -290,12 +279,16 @@ export const matchingService = {
     ): Promise<Interest> {
         console.log('🔵 [matchingService] submitFormalApplication START', { applicationId, youthId });
 
-        // NEW: Check if youth already has a pending application
-        console.log('🔵 [matchingService] Step 0: Checking for existing pending applications...');
+        // NEW: Check if youth already has a pending application (pending_review or approved)
+        console.log('🔵 [matchingService] Step 0: Checking for existing applications under review...');
         const existingPending = await matchingRepository.getYouthPendingApplications(youthId);
         if (existingPending.length > 0) {
-            console.error('❌ [matchingService] Youth already has pending application');
-            throw new Error('You already have a pending application. Please wait for the decision before submitting another.');
+            const existingApp = existingPending[0];
+            const statusText = existingApp.status === 'pending_review'
+                ? 'under admin review'
+                : 'awaiting elderly decision';
+            console.error('❌ [matchingService] Youth already has application:', existingApp.status);
+            throw new Error(`You already have an application ${statusText}. You can only submit one application at a time.`);
         }
 
         // Verify the application belongs to this youth
@@ -441,8 +434,8 @@ export const matchingService = {
         // End each pre-match and notify the elderly
         for (const app of otherActivePreMatches) {
             try {
-                // Update application status to 'ended'
-                await matchingRepository.updateApplicationStatus(app.id, 'ended');
+                // Update application status to 'withdrawn' (ended by system)
+                await matchingRepository.updateApplicationStatus(app.id, 'withdrawn');
 
                 // Send apology notification to elderly
                 await notificationRepository.createNotification({

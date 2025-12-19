@@ -1,5 +1,6 @@
 import { makeAutoObservable, runInAction } from 'mobx';
 import { matchingService } from '../../Model/Service/CoreService/matchingService';
+import { notificationService } from '../../Model/Service/CoreService/notificationService';
 import { User } from '../../Model/types';
 import { RealtimeChannel, supabase, Interest } from '@home-sweet-home/model';
 import { ElderlyFilters } from '../../Model/Repository/UserRepository/matchingRepository';
@@ -13,6 +14,9 @@ export class YouthMatchingViewModel {
     successMessage: string | null = null;
     private subscription: RealtimeChannel | null = null;
     private notificationSubscription: RealtimeChannel | null = null;
+
+    // ✅ Unread notification count for bell icon
+    unreadNotificationCount: number = 0;
 
     // Filter and pagination state
     filters: ElderlyFilters = {};
@@ -176,15 +180,22 @@ export class YouthMatchingViewModel {
             if (!this.notificationSubscription) {
                 console.log('🟢 [YouthVM] Setting up realtime for notifications...');
 
-                this.notificationSubscription = matchingService.subscribeToNotifications(
+                this.notificationSubscription = notificationService.subscribeToNotifications(
                     youthId,
                     (notification) => {
                         console.log('🔔 [YouthVM] New notification:', notification.type);
+                        // ✅ Increment unread count immediately
+                        runInAction(() => {
+                            this.unreadNotificationCount += 1;
+                        });
                         // Reload to get updated data with elderly details
                         this.loadNotifications(youthId);
                     }
                 );
             }
+
+            // ✅ Load initial unread count
+            await this.loadUnreadNotificationCount(youthId);
         } catch (e: any) {
             console.error('❌ [YouthVM] Failed to load notifications', e);
         } finally {
@@ -247,13 +258,110 @@ export class YouthMatchingViewModel {
             this.subscription = null;
         }
         if (this.notificationSubscription) {
-            matchingService.unsubscribe(this.notificationSubscription);
+            notificationService.unsubscribe(this.notificationSubscription);
             this.notificationSubscription = null;
         }
     }
+
+    /**
+     * Get application by ID with partner info (sync - from cache)
+     * Used by ApplicationStatusScreen for quick access
+     * Returns undefined if not in cache - use loadApplicationById first
+     */
+    getApplicationById(applicationId: string): { application: Interest; partnerUser: User } | undefined {
+        // First check local cache (activeMatches)
+        const application = this.activeMatches.find(match => match.id === applicationId);
+        if (application) {
+            const partnerUser = application.elderly as User | undefined;
+            if (partnerUser) {
+                return { application, partnerUser };
+            }
+        }
+
+        // Check if we have it in loadedApplication
+        if (this.loadedApplication?.application.id === applicationId) {
+            return this.loadedApplication;
+        }
+
+        return undefined;
+    }
+
+    /** Temporarily loaded application (for ApplicationStatusScreen when not in activeMatches) */
+    loadedApplication: { application: Interest; partnerUser: User } | null = null;
+    isLoadingApplication: boolean = false;
+
+    /**
+     * ✅ Load application by ID from server (async - safe method)
+     * Used by ApplicationStatusScreen when data is not in cache
+     * This ensures data is always available even if user navigates directly to the page
+     */
+    async loadApplicationById(applicationId: string): Promise<{ application: Interest; partnerUser: User } | null> {
+        // First check cache
+        const cached = this.getApplicationById(applicationId);
+        if (cached) return cached;
+
+        // Load from server
+        this.isLoadingApplication = true;
+        try {
+            const application = await matchingService.getApplicationById(applicationId);
+            if (!application) {
+                runInAction(() => {
+                    this.isLoadingApplication = false;
+                    this.loadedApplication = null;
+                });
+                return null;
+            }
+
+            // Get partner user from application.elderly
+            const partnerUser = application.elderly as User | undefined;
+            if (!partnerUser) {
+                runInAction(() => {
+                    this.isLoadingApplication = false;
+                    this.loadedApplication = null;
+                });
+                return null;
+            }
+
+            const result = { application, partnerUser };
+            runInAction(() => {
+                this.loadedApplication = result;
+                this.isLoadingApplication = false;
+            });
+            return result;
+        } catch (error) {
+            console.error('[YouthVM] Failed to load application:', error);
+            runInAction(() => {
+                this.isLoadingApplication = false;
+                this.loadedApplication = null;
+            });
+            return null;
+        }
+    }
+
     clearMessages() {
         this.error = null;
         this.successMessage = null;
+    }
+
+    /**
+     * Load unread notification count from database
+     */
+    async loadUnreadNotificationCount(userId: string) {
+        try {
+            const count = await notificationService.getUnreadCount(userId);
+            runInAction(() => {
+                this.unreadNotificationCount = count;
+            });
+        } catch (e) {
+            console.error('[YouthVM] Failed to load notification count', e);
+        }
+    }
+
+    /**
+     * Reset notification count (call when user visits notification screen)
+     */
+    resetNotificationCount() {
+        this.unreadNotificationCount = 0;
     }
 
     /**

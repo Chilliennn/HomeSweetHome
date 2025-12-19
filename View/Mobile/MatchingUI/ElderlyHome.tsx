@@ -83,7 +83,7 @@ export const ElderlyHome: React.FC<ElderlyHomeProps> = observer(({
     router.push('/(main)/notification');
   };
 
-  const pendingCount = vm.incomingRequests.length;
+  const pendingCount = vm.unreadNotificationCount;
   console.log('🔵 [ElderlyHome] Rendering - pendingCount:', pendingCount, 'requests:', vm.incomingRequests.map(r => r.id));
   // How it works items
   const howItWorksItems = [

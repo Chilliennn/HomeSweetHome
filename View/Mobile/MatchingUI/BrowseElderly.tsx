@@ -114,7 +114,7 @@ export const BrowseElderly: React.FC<BrowseElderlyProps> = observer(({
     return value !== undefined && value !== null && value !== '';
   }).length;
 
-  const notificationCount = propNotificationCount ?? vm.activeMatches.length;
+  const notificationCount = propNotificationCount ?? vm.unreadNotificationCount;
 
   const renderProfileCard = ({ item }: { item: User }) => {
     const profile = mapUserToProfile(item);

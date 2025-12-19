@@ -363,7 +363,7 @@ export class StageService {
     currentStage: RelationshipStage;
     stageDisplayName: string;
   } | null> {
-    const relationship = await userRepository.getActiveRelationship(userId);
+    const relationship = await userRepository.getAnyRelationship(userId);
     if (!relationship) {
       console.log(
         "[getCoolingPeriodInfo] No relationship found for user:",

@@ -72,21 +72,31 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
     useEffect(() => {
       if (vm.consumeStageCompletionNavigation()) {
         (async () => {
-          console.log("[StageProgression] Stage completion detected, loading info ->", {
-            stageJustCompleted: vm.stageJustCompleted,
-            stageJustCompletedName: vm.stageJustCompletedName,
-            userId,
-          });
+          console.log(
+            "[StageProgression] Stage completion detected, loading info ->",
+            {
+              stageJustCompleted: vm.stageJustCompleted,
+              stageJustCompletedName: vm.stageJustCompletedName,
+              userId,
+            }
+          );
 
           try {
             // Ensure VM has the latest completion info
-            await vm.loadStageCompletionInfo(vm.stageJustCompleted ?? undefined);
+            await vm.loadStageCompletionInfo(
+              vm.stageJustCompleted ?? undefined
+            );
 
             // If the just completed stage is the final stage (family_life),
             // navigate to the Journey Completed screen instead.
             if (vm.stageJustCompleted === ("family_life" as any)) {
-              console.log("[StageProgression] Navigating to journey-completed page");
-              router.push({ pathname: "/(main)/journey-completed", params: { userId } });
+              console.log(
+                "[StageProgression] Navigating to journey-completed page"
+              );
+              router.push({
+                pathname: "/(main)/journey-completed",
+                params: { userId },
+              });
             } else {
               router.push({
                 pathname: "/(main)/stage-completed",
@@ -110,7 +120,7 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
     // Watch for auto-navigation to Journey Pause page
     useEffect(() => {
       if (vm.consumeJourneyPauseNavigation()) {
-        router.push({ pathname: "/(main)/journey-pause", params: { userId } });
+        router.push({ pathname: "/journey-pause", params: { userId } });
       }
     }, [vm.shouldNavigateToJourneyPause, router, userId, vm]);
 
@@ -121,7 +131,10 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
           try {
             // Ensure completion info loaded
             await vm.loadStageCompletionInfo(vm.currentStage ?? undefined);
-            router.push({ pathname: "/(main)/journey-completed", params: { userId } });
+            router.push({
+              pathname: "/(main)/journey-completed",
+              params: { userId },
+            });
           } catch (err) {
             console.error("Failed to navigate to journey-completed:", err);
           }
@@ -186,7 +199,7 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
       }
     };
 
-    if (vm.isLoading && !vm.stages.length) {
+    if (vm.isLoading && !vm.stages.length && !vm.error) {
       return <LoadingSpinner />;
     }
 
@@ -365,9 +378,9 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
                 <View style={styles.progressBar}>
                   <View
                     style={[
-                  styles.progressFill, 
-                  { width: `${progressWidthPct}%` }
-                ]}
+                      styles.progressFill,
+                      { width: `${progressWidthPct}%` },
+                    ]}
                   />
                 </View>
 
@@ -465,13 +478,9 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
 
                   <TouchableOpacity
                     onPress={async () => {
-                      const success = await vm.submitWithdrawal();
-                      if (success) {
-                        router.push({
-                          pathname: "/(main)/journey-pause",
-                          params: { userId },
-                        });
-                      }
+                      // submitWithdrawal now sets the navigation flag automatically
+                      // The useEffect above will handle the actual navigation
+                      await vm.submitWithdrawal();
                     }}
                     style={styles.modalWithdrawButton}
                     disabled={vm.isLoading}

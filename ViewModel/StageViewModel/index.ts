@@ -193,17 +193,10 @@ export class StageViewModel {
     payloadNew: any
   ) {
     try {
-      const cooling = await stageService.getCoolingPeriodInfo(this.userId);
-
-      const active = !!(
-        cooling &&
-        cooling.isInCoolingPeriod &&
-        typeof cooling.remainingSeconds === "number" &&
-        cooling.remainingSeconds > 0
-      );
+      await this.loadCoolingPeriodInfo();
 
       runInAction(() => {
-        if (active) {
+        if (this.isInCoolingPeriod) {
           this.shouldNavigateToJourneyPause = true;
         } else {
           this.shouldNavigateToJourneyPause = false;
@@ -290,6 +283,7 @@ export class StageViewModel {
       this.loadStageProgression(this.userId, true);
       this.loadMilestoneInfo();
       this.checkMilestoneReached();
+      this.loadCoolingPeriodInfo();
     }
   }
 
@@ -770,10 +764,15 @@ export class StageViewModel {
         this.withdrawalReason.trim() || "No reason provided"
       );
 
+      await this.loadCoolingPeriodInfo();
+
       runInAction(() => {
         this.showWithdrawModal = false;
         this.withdrawalReason = "";
         this.isLoading = false;
+        if (this.isInCoolingPeriod) {
+          this.shouldNavigateToJourneyPause = true;
+        }
       });
 
       return true;

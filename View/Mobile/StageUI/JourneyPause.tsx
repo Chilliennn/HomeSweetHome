@@ -48,29 +48,28 @@ export const JourneyPauseScreen: React.FC<JourneyPauseScreenProps> = observer(
 
     // Reactive redirect when cooling period ends
     useEffect(() => {
-      let isRedirecting = false;
-
-      // Check if (not in cooling period OR timer reached 0)
-      if (
+      // Check if cooling period ended (either flag turned off or timer reached 0)
+      const shouldRedirect =
         !vm.isInCoolingPeriod ||
         (typeof vm.coolingRemainingSeconds === "number" &&
-          vm.coolingRemainingSeconds <= 0)
-      ) {
-        if (!isRedirecting) {
-          isRedirecting = true;
-          // Use replace to prevent "GO_BACK" errors if stack is empty/weird
-          router.replace("/(main)/bonding");
-        }
+          vm.coolingRemainingSeconds <= 0);
+
+      if (shouldRedirect) {
+        console.log(
+          "[JourneyPause] Cooling period ended, redirecting to bonding..."
+        );
+        // Use replace to prevent "GO_BACK" errors if stack is empty/weird
+        router.replace("/bonding");
       }
     }, [vm.isInCoolingPeriod, vm.coolingRemainingSeconds, router]);
 
     const handleNotificationPress = () => {
       vm.markNotificationsRead();
-      router.push("/(main)/notification");
+      router.push("/notification");
     };
 
     const handleFamilyAdvisor = () => {
-      router.push("/(main)/chat");
+      router.push("/chat");
     };
 
     const handleRefresh = async () => {
@@ -84,7 +83,7 @@ export const JourneyPauseScreen: React.FC<JourneyPauseScreenProps> = observer(
       ) {
         setRefreshing(false);
         setRefreshing(false);
-        router.replace("/(main)/bonding");
+        router.replace("/bonding");
         return;
       }
 
@@ -94,10 +93,6 @@ export const JourneyPauseScreen: React.FC<JourneyPauseScreenProps> = observer(
     const getCurrentStageIndex = () => {
       return stageOrder.findIndex((s) => s.stage === vm.currentStage);
     };
-
-    if (vm.isLoading && !refreshing) {
-      return <LoadingSpinner />;
-    }
 
     const currentStageIndex = getCurrentStageIndex();
 

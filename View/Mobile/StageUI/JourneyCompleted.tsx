@@ -138,7 +138,7 @@ export const JourneyCompletedScreen = observer(() => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#FDFDF7", // Cream background from screenshot
+    backgroundColor: "#FDFDF7", 
   },
   scrollContent: {
     padding: 24,

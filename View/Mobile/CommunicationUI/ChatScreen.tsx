@@ -24,7 +24,7 @@ import { useAudioPlayer } from '@/hooks/useAudioPlayer';
 import { useVoiceUpload } from '@/hooks/useVoiceUpload';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system';
-import { uploadChatImage, uploadChatVideo } from '@home-sweet-home/model';
+import { uploadChatImage, uploadChatVideo, filterMessage, getBlockedMessageAlert } from '@home-sweet-home/model';
 
 /**
  * ChatScreen - UC104: Pre-match and relationship chat interface
@@ -260,6 +260,18 @@ export const ChatScreen = observer(function ChatScreen() {
     if (!messageInput.trim() || !currentUserId || !partnerUser) return;
 
     const content = messageInput.trim();
+
+    // UC403: Content Filter - Block harmful/inappropriate messages
+    const filterResult = filterMessage(content);
+    if (filterResult.isBlocked) {
+      Alert.alert(
+        'Message Blocked',
+        getBlockedMessageAlert(),
+        [{ text: 'OK' }]
+      );
+      return; // Don't send the message
+    }
+
     setMessageInput(''); // Clear input immediately
 
     const receiverId = partnerUser.id;

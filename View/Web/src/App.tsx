@@ -1,24 +1,24 @@
 // View/Web/src/App.tsx
 
-import React, { Suspense, useState, useMemo } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import React, { useState, useMemo } from 'react';
 import './App.css';
 
 // Model & ViewModel imports
 import { supabase, KeywordRepository, KeywordService } from '@home-sweet-home/model';
-import { KeywordManagementViewModel } from '@home-sweet-home/viewmodel';
+import { KeywordManagementViewModel, adminViewModel } from '@home-sweet-home/viewmodel';
 
 // Components
 import { NavigationBar } from './components/AdminUI/NavigationBar';
 import { KeywordManagementScreen } from './components/AdminUI/KeywordManagementScreen';
 import { RelationshipsScreen } from './components/AdminUI/RelationshipsScreen';
 
-// Lazy load heavy pages (from teammate's code)
-const AdminLogin = React.lazy(() => import('./pages/AdminLogin'));
-const AdminPage = React.lazy(() => import('./pages/AdminPage'));
-const ReportPage = React.lazy(() => import('./pages/ReportPage'));
+// Application & Report Components
+import { ApplicationQueue } from './AdminUI/ApplicationQueue';
+import { ApplicationDetails } from './AdminUI/ApplicationDetails';
+import ReportPage from './AdminUI/ReportPage';
 
 type PageType = 'relationships' | 'applications' | 'reports' | 'keyword-management';
+type ApplicationView = 'queue' | 'details';
 
 class ErrorBoundary extends React.Component<
   { children: React.ReactNode },
@@ -56,15 +56,9 @@ class ErrorBoundary extends React.Component<
   }
 }
 
-// Auth guard component (placeholder - implement based on your auth flow)
-function RequireAuth({ children }: { children: React.ReactNode }) {
-  // TODO: Check actual auth status from AuthViewModel
-  const isAuthenticated = true; // Replace with real auth check
-  return isAuthenticated ? <>{children}</> : <Navigate to="/" replace />;
-}
-
 function App() {
   const [currentPage, setCurrentPage] = useState<PageType>('keyword-management');
+  const [applicationView, setApplicationView] = useState<ApplicationView>('queue');
 
   // Initialize ViewModel for Keyword Management
   const keywordVM = useMemo(() => {
@@ -75,41 +69,67 @@ function App() {
 
   const handleNavigate = (page: string) => {
     setCurrentPage(page as PageType);
+    // Reset application view when navigating to applications
+    if (page === 'applications') {
+      setApplicationView('queue');
+    }
+  };
+
+  // Handle selecting an application to view details
+  const handleSelectApplication = async (appId: string) => {
+    await adminViewModel.selectApplication(appId);
+    setApplicationView('details');
+  };
+
+  // Handle going back to application queue
+  const handleBackToQueue = () => {
+    setApplicationView('queue');
+  };
+
+  // Handle application decision (approve, reject, request info)
+  const handleApplicationDecision = async (action: 'approve' | 'reject' | 'request_info') => {
+    const app = adminViewModel.selectedApplication;
+    if (!app) return;
+
+    try {
+      if (action === 'approve') {
+        await adminViewModel.approveApplication(app.id);
+      } else if (action === 'reject') {
+        await adminViewModel.rejectApplication(app.id, 'Application rejected by admin');
+      } else if (action === 'request_info') {
+        await adminViewModel.requestInfo(app.id, 'Please provide additional information');
+      }
+      // Go back to queue after decision
+      setApplicationView('queue');
+    } catch (error) {
+      console.error('Error processing application decision:', error);
+    }
   };
 
   return (
-    <BrowserRouter>
-      <ErrorBoundary>
-        <Suspense fallback={<div>Loading...</div>}>
-          <Routes>
-            {/* Teammate's routes */}
-            <Route path="/" element={<AdminLogin />} />
-            <Route path="/admin" element={<RequireAuth><AdminPage /></RequireAuth>} />
-            <Route path="/admin/reports" element={<RequireAuth><ReportPage /></RequireAuth>} />
+    <ErrorBoundary>
+      <div style={{ minHeight: '100vh', backgroundColor: '#F9F9F9' }}>
+        <NavigationBar currentPage={currentPage} onNavigate={handleNavigate} />
 
-            {/* Your keyword management route */}
-            <Route path="/admin/keywords" element={
-              <RequireAuth>
-                <div style={{ minHeight: '100vh', backgroundColor: '#F9F9F9' }}>
-                  <NavigationBar currentPage={currentPage} onNavigate={handleNavigate} />
-                  <KeywordManagementScreen vm={keywordVM} onNavigate={handleNavigate} />
-                </div>
-              </RequireAuth>
-            } />
-
-            {/* Your relationships route */}
-            <Route path="/admin/relationships" element={
-              <RequireAuth>
-                <div style={{ minHeight: '100vh', backgroundColor: '#F9F9F9' }}>
-                  <NavigationBar currentPage={currentPage} onNavigate={handleNavigate} />
-                  <RelationshipsScreen onNavigate={handleNavigate} />
-                </div>
-              </RequireAuth>
-            } />
-          </Routes>
-        </Suspense>
-      </ErrorBoundary>
-    </BrowserRouter>
+        {/* Render the current page */}
+        {currentPage === 'relationships' && <RelationshipsScreen onNavigate={handleNavigate} />}
+        {currentPage === 'keyword-management' && <KeywordManagementScreen vm={keywordVM} onNavigate={handleNavigate} />}
+        {currentPage === 'applications' && (
+          <div style={{ padding: '32px' }}>
+            {applicationView === 'queue' && (
+              <ApplicationQueue onSelectApplication={handleSelectApplication} />
+            )}
+            {applicationView === 'details' && (
+              <ApplicationDetails
+                onBack={handleBackToQueue}
+                onDecision={handleApplicationDecision}
+              />
+            )}
+          </div>
+        )}
+        {currentPage === 'reports' && <ReportPage />}
+      </div>
+    </ErrorBoundary>
   );
 }
 

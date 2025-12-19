@@ -1,6 +1,6 @@
 // ViewModel/SafetyViewModel/SafetyFeedbackViewModel.ts
 
-import { makeAutoObservable } from "mobx";
+import { makeAutoObservable, runInAction } from "mobx";
 import type { SafetyReportService } from "../../Model/Service/CoreService/SafetyReportService";
 import type { ReportType, SafetyReport } from "../../Model/types/SafetyTypes";
 
@@ -30,7 +30,8 @@ export class SafetyFeedbackViewModel {
     private userId: string;
 
     constructor(service: SafetyReportService, userId: string) {
-        makeAutoObservable(this);
+        // Use autoBind: true to automatically bind methods
+        makeAutoObservable(this, {}, { autoBind: true });
         this.service = service;
         this.userId = userId;
         this.loadFormConfig();
@@ -42,9 +43,11 @@ export class SafetyFeedbackViewModel {
     async loadFormConfig() {
         try {
             const config = await this.service.getFormConfig();
-            this.maxFiles = config.max_files;
-            this.maxFileSizeMB = config.max_file_size_mb;
-            this.allowedFormats = config.allowed_file_formats;
+            runInAction(() => {
+                this.maxFiles = config.max_files;
+                this.maxFileSizeMB = config.max_file_size_mb;
+                this.allowedFormats = config.allowed_file_formats;
+            });
         } catch (error) {
             console.error('Error loading form config:', error);
             // Use default values if fetch fails
@@ -52,104 +55,113 @@ export class SafetyFeedbackViewModel {
     }
 
     /**
-     * Set report type
+     * Set report type - arrow function for proper 'this' binding
      */
-    setReportType(type: ReportType) {
+    setReportType = (type: ReportType) => {
         this.reportType = type;
-        if (this.errors.reportType) {
-            delete this.errors.reportType;
-        }
-    }
+        // Clear error when user provides input
+        const newErrors = { ...this.errors };
+        delete newErrors.reportType;
+        this.errors = newErrors;
+    };
 
     /**
-     * Set subject
+     * Set subject - arrow function for proper 'this' binding
      */
-    setSubject(subject: string) {
+    setSubject = (subject: string) => {
         this.subject = subject;
-        if (this.errors.subject) {
-            delete this.errors.subject;
-        }
-    }
+        // Clear error when user provides input
+        const newErrors = { ...this.errors };
+        delete newErrors.subject;
+        this.errors = newErrors;
+    };
 
     /**
-     * Set description
+     * Set description - arrow function for proper 'this' binding
      */
-    setDescription(description: string) {
+    setDescription = (description: string) => {
         this.description = description;
-        if (this.errors.description) {
-            delete this.errors.description;
-        }
-    }
+        // Clear error when user provides input
+        const newErrors = { ...this.errors };
+        delete newErrors.description;
+        this.errors = newErrors;
+    };
 
     /**
      * Add evidence file
      * UC401_6: User attaches evidence
      */
-    addEvidenceFile(file: File): boolean {
+    addEvidenceFile = (file: File): boolean => {
         // Check max files
         if (this.evidenceFiles.length >= this.maxFiles) {
-            this.errors.evidenceFiles = `Maximum ${this.maxFiles} files allowed`;
+            this.errors = { ...this.errors, evidenceFiles: `Maximum ${this.maxFiles} files allowed` };
             return false;
         }
 
         // Check file size (UC401 A3a: File Upload Fails)
         const fileSizeMB = file.size / (1024 * 1024);
         if (fileSizeMB > this.maxFileSizeMB) {
-            this.errors.evidenceFiles = `File size must be less than ${this.maxFileSizeMB}MB`;
+            this.errors = { ...this.errors, evidenceFiles: `File size must be less than ${this.maxFileSizeMB}MB` };
             return false;
         }
 
         // Check file format (UC401 A3b: Unsupported File Format)
         if (!this.allowedFormats.includes(file.type)) {
-            this.errors.evidenceFiles = 'File upload failed. Please try uploading the supported file format (PNG,JPEG,JPG,PDF).';
+            this.errors = { ...this.errors, evidenceFiles: 'File upload failed. Please try uploading the supported file format (PNG,JPEG,JPG,PDF).' };
             return false;
         }
 
-        this.evidenceFiles.push(file);
-        delete this.errors.evidenceFiles;
+        this.evidenceFiles = [...this.evidenceFiles, file];
+        const newErrors = { ...this.errors };
+        delete newErrors.evidenceFiles;
+        this.errors = newErrors;
         return true;
-    }
+    };
 
     /**
      * Remove evidence file
      */
-    removeEvidenceFile(index: number) {
-        this.evidenceFiles.splice(index, 1);
-        delete this.errors.evidenceFiles;
-    }
+    removeEvidenceFile = (index: number) => {
+        this.evidenceFiles = this.evidenceFiles.filter((_, i) => i !== index);
+        const newErrors = { ...this.errors };
+        delete newErrors.evidenceFiles;
+        this.errors = newErrors;
+    };
 
     /**
      * Validate form
      * UC401_8: System validates input fields
      * UC401 A2: User leaves fields blank
      */
-    validateForm(): boolean {
-        this.errors = {};
+    validateForm = (): boolean => {
+        const newErrors: { [key: string]: string } = {};
         let isValid = true;
 
         // Validate report type
         if (!this.reportType) {
-            this.errors.reportType = 'Please select a report type';
+            newErrors.reportType = 'Please select a report type';
             isValid = false;
         }
 
         // Validate subject
         if (!this.subject.trim()) {
-            this.errors.subject = 'Subject is required';
+            newErrors.subject = 'Subject is required';
             isValid = false;
         } else if (this.subject.trim().length < 3) {
-            this.errors.subject = 'Subject must be at least 3 characters';
+            newErrors.subject = 'Subject must be at least 3 characters';
             isValid = false;
         }
 
         // Validate description
         if (!this.description.trim()) {
-            this.errors.description = 'Description is required';
+            newErrors.description = 'Description is required';
             isValid = false;
         } else if (this.description.trim().length < 10) {
-            this.errors.description = 'Description must be at least 10 characters';
+            newErrors.description = 'Description must be at least 10 characters';
             isValid = false;
         }
+
+        this.errors = newErrors;
 
         // UC401 M2: Display error message if validation fails
         if (!isValid) {
@@ -157,13 +169,13 @@ export class SafetyFeedbackViewModel {
         }
 
         return isValid;
-    }
+    };
 
     /**
      * Submit safety report
      * UC401_7 to UC401_12: Complete submission flow
      */
-    async submitReport(): Promise<void> {
+    submitReport = async (): Promise<void> => {
         // UC401_8: Validate form
         if (!this.validateForm()) {
             return;
@@ -185,50 +197,56 @@ export class SafetyFeedbackViewModel {
                 this.userId
             );
 
-            // UC401_12: Display success message with report ID
-            this.submittedReportId = report.id;
-            this.submittedReport = report;
-            this.submitSuccess = true;
+            runInAction(() => {
+                // UC401_12: Display success message with report ID
+                this.submittedReportId = report.id;
+                this.submittedReport = report;
+                this.submitSuccess = true;
 
-            // Reset form after successful submission
-            this.resetForm();
+                // Reset form after successful submission
+                this.resetForm();
+            });
 
         } catch (error) {
             console.error('Error submitting report:', error);
-            // UC401 M3: File upload failed message
-            this.submitError = error instanceof Error
-                ? error.message
-                : 'An error occurred while submitting your report. Please try again.';
+            runInAction(() => {
+                // UC401 M3: File upload failed message
+                this.submitError = error instanceof Error
+                    ? error.message
+                    : 'An error occurred while submitting your report. Please try again.';
+            });
         } finally {
-            this.isSubmitting = false;
+            runInAction(() => {
+                this.isSubmitting = false;
+            });
         }
-    }
+    };
 
     /**
      * Reset form to initial state
      */
-    resetForm() {
+    resetForm = () => {
         this.reportType = null;
         this.subject = '';
         this.description = '';
         this.evidenceFiles = [];
         this.errors = {};
-    }
+    };
 
     /**
      * Close success modal
      * UC401_14: User closes confirmation message
      */
-    closeSuccessModal() {
+    closeSuccessModal = () => {
         this.submitSuccess = false;
         this.submittedReportId = null;
         this.submittedReport = null;
-    }
+    };
 
     /**
      * Clear error message
      */
-    clearError() {
+    clearError = () => {
         this.submitError = null;
-    }
+    };
 }

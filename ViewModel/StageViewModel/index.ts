@@ -104,7 +104,7 @@ export class StageViewModel {
 
     this.relationshipSubscription = subscriptions.relationshipSubscription;
     this.activitiesSubscription = subscriptions.activitiesSubscription;
-    
+
     console.log("[StageViewModel] Realtime subscriptions setup complete:", {
       hasRelationshipSub: !!this.relationshipSubscription,
       hasActivitiesSub: !!this.activitiesSubscription
@@ -120,7 +120,7 @@ export class StageViewModel {
       }
 
       console.log("[StageViewModel] Reloading progression and requirements after activity change...");
-      
+
       // Refresh progression and requirements to get latest completion state
       await this.loadStageProgression(this.userId, true);
       await this.loadCurrentStageRequirements();
@@ -143,11 +143,11 @@ export class StageViewModel {
           requirementsCount: this.requirements?.length || 0,
           requirements: this.requirements
         });
-        
+
         if (this.requirements && this.requirements.length > 0) {
           const allDone = this.requirements.every((r) => !!r.is_completed);
           console.log("[StageViewModel] All requirements completed?", allDone);
-          
+
           if (allDone) {
             console.log("[StageViewModel] 🎉 All final stage requirements completed! Setting journey completed flag...");
             runInAction(() => {
@@ -222,7 +222,7 @@ export class StageViewModel {
         console.log(
           `[Realtime] Stage completed: ${this.previousStage} → ${newData.current_stage}`
         );
-        
+
         // If advanced TO family_life (final stage), navigate to journey-completed instead of stage-completed
         if (newData.current_stage === 'family_life') {
           console.log("[Realtime] Advanced to final stage (family_life) - triggering journey completed!");
@@ -450,6 +450,43 @@ export class StageViewModel {
       runInAction(() => {
         this.requirements = reqs;
       });
+
+      // Run AI verification for topic-based activities
+      try {
+        const { runActivityVerificationCheck } = await import(
+          "../../Model/Service/CoreService/ActivityVerificationService"
+        );
+
+        // Map stage to DB stage name
+        const stageMap: Record<string, string> = {
+          getting_to_know: "getting_acquainted",
+          trial_period: "building_trust",
+          official_ceremony: "family_bond",
+          family_life: "full_adoption",
+        };
+        const dbStage = stageMap[this.currentStage] || this.currentStage;
+
+        const verificationResult = await runActivityVerificationCheck(
+          this.relationshipId,
+          dbStage
+        );
+
+        if (verificationResult.completed > 0) {
+          console.log(
+            `[StageViewModel] AI verified ${verificationResult.completed} activities as complete!`
+          );
+          // Reload requirements to get updated completion status
+          const updatedReqs = await stageService.getCurrentStageRequirements(
+            this.relationshipId,
+            this.currentStage
+          );
+          runInAction(() => {
+            this.requirements = updatedReqs;
+          });
+        }
+      } catch (verifyError) {
+        console.warn("[StageViewModel] AI verification error (non-fatal):", verifyError);
+      }
 
       try {
         const pct = await stageService.computeProgressPercent(
@@ -984,11 +1021,9 @@ export class StageViewModel {
     if (!this.stageJustCompletedName || !this.currentStageDisplayName) {
       return "Congratulations on your progress!";
     }
-    return `Congratulations! You've successfully completed "${
-      this.stageJustCompletedName
-    }" and moved to Stage ${this.completedStageOrder + 1}: ${
-      this.currentStageDisplayName
-    }.`;
+    return `Congratulations! You've successfully completed "${this.stageJustCompletedName
+      }" and moved to Stage ${this.completedStageOrder + 1}: ${this.currentStageDisplayName
+      }.`;
   }
 }
 

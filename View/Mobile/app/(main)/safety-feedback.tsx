@@ -10,7 +10,7 @@ import {
     StyleSheet,
     Alert,
     ActivityIndicator,
-    Image,
+    Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { observer } from 'mobx-react-lite';
@@ -34,6 +34,7 @@ import { supabase } from '@home-sweet-home/model';
  * - Camera, gallery, and PDF file attachment
  * - AI-powered severity detection
  * - Critical alert notifications
+ * - Success modal matching Figma design
  */
 
 const SafetyFeedbackScreen = observer(() => {
@@ -47,6 +48,9 @@ const SafetyFeedbackScreen = observer(() => {
     const chatContext = params.chatContext as string;
     const contextId = params.contextId as string;
 
+    // State for success modal
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
+
     // Initialize ViewModel
     const [vm] = useState(() => {
         const repository = new SafetyReportRepository(supabase);
@@ -57,19 +61,7 @@ const SafetyFeedbackScreen = observer(() => {
     // Show success modal when report is submitted
     useEffect(() => {
         if (vm.submitSuccess && vm.submittedReportId) {
-            Alert.alert(
-                '✅ Report Submitted Successfully',
-                `Your report has been submitted.\n\nReport ID: ${vm.submittedReportId}\n\nYou can track your report status in your profile.`,
-                [
-                    {
-                        text: 'OK',
-                        onPress: () => {
-                            vm.closeSuccessModal();
-                            router.back();
-                        },
-                    },
-                ]
-            );
+            setShowSuccessModal(true);
         }
     }, [vm.submitSuccess]);
 
@@ -84,6 +76,44 @@ const SafetyFeedbackScreen = observer(() => {
 
     const handleSubmit = () => {
         vm.submitReport();
+    };
+
+    const handleCloseSuccessModal = () => {
+        setShowSuccessModal(false);
+        vm.closeSuccessModal();
+        router.back();
+    };
+
+    // Format date for display
+    const formatDate = (dateString?: string) => {
+        if (!dateString) return new Date().toLocaleDateString('en-US', {
+            month: 'short',
+            day: '2-digit',
+            year: 'numeric',
+        }) + ' - ' + new Date().toLocaleTimeString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true,
+        });
+
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-US', {
+            month: 'short',
+            day: '2-digit',
+            year: 'numeric',
+        }) + ' - ' + date.toLocaleTimeString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true,
+        });
+    };
+
+    // Generate feedback ID in format FB-YYYY-XXXX
+    const formatFeedbackId = (id?: string) => {
+        if (!id) return 'FB-' + new Date().getFullYear() + '-0000';
+        // Use last 4 chars of UUID
+        const shortId = id.replace(/-/g, '').slice(-4).toUpperCase();
+        return `FB-${new Date().getFullYear()}-${shortId}`;
     };
 
     const handleFileUpload = () => {
@@ -177,6 +207,71 @@ const SafetyFeedbackScreen = observer(() => {
 
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
+            {/* Success Modal - Figma Design */}
+            <Modal
+                visible={showSuccessModal}
+                transparent={true}
+                animationType="fade"
+                onRequestClose={handleCloseSuccessModal}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContainer}>
+                        {/* Success Icon */}
+                        <View style={styles.successIconContainer}>
+                            <Ionicons name="checkmark" size={40} color="#FFF" />
+                        </View>
+
+                        {/* Title */}
+                        <Text style={styles.modalTitle}>Feedback Submitted</Text>
+                        <Text style={styles.modalSubtitle}>
+                            Your feedback submission has been{'\n'}submitted successfully.
+                        </Text>
+
+                        {/* Details Card */}
+                        <View style={styles.detailsCard}>
+                            <View style={styles.detailRow}>
+                                <Text style={styles.detailLabel}>Feedback ID</Text>
+                                <Text style={styles.detailValue}>
+                                    {formatFeedbackId(vm.submittedReportId || undefined)}
+                                </Text>
+                            </View>
+                            <View style={styles.detailRow}>
+                                <Text style={styles.detailLabel}>Name</Text>
+                                <Text style={styles.detailValue}>
+                                    {reportedUserName || 'User'}
+                                </Text>
+                            </View>
+                            <View style={styles.detailRow}>
+                                <Text style={styles.detailLabel}>Report Type</Text>
+                                <Text style={styles.detailValue}>
+                                    {vm.submittedReport?.report_type || vm.reportType || 'Safety Concern'}
+                                </Text>
+                            </View>
+                            <View style={styles.detailRow}>
+                                <Text style={styles.detailLabel}>Date & Time</Text>
+                                <Text style={styles.detailValue}>
+                                    {formatDate(vm.submittedReport?.created_at)}
+                                </Text>
+                            </View>
+                            <View style={styles.detailRow}>
+                                <Text style={styles.detailLabel}>Status</Text>
+                                <Text style={[styles.detailValue, styles.statusInProgress]}>
+                                    {vm.submittedReport?.status || 'In Progress'}
+                                </Text>
+                            </View>
+                        </View>
+
+                        {/* Close Button */}
+                        <TouchableOpacity
+                            style={styles.closeButton}
+                            onPress={handleCloseSuccessModal}
+                        >
+                            <Text style={styles.closeButtonText}>Close</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
+
             {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
@@ -542,6 +637,86 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         marginTop: 16,
         lineHeight: 18,
+    },
+    // Success Modal Styles - Matching Figma Design
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 20,
+    },
+    modalContainer: {
+        backgroundColor: '#FFFDF5',
+        borderRadius: 24,
+        padding: 32,
+        alignItems: 'center',
+        width: '100%',
+        maxWidth: 340,
+    },
+    successIconContainer: {
+        width: 80,
+        height: 80,
+        borderRadius: 40,
+        backgroundColor: '#9DE2D0', // Mint green
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 24,
+    },
+    modalTitle: {
+        fontSize: 24,
+        fontWeight: '700',
+        color: '#000',
+        marginBottom: 8,
+    },
+    modalSubtitle: {
+        fontSize: 14,
+        color: '#666',
+        textAlign: 'center',
+        marginBottom: 24,
+        lineHeight: 20,
+    },
+    detailsCard: {
+        backgroundColor: '#FFF',
+        borderRadius: 16,
+        padding: 16,
+        width: '100%',
+        marginBottom: 24,
+        borderWidth: 1,
+        borderColor: '#F0F0F0',
+    },
+    detailRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingVertical: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: '#F5F5F5',
+    },
+    detailLabel: {
+        fontSize: 14,
+        color: '#999',
+    },
+    detailValue: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#333',
+    },
+    statusInProgress: {
+        color: '#E89B8E', // Coral/orange for in progress
+    },
+    closeButton: {
+        backgroundColor: '#FFF',
+        borderRadius: 24,
+        paddingVertical: 14,
+        paddingHorizontal: 48,
+        borderWidth: 1.5,
+        borderColor: '#E0E0E0',
+    },
+    closeButtonText: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#333',
     },
 });
 

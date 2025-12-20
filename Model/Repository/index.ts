@@ -10,7 +10,15 @@ export type { Interest } from './UserRepository';
 export { matchingRepository } from './UserRepository';
 export type { ElderlyFilters, ElderlyProfilesResult } from './UserRepository/matchingRepository';
 
+// Relationship Repository
+export { relationshipRepository } from './UserRepository';
+export type { Relationship } from './UserRepository';
+
 // Admin Repository  
+export * from './AdminRepository/KeywordRepository';
+export * from './AdminRepository/SafetyReportRepository';
+export * from './AdminRepository/KeywordDetectionRepository';
+export * from './AdminRepository/SentimentAnalyticsRepository';
 export { adminRepository, consultationRepository, getAdminNotifications } from './AdminRepository';
 export type {
     ApplicationWithProfiles,
@@ -23,4 +31,3 @@ export type {
     ConsultationStats,
     AdminNotification
 } from './AdminRepository';
-

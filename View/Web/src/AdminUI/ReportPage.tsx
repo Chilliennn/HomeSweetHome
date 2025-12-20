@@ -1,10 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { observer } from 'mobx-react-lite';
 import { consultationViewModel, safetyViewModel } from '@home-sweet-home/viewmodel';
-import { AdminLayout } from '../components/ui';
 import { ConsultationDashboard } from './ConsultationDashboard';
 import { ConsultationDetails } from './ConsultationDetails';
 import { SafetyAlertsDashboard, SafetyAlertDetails } from '../SafetyUI';
+
+// Simple content wrapper (replaces AdminLayout which requires Router)
+const ContentWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+    <div style={{ padding: '32px', width: '100%', boxSizing: 'border-box' as const }}>
+        {children}
+    </div>
+);
 
 // Color constants from UC501UI.txt
 const colors = {
@@ -235,14 +241,6 @@ const ReportPage: React.FC = observer(() => {
     const safetyStats = safetyViewModel.stats;
     const urgentCount = (safetyStats?.critical ?? 0) + (safetyStats?.high ?? 0);
 
-    // Handle tab change - resets view back to main when clicking Reports tab
-    const handleTabChange = (tab: string) => {
-        if (tab === 'reports') {
-            setCurrentView('main');
-            setSelectedRequestId(null);
-            setSelectedAlertId(null);
-        }
-    };
 
     // Handle navigation to consultation dashboard
     const handleViewConsultations = () => {
@@ -286,55 +284,55 @@ const ReportPage: React.FC = observer(() => {
     // Render Consultation Dashboard
     if (currentView === 'consultations') {
         return (
-            <AdminLayout onTabChange={handleTabChange}>
+            <ContentWrapper>
                 <ConsultationDashboard
                     onBack={handleBackToReports}
                     onSelectRequest={handleSelectRequest}
                 />
-            </AdminLayout>
+            </ContentWrapper>
         );
     }
 
     // Render Consultation Details
     if (currentView === 'consultation-details' && selectedRequestId) {
         return (
-            <AdminLayout onTabChange={handleTabChange}>
+            <ContentWrapper>
                 <ConsultationDetails
                     requestId={selectedRequestId}
                     onBack={handleBackToConsultations}
                 />
-            </AdminLayout>
+            </ContentWrapper>
         );
     }
 
     // Render Safety Alerts Dashboard
     if (currentView === 'safety-alerts') {
         return (
-            <AdminLayout onTabChange={handleTabChange}>
+            <ContentWrapper>
                 <SafetyAlertsDashboard
                     onBack={handleBackToReports}
                     onSelectAlert={handleSelectAlert}
                 />
-            </AdminLayout>
+            </ContentWrapper>
         );
     }
 
     // Render Safety Alert Details
     if (currentView === 'safety-alert-details' && selectedAlertId) {
         return (
-            <AdminLayout onTabChange={handleTabChange}>
+            <ContentWrapper>
                 <SafetyAlertDetails
                     alertId={selectedAlertId}
                     onBack={handleBackToSafetyAlerts}
                 />
-            </AdminLayout>
+            </ContentWrapper>
         );
     }
 
     // Main Reports Dashboard
 
     return (
-        <AdminLayout onTabChange={handleTabChange}>
+        <ContentWrapper>
             <div style={styles.container}>
                 {/* Page Header */}
                 <div style={styles.header}>
@@ -460,7 +458,7 @@ const ReportPage: React.FC = observer(() => {
                     </div>
                 </div>
             </div>
-        </AdminLayout>
+        </ContentWrapper>
     );
 });
 

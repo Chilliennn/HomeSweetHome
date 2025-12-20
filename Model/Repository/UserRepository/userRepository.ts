@@ -166,6 +166,7 @@ export const userRepository = {
   async updateUser(
     userId: string,
     update: {
+      full_name?: string;
       phone?: string;
       location?: string;
       languages?: string[];

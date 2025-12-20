@@ -752,7 +752,7 @@ export const ChatScreen = observer(function ChatScreen() {
                 );
               })()}
               <View style={styles.headerText}>
-                <Text style={styles.partnerName}>{partnerUser?.profile_data?.display_name || partnerUser?.full_name || 'Partner'}</Text>
+                <Text style={styles.partnerName}>{partnerUser?.full_name || 'Partner'}</Text>
                 <Text style={styles.dayLabel}>{headerInfo}</Text>
               </View>
             </View>

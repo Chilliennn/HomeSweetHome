@@ -517,5 +517,35 @@ export const matchingRepository = {
         }
 
         console.log('[Repo] Application and messages deleted successfully');
-    }
+    },
+        /**
+     * Update walkthrough completion status
+     * UC101: Track if user has completed journey walkthrough
+     */
+    async updateWalkthroughStatus(
+        userId: string,
+        completed: boolean
+    ): Promise<void> {
+        const { error } = await supabase
+        .from("users")
+        .update({ has_completed_walkthrough: completed })
+        .eq("id", userId);
+
+        if (error) throw error;
+    },
+
+    /**
+     * Get walkthrough completion status
+     * UC101: Check if user has seen journey walkthrough
+     */
+    async getWalkthroughStatus(userId: string): Promise<boolean> {
+        const { data, error } = await supabase
+        .from("users")
+        .select("has_completed_walkthrough")
+        .eq("id", userId)
+        .single();
+
+        if (error) throw error;
+        return data?.has_completed_walkthrough ?? false;
+    },
 };

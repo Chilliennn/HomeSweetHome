@@ -5,6 +5,7 @@ import {
   ScrollView,
   TouchableOpacity,
   StyleSheet,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -25,14 +26,15 @@ interface ElderlyDetailData {
   name: string;
   age: number;
   location: string;
+  profilePhotoUrl?: string;
   avatarEmoji?: string;
   avatarColor?: string;
   isOnline?: boolean;
   interests: Array<{ label: string; color?: string }>;
   aboutMe: string;
   languages: string[];
-  communicationStyle: string[];
-  availability: string;
+  communicationStyle?: string[];
+  availability?: string;
 }
 
 interface ElderlyProfileDetailProps {
@@ -56,6 +58,7 @@ const MOCK_PROFILE: ElderlyDetailData = {
   name: 'Ah Ma Mei',
   age: 68,
   location: 'Penang',
+  profilePhotoUrl: undefined,
   avatarEmoji: '👵',
   avatarColor: '#C8ADD6',
   isOnline: true,
@@ -133,12 +136,19 @@ export const ElderlyProfileDetail: React.FC<ElderlyProfileDetailProps> = ({
       >
         {/* Avatar Section */}
         <View style={styles.avatarSection}>
-          <IconCircle
-            icon={profile.avatarEmoji}
-            size={120}
-            backgroundColor={profile.avatarColor}
-            contentScale={0.65}
-          />
+          {profile.profilePhotoUrl ? (
+            <Image
+              source={{ uri: profile.profilePhotoUrl }}
+              style={styles.profilePhoto}
+            />
+          ) : (
+            <IconCircle
+              icon={profile.avatarEmoji}
+              size={120}
+              backgroundColor={profile.avatarColor}
+              contentScale={0.65}
+            />
+          )}
         </View>
 
         {/* Name and Basic Info */}
@@ -179,32 +189,41 @@ export const ElderlyProfileDetail: React.FC<ElderlyProfileDetailProps> = ({
             content={profile.aboutMe}
           />
           
-          <View style={styles.divider} />
+          {profile.languages && profile.languages.length > 0 && (
+            <>
+              <View style={styles.divider} />
+              <ProfileInfoRow
+                icon="🌐"
+                iconColor="#C8ADD6"
+                title="Languages"
+                content={profile.languages.join(', ')}
+              />
+            </>
+          )}
           
-          <ProfileInfoRow
-            icon="🌐"
-            iconColor="#C8ADD6"
-            title="Languages"
-            content={profile.languages.join(', ')}
-          />
+          {profile.communicationStyle && profile.communicationStyle.length > 0 && (
+            <>
+              <View style={styles.divider} />
+              <ProfileInfoRow
+                icon="💬"
+                iconColor="#C8ADD6"
+                title="Communication Style"
+                content={profile.communicationStyle.join(', ')}
+              />
+            </>
+          )}
           
-          <View style={styles.divider} />
-          
-          <ProfileInfoRow
-            icon="💬"
-            iconColor="#C8ADD6"
-            title="Communication Style"
-            content={profile.communicationStyle.join(', ')}
-          />
-          
-          <View style={styles.divider} />
-          
-          <ProfileInfoRow
-            icon="📅"
-            iconColor="#C8ADD6"
-            title="Availability"
-            content={profile.availability}
-          />
+          {profile.availability && (
+            <>
+              <View style={styles.divider} />
+              <ProfileInfoRow
+                icon="📅"
+                iconColor="#C8ADD6"
+                title="Availability"
+                content={profile.availability}
+              />
+            </>
+          )}
         </Card>
 
         {/* Express Interest Button */}
@@ -273,6 +292,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingTop: 8,
     paddingBottom: 16,
+  },
+  profilePhoto: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: '#E0E0E0',
   },
   basicInfoSection: {
     alignItems: 'center',

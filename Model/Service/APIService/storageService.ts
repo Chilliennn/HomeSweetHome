@@ -168,6 +168,69 @@ export const storageService = {
   },
 
   /**
+   * Upload profile photo to Supabase Storage
+   * Goes to users.profile_photo_url (real photo, not avatar)
+   * 
+   * @param userId - User ID for path construction
+   * @param base64Data - Base64 encoded image data (from View layer)
+   * @param fileExtension - File extension (jpeg, png, webp)
+   * @returns Public URL of the uploaded profile photo
+   */
+  async uploadProfilePhoto(
+    userId: string,
+    base64Data: string,
+    fileExtension: string
+  ): Promise<string> {
+    const bucket = 'avatars'; // Use avatars bucket (per bucketPolicies)
+    const timestamp = Date.now();
+    const filePath = `${userId}/profile-${timestamp}.${fileExtension}`;
+
+    console.log('[storageService] Uploading profile photo:', { bucket, filePath });
+
+    try {
+      // Convert base64 to binary
+      const binaryString = atob(base64Data);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+
+      // Determine MIME type
+      const mimeType = fileExtension === 'png' ? 'image/png' 
+                     : fileExtension === 'webp' ? 'image/webp' 
+                     : 'image/jpeg';
+
+      const { data, error } = await supabase.storage
+        .from(bucket)
+        .upload(filePath, bytes, {
+          contentType: mimeType,
+          cacheControl: '3600',
+          upsert: true, // Allow overwriting existing profile photo
+        });
+
+      if (error) {
+        console.error('[storageService] Upload error:', error);
+        throw error;
+      }
+
+      console.log('[storageService] Profile photo uploaded successfully:', { path: data.path });
+
+      // Get public URL
+      const { data: publicUrlData } = supabase.storage
+        .from(bucket)
+        .getPublicUrl(filePath);
+
+      const publicUrl = publicUrlData.publicUrl;
+      console.log('[storageService] Profile photo public URL:', publicUrl);
+
+      return publicUrl;
+    } catch (error: any) {
+      console.error('[storageService] Upload failed:', error);
+      throw new Error(`Failed to upload profile photo: ${error.message}`);
+    }
+  },
+
+  /**
    * Delete a file from storage
    * @param bucket - Storage bucket name
    * @param filePath - Path to the file in bucket

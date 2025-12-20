@@ -592,5 +592,33 @@ export const matchingService = {
         // Delete application and messages
         await matchingRepository.deleteApplication(applicationId);
         console.log('[matchingService] Application deleted successfully');
+    },
+
+    // ============================================
+    // WALKTHROUGH OPERATIONS (UC101)
+    // ============================================
+
+    /**
+     * Get walkthrough completion status for a user
+     * UC101: Check if user has seen journey walkthrough
+     * Data stored in users table, but logic belongs to matching domain
+     */
+    async getWalkthroughStatus(userId: string): Promise<boolean> {
+        if (!userId) {
+            throw new Error('userId is required');
+        }
+        return await matchingRepository.getWalkthroughStatus(userId);
+    },
+
+    /**
+     * Update walkthrough completion status for a user
+     * UC101: Mark journey walkthrough as completed
+     * Data stored in users table, but logic belongs to matching domain
+     */
+    async updateWalkthroughStatus(userId: string, completed: boolean): Promise<void> {
+        if (!userId) {
+            throw new Error('userId is required');
+        }
+        await matchingRepository.updateWalkthroughStatus(userId, completed);
     }
 };

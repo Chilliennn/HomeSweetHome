@@ -84,6 +84,8 @@ export const IconCircle: React.FC<IconCircleProps> = ({
   disabled = false,
   style,
 }) => {
+  // Calculate border radius (always half of size for perfect circle)
+  const borderRadius = size / 2;
   // Default scales: image = 0.7, emoji = 0.4 (legacy behavior for emoji)
   // For images that should overflow (like the old 1.5x), use contentScale > 1
   const effectiveScale = contentScale ?? (imageSource ? 0.7 : 0.4);

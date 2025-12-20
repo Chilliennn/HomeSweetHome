@@ -6,6 +6,7 @@ import type { Interest } from '../../Repository/UserRepository/matchingRepositor
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import { moderationService } from './moderationService';
 import { dailyService } from '../APIService';
+import { messageWithDetectionService } from './MessageWithDetectionService';
 
 // ============================================================================
 // TYPES
@@ -351,7 +352,7 @@ export const communicationService = {
       }
 
       // Send pre-match message
-      const message = await messageRepository.sendMessage({
+      const { message } = await messageWithDetectionService.sendMessageWithDetection({
         senderId,
         receiverId,
         applicationId: context.applicationId,
@@ -371,13 +372,15 @@ export const communicationService = {
       return message;
     } else {
       // Relationship message - no moderation needed
-      return await messageRepository.sendMessage({
+      // Also use detection service for consistency (and maybe future relationship monitoring)
+      const { message } = await messageWithDetectionService.sendMessageWithDetection({
         senderId,
         receiverId,
         relationshipId: context.relationshipId,
         messageType: 'text',
         content: content.trim(),
       });
+      return message;
     }
   },
 

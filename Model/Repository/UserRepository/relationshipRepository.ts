@@ -20,6 +20,9 @@ export interface Relationship {
         requirements_met: boolean;
     };
     status: 'active' | 'paused' | 'ended';
+    risk_level: 'healthy' | 'caution' | 'critical'; // Auto-calculated or manually set
+    risk_level_manual: boolean; // True if admin manually set, false if auto-calculated
+    last_message_at: string | null; // Timestamp of last message for auto-calculation
     updated_at: string;
     family_name: string | null;
     ceremony_date: string | null;
@@ -81,5 +84,21 @@ export const relationshipRepository = {
 
         if (error) throw error;
         return data as Relationship;
+    },
+
+    /**
+     * Get all relationships (for admin dashboard)
+     */
+    async getAllRelationships(): Promise<Relationship[]> {
+        const { data, error } = await supabase
+            .from('relationships')
+            .select('*, youth:youth_id(*), elderly:elderly_id(*)')
+            .order('created_at', { ascending: false });
+
+        if (error) {
+            console.error('[relationshipRepository] Error fetching all relationships:', error);
+            throw error;
+        }
+        return (data as Relationship[]) || [];
     },
 };

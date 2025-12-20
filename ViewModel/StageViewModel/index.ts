@@ -486,6 +486,43 @@ export class StageViewModel {
         this.requirements = reqs;
       });
 
+      // Run AI verification for topic-based activities
+      try {
+        const { runActivityVerificationCheck } = await import(
+          "../../Model/Service/CoreService/ActivityVerificationService"
+        );
+
+        // Map stage to DB stage name
+        const stageMap: Record<string, string> = {
+          getting_to_know: "getting_acquainted",
+          trial_period: "building_trust",
+          official_ceremony: "family_bond",
+          family_life: "full_adoption",
+        };
+        const dbStage = stageMap[this.currentStage] || this.currentStage;
+
+        const verificationResult = await runActivityVerificationCheck(
+          this.relationshipId,
+          dbStage
+        );
+
+        if (verificationResult.completed > 0) {
+          console.log(
+            `[StageViewModel] AI verified ${verificationResult.completed} activities as complete!`
+          );
+          // Reload requirements to get updated completion status
+          const updatedReqs = await stageService.getCurrentStageRequirements(
+            this.relationshipId,
+            this.currentStage
+          );
+          runInAction(() => {
+            this.requirements = updatedReqs;
+          });
+        }
+      } catch (verifyError) {
+        console.warn("[StageViewModel] AI verification error (non-fatal):", verifyError);
+      }
+
       try {
         const pct = await stageService.computeProgressPercent(
           this.relationshipId,

@@ -147,6 +147,7 @@ export const matchingService = {
     /**
      * Youth expresses interest in an elderly profile.
      * First checks limits, then creates the interest record.
+     * UC101_6: Creates notification for elderly when youth expresses interest
      */
     async expressInterest(youthId: string, elderlyId: string) {
         // 1. Check Youth Limit
@@ -156,7 +157,21 @@ export const matchingService = {
         }
 
         // 2. Create Interest
-        return await matchingRepository.createInterest(youthId, elderlyId);
+        const interest = await matchingRepository.createInterest(youthId, elderlyId);
+
+        // 3. Send notification to elderly
+        const youthName = interest.youth?.full_name || 'A Youth';
+        await notificationRepository.createNotification({
+            user_id: elderlyId,
+            type: 'new_interest',
+            title: 'New Interest Received! 💚',
+            message: `${youthName} is interested in becoming your companion. Review their profile and respond!`,
+            reference_id: interest.id,
+            reference_table: 'applications',
+        });
+        console.log('[Service] Interest notification sent to elderly:', elderlyId);
+
+        return interest;
     },
 
     /**
@@ -214,7 +229,7 @@ export const matchingService = {
             );
             console.log('[Service] Welcome message created');
         } else {
-            // Optional: Notify rejection
+            // Notify youth of rejection
             const elderlyName = updatedApplication.elderly?.full_name || 'An Elderly';
             console.log('[Service] Creating rejection notification for youth:', youthId);
             await notificationRepository.createNotification({

@@ -751,11 +751,11 @@ export class FamilyViewModel {
    * Transcribe voice audio to text for diary entry
    * UC-301: Voice input for diary writing
    * FR 3.3.1, 3.3.2, 3.3.4, 3.3.5
-   * 
+   *
    * Called from WriteDiaryScreen when user stops recording
-   * Calls voiceTranscriptionService (Hugging Face Whisper API)
+   * Calls voiceTranscriptionService (AssemblyAI STT)
    * Returns transcribed text for user to review/edit
-   * 
+   *
    * @param base64Audio - Base64-encoded audio from View layer hook
    * @returns Transcribed text that user can review
    */
@@ -770,7 +770,7 @@ export class FamilyViewModel {
         audioLength: base64Audio.length,
       });
 
-      // Call Service for business logic - Whisper transcription via Hugging Face
+      // Call Service for business logic - AssemblyAI transcription
       const result = await voiceTranscriptionService.transcribeDiary(base64Audio);
 
       console.log('[FamilyViewModel] Voice transcription successful', {
@@ -1130,6 +1130,28 @@ export class FamilyViewModel {
     } catch (error: any) {
       runInAction(() => {
         this.errorMessage = error.message || 'Failed to use recommendation';
+      });
+    }
+  }
+
+  /**
+   * Dismiss an AI recommendation (mark as used/dismissed without creating event)
+   * FR 3.4.6, 3.4.7
+   */
+  async dismissAIRecommendation(suggestionId: string) {
+    try {
+      // Mark as used in backend (same as accepting, but without creating event)
+      await familyService.useSuggestion(suggestionId);
+
+      // Remove from local state immediately
+      runInAction(() => {
+        this.aiRecommendations = this.aiRecommendations.filter(
+          s => s.id !== suggestionId
+        );
+      });
+    } catch (error: any) {
+      runInAction(() => {
+        this.errorMessage = error.message || 'Failed to dismiss recommendation';
       });
     }
   }

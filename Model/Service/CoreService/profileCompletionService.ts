@@ -10,6 +10,14 @@ import type {
 } from '../../types';
 import { userRepository } from '../../Repository';
 import { ageVerificationService } from './ageVerificationService';
+import { storageService } from '../APIService/storageService';
+
+// ============================================================================
+// STORAGE CONSTANTS
+// ============================================================================
+const AVATARS_BUCKET = 'avatars';
+const ALLOWED_AVATAR_FORMATS = ['jpeg', 'jpg', 'png', 'webp'];
+const MAX_AVATAR_SIZE_BYTES = 5 * 1024 * 1024; // 5MB
 
 // ============================================================================
 // VALIDATION TYPES & CONSTANTS
@@ -272,19 +280,35 @@ export const profileCompletionService = {
   },
 
   async verifyAgeAndPersist(payload: AgeVerificationPayload): Promise<AgeVerificationResult> {
-    const result = await ageVerificationService.verify(payload);
-    const user = await userRepository.getById(payload.userId);
-    const mergedProfile = mergeProfileData(user?.profile_data || null, {
-      age_verified: result.ageVerified,
-      verified_age: result.verifiedAge,
-      verification_reference: result.referenceId,
-      verified_at: result.verifiedAt,
-    });
+    console.log('[profileCompletionService] verifyAgeAndPersist START:', payload.userId);
 
-    await userRepository.updateVerificationStatus(payload.userId, result.status);
-    await userRepository.updateProfileData(payload.userId, mergedProfile);
+    try {
+      const result = await ageVerificationService.verify(payload);
+      console.log('[profileCompletionService] verification result:', result);
 
-    return result;
+      const user = await userRepository.getById(payload.userId);
+      console.log('[profileCompletionService] got user:', user?.id);
+
+      const mergedProfile = mergeProfileData(user?.profile_data || null, {
+        age_verified: result.ageVerified,
+        verified_age: result.verifiedAge,
+        verification_reference: result.referenceId,
+        verified_at: result.verifiedAt,
+      });
+      console.log('[profileCompletionService] merged profile ready');
+
+      await userRepository.updateVerificationStatus(payload.userId, result.status);
+      console.log('[profileCompletionService] verification status updated');
+
+      await userRepository.updateProfileData(payload.userId, mergedProfile);
+      console.log('[profileCompletionService] profile data updated');
+
+      console.log('[profileCompletionService] verifyAgeAndPersist COMPLETE');
+      return result;
+    } catch (error) {
+      console.error('[profileCompletionService] verifyAgeAndPersist ERROR:', error);
+      throw error;
+    }
   },
 
   async saveRealIdentity(userId: string, data: RealIdentityPayload): Promise<User> {
@@ -295,7 +319,7 @@ export const profileCompletionService = {
     }
 
     const user = await userRepository.getById(userId);
-    
+
     // real_photo_url goes to profile_data (private, only revealed after match)
     const mergedProfile = mergeProfileData(user?.profile_data || null, {
       real_identity: {
@@ -347,7 +371,7 @@ export const profileCompletionService = {
     }
 
     const user = await userRepository.getById(userId);
-    
+
     // interests and self_introduction go to profile_data (user-type specific presentation)
     const mergedProfile = mergeProfileData(user?.profile_data || null, {
       interests: data.interests,
@@ -390,4 +414,180 @@ export const profileCompletionService = {
       profileCompleted: !!profile?.profile_completed,
     };
   },
+
+  /**
+   * Upload custom avatar to Supabase Storage
+   * Bucket: avatars (public)
+   * Path pattern: {userId}/avatar-{timestamp}.{ext}
+   * 
+   * NOTE: This method expects base64 data, NOT a local file URI.
+   * File reading must be done in the View layer before calling this method.
+   * 
+   * @param userId - User ID for path construction
+   * @param base64Data - Base64 encoded image data (from View layer)
+   * @param fileExtension - File extension (jpeg, png, webp)
+   * @returns Public URL of the uploaded avatar
+   */
+  async uploadCustomAvatar(
+    userId: string, 
+    base64Data: string, 
+    fileExtension: string
+  ): Promise<string> {
+    console.log('[profileCompletionService] uploadCustomAvatar START:', userId);
+
+    try {
+      // Normalize extension
+      let extension = fileExtension.toLowerCase();
+      if (extension === 'jpg') extension = 'jpeg';
+      
+      // Validate extension
+      if (!ALLOWED_AVATAR_FORMATS.includes(extension)) {
+        throw new Error(`Invalid file format. Allowed: ${ALLOWED_AVATAR_FORMATS.join(', ')}`);
+      }
+
+      // Check file size (base64 is ~33% larger than actual file)
+      const estimatedSize = (base64Data.length * 3) / 4;
+      if (estimatedSize > MAX_AVATAR_SIZE_BYTES) {
+        throw new Error('Avatar file is too large. Maximum size is 5MB');
+      }
+
+      // Determine MIME type
+      const mimeType = extension === 'png' ? 'image/png' 
+        : extension === 'webp' ? 'image/webp' 
+        : 'image/jpeg';
+
+      // Build file path: {userId}/avatar-{timestamp}.{ext}
+      const timestamp = Date.now();
+      const fileName = `avatar-${timestamp}.${extension}`;
+      const folder = userId;
+
+      console.log('[profileCompletionService] Uploading avatar:', { folder, fileName, mimeType });
+
+      // Upload using storageService
+      const publicUrl = await storageService.uploadMediaFile(
+        AVATARS_BUCKET,
+        {
+          base64: base64Data,
+          name: fileName,
+          type: mimeType,
+        },
+        folder
+      );
+
+      console.log('[profileCompletionService] Avatar uploaded:', publicUrl);
+      return publicUrl;
+    } catch (error: any) {
+      console.error('[profileCompletionService] uploadCustomAvatar ERROR:', error);
+      throw new Error(`Failed to upload avatar: ${error.message}`);
+    }
+  },
+
+  /**
+   * Save combined profile setup data (merged Step 1 + Step 2)
+   * Handles: phone, location, displayName, avatar
+   * 
+   * NOTE: For custom avatars, the View layer must read the file and pass base64 data.
+   * This service does NOT handle file system operations.
+   * 
+   * @param userId - User ID
+   * @param data - Combined profile setup form data
+   * @returns Updated user
+   */
+  async saveProfileSetup(
+    userId: string, 
+    data: {
+      phoneNumber: string;
+      location: string;
+      displayName: string;
+      avatarType: 'default' | 'custom';
+      selectedAvatarId: string | null;
+      // For custom avatars: base64 data and extension (from View layer file reading)
+      customAvatarBase64: string | null;
+      customAvatarExtension: string | null;
+    }
+  ): Promise<User> {
+    console.log('[profileCompletionService] saveProfileSetup START:', userId);
+
+    // Validate required fields
+    const errors: string[] = [];
+    
+    if (!data.phoneNumber?.trim()) {
+      errors.push('Phone number is required');
+    } else if (!/^\+?[\d\s-]{10,}$/.test(data.phoneNumber)) {
+      errors.push('Invalid phone number format');
+    }
+
+    if (!data.location?.trim()) {
+      errors.push('Location is required');
+    }
+
+    if (!data.displayName?.trim()) {
+      errors.push('Display name is required');
+    } else if (data.displayName.length < 2 || data.displayName.length > 30) {
+      errors.push('Display name must be 2-30 characters');
+    }
+
+    if (data.avatarType === 'default' && !data.selectedAvatarId) {
+      errors.push('Please select an avatar');
+    }
+    if (data.avatarType === 'custom' && !data.customAvatarBase64) {
+      errors.push('Please upload a custom avatar');
+    }
+
+    if (errors.length > 0) {
+      throw new Error(errors[0]);
+    }
+
+    // Upload custom avatar if provided
+    let avatarUrl: string | null = null;
+    if (data.avatarType === 'custom' && data.customAvatarBase64 && data.customAvatarExtension) {
+      avatarUrl = await this.uploadCustomAvatar(
+        userId, 
+        data.customAvatarBase64, 
+        data.customAvatarExtension
+      );
+    }
+
+    // Convert selectedAvatarId to selectedAvatarIndex for storage
+    // Format: "img-0", "img-1" → 0, 1
+    // Format: "emoji-0" to "emoji-5" → 2, 3, 4, 5, 6, 7
+    let selectedAvatarIndex: number | null = null;
+    if (data.avatarType === 'default' && data.selectedAvatarId) {
+      if (data.selectedAvatarId.startsWith('img-')) {
+        selectedAvatarIndex = parseInt(data.selectedAvatarId.replace('img-', ''), 10);
+      } else if (data.selectedAvatarId.startsWith('emoji-')) {
+        // emoji-0 maps to index 2, emoji-1 to 3, etc.
+        selectedAvatarIndex = parseInt(data.selectedAvatarId.replace('emoji-', ''), 10) + 2;
+      }
+    }
+
+    // Get existing user data
+    const user = await userRepository.getById(userId);
+
+    // Build merged profile data
+    const mergedProfile = mergeProfileData(user?.profile_data || null, {
+      display_name: data.displayName,
+      avatar_url: avatarUrl || undefined,
+      avatar_meta: {
+        type: data.avatarType,
+        selected_avatar_index: selectedAvatarIndex,
+      },
+      profile_completion: {
+        ...(user?.profile_data?.profile_completion || {}),
+        real_identity_completed: true,
+        display_identity_completed: true,
+      },
+    });
+
+    // Update user with phone, location, and merged profile data
+    const updatedUser = await userRepository.updateUser(userId, {
+      phone: data.phoneNumber,
+      location: data.location,
+      profile_data: mergedProfile,
+    });
+
+    console.log('[profileCompletionService] saveProfileSetup COMPLETE');
+    return updatedUser;
+  },
 };
+

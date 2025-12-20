@@ -411,29 +411,111 @@ export const matchingRepository = {
             .select('*, youth:youth_id(*), elderly:elderly_id(*)')
             .single();
 
-        console.log('🔵 [Repo] submitFormalApplication supabase result:', { data: data?.id, error });
+        console.log('🔵 [Repo] submitFormalApplication supabase result:', { data: data?.id, status: data?.status, error });
 
         if (error) {
             console.error('❌ [Repo] submitFormalApplication error:', error);
             throw error;
         }
 
-        console.log('✅ [Repo] submitFormalApplication SUCCESS');
+        console.log('✅ [Repo] submitFormalApplication SUCCESS - new status:', data?.status);
         return data as Interest;
     },
 
     /**
-     * Get youth's pending applications (status = pending_review)
+     * Get youth's applications under review (status = pending_review OR approved)
      * Used to prevent multiple simultaneous applications
+     * Youth can only have ONE application under review at a time
      */
     async getYouthPendingApplications(youthId: string): Promise<Interest[]> {
         const { data, error } = await supabase
             .from('applications')
             .select('*, elderly:elderly_id(*)')
             .eq('youth_id', youthId)
-            .eq('status', 'pending_review');
+            .in('status', ['pending_review', 'approved']);
 
         if (error) throw error;
         return data || [];
+    },
+
+    /**
+     * Elderly responds to admin-approved application
+     * Called after admin approves (status = 'approved')
+     */
+    async elderlyRespondToApprovedApplication(
+        applicationId: string,
+        decision: 'accept' | 'decline',
+        rejectReason?: string
+    ): Promise<Interest> {
+        console.log('[Repo] elderlyRespondToApprovedApplication', { applicationId, decision });
+
+        const updateData: any = {
+            elderly_decision: decision,
+            status: decision === 'accept' ? 'both_accepted' : 'rejected',
+            reviewed_at: new Date().toISOString()
+        };
+
+        // Store rejection reason in ngo_notes field (optional)
+        if (decision === 'decline' && rejectReason) {
+            updateData.ngo_notes = `Elderly rejection reason: ${rejectReason}`;
+        }
+
+        const { data, error } = await supabase
+            .from('applications')
+            .update(updateData)
+            .eq('id', applicationId)
+            .select('*, youth:youth_id(*), elderly:elderly_id(*)')
+            .single();
+
+        if (error) throw error;
+        return data as Interest;
+    },
+
+    /**
+     * Get applications pending elderly review (status = 'approved')
+     * After admin approval, elderly needs to review
+     */
+    async getApplicationsPendingElderlyReview(elderlyId: string): Promise<Interest[]> {
+        const { data, error } = await supabase
+            .from('applications')
+            .select('*, youth:youth_id(*)')
+            .eq('elderly_id', elderlyId)
+            .eq('status', 'approved')
+            .order('reviewed_at', { ascending: false });
+
+        if (error) throw error;
+        return data || [];
+    },
+
+    /**
+     * Delete application and related messages
+     * Called when youth confirms rejection
+     */
+    async deleteApplication(applicationId: string): Promise<void> {
+        console.log('[Repo] deleteApplication', { applicationId });
+
+        // First delete messages related to this application
+        const { error: msgError } = await supabase
+            .from('messages')
+            .delete()
+            .eq('application_id', applicationId);
+
+        if (msgError) {
+            console.error('[Repo] Error deleting messages:', msgError);
+            throw msgError;
+        }
+
+        // Then delete the application
+        const { error: appError } = await supabase
+            .from('applications')
+            .delete()
+            .eq('id', applicationId);
+
+        if (appError) {
+            console.error('[Repo] Error deleting application:', appError);
+            throw appError;
+        }
+
+        console.log('[Repo] Application and messages deleted successfully');
     }
 };

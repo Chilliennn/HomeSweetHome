@@ -1,5 +1,6 @@
 import { makeAutoObservable, runInAction } from "mobx";
 import { stageService } from "../../Model/Service/CoreService/stage";
+import { notificationService } from "../../Model/Service/CoreService/notificationService";
 import type {
   Feature,
   LockedStageDetail,
@@ -66,6 +67,7 @@ export class StageViewModel {
 
   private relationshipSubscription: any = null;
   private activitiesSubscription: any = null;
+  private notificationSubscription: any = null;
   currentUserId: any;
 
   constructor() {
@@ -198,6 +200,33 @@ export class StageViewModel {
       this.relationshipSubscription = null;
       this.activitiesSubscription = null;
     }
+    // Cleanup notification subscription
+    if (this.notificationSubscription) {
+      notificationService.unsubscribe(this.notificationSubscription);
+      this.notificationSubscription = null;
+    }
+  }
+
+  /**
+   * Setup notification realtime subscription
+   */
+  private setupNotificationSubscription(userId: string) {
+    if (this.notificationSubscription) {
+      console.log('[StageViewModel] Notification subscription already active');
+      return;
+    }
+
+    console.log('[StageViewModel] Setting up notification subscription for:', userId);
+    this.notificationSubscription = notificationService.subscribeToNotifications(
+      userId,
+      (notification) => {
+        console.log('[StageViewModel] New notification received:', notification.type);
+        // Reload notification count when new notification arrives
+        runInAction(() => {
+          this.unreadNotificationCount += 1;
+        });
+      }
+    );
   }
 
   /**
@@ -353,6 +382,12 @@ export class StageViewModel {
       if (this.relationshipId) {
         this.setupRealtimeSubscription(this.relationshipId);
       }
+
+      // Setup notification realtime subscription
+      this.setupNotificationSubscription(userId);
+
+      // Load initial notification count
+      await this.loadUnreadNotifications();
     } catch (err: any) {
       runInAction(() => {
         this.error = err.message;

@@ -6,8 +6,8 @@ import { observer } from 'mobx-react-lite';
 import { authViewModel, settingsViewModel } from '@home-sweet-home/viewmodel';
 import { SettingItem } from '../components/ui/SettingItem';
 import { ToggleSettingItem } from '../components/ui/ToggleSettingItem';
-import { BottomTabBar, DEFAULT_TABS, NotificationBell } from '../components/ui';
-import { useTabNavigation } from '../hooks'; 
+import { BottomTabBar, DEFAULT_TABS, NotificationBell, IconCircle } from '../components/ui';
+import { useTabNavigation, getAvatarDisplay } from '../hooks'; 
 
 
 /**
@@ -28,7 +28,10 @@ import { useTabNavigation } from '../hooks';
  */
 const SettingsScreenComponent: React.FC = () => {
   const router = useRouter();
-  const { handleTabPress, userId, userName, userType } = useTabNavigation('settings');
+  const { handleTabPress, userId: userIdFromParams, userName, userType } = useTabNavigation('settings');
+
+  // ✅ Fallback: Get userId from authViewModel if not in params
+  const userId = userIdFromParams || authViewModel.authState.currentUserId || undefined;
 
 // Load user profile data on mount
   useEffect(() => {
@@ -42,6 +45,30 @@ const SettingsScreenComponent: React.FC = () => {
   const displayIdentity = authViewModel.profileData.displayIdentity;
   const verifiedAge = authViewModel.verifiedAge;
 
+  // ============================================================================
+  // RENDER DATA
+  // ============================================================================
+  // Get user display name - prefer display identity, fallback to userName param
+  const displayName = displayIdentity?.displayName || userName || 'User';
+  
+  // Get user location from real identity
+  const location = realIdentity?.location || 'Kuala Lumpur';
+  
+  // Get user age from verified age
+  const age = verifiedAge || 25;
+
+  // Get avatar config from user's profile data
+  const avatarConfig = getAvatarDisplay(
+    displayIdentity ? {
+      avatar_url: displayIdentity.customAvatarUrl || undefined,
+      avatar_meta: {
+        type: displayIdentity.avatarType || 'default',
+        selected_avatar_index: displayIdentity.selectedAvatarIndex ?? null,
+      },
+    } : null,
+    (userType as 'youth' | 'elderly') || 'youth'
+  );
+
 
 
   // ============================================================================
@@ -49,24 +76,14 @@ const SettingsScreenComponent: React.FC = () => {
   // ============================================================================
 
   const handleEditProfile = () => {
+    console.log('[SettingsScreen] handleEditProfile - userId:', userId, 'userName:', userName, 'userType:', userType);
     router.push({
       pathname: '/(auth)/profile-setup',
-      params: { userId, userName, userType },
+      params: { userId, userName, userType, editMode: 'true' },
     });
   };
 
-  const handleDisplayIdentity = () => {
-    // TODO: Navigate to display identity screen
-    Alert.alert('Display Identity', 'Navigate to display identity settings');
-  };
-
-  const handleRealIdentity = () => {
-    // TODO: Navigate to real identity screen
-    Alert.alert('Real Identity', 'View your private information');
-  };
-
   const handleAgeVerification = () => {
-    // TODO: Navigate to age verification screen
     Alert.alert('Age Verification', 'Your age is verified');
   };
 
@@ -75,30 +92,30 @@ const SettingsScreenComponent: React.FC = () => {
     Alert.alert('Safety Reports', 'View your report history');
   };
 
-  const handleSafetyResources = () => {
-    // TODO: Navigate to safety resources screen
-    Alert.alert('Safety Resources', 'Guidelines & tips for staying safe');
-  };
+  // const handleSafetyResources = () => {
+  //   // TODO: Navigate to safety resources screen
+  //   Alert.alert('Safety Resources', 'Guidelines & tips for staying safe');
+  // };
 
-  const handleHelpCenter = () => {
-    // TODO: Navigate to help center
-    Alert.alert('Help Center', 'FAQ & guides');
-  };
+  // const handleHelpCenter = () => {
+  //   // TODO: Navigate to help center
+  //   Alert.alert('Help Center', 'FAQ & guides');
+  // };
 
-  const handleContactSupport = () => {
-    // TODO: Navigate to contact support
-    Alert.alert('Contact Support', 'Get help from our team');
-  };
+  // const handleContactSupport = () => {
+  //   // TODO: Navigate to contact support
+  //   Alert.alert('Contact Support', 'Get help from our team');
+  // };
 
-  const handleTermsConditions = () => {
-    // TODO: Navigate to terms & conditions
-    Alert.alert('Terms & Conditions', 'Legal agreements');
-  };
+  // const handleTermsConditions = () => {
+  //   // TODO: Navigate to terms & conditions
+  //   Alert.alert('Terms & Conditions', 'Legal agreements');
+  // };
 
-  const handlePrivacyPolicy = () => {
-    // TODO: Navigate to privacy policy
-    Alert.alert('Privacy Policy', 'How we protect your data');
-  };
+  // const handlePrivacyPolicy = () => {
+  //   // TODO: Navigate to privacy policy
+  //   Alert.alert('Privacy Policy', 'How we protect your data');
+  // };
 
   const handleLogout = async () => {
     Alert.alert(
@@ -133,18 +150,6 @@ const SettingsScreenComponent: React.FC = () => {
     });
   };
 
-  // ============================================================================
-  // RENDER
-  // ============================================================================
-  // Get user display name - prefer display identity, fallback to userName param
-  const displayName = displayIdentity?.displayName || userName || 'User';
-  
-  // Get user location from real identity
-  const location = realIdentity?.location || 'Kuala Lumpur';
-  
-  // Get user age from verified age
-  const age = verifiedAge || 25;
-
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       {/* Header */}
@@ -159,12 +164,16 @@ const SettingsScreenComponent: React.FC = () => {
       </View>
 
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        {/* User Profile Header */}
+        {/* User Profile Header - FIXED: Uses proper avatar from profile */}
         <View style={styles.profileHeader}>
           <View style={styles.avatarContainer}>
-            <Text style={styles.avatarEmoji}>
-              {userType === 'elderly' ? '👴' : '👨'}
-            </Text>
+            <IconCircle
+              icon={avatarConfig.icon}
+              imageSource={avatarConfig.imageSource}
+              size={64}
+              backgroundColor={avatarConfig.backgroundColor}
+              contentScale={0.7}
+            />
           </View>
           <View style={styles.profileInfo}>
             <Text style={styles.profileName}>{displayName}</Text>
@@ -175,9 +184,6 @@ const SettingsScreenComponent: React.FC = () => {
               <Text style={styles.verifiedText}>✓ Verified</Text>
             </View>
           </View>
-          <TouchableOpacity onPress={handleEditProfile}>
-            <Text style={styles.profileArrow}>›</Text>
-          </TouchableOpacity>
         </View>
 
         {/* Account Section */}
@@ -190,20 +196,6 @@ const SettingsScreenComponent: React.FC = () => {
               title="Edit Profile"
               subtitle="Update your information"
               onPress={handleEditProfile}
-            />
-            <SettingItem
-              icon={require('../assets/images/icon-fakeIdentity.png')}
-              iconBackgroundColor="#D4E5AE"
-              title="Display Identity"
-              subtitle="Name & avatar for browsing"
-              onPress={handleDisplayIdentity}
-            />
-            <SettingItem
-              icon={require('../assets/images/icon-realIdentity.png')}
-              iconBackgroundColor="#C8ADD6"
-              title="Real Identity"
-              subtitle="Private information"
-              onPress={handleRealIdentity}
             />
             <SettingItem
               icon={require('../assets/images/icon-smallcorrect.png')}
@@ -228,17 +220,17 @@ const SettingsScreenComponent: React.FC = () => {
               subtitle="View your report history"
               onPress={handleSafetyReports}
             />
-            <SettingItem
+            {/* <SettingItem
               icon={require('../assets/images/icon-question.png')}
               iconBackgroundColor="#9DE2D0"
               title="Safety Resources"
               subtitle="Guidelines & tips"
               onPress={handleSafetyResources}
-            />
+            /> */}
           </View>
         </View>
 
-        {/* Notifications Section */}
+        {/* Notifications Section
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>NOTIFICATIONS</Text>
           <View style={styles.sectionContent}>
@@ -283,9 +275,9 @@ const SettingsScreenComponent: React.FC = () => {
               onToggle={() => settingsViewModel.toggleNotification('platformUpdates')}
             />
           </View>
-        </View>
+        </View> */}
 
-        {/* Support & Help Section */}
+        {/* Support & Help Section
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>SUPPORT & HELP</Text>
           <View style={styles.sectionContent}>
@@ -318,7 +310,7 @@ const SettingsScreenComponent: React.FC = () => {
               onPress={handlePrivacyPolicy}
             />
           </View>
-        </View>
+        </View> */}
 
         {/* Log Out Button */}
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
@@ -337,21 +329,6 @@ const SettingsScreenComponent: React.FC = () => {
       />
     </SafeAreaView>
   );
-};
-
-// ============================================================================
-// HELPER FUNCTIONS
-// ============================================================================
-
-const calculateAge = (dateOfBirth: string): number => {
-  const today = new Date();
-  const birthDate = new Date(dateOfBirth);
-  let age = today.getFullYear() - birthDate.getFullYear();
-  const monthDiff = today.getMonth() - birthDate.getMonth();
-  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-    age--;
-  }
-  return age;
 };
 
 // ============================================================================

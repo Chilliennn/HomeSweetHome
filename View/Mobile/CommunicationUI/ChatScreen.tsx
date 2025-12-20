@@ -22,9 +22,9 @@ import { Colors } from '@/constants/theme';
 import { useVoiceRecording } from '@/hooks/useVoiceRecording';
 import { useAudioPlayer } from '@/hooks/useAudioPlayer';
 import { useVoiceUpload } from '@/hooks/useVoiceUpload';
+import { getAvatarDisplay } from '@/hooks';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system';
-import { uploadChatImage, uploadChatVideo, filterMessage, getBlockedMessageAlert } from '@home-sweet-home/model';
 
 /**
  * ChatScreen - UC104: Pre-match and relationship chat interface
@@ -185,8 +185,10 @@ export const ChatScreen = observer(function ChatScreen() {
   const isRelationshipChat = vm.currentChatContext === 'relationship';
 
   // Get partner based on context
+  // For relationship chat, use relationshipPartnerUser which is loaded in checkActiveRelationship
+  // For pre-match chat, use chat.partnerUser
   const partnerUser = isRelationshipChat
-    ? (relationship?.youth_id === currentUserId ? relationship?.elderly : relationship?.youth)
+    ? vm.relationshipPartnerUser
     : chat?.partnerUser;
 
   const messages = vm.currentChatMessages;
@@ -262,11 +264,11 @@ export const ChatScreen = observer(function ChatScreen() {
     const content = messageInput.trim();
 
     // UC403: Content Filter - Block harmful/inappropriate messages
-    const filterResult = filterMessage(content);
+    const filterResult = vm.filterMessage(content);
     if (filterResult.isBlocked) {
       Alert.alert(
         'Message Blocked',
-        getBlockedMessageAlert(),
+        vm.getBlockedMessageAlert(),
         [{ text: 'OK' }]
       );
       return; // Don't send the message
@@ -417,13 +419,13 @@ export const ChatScreen = observer(function ChatScreen() {
       let mediaUrl: string;
 
       if (isVideo) {
-        mediaUrl = await uploadChatVideo(base64Data, uploadContext, currentUserId!, fileExtension);
+        mediaUrl = await vm.uploadChatVideo(base64Data, uploadContext, currentUserId!, fileExtension);
         const success = await vm.sendVideoMessage(mediaUrl);
         if (!success) {
           Alert.alert('Error', vm.errorMessage || 'Failed to send video');
         }
       } else {
-        mediaUrl = await uploadChatImage(base64Data, uploadContext, currentUserId!, fileExtension);
+        mediaUrl = await vm.uploadChatImage(base64Data, uploadContext, currentUserId!, fileExtension);
         const success = await vm.sendImageMessage(mediaUrl);
         if (!success) {
           Alert.alert('Error', vm.errorMessage || 'Failed to send image');
@@ -735,14 +737,22 @@ export const ChatScreen = observer(function ChatScreen() {
 
           <View style={styles.headerInfo}>
             <View style={styles.headerRow}>
-              <IconCircle
-                icon={partnerUser?.profile_data?.avatar_meta?.type === 'default' ? '👵' : '👤'}
-                size={40}
-                backgroundColor="#C8ADD6"
-                contentScale={0.6}
-              />
+              {(() => {
+                // FIXED: Get partner's avatar config properly
+                const partnerType = currentUserType === 'youth' ? 'elderly' : 'youth';
+                const avatarConfig = getAvatarDisplay(partnerUser?.profile_data, partnerType);
+                return (
+                  <IconCircle
+                    icon={avatarConfig.icon}
+                    imageSource={avatarConfig.imageSource}
+                    size={40}
+                    backgroundColor={avatarConfig.backgroundColor}
+                    contentScale={0.6}
+                  />
+                );
+              })()}
               <View style={styles.headerText}>
-                <Text style={styles.partnerName}>{partnerUser?.full_name || 'Partner'}</Text>
+                <Text style={styles.partnerName}>{partnerUser?.profile_data?.display_name || partnerUser?.full_name || 'Partner'}</Text>
                 <Text style={styles.dayLabel}>{headerInfo}</Text>
               </View>
             </View>

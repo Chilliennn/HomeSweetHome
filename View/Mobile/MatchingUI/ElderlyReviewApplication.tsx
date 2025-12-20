@@ -38,12 +38,11 @@ export const ElderlyReviewApplication = observer(function ElderlyReviewApplicati
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [application, setApplication] = useState<any>(null);
 
-    // Load application data
+    // Load application data - ✅ MVVM: Use ViewModel method
     useEffect(() => {
         const loadApplication = async () => {
             try {
-                const { matchingRepository } = await import('@home-sweet-home/model');
-                const data = await matchingRepository.getApplicationById(applicationId);
+                const data = await vm.getApplicationById(applicationId);
                 setApplication(data);
             } catch (error) {
                 console.error('Failed to load application:', error);

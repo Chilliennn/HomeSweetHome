@@ -3,9 +3,8 @@ import { View, Text, StyleSheet, ScrollView, ImageSourcePropType, TouchableOpaci
 import { useRouter } from 'expo-router';
 import { observer } from 'mobx-react-lite';
 import { elderMatchingViewModel, communicationViewModel } from '@home-sweet-home/viewmodel';
-import { authViewModel } from '@home-sweet-home/viewmodel';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useTabNavigation } from '@/hooks/use-tab-navigation';
+import { useTabNavigation, getAvatarDisplay } from '@/hooks';
 import {
   Card,
   NotificationBell,
@@ -60,10 +59,21 @@ export const ElderlyHome: React.FC<ElderlyHomeProps> = observer(({
   const { handleTabPress: hookHandleTabPress } = useTabNavigation(activeTab);
   const handleTabPress = onTabPress || hookHandleTabPress;
 
-  // Use real user ID from AuthViewModel
-  const currentElderlyId = authViewModel.authState.currentUserId;
-  // Use real name if not passed as prop
-  const displayName = propDisplayName || authViewModel.profileData.displayIdentity?.displayName || 'Elderly User';
+  // ✅ MVVM: Get user ID from ViewModel (synced by Layout from authViewModel)
+  const currentElderlyId = vm.currentUserId;
+  const displayName = propDisplayName || 'Elderly User';
+
+  // ✅ Default avatar for elderly (since we don't have profile data in this ViewModel)
+  // If custom avatar is needed, it should be passed as prop from parent
+  const avatarConfig = avatarSource ? {
+    icon: undefined,
+    imageSource: avatarSource,
+    backgroundColor: '#C8ADD6'
+  } : {
+    icon: '👵' as const,
+    imageSource: undefined,
+    backgroundColor: '#C8ADD6'
+  };
 
   // Poll for requests or load on mount
   useEffect(() => {
@@ -83,7 +93,7 @@ export const ElderlyHome: React.FC<ElderlyHomeProps> = observer(({
     router.push('/(main)/notification');
   };
 
-  const pendingCount = vm.incomingRequests.length;
+  const pendingCount = vm.unreadNotificationCount;
   console.log('🔵 [ElderlyHome] Rendering - pendingCount:', pendingCount, 'requests:', vm.incomingRequests.map(r => r.id));
   // How it works items
   const howItWorksItems = [
@@ -136,13 +146,13 @@ export const ElderlyHome: React.FC<ElderlyHomeProps> = observer(({
           </Card>
         )}
 
-        {/* Welcome Icon */}
+        {/* Welcome Icon - FIXED: Uses user's actual avatar from profile */}
         <View style={styles.welcomeIconContainer}>
           <IconCircle
-            icon={avatarSource ? undefined : '👵'}
-            imageSource={avatarSource}
+            icon={avatarConfig.icon}
+            imageSource={avatarConfig.imageSource}
             size={100}
-            backgroundColor="#9DE2D0"
+            backgroundColor={avatarConfig.backgroundColor}
             contentScale={0.7}
           />
         </View>

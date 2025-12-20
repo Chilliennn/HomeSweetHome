@@ -117,6 +117,30 @@ export class FamilyViewModel {
     }
   }
 
+  /**
+   * Set current user context (called by Layout when auth state changes)
+   */
+  setCurrentUser(userId: string | null): void {
+    runInAction(() => {
+      this.currentUserId = userId;
+    });
+  }
+
+  /**
+   * Clear user context (on logout)
+   */
+  clearUser(): void {
+    runInAction(() => {
+      this.currentUserId = null;
+      this.currentRelationship = null;
+      this.mediaItems = [];
+      this.memories = [];
+      this.diaryEntries = [];
+      this.calendarEvents = [];
+      this.aiRecommendations = [];
+    });
+  }
+
   setRelationship(relationship: Relationship) {
     this.currentRelationship = relationship;
   }

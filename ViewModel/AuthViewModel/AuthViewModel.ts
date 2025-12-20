@@ -11,6 +11,7 @@ import {
   UserType,
   profileCompletionService,
   authService,
+  notificationService,
 } from '@home-sweet-home/model';
 
 /**
@@ -22,8 +23,7 @@ export type ProfileSetupStep =
   | 'camera'
   | 'verifying'
   | 'verified'
-  | 'real-identity'
-  | 'display-identity'
+  | 'profile-form'      
   | 'profile-info'
   | 'complete';
 
@@ -130,10 +130,9 @@ export class AuthViewModel {
       'camera': 1,
       'verifying': 1,
       'verified': 1,
-      'real-identity': 2,
-      'display-identity': 3,
-      'profile-info': 4,
-      'complete': 5,
+      'profile-form': 2, 
+      'profile-info': 3,
+      'complete': 4,
     };
     return stepMap[this.currentStep];
   }
@@ -142,7 +141,7 @@ export class AuthViewModel {
    * Total number of main steps (excluding sub-steps)
    */
   get totalSteps(): number {
-    return 5;
+    return 4; // Welcome, Age Verification, Profile Form, Profile Info
   }
 
   // =============================================================
@@ -273,6 +272,34 @@ export class AuthViewModel {
     }
   }
 
+  /**
+   * Get active relationship for a user
+   * Used during login to determine if user should go to bonding or matching
+   */
+  async getActiveRelationship(userId: string) {
+    const { relationshipService } = await import('@home-sweet-home/model');
+    return relationshipService.getActiveRelationship(userId);
+  }
+
+  /**
+   * Manually set auth state (for prototype mode)
+   * Used when login flow bypasses authService
+   */
+  setAuthState(state: AuthState) {
+    runInAction(() => {
+      this.authState = state;
+    });
+  }
+
+  /**
+   * Manually set user type
+   */
+  setUserType(userType: UserType) {
+    runInAction(() => {
+      this.userType = userType;
+    });
+  }
+
   // =============================================================
   // Profile Setup State Helpers
   // =============================================================
@@ -327,29 +354,39 @@ export class AuthViewModel {
    * UC103_2, UC103_3, UC103_4
    */
   async verifyAgeWithCapture(payload: AgeVerificationPayload) {
+    console.log('[AuthViewModel] verifyAgeWithCapture START:', payload.userId);
+
     this.isLoading = true;
     this.errorMessage = null;
     this.currentStep = 'verifying';
+    console.log('[AuthViewModel] Step set to: verifying');
 
     try {
       const result = await profileCompletionService.verifyAgeAndPersist(payload);
+      console.log('[AuthViewModel] Service returned result:', result);
+
       runInAction(() => {
+        console.log('[AuthViewModel] runInAction: updating state');
         this.verificationResult = result;
         this.verifiedAge = result.verifiedAge;
         this.profileCompletion.ageVerified = result.ageVerified;
         this.userType = payload.userType;
         this.currentStep = 'verified';
+        console.log('[AuthViewModel] Step set to: verified, age:', result.verifiedAge);
       });
       return result;
     } catch (error: any) {
+      console.error('[AuthViewModel] verifyAgeWithCapture ERROR:', error);
       runInAction(() => {
         this.errorMessage = this.mapVerificationError(error);
         this.currentStep = 'age-verification';
+        console.log('[AuthViewModel] Step set to: age-verification (error recovery)');
       });
       throw error;
     } finally {
       runInAction(() => {
         this.isLoading = false;
+        console.log('[AuthViewModel] isLoading set to false');
       });
     }
   }
@@ -403,6 +440,72 @@ export class AuthViewModel {
     } catch (error: any) {
       runInAction(() => {
         this.errorMessage = error?.message || 'Unable to save display identity';
+      });
+      throw error;
+    } finally {
+      runInAction(() => {
+        this.isLoading = false;
+      });
+    }
+  }
+
+  /**
+   * Save combined profile setup (merged Step 1 + Step 2)
+   * Handles: phone, location, displayName, avatar upload
+   * 
+   * NOTE: For custom avatars, the View layer must read the file and pass base64 data.
+   * The ViewModel does NOT handle file system operations.
+   */
+  async saveProfileSetup(
+    userId: string,
+    data: {
+      phoneNumber: string;
+      location: string;
+      displayName: string;
+      avatarType: 'default' | 'custom';
+      selectedAvatarId: string | null;
+      // For custom avatars: base64 data and extension (from View layer)
+      customAvatarBase64: string | null;
+      customAvatarExtension: string | null;
+    }
+  ) {
+    this.isLoading = true;
+    this.errorMessage = null;
+
+    try {
+      const user = await profileCompletionService.saveProfileSetup(userId, data);
+      
+      // Convert selectedAvatarId to index for storage in profileData
+      let avatarIndex: number | null = null;
+      if (data.selectedAvatarId) {
+        if (data.selectedAvatarId.startsWith('img-')) {
+          avatarIndex = parseInt(data.selectedAvatarId.replace('img-', ''), 10);
+        } else if (data.selectedAvatarId.startsWith('emoji-')) {
+          avatarIndex = parseInt(data.selectedAvatarId.replace('emoji-', ''), 10) + 2;
+        }
+      }
+
+      runInAction(() => {
+        // Update realIdentity data (phone, location - without real photo)
+        this.profileData.realIdentity = {
+          phoneNumber: data.phoneNumber,
+          location: data.location,
+          realPhotoUrl: null, // Removed per requirements
+        };
+        // Update displayIdentity data
+        this.profileData.displayIdentity = {
+          displayName: data.displayName,
+          avatarType: data.avatarType,
+          selectedAvatarIndex: avatarIndex,
+          customAvatarUrl: user.profile_data?.avatar_url || null,
+        };
+        this.profileCompletion.realIdentityCompleted = true;
+        this.profileCompletion.displayIdentityCompleted = true;
+      });
+      return user;
+    } catch (error: any) {
+      runInAction(() => {
+        this.errorMessage = error?.message || 'Unable to save profile';
       });
       throw error;
     } finally {
@@ -525,6 +628,27 @@ export class AuthViewModel {
       runInAction(() => {
         this.isLoading = false;
       });
+    }
+  }
+
+  // =============================================================
+  // Push Notification Methods (for View layer hooks)
+  // =============================================================
+
+  /**
+   * Save push notification token for current user
+   * Called by View layer hooks after getting Expo push token
+   * 
+   * @param userId - User ID to save token for
+   * @param token - Expo push token
+   */
+  async savePushToken(userId: string, token: string): Promise<void> {
+    try {
+      await notificationService.savePushToken(userId, token);
+      console.log('[AuthViewModel] Push token saved successfully');
+    } catch (error) {
+      console.error('[AuthViewModel] Failed to save push token:', error);
+      // Don't throw - push token save failure shouldn't break the app
     }
   }
 

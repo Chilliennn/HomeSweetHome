@@ -117,7 +117,8 @@ export const MatchingScreenComponent = observer(
     };
 
     const handleExpressInterest = async () => {
-      const youthId = matchingViewModel.currentUserId;
+      // Get userId from youthMatchingViewModel (synced by Layout)
+      const youthId = youthMatchingViewModel.currentUserId;
       if (!youthId) {
         Alert.alert("Error", "You must be logged in to express interest.");
         return;

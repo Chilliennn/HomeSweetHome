@@ -174,12 +174,16 @@ export const communicationService = {
         ? await matchingRepository.getYouthApplications(userId)
         : await matchingRepository.getElderlyApplications(userId);
 
+      console.log('[communicationService] getActivePreMatchChats - Raw applications:', applications.map(a => ({ id: a.id, status: a.status })));
+
       // ✅ Filter for chat-accessible statuses (include pending, approved, and active)
       // Exclude only 'rejected', 'withdrawn', and 'both_accepted' (which becomes relationship)
       const chatAccessibleStatuses = ['pending_review', 'approved', 'pre_chat_active'];
       const activeChats = applications.filter(app =>
         chatAccessibleStatuses.includes(app.status)
       );
+
+      console.log('[communicationService] getActivePreMatchChats - Filtered activeChats:', activeChats.map(a => ({ id: a.id, status: a.status })));
 
       // Get messages and partner info for each chat
       const chats = await Promise.all(
@@ -486,6 +490,32 @@ export const communicationService = {
       return await messageRepository.getUnreadCount(userId);
     } catch (error) {
       console.error('Error getting unread count:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Get messages for a specific relationship chat
+   * Used by ViewModel for relationship chat loading
+   */
+  async getRelationshipMessages(relationshipId: string): Promise<Message[]> {
+    try {
+      return await messageRepository.getMessagesByRelationship(relationshipId);
+    } catch (error) {
+      console.error('Error getting relationship messages:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Mark relationship messages as read
+   * Used by ViewModel when user opens relationship chat
+   */
+  async markRelationshipMessagesAsRead(userId: string, relationshipId: string): Promise<void> {
+    try {
+      await messageRepository.markMessagesAsRead(userId, undefined, relationshipId);
+    } catch (error) {
+      console.error('Error marking relationship messages as read:', error);
       throw error;
     }
   },

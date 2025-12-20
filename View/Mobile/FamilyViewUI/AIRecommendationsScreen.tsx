@@ -8,12 +8,12 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { observer } from 'mobx-react-lite';
-import { familyViewModel, authViewModel } from '@home-sweet-home/viewmodel';
+import { useRouter, useLocalSearchParams } from 'expo-router';
+import { familyViewModel } from '@home-sweet-home/viewmodel';
 import { ThemedText } from '@/components/themed-text';
 import { Button } from '@/components/ui/Button';
 import { AlertBanner } from '@/components/ui/AlertBanner';
 import { Header } from '@/components/ui/Header';
-import { useRouter } from 'expo-router';
 
 /**
  * AIRecommendationsScreen - View and use AI activity suggestions
@@ -56,7 +56,8 @@ export const AIRecommendationsScreen = observer(() => {
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
 
-    const userId = authViewModel.authState.currentUserId;
+    // ✅ MVVM: Use familyViewModel.currentUserId (synced from Layout)
+    const userId = familyViewModel.currentUserId;
     if (!userId) {
       Alert.alert('Error', 'User not authenticated');
       return;

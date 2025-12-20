@@ -11,12 +11,12 @@ import {
 import { observer } from 'mobx-react-lite';
 import * as Speech from 'expo-speech';
 import { Audio } from 'expo-av';
-import { familyViewModel, authViewModel } from '@home-sweet-home/viewmodel';
+import { useRouter, useLocalSearchParams } from 'expo-router';
+import { familyViewModel } from '@home-sweet-home/viewmodel';
 import { ThemedText } from '@/components/themed-text';
 import { Button } from '@/components/ui/Button';
 import { AlertBanner } from '@/components/ui/AlertBanner';
 import { Header } from '@/components/ui/Header';
-import { useRouter } from 'expo-router';
 import { useVoiceTranscription } from '@/hooks/useVoiceTranscription';
 import type { MoodType } from '@home-sweet-home/model';
 
@@ -40,9 +40,11 @@ const MOOD_OPTIONS: { value: MoodType; label: string; emoji: string }[] = [
  */
 export const WriteDiaryScreen = observer(() => {
   const router = useRouter();
+  const params = useLocalSearchParams();
   const { currentRelationship, isLoading, errorMessage, isTranscribing, transcriptionError } = familyViewModel;
   const { transcribeAudio } = useVoiceTranscription();
   const recordingRef = useRef<Audio.Recording | null>(null);
+  const userId = (params.userId as string) || familyViewModel.currentUserId;
 
   const [content, setContent] = useState('');
   const [selectedMood, setSelectedMood] = useState<MoodType>('happy');
@@ -51,16 +53,12 @@ export const WriteDiaryScreen = observer(() => {
   // Initialize relationship if not loaded
   React.useEffect(() => {
     const initializeIfNeeded = async () => {
-      if (!currentRelationship) {
-        const { authViewModel: auth } = await import('@home-sweet-home/viewmodel');
-        const userId = auth.authState.currentUserId;
-        if (userId) {
-          await familyViewModel.initialize(userId);
-        }
+      if (!currentRelationship && userId) {
+        await familyViewModel.initialize(userId);
       }
     };
     initializeIfNeeded();
-  }, [currentRelationship]);
+  }, [currentRelationship, userId]);
 
   const handleSave = async () => {
     if (!content.trim()) {
@@ -73,7 +71,6 @@ export const WriteDiaryScreen = observer(() => {
       return;
     }
 
-    const userId = authViewModel.authState.currentUserId;
     if (!userId) {
       Alert.alert('Error', 'User not authenticated');
       return;

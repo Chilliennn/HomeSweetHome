@@ -40,7 +40,7 @@ const AGE_REQUIREMENTS = [
   },
 ];
 
-const TOTAL_ONBOARDING_STEPS = 4;
+const TOTAL_ONBOARDING_STEPS = 3;
 const CURRENT_STEP = 1;
 
 // ============================================================================
@@ -52,21 +52,21 @@ export const AgeVerification: React.FC<AgeVerificationProps> = ({
   isLoading = false,
 }) => {
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
+    <SafeAreaView style={styles.safeArea} edges={['top','bottom']}>
       <View style={styles.container}>
         {/* Header with Back Button */}
         <Header title="Age Verification" onBack={onBack} />
-
-        <ScrollView
-          contentContainerStyle={styles.content}
-          showsVerticalScrollIndicator={false}
-        >
-          {/* Step Indicator */}
+        {/* Step Indicator */}
           <StepIndicator
             totalSteps={TOTAL_ONBOARDING_STEPS}
             currentStep={CURRENT_STEP}
             style={styles.steps}
           />
+        <ScrollView
+          contentContainerStyle={styles.content}
+          showsVerticalScrollIndicator={false}
+        >
+          
 
           {/* Important Notice */}
           <AlertBanner

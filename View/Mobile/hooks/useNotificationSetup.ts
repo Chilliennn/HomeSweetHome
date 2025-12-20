@@ -1,6 +1,6 @@
 import { useEffect, useCallback, useRef } from "react";
 import Constants from "expo-constants";
-import { notificationService } from "@home-sweet-home/model/Service/CoreService";
+import { authViewModel } from "@home-sweet-home/viewmodel";
 
 let _NotificationsModule: any = null;
 let _DeviceModule: any = null;
@@ -129,7 +129,7 @@ export function useNotificationSetup(): UseNotificationSetupReturn {
       const token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
       console.log('[useNotificationSetup] ✅ Push Token:', token);
 
-      await notificationService.savePushToken(userId, token);
+      await authViewModel.savePushToken(userId, token);
 
       await Notifications.setNotificationChannelAsync('default', {
         name: 'default',

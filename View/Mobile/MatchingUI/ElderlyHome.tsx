@@ -5,7 +5,7 @@ import { observer } from 'mobx-react-lite';
 import { elderMatchingViewModel, communicationViewModel } from '@home-sweet-home/viewmodel';
 import { authViewModel } from '@home-sweet-home/viewmodel';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useTabNavigation } from '@/hooks/use-tab-navigation';
+import { useTabNavigation, getAvatarDisplay } from '@/hooks';
 import {
   Card,
   NotificationBell,
@@ -64,6 +64,19 @@ export const ElderlyHome: React.FC<ElderlyHomeProps> = observer(({
   const currentElderlyId = authViewModel.authState.currentUserId;
   // Use real name if not passed as prop
   const displayName = propDisplayName || authViewModel.profileData.displayIdentity?.displayName || 'Elderly User';
+
+  // FIXED: Get avatar config from user's profile data
+  const currentUserProfileData = authViewModel.profileData.displayIdentity;
+  const avatarConfig = getAvatarDisplay(
+    currentUserProfileData ? {
+      avatar_url: currentUserProfileData.customAvatarUrl || undefined,
+      avatar_meta: {
+        type: currentUserProfileData.customAvatarUrl ? 'custom' : 'default',
+        selected_avatar_index: currentUserProfileData.selectedAvatarIndex ?? null,
+      },
+    } : null,
+    'elderly'
+  );
 
   // Poll for requests or load on mount
   useEffect(() => {
@@ -136,13 +149,13 @@ export const ElderlyHome: React.FC<ElderlyHomeProps> = observer(({
           </Card>
         )}
 
-        {/* Welcome Icon */}
+        {/* Welcome Icon - FIXED: Uses user's actual avatar from profile */}
         <View style={styles.welcomeIconContainer}>
           <IconCircle
-            icon={avatarSource ? undefined : '👵'}
-            imageSource={avatarSource}
+            icon={avatarConfig.icon}
+            imageSource={avatarConfig.imageSource}
             size={100}
-            backgroundColor="#9DE2D0"
+            backgroundColor={avatarConfig.backgroundColor}
             contentScale={0.7}
           />
         </View>

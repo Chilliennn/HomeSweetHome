@@ -6,8 +6,8 @@ import { observer } from 'mobx-react-lite';
 import { authViewModel, settingsViewModel } from '@home-sweet-home/viewmodel';
 import { SettingItem } from '../components/ui/SettingItem';
 import { ToggleSettingItem } from '../components/ui/ToggleSettingItem';
-import { BottomTabBar, DEFAULT_TABS, NotificationBell } from '../components/ui';
-import { useTabNavigation } from '../hooks'; 
+import { BottomTabBar, DEFAULT_TABS, NotificationBell, IconCircle } from '../components/ui';
+import { useTabNavigation, getAvatarDisplay } from '../hooks'; 
 
 
 /**
@@ -51,18 +51,24 @@ const SettingsScreenComponent: React.FC = () => {
   const handleEditProfile = () => {
     router.push({
       pathname: '/(auth)/profile-setup',
-      params: { userId, userName, userType },
+      params: { userId, userName, userType, editMode: 'true' },
     });
   };
 
   const handleDisplayIdentity = () => {
-    // TODO: Navigate to display identity screen
-    Alert.alert('Display Identity', 'Navigate to display identity settings');
+    // Navigate to profile setup in edit mode for display identity changes
+    router.push({
+      pathname: '/(auth)/profile-setup',
+      params: { userId, userName, userType, editMode: 'true' },
+    });
   };
 
   const handleRealIdentity = () => {
-    // TODO: Navigate to real identity screen
-    Alert.alert('Real Identity', 'View your private information');
+    // Navigate to profile setup in edit mode for contact info changes
+    router.push({
+      pathname: '/(auth)/profile-setup',
+      params: { userId, userName, userType, editMode: 'true' },
+    });
   };
 
   const handleAgeVerification = () => {
@@ -145,6 +151,18 @@ const SettingsScreenComponent: React.FC = () => {
   // Get user age from verified age
   const age = verifiedAge || 25;
 
+  // FIXED: Get avatar config from user's profile data
+  const avatarConfig = getAvatarDisplay(
+    displayIdentity ? {
+      avatar_url: displayIdentity.customAvatarUrl || undefined,
+      avatar_meta: {
+        type: displayIdentity.customAvatarUrl ? 'custom' : 'default',
+        selected_avatar_index: displayIdentity.selectedAvatarIndex ?? null,
+      },
+    } : null,
+    userType as 'youth' | 'elderly' || 'youth'
+  );
+
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       {/* Header */}
@@ -159,12 +177,16 @@ const SettingsScreenComponent: React.FC = () => {
       </View>
 
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        {/* User Profile Header */}
+        {/* User Profile Header - FIXED: Uses proper avatar from profile */}
         <View style={styles.profileHeader}>
           <View style={styles.avatarContainer}>
-            <Text style={styles.avatarEmoji}>
-              {userType === 'elderly' ? '👴' : '👨'}
-            </Text>
+            <IconCircle
+              icon={avatarConfig.icon}
+              imageSource={avatarConfig.imageSource}
+              size={64}
+              backgroundColor={avatarConfig.backgroundColor}
+              contentScale={0.7}
+            />
           </View>
           <View style={styles.profileInfo}>
             <Text style={styles.profileName}>{displayName}</Text>

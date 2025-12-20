@@ -1,13 +1,13 @@
 import { useCallback } from 'react';
 import * as FileSystem from 'expo-file-system';
-import { voiceUploadService, type ChatContext } from '@home-sweet-home/model';
+import { communicationViewModel, type ChatContext } from '@home-sweet-home/viewmodel';
 
 /**
  * useVoiceUpload - Hook for voice message file operations (View layer)
  * 
  * MVVM Architecture:
  * - View layer: Platform-specific file reading using expo-file-system
- * - Calls Service for business logic and upload
+ * - Calls ViewModel for business logic and upload
  * - NO business logic in this hook
  * 
  * Usage:
@@ -26,7 +26,7 @@ export function useVoiceUpload() {
     /**
      * Upload voice message
      * Platform-specific: Reads file using expo-file-system
-     * Then calls Service for business logic
+     * Then calls ViewModel for business logic
      */
     const uploadVoiceMessage = useCallback(async (
         fileUri: string,
@@ -40,8 +40,8 @@ export function useVoiceUpload() {
                 encoding: FileSystem.EncodingType.Base64,
             });
 
-            // Call Service for business logic and upload
-            const publicUrl = await voiceUploadService.uploadVoiceMessage(
+            // Call ViewModel for business logic and upload
+            const publicUrl = await communicationViewModel.uploadVoiceMessage(
                 base64Data,
                 context,
                 senderId,
@@ -57,11 +57,11 @@ export function useVoiceUpload() {
 
     /**
      * Delete voice message
-     * Delegates to Service
+     * Delegates to ViewModel
      */
     const deleteVoiceMessage = useCallback(async (mediaUrl: string): Promise<void> => {
         try {
-            await voiceUploadService.deleteVoiceMessage(mediaUrl);
+            await communicationViewModel.deleteVoiceMessage(mediaUrl);
         } catch (error) {
             console.error('[useVoiceUpload] Delete failed:', error);
             throw error;

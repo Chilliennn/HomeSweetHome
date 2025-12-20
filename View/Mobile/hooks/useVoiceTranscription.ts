@@ -1,19 +1,19 @@
 import { useCallback } from 'react';
 import * as FileSystem from 'expo-file-system';
-import { voiceTranscriptionService, type TranscriptionResult } from '@home-sweet-home/model';
+import { communicationViewModel, type TranscriptionResult } from '@home-sweet-home/viewmodel';
 
 /**
  * useVoiceTranscription - Hook for voice transcription file operations (View layer)
  * 
  * MVVM Architecture:
  * - View layer: Platform-specific file reading using expo-file-system
- * - Calls Service for business logic and transcription
+ * - Calls ViewModel for business logic and transcription
  * - NO business logic in this hook
  * 
  * Responsibilities:
  * - Read audio file from device filesystem
  * - Convert to base64
- * - Pass to Service for transcription
+ * - Pass to ViewModel for transcription
  * 
  * Usage:
  * ```tsx
@@ -28,7 +28,7 @@ export function useVoiceTranscription() {
    * Transcribe audio file to text
    * 
    * Platform-specific: Reads file using expo-file-system
-   * Then calls Service for business logic and Whisper transcription
+   * Then calls ViewModel for business logic and transcription
    * 
    * @param audioUri - URI of the audio file on device (e.g., from Audio.Recording)
    * @returns Transcription result with text
@@ -48,8 +48,8 @@ export function useVoiceTranscription() {
 
         console.log('[useVoiceTranscription] Audio file read, size:', base64Data.length);
 
-        // Call Service for business logic and transcription
-        const result = await voiceTranscriptionService.transcribeDiary(base64Data);
+        // Call ViewModel for business logic and transcription
+        const result = await communicationViewModel.transcribeAudio(base64Data);
 
         console.log('[useVoiceTranscription] Transcription successful', {
           textLength: result.text.length,

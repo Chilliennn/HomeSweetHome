@@ -3,6 +3,8 @@ import { communicationService, type PreMatchChat } from '../../Model/Service/Cor
 import { familyService } from '../../Model/Service/CoreService/familyService';
 import { notificationService } from '../../Model/Service/CoreService/notificationService';
 import { relationshipService } from '../../Model/Service/CoreService/relationshipService';
+import { voiceUploadService, type ChatContext } from '../../Model/Service/CoreService/voiceUploadHelper';
+import { voiceTranscriptionService, type TranscriptionResult } from '../../Model/Service/CoreService/voiceTranscriptionService';
 import type { Message, Relationship } from '../../Model/types';
 import type { RealtimeChannel } from '@home-sweet-home/model';
 
@@ -973,6 +975,48 @@ export class CommunicationViewModel {
       });
       return false;
     }
+  }
+
+  // =============================================================
+  // Voice Message Methods (for View layer hooks)
+  // =============================================================
+
+  /**
+   * Upload voice message to storage
+   * Called by View layer hooks after reading file to base64
+   * 
+   * @param base64Data - Base64-encoded audio data
+   * @param context - Chat context (preMatch or relationship)
+   * @param senderId - Current user ID
+   * @param durationSeconds - Optional duration
+   * @returns Public URL of uploaded file
+   */
+  async uploadVoiceMessage(
+    base64Data: string,
+    context: ChatContext,
+    senderId: string,
+    durationSeconds?: number
+  ): Promise<string> {
+    return voiceUploadService.uploadVoiceMessage(base64Data, context, senderId, durationSeconds);
+  }
+
+  /**
+   * Delete voice message from storage
+   * @param mediaUrl - Public URL of the voice message to delete
+   */
+  async deleteVoiceMessage(mediaUrl: string): Promise<void> {
+    return voiceUploadService.deleteVoiceMessage(mediaUrl);
+  }
+
+  /**
+   * Transcribe audio to text
+   * Called by View layer hooks after reading file to base64
+   * 
+   * @param base64Audio - Base64-encoded audio data
+   * @returns Transcription result with text
+   */
+  async transcribeAudio(base64Audio: string): Promise<TranscriptionResult> {
+    return voiceTranscriptionService.transcribeDiary(base64Audio);
   }
 }
 

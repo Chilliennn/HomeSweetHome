@@ -10,6 +10,7 @@ import {
   UserType,
   profileCompletionService,
   authService,
+  notificationService,
 } from '@home-sweet-home/model';
 
 /**
@@ -21,8 +22,7 @@ export type ProfileSetupStep =
   | 'camera'
   | 'verifying'
   | 'verified'
-  | 'real-identity'
-  | 'display-identity'
+  | 'profile-form'      
   | 'profile-info'
   | 'complete';
 
@@ -129,10 +129,9 @@ export class AuthViewModel {
       'camera': 1,
       'verifying': 1,
       'verified': 1,
-      'real-identity': 2,
-      'display-identity': 3,
-      'profile-info': 4,
-      'complete': 5,
+      'profile-form': 2, 
+      'profile-info': 3,
+      'complete': 4,
     };
     return stepMap[this.currentStep];
   }
@@ -141,7 +140,7 @@ export class AuthViewModel {
    * Total number of main steps (excluding sub-steps)
    */
   get totalSteps(): number {
-    return 5;
+    return 4; // Welcome, Age Verification, Profile Form, Profile Info
   }
 
   // =============================================================
@@ -422,6 +421,72 @@ export class AuthViewModel {
   }
 
   /**
+   * Save combined profile setup (merged Step 1 + Step 2)
+   * Handles: phone, location, displayName, avatar upload
+   * 
+   * NOTE: For custom avatars, the View layer must read the file and pass base64 data.
+   * The ViewModel does NOT handle file system operations.
+   */
+  async saveProfileSetup(
+    userId: string,
+    data: {
+      phoneNumber: string;
+      location: string;
+      displayName: string;
+      avatarType: 'default' | 'custom';
+      selectedAvatarId: string | null;
+      // For custom avatars: base64 data and extension (from View layer)
+      customAvatarBase64: string | null;
+      customAvatarExtension: string | null;
+    }
+  ) {
+    this.isLoading = true;
+    this.errorMessage = null;
+
+    try {
+      const user = await profileCompletionService.saveProfileSetup(userId, data);
+      
+      // Convert selectedAvatarId to index for storage in profileData
+      let avatarIndex: number | null = null;
+      if (data.selectedAvatarId) {
+        if (data.selectedAvatarId.startsWith('img-')) {
+          avatarIndex = parseInt(data.selectedAvatarId.replace('img-', ''), 10);
+        } else if (data.selectedAvatarId.startsWith('emoji-')) {
+          avatarIndex = parseInt(data.selectedAvatarId.replace('emoji-', ''), 10) + 2;
+        }
+      }
+
+      runInAction(() => {
+        // Update realIdentity data (phone, location - without real photo)
+        this.profileData.realIdentity = {
+          phoneNumber: data.phoneNumber,
+          location: data.location,
+          realPhotoUrl: null, // Removed per requirements
+        };
+        // Update displayIdentity data
+        this.profileData.displayIdentity = {
+          displayName: data.displayName,
+          avatarType: data.avatarType,
+          selectedAvatarIndex: avatarIndex,
+          customAvatarUrl: user.profile_data?.avatar_url || null,
+        };
+        this.profileCompletion.realIdentityCompleted = true;
+        this.profileCompletion.displayIdentityCompleted = true;
+      });
+      return user;
+    } catch (error: any) {
+      runInAction(() => {
+        this.errorMessage = error?.message || 'Unable to save profile';
+      });
+      throw error;
+    } finally {
+      runInAction(() => {
+        this.isLoading = false;
+      });
+    }
+  }
+
+  /**
    * Save profile information
    * UC103_11, UC103_12, UC103_13, UC103_14, UC103_15
    */
@@ -534,6 +599,27 @@ export class AuthViewModel {
       runInAction(() => {
         this.isLoading = false;
       });
+    }
+  }
+
+  // =============================================================
+  // Push Notification Methods (for View layer hooks)
+  // =============================================================
+
+  /**
+   * Save push notification token for current user
+   * Called by View layer hooks after getting Expo push token
+   * 
+   * @param userId - User ID to save token for
+   * @param token - Expo push token
+   */
+  async savePushToken(userId: string, token: string): Promise<void> {
+    try {
+      await notificationService.savePushToken(userId, token);
+      console.log('[AuthViewModel] Push token saved successfully');
+    } catch (error) {
+      console.error('[AuthViewModel] Failed to save push token:', error);
+      // Don't throw - push token save failure shouldn't break the app
     }
   }
 

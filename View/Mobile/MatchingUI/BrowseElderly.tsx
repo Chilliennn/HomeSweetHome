@@ -12,7 +12,7 @@ import { observer } from 'mobx-react-lite';
 import { youthMatchingViewModel, communicationViewModel } from '@home-sweet-home/viewmodel';
 import { authViewModel } from '@home-sweet-home/viewmodel';
 import { User } from '@home-sweet-home/model';
-import { useTabNavigation } from '../hooks/use-tab-navigation';
+import { useTabNavigation, getAvatarDisplay } from '@/hooks';
 import {
   NotificationBell,
   JourneyProgressDropdown,
@@ -48,15 +48,20 @@ interface BrowseElderlyProps {
 // Tabs that are disabled (no function yet)
 const DISABLED_TABS = ['diary', 'memory'];
 
-// Helper to map User -> Display Data
+// FIXED: Helper to map User -> Display Data with proper avatar handling
 const mapUserToProfile = (user: User) => {
+  // Use getAvatarDisplay for proper avatar rendering
+  const avatarConfig = getAvatarDisplay(user.profile_data, 'elderly');
+  
   return {
     id: user.id,
     name: user.full_name || user.profile_data?.display_name || 'Anonymous',
-    age: user.profile_data?.verified_age || '60+', // Default or calculated
+    age: user.profile_data?.verified_age || '60+',
     location: user.location || 'Unknown',
-    avatarEmoji: user.profile_data?.avatar_meta?.type === 'default' ? '👵' : undefined, // Simplification
-    avatarColor: Colors.light.tertiary,
+    // Avatar properties from helper
+    avatarIcon: avatarConfig.icon,
+    avatarImageSource: avatarConfig.imageSource,
+    avatarColor: avatarConfig.backgroundColor,
     interests: (user.profile_data?.interests || []).map(i => ({ label: i, color: Colors.light.secondary })),
   };
 };
@@ -129,9 +134,10 @@ export const BrowseElderly: React.FC<BrowseElderlyProps> = observer(({
         disabled={hasExpressed}
       >
         <Card style={[styles.cardContainer, hasExpressed && styles.cardDisabled]}>
-          {/* Avatar */}
+          {/* Avatar - FIXED: Uses proper avatar from profile */}
           <IconCircle
-            icon={profile.avatarEmoji || '👤'}
+            icon={profile.avatarIcon}
+            imageSource={profile.avatarImageSource}
             size={64}
             backgroundColor={profile.avatarColor}
             contentScale={0.65}

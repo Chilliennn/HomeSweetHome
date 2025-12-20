@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { observer } from 'mobx-react-lite';
 import { useRouter } from 'expo-router';
 import { communicationViewModel } from '@home-sweet-home/viewmodel';
-import { useTabNavigation } from '@/hooks/use-tab-navigation';
+import { useTabNavigation, getAvatarDisplay } from '@/hooks';
 import { Card, IconCircle, NotificationBell, ProgressBar, Button } from '@/components/ui';
 import { BottomTabBar, DEFAULT_TABS } from '@/components/ui/BottomTabBar';
 import { Colors } from '@/constants/theme';
@@ -131,16 +131,24 @@ export const PreMatchChatList = observer(function PreMatchChatList() {
 
     return (
       <Card style={styles.chatCard}>
-        {/* Header with Avatar and Name */}
+        {/* Header with Avatar and Name - FIXED: Uses proper avatar from partner profile */}
         <View style={styles.cardHeader}>
-          <IconCircle
-            icon={partner.profile_data?.avatar_meta?.type === 'default' ? (isYouth ? '👵' : '🧑') : '👤'}
-            size={64}
-            backgroundColor={isYouth ? '#C8ADD6' : '#B8D4E3'}
-            contentScale={0.6}
-          />
+          {(() => {
+            // Get partner's avatar config
+            const partnerType = isYouth ? 'elderly' : 'youth';
+            const avatarConfig = getAvatarDisplay(partner.profile_data, partnerType);
+            return (
+              <IconCircle
+                icon={avatarConfig.icon}
+                imageSource={avatarConfig.imageSource}
+                size={64}
+                backgroundColor={avatarConfig.backgroundColor}
+                contentScale={0.6}
+              />
+            );
+          })()}
           <View style={styles.headerInfo}>
-            <Text style={styles.name}>{partner.full_name || 'Partner'}</Text>
+            <Text style={styles.name}>{partner.profile_data?.display_name || partner.full_name || 'Partner'}</Text>
             <View style={styles.badgeRow}>
               {isChatLocked ? (
                 <>

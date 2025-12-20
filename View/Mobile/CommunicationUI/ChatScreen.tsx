@@ -22,6 +22,7 @@ import { Colors } from '@/constants/theme';
 import { useVoiceRecording } from '@/hooks/useVoiceRecording';
 import { useAudioPlayer } from '@/hooks/useAudioPlayer';
 import { useVoiceUpload } from '@/hooks/useVoiceUpload';
+import { getAvatarDisplay } from '@/hooks';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system';
 import { uploadChatImage, uploadChatVideo } from '@home-sweet-home/model';
@@ -716,14 +717,22 @@ export const ChatScreen = observer(function ChatScreen() {
 
           <View style={styles.headerInfo}>
             <View style={styles.headerRow}>
-              <IconCircle
-                icon={partnerUser?.profile_data?.avatar_meta?.type === 'default' ? '👵' : '👤'}
-                size={40}
-                backgroundColor="#C8ADD6"
-                contentScale={0.6}
-              />
+              {(() => {
+                // FIXED: Get partner's avatar config properly
+                const partnerType = currentUserType === 'youth' ? 'elderly' : 'youth';
+                const avatarConfig = getAvatarDisplay(partnerUser?.profile_data, partnerType);
+                return (
+                  <IconCircle
+                    icon={avatarConfig.icon}
+                    imageSource={avatarConfig.imageSource}
+                    size={40}
+                    backgroundColor={avatarConfig.backgroundColor}
+                    contentScale={0.6}
+                  />
+                );
+              })()}
               <View style={styles.headerText}>
-                <Text style={styles.partnerName}>{partnerUser?.full_name || 'Partner'}</Text>
+                <Text style={styles.partnerName}>{partnerUser?.profile_data?.display_name || partnerUser?.full_name || 'Partner'}</Text>
                 <Text style={styles.dayLabel}>{headerInfo}</Text>
               </View>
             </View>

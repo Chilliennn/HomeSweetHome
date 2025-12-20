@@ -2,18 +2,17 @@ import React, { useEffect, useRef } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { observer } from 'mobx-react-lite';
+import * as FileSystem from 'expo-file-system';
 import { authViewModel } from '@home-sweet-home/viewmodel';
 import { ProfileWelcome } from './ProfileWelcome';
 import { AgeVerification } from './AgeVerification';
 import { VerifyingLoader } from './VerifyingLoader';
 import { VerifiedSuccess } from './VerifiedSuccess';
 import { AgeVerificationCamera } from './AgeVerificationCamera';
-import { RealIdentityForm } from './RealIdentityForm';
-import { DisplayIdentityForm } from './DisplayIdentityForm';
+import { ProfileSetupForm } from './ProfileSetupForm';
 import { ProfileInfoForm } from './ProfileInfoForm';
 import { ProfileComplete } from './ProfileComplete';
-import type { RealIdentityData } from './RealIdentityForm';
-import type { DisplayIdentityData } from './DisplayIdentityForm';
+import type { ProfileSetupFormData } from './ProfileSetupForm';
 import type { ProfileInfoData } from './ProfileInfoForm';
 
 // ============================================================================
@@ -44,20 +43,30 @@ const ProfileSetupScreenComponent: React.FC = () => {
   const params = useLocalSearchParams();
   const initializedRef = useRef(false);
 
-  // Extract user info from login
+  // Extract user info from login or settings navigation
   const userId = params.userId as string | undefined;
   const userName = params.userName as string | undefined;
   const userTypeFromDB = params.userType as 'youth' | 'elderly' | undefined;
+  const editMode = params.editMode === 'true'; // Settings navigation passes this
 
   // One-time init: set default userType and hydrate profile state if available
   useEffect(() => {
     if (initializedRef.current) return;
     initializedRef.current = true;
-    authViewModel.resetFlow(userTypeFromDB || 'youth');
+    
+    if (editMode) {
+      // Edit mode: skip to profile-form step directly
+      authViewModel.resetFlow(userTypeFromDB || 'youth');
+      authViewModel.setStep('profile-form');
+    } else {
+      // Normal flow: start from welcome
+      authViewModel.resetFlow(userTypeFromDB || 'youth');
+    }
+    
     if (userId) {
       authViewModel.loadProfile(userId);
     }
-  }, [userId, userTypeFromDB]);
+  }, [userId, userTypeFromDB, editMode]);
 
   // Access observable properties directly from authViewModel in render
   // DO NOT destructure at the top level - it breaks MobX reactivity
@@ -101,14 +110,16 @@ const ProfileSetupScreenComponent: React.FC = () => {
       case 'camera':
         authViewModel.setStep('age-verification');
         break;
-      case 'real-identity':
-        authViewModel.setStep('verified');
-        break;
-      case 'display-identity':
-        authViewModel.setStep('real-identity');
+      case 'profile-form':
+        if (editMode) {
+          // In edit mode, go back to settings
+          router.back();
+        } else {
+          authViewModel.setStep('verified');
+        }
         break;
       case 'profile-info':
-        authViewModel.setStep('display-identity');
+        authViewModel.setStep('profile-form');
         break;
       case 'welcome':
         // At welcome step, go back to login
@@ -157,41 +168,63 @@ const ProfileSetupScreenComponent: React.FC = () => {
 
   /**
    * Handle "Continue to Profile" after successful age verification
-   * Proceeds to Real Identity Section (Step 1 of 3) - UC103_5, UC103_6
+   * Proceeds to Profile Setup Form (merged Step 1+2)
    */
   const handleContinueAfterVerification = () => {
-    authViewModel.setStep('real-identity');
+    authViewModel.setStep('profile-form');
   };
 
   /**
-   * Handle Real Identity form submission - UC103_5, UC103_6
-   * Proceeds to Display Identity Section (Step 2 of 3)
+   * Handle Profile Setup form submission (merged Step 1+2)
+   * Saves phone, location, displayName, and avatar
+   * Proceeds to Profile Info Section (Step 3)
+   * 
+   * NOTE: File reading is done here in the View layer (using expo-file-system)
+   * before passing base64 data to the ViewModel. This follows MVVM architecture.
    */
-  const handleRealIdentitySubmit = async (data: RealIdentityData) => {
+  const handleProfileSetupSubmit = async (data: ProfileSetupFormData) => {
     if (!userId) return;
-    await authViewModel.saveRealIdentity(userId, {
+    
+    // Read file in View layer if custom avatar is selected
+    let customAvatarBase64: string | null = null;
+    let customAvatarExtension: string | null = null;
+    
+    if (data.avatarType === 'custom' && data.customAvatarUri) {
+      try {
+        // Extract file extension from URI
+        const uriParts = data.customAvatarUri.split('.');
+        customAvatarExtension = uriParts[uriParts.length - 1].toLowerCase();
+        
+        // Read file as base64 (View layer responsibility)
+        customAvatarBase64 = await FileSystem.readAsStringAsync(
+          data.customAvatarUri, 
+          { encoding: FileSystem.EncodingType.Base64 }
+        );
+      } catch (error) {
+        console.error('[ProfileSetupScreen] Failed to read avatar file:', error);
+        authViewModel.setError('Failed to read avatar image');
+        return;
+      }
+    }
+    
+    await authViewModel.saveProfileSetup(userId, {
       phoneNumber: data.phoneNumber,
       location: data.location,
-      realPhotoUrl: data.realPhotoUri,
-    });
-    authViewModel.setStep('display-identity');
-  };
-
-  /**
-   * Handle Display Identity form submission - UC103_7, UC103_8, UC103_9, UC103_10
-   * Proceeds to Profile Info Section (Step 3 of 3)
-   */
-  const handleDisplayIdentitySubmit = async (data: DisplayIdentityData) => {
-    if (!userId) return;
-    await authViewModel.saveDisplayIdentity(userId, {
       displayName: data.displayName,
       avatarType: data.avatarType,
-      selectedAvatarIndex: data.selectedAvatarIndex,
-      customAvatarUrl: data.customAvatarUri,
+      selectedAvatarId: data.selectedAvatarId,
+      customAvatarBase64,
+      customAvatarExtension,
     });
-    authViewModel.setStep('profile-info');
+    
+    if (editMode) {
+      // In edit mode, go back to settings after saving
+      router.back();
+    } else {
+      // Normal flow: proceed to profile info
+      authViewModel.setStep('profile-info');
+    }
   };
-
   /**
    * Handle Profile Info form submission - UC103_11 to UC103_17
    * Completes the profile and shows success screen
@@ -261,24 +294,23 @@ const ProfileSetupScreenComponent: React.FC = () => {
         const data = authViewModel.profileData;
 
         // Debug: log every render
-        console.log('[ProfileSetupScreen] RENDER - step:', step, 'age:', age, 'loading:', loading);
+        console.log('[ProfileSetupScreen] RENDER - step:', step, 'age:', age, 'loading:', loading, 'editMode:', editMode);
 
-        const realIdentityInitial: RealIdentityData | undefined = data.realIdentity
-          ? {
-            phoneNumber: data.realIdentity.phoneNumber,
-            location: data.realIdentity.location,
-            realPhotoUri: data.realIdentity.realPhotoUrl,
-          }
-          : undefined;
-
-        const displayIdentityInitial: DisplayIdentityData | undefined = data.displayIdentity
-          ? {
-            displayName: data.displayIdentity.displayName,
-            avatarType: data.displayIdentity.avatarType,
-            selectedAvatarIndex: data.displayIdentity.selectedAvatarIndex,
-            customAvatarUri: data.displayIdentity.customAvatarUrl,
-          }
-          : undefined;
+        // Build initial data for ProfileSetupForm from existing profile data
+        const profileSetupInitial: ProfileSetupFormData | undefined = 
+          (data.realIdentity || data.displayIdentity) ? {
+            phoneNumber: data.realIdentity?.phoneNumber || '',
+            location: data.realIdentity?.location || '',
+            displayName: data.displayIdentity?.displayName || '',
+            avatarType: data.displayIdentity?.avatarType || 'default',
+            // Convert selectedAvatarIndex back to selectedAvatarId
+            selectedAvatarId: data.displayIdentity?.selectedAvatarIndex !== null && data.displayIdentity?.selectedAvatarIndex !== undefined
+              ? (data.displayIdentity.selectedAvatarIndex < 2 
+                  ? `img-${data.displayIdentity.selectedAvatarIndex}` 
+                  : `emoji-${data.displayIdentity.selectedAvatarIndex - 2}`)
+              : null,
+            customAvatarUri: data.displayIdentity?.customAvatarUrl || null,
+          } : undefined;
 
         const profileInfoInitial: ProfileInfoData | undefined = data.profileInfo
           ? {
@@ -325,23 +357,16 @@ const ProfileSetupScreenComponent: React.FC = () => {
                 isLoading={loading}
               />
             );
-          case 'real-identity':
+          case 'profile-form':
+            console.log('[ProfileSetupScreen] Rendering: ProfileSetupForm');
             return (
-              <RealIdentityForm
-                initialData={realIdentityInitial}
-                onNext={handleRealIdentitySubmit}
-                onBack={handleBack}
-                isLoading={loading}
-              />
-            );
-          case 'display-identity':
-            return (
-              <DisplayIdentityForm
-                initialData={displayIdentityInitial}
+              <ProfileSetupForm
+                initialData={profileSetupInitial}
                 userType={effectiveUserType}
-                onNext={handleDisplayIdentitySubmit}
+                onNext={handleProfileSetupSubmit}
                 onBack={handleBack}
                 isLoading={loading}
+                editMode={editMode}
               />
             );
           case 'profile-info':

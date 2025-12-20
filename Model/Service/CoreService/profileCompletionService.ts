@@ -170,23 +170,7 @@ function validateDisplayIdentity(data: DisplayIdentityPayload): ValidationResult
   const errors: string[] = [];
   const fieldErrors: Record<string, string> = {};
 
-  // UC103_8: Validate display name
-  const nameRequiredError = validateRequired(data.displayName, 'Display name');
-  if (nameRequiredError) {
-    errors.push(nameRequiredError);
-    fieldErrors.displayName = nameRequiredError;
-  } else {
-    const nameLengthError = validateStringLength(
-      data.displayName,
-      VALIDATION_RULES.displayName.minLength,
-      VALIDATION_RULES.displayName.maxLength,
-      'Display name'
-    );
-    if (nameLengthError) {
-      errors.push(nameLengthError);
-      fieldErrors.displayName = nameLengthError;
-    }
-  }
+  // FIXED: Removed display name validation - using full_name from users table
 
   // UC103_9, UC103_10: Validate avatar selection
   if (data.avatarType === 'default' && data.selectedAvatarIndex === null) {
@@ -194,11 +178,7 @@ function validateDisplayIdentity(data: DisplayIdentityPayload): ValidationResult
     errors.push(avatarError);
     fieldErrors.avatar = avatarError;
   }
-  if (data.avatarType === 'custom' && !data.customAvatarUrl) {
-    const avatarError = 'Please upload a custom avatar';
-    errors.push(avatarError);
-    fieldErrors.avatar = avatarError;
-  }
+  // FIXED: Removed custom avatar validation - only preset avatars supported
 
   return { valid: errors.length === 0, errors, fieldErrors };
 }
@@ -242,12 +222,7 @@ function validateRealIdentity(data: RealIdentityPayload): ValidationResult {
     }
   }
 
-  // UC103_5: Validate real photo
-  if (!data.realPhotoUrl) {
-    const photoError = 'Real photo is required for verification';
-    errors.push(photoError);
-    fieldErrors.realPhoto = photoError;
-  }
+  // FIXED: Removed real photo validation - using profile_photo_url in users table
 
   return { valid: errors.length === 0, errors, fieldErrors };
 }
@@ -262,10 +237,6 @@ function mergeProfileData(existing: UserProfileData | null, changes: Partial<Use
     profile_completion: {
       ...(existing?.profile_completion || {}),
       ...(changes.profile_completion || {}),
-    },
-    real_identity: {
-      ...(existing?.real_identity || {}),
-      ...(changes.real_identity || {}),
     },
     avatar_meta: {
       ...(existing?.avatar_meta || {}),
@@ -320,11 +291,8 @@ export const profileCompletionService = {
 
     const user = await userRepository.getById(userId);
 
-    // real_photo_url goes to profile_data (private, only revealed after match)
+    // FIXED: Removed real_identity - profile_photo_url in users table handles photos
     const mergedProfile = mergeProfileData(user?.profile_data || null, {
-      real_identity: {
-        real_photo_url: data.realPhotoUrl,
-      },
       profile_completion: {
         ...(user?.profile_data?.profile_completion || {}),
         real_identity_completed: true,
@@ -348,8 +316,6 @@ export const profileCompletionService = {
 
     const user = await userRepository.getById(userId);
     const mergedProfile = mergeProfileData(user?.profile_data || null, {
-      display_name: data.displayName,
-      avatar_url: data.avatarType === 'custom' ? (data.customAvatarUrl ?? undefined) : undefined,
       avatar_meta: {
         type: data.avatarType,
         selected_avatar_index: data.selectedAvatarIndex,
@@ -360,7 +326,9 @@ export const profileCompletionService = {
       },
     });
 
-    return userRepository.updateProfileData(userId, mergedProfile);
+    return userRepository.updateUser(userId, {
+      profile_data: mergedProfile,
+    });
   },
 
   async saveProfileInfo(userId: string, data: ProfileInfoPayload): Promise<User> {
@@ -484,9 +452,9 @@ export const profileCompletionService = {
 
   /**
    * Save combined profile setup data (merged Step 1 + Step 2)
-   * Handles: phone, location, displayName, avatar
+   * Handles: phone, location, fullName, avatar, and profile_photo_url
    * 
-   * NOTE: For custom avatars, the View layer must read the file and pass base64 data.
+   * NOTE: For profile photos, the View layer must read the file and pass base64 data.
    * This service does NOT handle file system operations.
    * 
    * @param userId - User ID
@@ -498,12 +466,12 @@ export const profileCompletionService = {
     data: {
       phoneNumber: string;
       location: string;
-      displayName: string;
+      fullName: string;
       avatarType: 'default' | 'custom';
       selectedAvatarId: string | null;
-      // For custom avatars: base64 data and extension (from View layer file reading)
-      customAvatarBase64: string | null;
-      customAvatarExtension: string | null;
+      // For profile photo: base64 data and extension (from View layer file reading)
+      profilePhotoBase64: string | null;
+      profilePhotoExtension: string | null;
     }
   ): Promise<User> {
     console.log('[profileCompletionService] saveProfileSetup START:', userId);
@@ -521,31 +489,26 @@ export const profileCompletionService = {
       errors.push('Location is required');
     }
 
-    if (!data.displayName?.trim()) {
-      errors.push('Display name is required');
-    } else if (data.displayName.length < 2 || data.displayName.length > 30) {
-      errors.push('Display name must be 2-30 characters');
-    }
-
-    if (data.avatarType === 'default' && !data.selectedAvatarId) {
-      errors.push('Please select an avatar');
-    }
-    if (data.avatarType === 'custom' && !data.customAvatarBase64) {
-      errors.push('Please upload a custom avatar');
+    if (!data.fullName?.trim()) {
+      errors.push('Full name is required');
+    } else if (data.fullName.length < 2 || data.fullName.length > 50) {
+      errors.push('Full name must be 2-50 characters');
     }
 
     if (errors.length > 0) {
       throw new Error(errors[0]);
     }
 
-    // Upload custom avatar if provided
-    let avatarUrl: string | null = null;
-    if (data.avatarType === 'custom' && data.customAvatarBase64 && data.customAvatarExtension) {
-      avatarUrl = await this.uploadCustomAvatar(
-        userId, 
-        data.customAvatarBase64, 
-        data.customAvatarExtension
+    // Upload profile photo if provided (goes to users.profile_photo_url)
+    let profilePhotoUrl: string | null = null;
+    if (data.profilePhotoBase64 && data.profilePhotoExtension) {
+      console.log('[profileCompletionService] Uploading profile photo to storage...');
+      profilePhotoUrl = await storageService.uploadProfilePhoto(
+        userId,
+        data.profilePhotoBase64,
+        data.profilePhotoExtension
       );
+      console.log('[profileCompletionService] Profile photo uploaded:', profilePhotoUrl);
     }
 
     // Convert selectedAvatarId to selectedAvatarIndex for storage
@@ -566,8 +529,6 @@ export const profileCompletionService = {
 
     // Build merged profile data
     const mergedProfile = mergeProfileData(user?.profile_data || null, {
-      display_name: data.displayName,
-      avatar_url: avatarUrl || undefined,
       avatar_meta: {
         type: data.avatarType,
         selected_avatar_index: selectedAvatarIndex,
@@ -579,10 +540,12 @@ export const profileCompletionService = {
       },
     });
 
-    // Update user with phone, location, and merged profile data
+    // Update user with phone, location, full_name, profile_photo_url, and merged profile data
     const updatedUser = await userRepository.updateUser(userId, {
       phone: data.phoneNumber,
       location: data.location,
+      full_name: data.fullName,
+      profile_photo_url: profilePhotoUrl ?? undefined, // Upload real photo here!
       profile_data: mergedProfile,
     });
 

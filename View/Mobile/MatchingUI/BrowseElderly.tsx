@@ -49,15 +49,25 @@ const DISABLED_TABS = ['diary', 'memory'];
 
 // FIXED: Helper to map User -> Display Data with proper avatar handling
 const mapUserToProfile = (user: User) => {
-  // Use getAvatarDisplay for proper avatar rendering
-  const avatarConfig = getAvatarDisplay(user.profile_data, 'elderly');
+  // Priority: profile_photo_url (real photo) > preset avatar from avatar_meta
+  const hasRealPhoto = !!user.profile_photo_url;
+  // Use user's actual user_type to get correct emoji/image arrays
+  // Filter out 'admin' type and cast to 'youth' | 'elderly'
+  const userTypeForAvatar: 'youth' | 'elderly' = 
+    user.user_type === 'youth' || user.user_type === 'elderly' 
+      ? user.user_type 
+      : 'elderly';
+  
+  const avatarConfig = hasRealPhoto 
+    ? { icon: undefined, imageSource: { uri: user.profile_photo_url! }, backgroundColor: '#9DE2D0' }
+    : getAvatarDisplay(user.profile_data, userTypeForAvatar);
   
   return {
     id: user.id,
-    name: user.full_name || user.profile_data?.display_name || 'Anonymous',
+    name: user.full_name || 'Anonymous',  // FIXED: Only use full_name
     age: user.profile_data?.verified_age || '60+',
     location: user.location || 'Unknown',
-    // Avatar properties from helper
+    // Avatar properties: real photo OR preset avatar
     avatarIcon: avatarConfig.icon,
     avatarImageSource: avatarConfig.imageSource,
     avatarColor: avatarConfig.backgroundColor,

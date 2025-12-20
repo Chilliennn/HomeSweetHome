@@ -97,6 +97,9 @@ export class AuthViewModel {
     profileCompleted: false,
   };
 
+  // Current user object (for display purposes like profile_photo_url)
+  currentUser: User | null = null;
+
   constructor() {
     makeAutoObservable(this, {}, { autoBind: true });
   }
@@ -461,12 +464,12 @@ export class AuthViewModel {
     data: {
       phoneNumber: string;
       location: string;
-      displayName: string;
+      fullName: string;
       avatarType: 'default' | 'custom';
       selectedAvatarId: string | null;
-      // For custom avatars: base64 data and extension (from View layer)
-      customAvatarBase64: string | null;
-      customAvatarExtension: string | null;
+      // For profile photo: base64 data and extension (from View layer)
+      profilePhotoBase64: string | null;
+      profilePhotoExtension: string | null;
     }
   ) {
     this.isLoading = true;
@@ -486,18 +489,15 @@ export class AuthViewModel {
       }
 
       runInAction(() => {
-        // Update realIdentity data (phone, location - without real photo)
+        // FIXED: Update realIdentity data (phone, location only)
         this.profileData.realIdentity = {
           phoneNumber: data.phoneNumber,
           location: data.location,
-          realPhotoUrl: null, // Removed per requirements
         };
-        // Update displayIdentity data
+        // FIXED: Update displayIdentity data (avatar_meta only)
         this.profileData.displayIdentity = {
-          displayName: data.displayName,
           avatarType: data.avatarType,
           selectedAvatarIndex: avatarIndex,
-          customAvatarUrl: user.profile_data?.avatar_url || null,
         };
         this.profileCompletion.realIdentityCompleted = true;
         this.profileCompletion.displayIdentityCompleted = true;
@@ -570,6 +570,26 @@ export class AuthViewModel {
   }
 
   /**
+   * Get current user object (with profile_photo_url, etc.)
+   * Use this for display purposes in Settings/Profile screens
+   */
+  async getCurrentUser(userId: string): Promise<User | null> {
+    try {
+      const user = await profileCompletionService.loadUser(userId);
+      runInAction(() => {
+        this.currentUser = user;
+      });
+      return user;
+    } catch (error: any) {
+      console.error('[AuthViewModel] Failed to get current user:', error);
+      runInAction(() => {
+        this.currentUser = null;
+      });
+      return null;
+    }
+  }
+
+  /**
    * Load existing profile data for a user
    */
   async loadProfile(userId: string): Promise<User | null> {
@@ -578,6 +598,9 @@ export class AuthViewModel {
 
     try {
       const user = await profileCompletionService.loadUser(userId);
+      runInAction(() => {
+        this.currentUser = user;
+      });
       runInAction(() => {
         this.profileCompletion = profileCompletionService.getCompletionState(user);
 
@@ -590,22 +613,19 @@ export class AuthViewModel {
           this.userType = user.user_type;
         }
 
-        // Real Identity: phone & location from users table, real_photo from profile_data
-        if (user?.phone || user?.location || user?.profile_data?.real_identity) {
+        // FIXED: Real Identity: phone & location from users table only
+        if (user?.phone || user?.location) {
           this.profileData.realIdentity = {
             phoneNumber: user.phone || '',
             location: user.location || '',
-            realPhotoUrl: user.profile_data?.real_identity?.real_photo_url || null,
           };
         }
 
-        // Display Identity: all from profile_data
-        if (user?.profile_data?.avatar_meta || user?.profile_data?.display_name) {
+        // FIXED: Display Identity: avatar_meta only (profile_photo_url in users table)
+        if (user?.profile_data?.avatar_meta) {
           this.profileData.displayIdentity = {
-            displayName: user.profile_data.display_name || '',
             avatarType: (user.profile_data.avatar_meta?.type as 'default' | 'custom') || 'default',
             selectedAvatarIndex: user.profile_data.avatar_meta?.selected_avatar_index ?? null,
-            customAvatarUrl: user.profile_data.avatar_url || null,
           };
         }
 

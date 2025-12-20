@@ -1,11 +1,12 @@
 import { makeAutoObservable, runInAction } from 'mobx';
+import { matchingService } from '../../Model/Service/CoreService/matchingService';
 
 /**
  * MatchingViewModel - Manages matching flow state
  * 
  * MVVM Architecture:
  * - Manages UI state for elderly browsing and adoption process
- * - Tracks journey walkthrough completion
+ * - Tracks journey walkthrough completion (persisted to database via MatchingService)
  * - Handles pre-match and application states
  */
 export class MatchingViewModel {
@@ -18,6 +19,9 @@ export class MatchingViewModel {
 
   /** Whether walkthrough is currently being shown */
   showWalkthrough = false;
+
+  /** Loading walkthrough status from database */
+  isLoadingWalkthrough = false;
 
   /** Loading state */
   isLoading = false;
@@ -48,6 +52,11 @@ export class MatchingViewModel {
       this.currentUserId = userId;
       this.currentUserType = userType;
     });
+
+    // Load walkthrough status when user context is set
+    if (userId) {
+      this.loadWalkthroughStatus();
+    }
   }
 
   /**
@@ -61,17 +70,36 @@ export class MatchingViewModel {
   }
 
   // =============================================================
-  // Placeholder Methods
-  // =============================================================
-
-  // =============================================================
   // Walkthrough Actions
   // =============================================================
 
   /**
-   * Check if walkthrough should be shown (first time user)
-   * Called when entering matching screen after profile completion
+   * Load walkthrough completion status from database
+   * Called when user context is set or when entering matching screen
    */
+  async loadWalkthroughStatus() {
+    if (!this.currentUserId) return;
+
+    runInAction(() => {
+      this.isLoadingWalkthrough = true;
+    });
+
+    try {
+      const completed = await matchingService.getWalkthroughStatus(this.currentUserId);
+      runInAction(() => {
+        this.hasSeenWalkthrough = completed;
+        this.isLoadingWalkthrough = false;
+      });
+    } catch (error) {
+      console.error('[MatchingViewModel] Failed to load walkthrough status:', error);
+      // Default to false (show walkthrough)
+      runInAction(() => {
+        this.hasSeenWalkthrough = false;
+        this.isLoadingWalkthrough = false;
+      });
+    }
+  }
+
   /**
    * Check if walkthrough should be shown (first time user)
    * Called when entering matching screen after profile completion
@@ -79,29 +107,63 @@ export class MatchingViewModel {
    * @param force - Force show walkthrough (e.g. "Learn More" button)
    */
   checkWalkthroughStatus(isFirstTimeUser: boolean = true, force: boolean = false) {
-    if (force || (isFirstTimeUser && !this.hasSeenWalkthrough)) {
+    // Force always shows walkthrough (Learn More button)
+    if (force) {
       this.showWalkthrough = true;
+      return;
+    }
+
+    // Only show if first time AND user has NOT seen it before (from database)
+    if (isFirstTimeUser && !this.hasSeenWalkthrough) {
+      this.showWalkthrough = true;
+    } else {
+      this.showWalkthrough = false;
     }
   }
 
   /**
-   * Mark walkthrough as completed
+   * Mark walkthrough as completed and persist to database
    * Called when user finishes or skips walkthrough
    */
-  completeWalkthrough() {
+  async completeWalkthrough() {
     runInAction(() => {
       this.showWalkthrough = false;
       this.hasSeenWalkthrough = true;
     });
-    // TODO: Persist to storage/backend
+
+    if (!this.currentUserId) {
+      console.warn('[MatchingViewModel] Cannot save walkthrough: no userId');
+      return;
+    }
+
+    // Persist to database via MatchingService → UserRepository
+    try {
+      await matchingService.updateWalkthroughStatus(this.currentUserId, true);
+      console.log('[MatchingViewModel] Walkthrough completion saved to database');
+    } catch (error) {
+      console.error('[MatchingViewModel] Failed to save walkthrough status:', error);
+    }
   }
 
   /**
    * Reset walkthrough state (for testing or re-showing)
+   * Also clears persisted database record
    */
-  resetWalkthrough() {
-    this.hasSeenWalkthrough = false;
-    this.showWalkthrough = false;
+  async resetWalkthrough() {
+    runInAction(() => {
+      this.hasSeenWalkthrough = false;
+      this.showWalkthrough = false;
+    });
+
+    if (!this.currentUserId) return;
+
+    // Clear from database via MatchingService → UserRepository
+    try {
+      await matchingService.updateWalkthroughStatus(this.currentUserId, false);
+      console.log('[MatchingViewModel] Walkthrough status reset in database');
+    } catch (error) {
+      console.error('[MatchingViewModel] Failed to reset walkthrough status:', error);
+    }
   }
 
   // =============================================================

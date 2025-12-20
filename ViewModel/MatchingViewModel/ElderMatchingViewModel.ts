@@ -126,6 +126,31 @@ export class ElderMatchingViewModel {
             });
         }
     }
+
+    /**
+     * Delete an interest request (remove from list without responding)
+     */
+    async deleteRequest(requestId: string) {
+        this.isLoading = true;
+        this.error = null;
+
+        try {
+            // Remove from local state
+            runInAction(() => {
+                this.incomingRequests = this.incomingRequests.filter(r => r.id !== requestId);
+            });
+        } catch (error: any) {
+            runInAction(() => {
+                this.error = error?.message || 'Failed to delete request';
+            });
+            throw error;
+        } finally {
+            runInAction(() => {
+                this.isLoading = false;
+            });
+        }
+    }
+
     dispose() {
         console.log('🔴 [ElderVM] Disposing subscriptions');
         if (this.subscription) {

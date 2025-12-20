@@ -61,6 +61,8 @@ interface NotificationItemProps {
   isLoading?: boolean;
   /** Whether notification is read */
   isRead?: boolean;
+  /** Callback when delete button is pressed */
+  onDelete?: () => void;
 }
 
 // ============================================================================
@@ -125,6 +127,7 @@ export const NotificationItem: React.FC<NotificationItemProps> = ({
   actions,
   isLoading = false,
   isRead = true,
+  onDelete,
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const config = NOTIFICATION_CONFIG[type] || NOTIFICATION_CONFIG.system;
@@ -177,6 +180,13 @@ export const NotificationItem: React.FC<NotificationItemProps> = ({
             {renderMessage()}
             <Text style={styles.timestamp}>{timestamp}</Text>
           </View>
+
+          {/* Delete button */}
+          {onDelete && (
+            <TouchableOpacity onPress={onDelete} style={styles.deleteButton}>
+              <Text style={styles.deleteIcon}>×</Text>
+            </TouchableOpacity>
+          )}
 
           {/* Arrow or Expand indicator */}
           {(showArrow || expandable) && (
@@ -289,6 +299,15 @@ const styles = StyleSheet.create({
   timestamp: {
     fontSize: 12,
     color: '#999',
+  },
+  deleteButton: {
+    padding: 4,
+    marginLeft: 8,
+  },
+  deleteIcon: {
+    fontSize: 24,
+    color: '#EB8F80',
+    fontWeight: '300',
   },
   arrow: {
     fontSize: 14,

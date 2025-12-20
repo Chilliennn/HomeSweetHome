@@ -33,11 +33,17 @@ const SettingsScreenComponent: React.FC = () => {
   // ✅ Fallback: Get userId from authViewModel if not in params
   const userId = userIdFromParams || authViewModel.authState.currentUserId || undefined;
 
-// Load user profile data on mount
+  // Load user profile data on mount
   useEffect(() => {
-    if (userId) {
-      authViewModel.loadProfile(userId);
-    }
+    const loadUserData = async () => {
+      if (userId) {
+        // Load profile data (realIdentity, displayIdentity, etc.)
+        authViewModel.loadProfile(userId);
+        // Load full user object for profile_photo_url
+        await authViewModel.getCurrentUser(userId);
+      }
+    };
+    loadUserData();
   }, [userId]);
 
   // Access observable properties from ViewModel
@@ -48,8 +54,8 @@ const SettingsScreenComponent: React.FC = () => {
   // ============================================================================
   // RENDER DATA
   // ============================================================================
-  // Get user display name - prefer display identity, fallback to userName param
-  const displayName = displayIdentity?.displayName || userName || 'User';
+  // FIXED: Get user display name from full_name (userName param)
+  const displayName = userName || 'User';
   
   // Get user location from real identity
   const location = realIdentity?.location || 'Kuala Lumpur';
@@ -58,16 +64,24 @@ const SettingsScreenComponent: React.FC = () => {
   const age = verifiedAge || 25;
 
   // Get avatar config from user's profile data
-  const avatarConfig = getAvatarDisplay(
-    displayIdentity ? {
-      avatar_url: displayIdentity.customAvatarUrl || undefined,
-      avatar_meta: {
-        type: displayIdentity.avatarType || 'default',
-        selected_avatar_index: displayIdentity.selectedAvatarIndex ?? null,
-      },
-    } : null,
-    (userType as 'youth' | 'elderly') || 'youth'
-  );
+  // Priority: profile_photo_url (real photo) > preset avatar from avatar_meta
+  // Use authViewModel.currentUser.profile_photo_url if available
+  const hasRealPhoto = !!authViewModel.currentUser?.profile_photo_url;
+  const avatarConfig = hasRealPhoto && authViewModel.currentUser
+    ? {
+        icon: undefined,
+        imageSource: { uri: authViewModel.currentUser.profile_photo_url! },
+        backgroundColor: '#9DE2D0',
+      }
+    : getAvatarDisplay(
+        displayIdentity ? {
+          avatar_meta: {
+            type: displayIdentity.avatarType || 'default',
+            selected_avatar_index: displayIdentity.selectedAvatarIndex ?? null,
+          },
+        } : null,
+        (userType as 'youth' | 'elderly') || 'youth'
+      );
 
 
 

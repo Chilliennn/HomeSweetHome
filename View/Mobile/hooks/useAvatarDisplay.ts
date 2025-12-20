@@ -76,17 +76,11 @@ export function getAvatarDisplay(
   }
 
   const avatarMeta = profileData.avatar_meta;
-  const avatarUrl = profileData.avatar_url;
+  // FIXED: Removed avatar_url - use profile_photo_url from users table instead
 
-  // Case 1: Custom avatar (uploaded image)
-  if (avatarMeta?.type === 'custom' && avatarUrl) {
-    return {
-      imageSource: { uri: avatarUrl },
-      backgroundColor: '#9DE2D0', // Default teal background for custom
-    };
-  }
+  // FIXED: Only support preset avatars, not custom avatars
 
-  // Case 2: Default avatar (selected from options)
+  // Case: Default avatar (selected from options)
   if (avatarMeta?.type === 'default' && avatarMeta.selected_avatar_index !== null && avatarMeta.selected_avatar_index !== undefined) {
     const index = avatarMeta.selected_avatar_index;
     const images = userType === 'youth' ? YOUTH_IMAGES : ELDERLY_IMAGES;

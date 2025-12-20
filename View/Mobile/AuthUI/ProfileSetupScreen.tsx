@@ -60,18 +60,25 @@ const ProfileSetupScreenComponent: React.FC = () => {
     
     console.log('[ProfileSetupScreen] Initializing - userId:', userId, 'editMode:', editMode, 'userType:', userTypeFromDB);
     
-    if (editMode) {
-      // Edit mode: skip to profile-form step directly
-      authViewModel.resetFlow(userTypeFromDB || 'youth');
-      authViewModel.setStep('profile-form');
-    } else {
-      // Normal flow: start from welcome
-      authViewModel.resetFlow(userTypeFromDB || 'youth');
-    }
+    // Initialize flow asynchronously to ensure profile loads first in editMode
+    const initFlow = async () => {
+      if (editMode) {
+        // Edit mode: Load profile data FIRST, then go to profile-form
+        authViewModel.resetFlow(userTypeFromDB || 'youth');
+        if (userId) {
+          await authViewModel.loadProfile(userId);
+        }
+        authViewModel.setStep('profile-form');
+      } else {
+        // Normal flow: start from welcome
+        authViewModel.resetFlow(userTypeFromDB || 'youth');
+        if (userId) {
+          authViewModel.loadProfile(userId);
+        }
+      }
+    };
     
-    if (userId) {
-      authViewModel.loadProfile(userId);
-    }
+    initFlow();
   }, [userId, userTypeFromDB, editMode]);
 
   // Access observable properties directly from authViewModel in render
@@ -182,40 +189,40 @@ const ProfileSetupScreenComponent: React.FC = () => {
 
   /**
    * Handle Profile Setup form submission (merged Step 1+2)
-   * Saves phone, location, displayName, and avatar
+   * Saves phone, location, fullName, avatar, and profile photo
    * Proceeds to Profile Info Section (Step 3)
    * 
    * NOTE: File reading is done here in the View layer (using expo-file-system)
    * before passing base64 data to the ViewModel. This follows MVVM architecture.
    */
   const handleProfileSetupSubmit = async (data: ProfileSetupFormData) => {
-    console.log('[ProfileSetupScreen] handleProfileSetupSubmit START', { userId, editMode, data: { ...data, customAvatarUri: data.customAvatarUri?.substring(0, 50) } });
+    console.log('[ProfileSetupScreen] handleProfileSetupSubmit START', { userId, editMode, data: { ...data, profilePhotoUri: data.profilePhotoUri?.substring(0, 50) } });
     
     if (!userId) {
       console.error('[ProfileSetupScreen] handleProfileSetupSubmit - No userId!');
       return;
     }
     
-    // Read file in View layer if custom avatar is selected
-    let customAvatarBase64: string | null = null;
-    let customAvatarExtension: string | null = null;
+    // Read profile photo file in View layer if provided
+    let profilePhotoBase64: string | null = null;
+    let profilePhotoExtension: string | null = null;
     
-    if (data.avatarType === 'custom' && data.customAvatarUri) {
-      console.log('[ProfileSetupScreen] Reading custom avatar file...');
+    if (data.profilePhotoUri) {
+      console.log('[ProfileSetupScreen] Reading profile photo file...');
       try {
         // Extract file extension from URI
-        const uriParts = data.customAvatarUri.split('.');
-        customAvatarExtension = uriParts[uriParts.length - 1].toLowerCase();
+        const uriParts = data.profilePhotoUri.split('.');
+        profilePhotoExtension = uriParts[uriParts.length - 1].toLowerCase();
         
         // Read file as base64 (View layer responsibility)
-        customAvatarBase64 = await FileSystem.readAsStringAsync(
-          data.customAvatarUri, 
+        profilePhotoBase64 = await FileSystem.readAsStringAsync(
+          data.profilePhotoUri, 
           { encoding: FileSystem.EncodingType.Base64 }
         );
-        console.log('[ProfileSetupScreen] Avatar file read successfully, size:', customAvatarBase64.length);
+        console.log('[ProfileSetupScreen] Photo file read successfully, size:', profilePhotoBase64.length);
       } catch (error) {
-        console.error('[ProfileSetupScreen] Failed to read avatar file:', error);
-        authViewModel.setError('Failed to read avatar image');
+        console.error('[ProfileSetupScreen] Failed to read photo file:', error);
+        authViewModel.setError('Failed to read profile photo');
         return;
       }
     }
@@ -225,11 +232,11 @@ const ProfileSetupScreenComponent: React.FC = () => {
       await authViewModel.saveProfileSetup(userId, {
         phoneNumber: data.phoneNumber,
         location: data.location,
-        displayName: data.displayName,
+        fullName: data.fullName,
         avatarType: data.avatarType,
         selectedAvatarId: data.selectedAvatarId,
-        customAvatarBase64,
-        customAvatarExtension,
+        profilePhotoBase64,
+        profilePhotoExtension,
       });
       console.log('[ProfileSetupScreen] saveProfileSetup completed successfully');
     } catch (error) {
@@ -326,7 +333,7 @@ const ProfileSetupScreenComponent: React.FC = () => {
           (data.realIdentity || data.displayIdentity) ? {
             phoneNumber: data.realIdentity?.phoneNumber || '',
             location: data.realIdentity?.location || '',
-            displayName: data.displayIdentity?.displayName || '',
+            fullName: userName || '', // Load full_name from params
             avatarType: data.displayIdentity?.avatarType || 'default',
             // Convert selectedAvatarIndex back to selectedAvatarId
             selectedAvatarId: data.displayIdentity?.selectedAvatarIndex !== null && data.displayIdentity?.selectedAvatarIndex !== undefined
@@ -334,7 +341,7 @@ const ProfileSetupScreenComponent: React.FC = () => {
                   ? `img-${data.displayIdentity.selectedAvatarIndex}` 
                   : `emoji-${data.displayIdentity.selectedAvatarIndex - 2}`)
               : null,
-            customAvatarUri: data.displayIdentity?.customAvatarUrl || null,
+            profilePhotoUri: null, // Don't pre-load photo URI (will load from database if exists)
           } : undefined;
 
         const profileInfoInitial: ProfileInfoData | undefined = data.profileInfo

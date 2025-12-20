@@ -33,8 +33,10 @@ const formatDate = (dateString: string) => {
 const mapNotificationType = (dbType: string): 'interest_sent' | 'interest_declined' | 'interest_accepted' | 'interest_received' | 'application_submitted' | 'message' | 'reminder' | 'system' => {
     const typeMap: Record<string, any> = {
         'interest_sent': 'interest_sent',
+        'new_interest': 'interest_received',          // DB: new_interest -> UI: interest_received
         'interest_received': 'interest_received',
         'interest_accepted': 'interest_accepted',
+        'interest_rejected': 'interest_declined',     // DB: interest_rejected -> UI: interest_declined
         'interest_declined': 'interest_declined',
         'application_submitted': 'application_submitted',
         'new_message': 'message',
@@ -152,6 +154,39 @@ export const NotificationScreen = observer(() => {
         router.push(`/(main)/pre-match-started?matchId=${matchId}`);
     };
 
+    // Delete interest request (elderly action)
+    const handleDeleteRequest = async (requestId: string) => {
+        Alert.alert(
+            'Delete Request',
+            'Are you sure you want to delete this interest request?',
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Delete',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            await matchVM.deleteRequest(requestId);
+                        } catch (error) {
+                            Alert.alert('Error', 'Failed to delete request');
+                        }
+                    },
+                },
+            ]
+        );
+    };
+
+    // Delete general notification
+    const handleDeleteNotification = async (notificationId: string) => {
+        try {
+            await notificationRepository.deleteNotification(notificationId);
+            setGeneralNotifications(prev => prev.filter(n => n.id !== notificationId));
+        } catch (error) {
+            console.error('[NotificationScreen] Failed to delete notification:', error);
+            Alert.alert('Error', 'Failed to delete notification');
+        }
+    };
+
     /**
      * Render: Incoming Interest Request (Elderly)
      * Uses NotificationItem with expandable feature
@@ -183,6 +218,7 @@ export const NotificationScreen = observer(() => {
                     onViewProfile: () => handleViewProfile(item.id),
                 }}
                 isLoading={matchVM.isLoading}
+                onDelete={() => handleDeleteRequest(item.id)}
             />
         );
     };
@@ -223,7 +259,7 @@ export const NotificationScreen = observer(() => {
 
     /**
      * Render: General System Notifications
-     * Uses NotificationItem
+     * Simple notifications (calendar, memories, system messages)
      */
     const renderGeneralNotification = (item: any) => {
         const date = formatDate(item.created_at);
@@ -238,6 +274,7 @@ export const NotificationScreen = observer(() => {
                 timestamp={date}
                 isRead={item.is_read}
                 onPress={() => handleNotificationPress(item.id)}
+                onDelete={() => handleDeleteNotification(item.id)}
             />
         );
     };
@@ -276,24 +313,31 @@ export const NotificationScreen = observer(() => {
                 renderItem={isElderly ? renderElderlyNotification : renderYouthNotification}
                 keyExtractor={item => item.id}
                 contentContainerStyle={styles.list}
-                ListHeaderComponent={() => (
-                    <View>
-                        {/* General Notifications Section */}
-                        {generalNotifications.length > 0 && (
-                            <View style={styles.section}>
-                                <Text style={styles.sectionTitle}>🔔 Recent Activity</Text>
-                                {generalNotifications.map(item => renderGeneralNotification(item))}
-                            </View>
-                        )}
+                ListHeaderComponent={() => {
+                    // Filter out interest_received notifications for elderly (already shown in matchData)
+                    const filteredNotifications = isElderly
+                        ? generalNotifications.filter(n => n.type !== 'new_interest' && n.type !== 'interest_received')
+                        : generalNotifications;
 
-                        {/* Match Notifications Section Header */}
-                        {matchData.length > 0 && (
-                            <Text style={styles.sectionTitle}>
-                                {isElderly ? '❤️ Interest Requests' : '📬 Match Updates'}
-                            </Text>
-                        )}
-                    </View>
-                )}
+                    return (
+                        <View>
+                            {/* General Notifications Section */}
+                            {filteredNotifications.length > 0 && (
+                                <View style={styles.section}>
+                                    <Text style={styles.sectionTitle}>🔔 Recent Activity</Text>
+                                    {filteredNotifications.map(item => renderGeneralNotification(item))}
+                                </View>
+                            )}
+
+                            {/* Match Notifications Section Header */}
+                            {matchData.length > 0 && (
+                                <Text style={styles.sectionTitle}>
+                                    {isElderly ? '❤️ Interest Requests' : '📬 Match Updates'}
+                                </Text>
+                            )}
+                        </View>
+                    );
+                }}
                 ListEmptyComponent={
                     generalNotifications.length === 0 ? (
                         <View style={styles.emptyContainer}>

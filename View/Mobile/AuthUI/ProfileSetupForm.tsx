@@ -33,11 +33,13 @@ export interface ProfileSetupFormData {
   // Real Identity Fields (without realPhoto)
   phoneNumber: string;
   location: string;
-  // Display Identity Fields
-  displayName: string;
+  // User's full name (maps to users.full_name in database)
+  fullName: string;
+  // Avatar selection (preset only - no custom upload here)
   avatarType: 'default' | 'custom';
   selectedAvatarId: string | null;
-  customAvatarUri: string | null;
+  // Profile photo upload (goes to users.profile_photo_url)
+  profilePhotoUri: string | null;
 }
 
 interface ProfileSetupFormProps {
@@ -136,13 +138,13 @@ export const ProfileSetupForm: React.FC<ProfileSetupFormProps> = ({
   const [phoneNumber, setPhoneNumber] = useState(initialData?.phoneNumber || '');
   const [location, setLocation] = useState(initialData?.location || '');
 
-  // Form state - Display Identity fields
-  const [displayName, setDisplayName] = useState(initialData?.displayName || '');
+  // Form state - User's full name
+  const [fullName, setFullName] = useState(initialData?.fullName || '');
   const [selectedAvatarId, setSelectedAvatarId] = useState<string | null>(
     initialData?.selectedAvatarId || null
   );
-  const [customAvatarUri, setCustomAvatarUri] = useState<string | null>(
-    initialData?.customAvatarUri || null
+  const [profilePhotoUri, setProfilePhotoUri] = useState<string | null>(
+    initialData?.profilePhotoUri || null
   );
   const [isUploading, setIsUploading] = useState(false);
 
@@ -161,16 +163,17 @@ export const ProfileSetupForm: React.FC<ProfileSetupFormProps> = ({
    */
   const handleSelectAvatar = (id: string) => {
     setSelectedAvatarId(id);
-    setCustomAvatarUri(null); // Clear custom avatar when selecting default
+    setProfilePhotoUri(null); // Clear profile photo when selecting preset avatar
     setErrors((prev) => ({ ...prev, avatar: '' }));
   };
 
   /**
-   * Handle custom avatar upload from gallery
+   * Handle profile photo upload from gallery
+   * This goes to users.profile_photo_url (real photo, not avatar)
    * - Validates file format (jpeg, png, webp)
-   * - Validates file size (max 5MB)
+   * - Validates file size (max 10MB)
    */
-  const handlePickCustomAvatar = async () => {
+  const handlePickProfilePhoto = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
       setErrors({ avatar: 'Permission to access gallery is required' });
@@ -180,16 +183,16 @@ export const ProfileSetupForm: React.FC<ProfileSetupFormProps> = ({
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
       allowsEditing: true,
-      aspect: [1, 1],
+      aspect: [1, 1], // Square crop for circular display
       quality: 0.8,
     });
 
     if (!result.canceled && result.assets[0]) {
       const asset = result.assets[0];
 
-      // Validate file size (max 5MB per requirements)
-      if (asset.fileSize && asset.fileSize > 5 * 1024 * 1024) {
-        setErrors({ avatar: 'Avatar size must be less than 5MB' });
+      // Validate file size (max 10MB for profile photos)
+      if (asset.fileSize && asset.fileSize > 10 * 1024 * 1024) {
+        setErrors({ avatar: 'Photo size must be less than 10MB' });
         return;
       }
 
@@ -205,8 +208,8 @@ export const ProfileSetupForm: React.FC<ProfileSetupFormProps> = ({
         }
       }
 
-      setCustomAvatarUri(asset.uri);
-      setSelectedAvatarId(null); // Clear default selection
+      setProfilePhotoUri(asset.uri);
+      setSelectedAvatarId(null); // Clear preset avatar selection
       setErrors((prev) => ({ ...prev, avatar: '' }));
     }
   };
@@ -218,9 +221,9 @@ export const ProfileSetupForm: React.FC<ProfileSetupFormProps> = ({
     console.log('[ProfileSetupForm] validateForm START', {
       phoneNumber,
       location,
-      displayName,
+      fullName,
       selectedAvatarId,
-      customAvatarUri: customAvatarUri?.substring(0, 50),
+      profilePhotoUri: profilePhotoUri?.substring(0, 50),
     });
     
     const newErrors: Record<string, string> = {};
@@ -239,20 +242,15 @@ export const ProfileSetupForm: React.FC<ProfileSetupFormProps> = ({
       newErrors.location = 'Please enter a valid location';
     }
 
-    // Validate display name - UC103_8
-    if (!displayName.trim()) {
-      newErrors.displayName = 'Display name is required';
-    } else if (displayName.length < 2 || displayName.length > 20) {
-      newErrors.displayName = 'Display name must be 2-20 characters';
-    } else if (!/^[a-zA-Z0-9]+$/.test(displayName)) {
-      newErrors.displayName = 'Only letters and numbers allowed';
+    // Validate full name
+    if (!fullName.trim()) {
+      newErrors.fullName = 'Full name is required';
+    } else if (fullName.length < 2 || fullName.length > 50) {
+      newErrors.fullName = 'Full name must be 2-50 characters';
     }
 
-    // Validate avatar selection - UC103_9
-    // Must select either a default avatar OR upload custom avatar
-    if (selectedAvatarId === null && !customAvatarUri) {
-      newErrors.avatar = 'Please select or upload an avatar';
-    }
+    // Avatar/photo is optional - user can choose preset avatar OR upload real photo OR neither
+    // If they choose neither, we'll show a default fallback
 
     console.log('[ProfileSetupForm] validateForm RESULT', {
       hasErrors: Object.keys(newErrors).length > 0,
@@ -284,10 +282,10 @@ export const ProfileSetupForm: React.FC<ProfileSetupFormProps> = ({
       await onNext({
         phoneNumber,
         location,
-        displayName,
-        avatarType: customAvatarUri ? 'custom' : 'default',
+        fullName,
+        avatarType: profilePhotoUri ? 'custom' : 'default',
         selectedAvatarId,
-        customAvatarUri,
+        profilePhotoUri,
       });
       console.log('[ProfileSetupForm] onNext callback completed successfully');
     } catch (error) {
@@ -377,31 +375,32 @@ export const ProfileSetupForm: React.FC<ProfileSetupFormProps> = ({
             style={styles.sectionBanner}
           />
 
-          {/* Display Name Field - UC103_7, UC103_8 */}
+          {/* Full Name Field */}
           <View style={styles.fieldContainer}>
             <Text style={styles.label}>
-              Display Name <Text style={styles.required}>*</Text>
+              Full Name <Text style={styles.required}>*</Text>
             </Text>
             <TextInput
-              style={[styles.input, errors.displayName && styles.inputError]}
-              placeholder="e.g. Faiz"
+              style={[styles.input, errors.fullName && styles.inputError]}
+              placeholder="e.g. Ahmad Faiz bin Abdullah"
               placeholderTextColor="#A0A0A0"
-              value={displayName}
-              onChangeText={setDisplayName}
-              maxLength={20}
+              value={fullName}
+              onChangeText={setFullName}
+              maxLength={50}
               editable={!isSubmitting}
             />
-            <Text style={styles.hint}>2-20 characters, letters and numbers only</Text>
-            {errors.displayName && (
-              <Text style={styles.errorText}>{errors.displayName}</Text>
+            <Text style={styles.hint}>Your full name (2-50 characters)</Text>
+            {errors.fullName && (
+              <Text style={styles.errorText}>{errors.fullName}</Text>
             )}
           </View>
 
           {/* Avatar Selection - UC103_9, UC103_10 */}
           <View style={styles.fieldContainer}>
             <Text style={styles.label}>
-              Choose Your Avatar <Text style={styles.required}>*</Text>
+              Choose Your Avatar (Optional)
             </Text>
+            <Text style={styles.hint}>Select a preset avatar for display</Text>
             <View style={styles.avatarGrid}>
               {avatarOptions.map((option) => (
                 <IconCircle
@@ -420,18 +419,19 @@ export const ProfileSetupForm: React.FC<ProfileSetupFormProps> = ({
             </View>
           </View>
 
-          {/* Custom Avatar Upload */}
+          {/* Profile Photo Upload */}
           <View style={styles.fieldContainer}>
-            <Text style={styles.label}>Or upload your own avatar</Text>
+            <Text style={styles.label}>Or upload your profile photo</Text>
+            <Text style={styles.hint}>Real photo shown to others (priority over avatar)</Text>
             <ImageUploader
-              imageUri={customAvatarUri}
-              onPress={handlePickCustomAvatar}
-              placeholder="Tap to select file"
-              hint="JPG, PNG, WebP • Max 5MB"
+              imageUri={profilePhotoUri}
+              onPress={handlePickProfilePhoto}
+              placeholder="Tap to select photo"
+              hint="JPG, PNG, WebP • Max 10MB • Will be displayed as circle"
               disabled={isSubmitting}
-              height={140}
+              height={160}
               previewShape="circle"
-              previewSize={100}
+              previewSize={120}
               selectedBorderColor="#9DE2D0"
             />
             {errors.avatar && <Text style={styles.errorText}>{errors.avatar}</Text>}

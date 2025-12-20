@@ -8,12 +8,12 @@ import {
   SectionList,
 } from 'react-native';
 import { observer } from 'mobx-react-lite';
-import { familyViewModel, authViewModel } from '@home-sweet-home/viewmodel';
+import { useRouter, useLocalSearchParams } from 'expo-router';
+import { familyViewModel } from '@home-sweet-home/viewmodel';
 import { ThemedText } from '@/components/themed-text';
 import { Button } from '@/components/ui/Button';
 import { AlertBanner } from '@/components/ui/AlertBanner';
 import { Header } from '@/components/ui/Header';
-import { useRouter } from 'expo-router';
 
 /**
  * CalendarScreen - Shared calendar and event planning
@@ -27,12 +27,13 @@ import { useRouter } from 'expo-router';
  */
 export const CalendarScreen = observer(() => {
   const router = useRouter();
-  const { calendarEvents, errorMessage, successMessage, canAccessCalendar } = familyViewModel;
+  const params = useLocalSearchParams();
+  const { calendarEvents, isLoading, errorMessage, successMessage } = familyViewModel;
+  const userId = (params.userId as string) || familyViewModel.currentUserId;
 
   useEffect(() => {
     const initializeIfNeeded = async () => {
-      if (!familyViewModel.currentRelationship) {
-        const userId = authViewModel.authState.currentUserId;
+      if (!familyViewModel.currentRelationship && userId) {
         if (userId) {
           await familyViewModel.initialize(userId);
         }
@@ -43,6 +44,14 @@ export const CalendarScreen = observer(() => {
     };
     initializeIfNeeded();
   }, [familyViewModel.currentRelationship?.id]);
+
+  // Check if calendar feature is unlocked based on relationship stage
+  const canAccessCalendar = () => {
+    if (!familyViewModel.currentRelationship) return false;
+    const stage = familyViewModel.currentRelationship.current_stage;
+    // Calendar available from Stage 2 (trial_period) onwards
+    return stage === 'trial_period' || stage === 'official_ceremony' || stage === 'family_life';
+  };
 
   if (!canAccessCalendar()) {
     return (

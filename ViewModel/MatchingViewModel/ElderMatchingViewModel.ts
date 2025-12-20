@@ -12,14 +12,33 @@ export class ElderMatchingViewModel {
     private subscription: RealtimeChannel | null = null;
     private notificationSubscription: RealtimeChannel | null = null;
 
-    // ✅ Store current elderly ID for later use
-    private currentElderlyId: string | null = null;
+    // ✅ Current user ID synced from AuthViewModel via Layout
+    currentUserId: string | null = null;
 
     // ✅ Unread notification count for bell icon
     unreadNotificationCount: number = 0;
 
     constructor() {
         makeAutoObservable(this);
+    }
+
+    /**
+     * Set current user context (called by Layout when auth state changes)
+     */
+    setCurrentUser(userId: string | null): void {
+        runInAction(() => {
+            this.currentUserId = userId;
+        });
+    }
+
+    /**
+     * Clear user context (on logout)
+     */
+    clearUser(): void {
+        runInAction(() => {
+            this.currentUserId = null;
+            this.incomingRequests = [];
+        });
     }
 
     /**
@@ -30,7 +49,7 @@ export class ElderMatchingViewModel {
         console.log('🔵 [ElderVM] Loading requests for:', elderlyId);
 
         // ✅ Save elderly ID for later use
-        this.currentElderlyId = elderlyId;
+        this.currentUserId = elderlyId;
 
         const data = await matchingService.getIncomingInterests(elderlyId);
         runInAction(() => {
@@ -154,7 +173,7 @@ export class ElderMatchingViewModel {
 
         try {
             // ✅ Use cached ID, fallback to supabase.auth.getUser
-            let elderlyId = this.currentElderlyId;
+            let elderlyId = this.currentUserId;
             if (!elderlyId) {
                 const { data: { user } } = await supabase.auth.getUser();
                 elderlyId = user?.id || null;
@@ -197,7 +216,7 @@ export class ElderMatchingViewModel {
         console.log('[ElderVM] Loading pending elderly review for:', elderlyId);
 
         // ✅ Save elderly ID for later use
-        this.currentElderlyId = elderlyId;
+        this.currentUserId = elderlyId;
 
         try {
             const data = await matchingService.getApplicationsPendingElderlyReview(elderlyId);
@@ -227,7 +246,7 @@ export class ElderMatchingViewModel {
 
         try {
             // ✅ Use cached ID, fallback to supabase.auth.getUser
-            let elderlyId = this.currentElderlyId;
+            let elderlyId = this.currentUserId;
             if (!elderlyId) {
                 const { data: { user } } = await supabase.auth.getUser();
                 elderlyId = user?.id || null;
@@ -265,6 +284,14 @@ export class ElderMatchingViewModel {
                 this.isLoading = false;
             });
         }
+    }
+
+    /**
+     * Get application by ID
+     * Used by Views to fetch detailed application data
+     */
+    async getApplicationById(applicationId: string) {
+        return matchingService.getApplicationById(applicationId);
     }
 }
 

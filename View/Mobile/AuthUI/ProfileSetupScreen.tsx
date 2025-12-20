@@ -42,17 +42,23 @@ const ProfileSetupScreenComponent: React.FC = () => {
   const router = useRouter();
   const params = useLocalSearchParams();
   const initializedRef = useRef(false);
+  const stepRef = useRef<string | null>(null); // Track step changes for logging
 
   // Extract user info from login or settings navigation
-  const userId = params.userId as string | undefined;
+  const userIdFromParams = params.userId as string | undefined;
   const userName = params.userName as string | undefined;
   const userTypeFromDB = params.userType as 'youth' | 'elderly' | undefined;
   const editMode = params.editMode === 'true'; // Settings navigation passes this
+
+  // ✅ Fallback: Get userId from authViewModel if not in params (edit mode scenario)
+  const userId = userIdFromParams || authViewModel.authState.currentUserId || undefined;
 
   // One-time init: set default userType and hydrate profile state if available
   useEffect(() => {
     if (initializedRef.current) return;
     initializedRef.current = true;
+    
+    console.log('[ProfileSetupScreen] Initializing - userId:', userId, 'editMode:', editMode, 'userType:', userTypeFromDB);
     
     if (editMode) {
       // Edit mode: skip to profile-form step directly
@@ -183,13 +189,19 @@ const ProfileSetupScreenComponent: React.FC = () => {
    * before passing base64 data to the ViewModel. This follows MVVM architecture.
    */
   const handleProfileSetupSubmit = async (data: ProfileSetupFormData) => {
-    if (!userId) return;
+    console.log('[ProfileSetupScreen] handleProfileSetupSubmit START', { userId, editMode, data: { ...data, customAvatarUri: data.customAvatarUri?.substring(0, 50) } });
+    
+    if (!userId) {
+      console.error('[ProfileSetupScreen] handleProfileSetupSubmit - No userId!');
+      return;
+    }
     
     // Read file in View layer if custom avatar is selected
     let customAvatarBase64: string | null = null;
     let customAvatarExtension: string | null = null;
     
     if (data.avatarType === 'custom' && data.customAvatarUri) {
+      console.log('[ProfileSetupScreen] Reading custom avatar file...');
       try {
         // Extract file extension from URI
         const uriParts = data.customAvatarUri.split('.');
@@ -200,6 +212,7 @@ const ProfileSetupScreenComponent: React.FC = () => {
           data.customAvatarUri, 
           { encoding: FileSystem.EncodingType.Base64 }
         );
+        console.log('[ProfileSetupScreen] Avatar file read successfully, size:', customAvatarBase64.length);
       } catch (error) {
         console.error('[ProfileSetupScreen] Failed to read avatar file:', error);
         authViewModel.setError('Failed to read avatar image');
@@ -207,21 +220,30 @@ const ProfileSetupScreenComponent: React.FC = () => {
       }
     }
     
-    await authViewModel.saveProfileSetup(userId, {
-      phoneNumber: data.phoneNumber,
-      location: data.location,
-      displayName: data.displayName,
-      avatarType: data.avatarType,
-      selectedAvatarId: data.selectedAvatarId,
-      customAvatarBase64,
-      customAvatarExtension,
-    });
+    console.log('[ProfileSetupScreen] Calling authViewModel.saveProfileSetup...');
+    try {
+      await authViewModel.saveProfileSetup(userId, {
+        phoneNumber: data.phoneNumber,
+        location: data.location,
+        displayName: data.displayName,
+        avatarType: data.avatarType,
+        selectedAvatarId: data.selectedAvatarId,
+        customAvatarBase64,
+        customAvatarExtension,
+      });
+      console.log('[ProfileSetupScreen] saveProfileSetup completed successfully');
+    } catch (error) {
+      console.error('[ProfileSetupScreen] saveProfileSetup failed:', error);
+      return; // Don't navigate if save failed
+    }
     
     if (editMode) {
       // In edit mode, go back to settings after saving
+      console.log('[ProfileSetupScreen] Edit mode - navigating back to settings');
       router.back();
     } else {
       // Normal flow: proceed to profile info
+      console.log('[ProfileSetupScreen] Normal flow - proceeding to profile-info');
       authViewModel.setStep('profile-info');
     }
   };
@@ -293,8 +315,11 @@ const ProfileSetupScreenComponent: React.FC = () => {
         const age = authViewModel.verifiedAge ?? 0;
         const data = authViewModel.profileData;
 
-        // Debug: log every render
-        console.log('[ProfileSetupScreen] RENDER - step:', step, 'age:', age, 'loading:', loading, 'editMode:', editMode);
+        // Debug: log only when step changes to avoid spam
+        if (stepRef.current !== step) {
+          console.log('[ProfileSetupScreen] Step changed:', stepRef.current, '→', step);
+          stepRef.current = step;
+        }
 
         // Build initial data for ProfileSetupForm from existing profile data
         const profileSetupInitial: ProfileSetupFormData | undefined = 

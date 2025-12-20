@@ -57,7 +57,7 @@ export const VerifiedSuccess: React.FC<VerifiedSuccessProps> = ({
   // Render with try-catch to catch any rendering errors
   try {
     return (
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={styles.safeArea} edges={['top','bottom']}>
         <ScrollView
           style={styles.container}
           contentContainerStyle={styles.content}

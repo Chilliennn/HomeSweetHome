@@ -25,7 +25,6 @@ import { useVoiceUpload } from '@/hooks/useVoiceUpload';
 import { getAvatarDisplay } from '@/hooks';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system';
-import { uploadChatImage, uploadChatVideo } from '@home-sweet-home/model';
 
 /**
  * ChatScreen - UC104: Pre-match and relationship chat interface
@@ -408,13 +407,13 @@ export const ChatScreen = observer(function ChatScreen() {
       let mediaUrl: string;
 
       if (isVideo) {
-        mediaUrl = await uploadChatVideo(base64Data, uploadContext, currentUserId!, fileExtension);
+        mediaUrl = await vm.uploadChatVideo(base64Data, uploadContext, currentUserId!, fileExtension);
         const success = await vm.sendVideoMessage(mediaUrl);
         if (!success) {
           Alert.alert('Error', vm.errorMessage || 'Failed to send video');
         }
       } else {
-        mediaUrl = await uploadChatImage(base64Data, uploadContext, currentUserId!, fileExtension);
+        mediaUrl = await vm.uploadChatImage(base64Data, uploadContext, currentUserId!, fileExtension);
         const success = await vm.sendImageMessage(mediaUrl);
         if (!success) {
           Alert.alert('Error', vm.errorMessage || 'Failed to send image');

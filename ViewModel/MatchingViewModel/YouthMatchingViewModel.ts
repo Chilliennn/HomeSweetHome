@@ -15,6 +15,9 @@ export class YouthMatchingViewModel {
     private subscription: RealtimeChannel | null = null;
     private notificationSubscription: RealtimeChannel | null = null;
 
+    // ✅ Current user ID synced from AuthViewModel via Layout
+    currentUserId: string | null = null;
+
     // ✅ Unread notification count for bell icon
     unreadNotificationCount: number = 0;
 
@@ -28,6 +31,27 @@ export class YouthMatchingViewModel {
 
     constructor() {
         makeAutoObservable(this);
+    }
+
+    /**
+     * Set current user context (called by Layout when auth state changes)
+     */
+    setCurrentUser(userId: string | null): void {
+        runInAction(() => {
+            this.currentUserId = userId;
+        });
+    }
+
+    /**
+     * Clear user context (on logout)
+     */
+    clearUser(): void {
+        runInAction(() => {
+            this.currentUserId = null;
+            this.profiles = [];
+            this.activeMatches = [];
+            this.expressedElderlyIds.clear();
+        });
     }
 
     /**

@@ -215,6 +215,14 @@ export const ProfileSetupForm: React.FC<ProfileSetupFormProps> = ({
    * Validate all form fields
    */
   const validateForm = (): boolean => {
+    console.log('[ProfileSetupForm] validateForm START', {
+      phoneNumber,
+      location,
+      displayName,
+      selectedAvatarId,
+      customAvatarUri: customAvatarUri?.substring(0, 50),
+    });
+    
     const newErrors: Record<string, string> = {};
 
     // Validate phone number
@@ -246,6 +254,11 @@ export const ProfileSetupForm: React.FC<ProfileSetupFormProps> = ({
       newErrors.avatar = 'Please select or upload an avatar';
     }
 
+    console.log('[ProfileSetupForm] validateForm RESULT', {
+      hasErrors: Object.keys(newErrors).length > 0,
+      errors: newErrors,
+    });
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -254,9 +267,19 @@ export const ProfileSetupForm: React.FC<ProfileSetupFormProps> = ({
    * Handle form submission
    */
   const handleNext = async () => {
-    if (!validateForm()) return;
+    console.log('[ProfileSetupForm] handleNext called');
+    
+    const isValid = validateForm();
+    console.log('[ProfileSetupForm] Form validation result:', isValid);
+    
+    if (!isValid) {
+      console.log('[ProfileSetupForm] Form validation failed, aborting');
+      return;
+    }
 
     setIsUploading(true);
+    console.log('[ProfileSetupForm] Calling onNext callback...');
+    
     try {
       await onNext({
         phoneNumber,
@@ -266,8 +289,12 @@ export const ProfileSetupForm: React.FC<ProfileSetupFormProps> = ({
         selectedAvatarId,
         customAvatarUri,
       });
+      console.log('[ProfileSetupForm] onNext callback completed successfully');
+    } catch (error) {
+      console.error('[ProfileSetupForm] onNext callback failed:', error);
     } finally {
       setIsUploading(false);
+      console.log('[ProfileSetupForm] handleNext completed');
     }
   };
 
@@ -278,28 +305,27 @@ export const ProfileSetupForm: React.FC<ProfileSetupFormProps> = ({
   // ============================================================================
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
+    <SafeAreaView style={styles.safeArea} edges={['top','bottom']}>
       <View style={styles.container}>
         {/* Header */}
         <Header 
           title={editMode ? 'Edit Profile' : 'Profile Setup'} 
           onBack={onBack} 
         />
-
+        {/* Step Indicator - only show when not in edit mode */}
+        {!editMode && (
+        <StepIndicator
+            totalSteps={TOTAL_STEPS}
+            currentStep={CURRENT_STEP}
+            style={styles.stepIndicator}
+        />
+        )}
         <ScrollView
           style={styles.scrollView}
           contentContainerStyle={styles.content}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          {/* Step Indicator - only show when not in edit mode */}
-          {!editMode && (
-            <StepIndicator
-              totalSteps={TOTAL_STEPS}
-              currentStep={CURRENT_STEP}
-              style={styles.stepIndicator}
-            />
-          )}
 
           {/* Section 1: Contact Information */}
           <AlertBanner

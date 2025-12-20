@@ -3,7 +3,6 @@ import { View, Text, StyleSheet, ScrollView, ImageSourcePropType, TouchableOpaci
 import { useRouter } from 'expo-router';
 import { observer } from 'mobx-react-lite';
 import { elderMatchingViewModel, communicationViewModel } from '@home-sweet-home/viewmodel';
-import { authViewModel } from '@home-sweet-home/viewmodel';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTabNavigation, getAvatarDisplay } from '@/hooks';
 import {
@@ -60,23 +59,21 @@ export const ElderlyHome: React.FC<ElderlyHomeProps> = observer(({
   const { handleTabPress: hookHandleTabPress } = useTabNavigation(activeTab);
   const handleTabPress = onTabPress || hookHandleTabPress;
 
-  // Use real user ID from AuthViewModel
-  const currentElderlyId = authViewModel.authState.currentUserId;
-  // Use real name if not passed as prop
-  const displayName = propDisplayName || authViewModel.profileData.displayIdentity?.displayName || 'Elderly User';
+  // ✅ MVVM: Get user ID from ViewModel (synced by Layout from authViewModel)
+  const currentElderlyId = vm.currentUserId;
+  const displayName = propDisplayName || 'Elderly User';
 
-  // FIXED: Get avatar config from user's profile data
-  const currentUserProfileData = authViewModel.profileData.displayIdentity;
-  const avatarConfig = getAvatarDisplay(
-    currentUserProfileData ? {
-      avatar_url: currentUserProfileData.customAvatarUrl || undefined,
-      avatar_meta: {
-        type: currentUserProfileData.customAvatarUrl ? 'custom' : 'default',
-        selected_avatar_index: currentUserProfileData.selectedAvatarIndex ?? null,
-      },
-    } : null,
-    'elderly'
-  );
+  // ✅ Default avatar for elderly (since we don't have profile data in this ViewModel)
+  // If custom avatar is needed, it should be passed as prop from parent
+  const avatarConfig = avatarSource ? {
+    icon: undefined,
+    imageSource: avatarSource,
+    backgroundColor: '#C8ADD6'
+  } : {
+    icon: '👵' as const,
+    imageSource: undefined,
+    backgroundColor: '#C8ADD6'
+  };
 
   // Poll for requests or load on mount
   useEffect(() => {

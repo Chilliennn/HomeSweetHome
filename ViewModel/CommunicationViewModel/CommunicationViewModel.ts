@@ -5,6 +5,7 @@ import { notificationService } from '../../Model/Service/CoreService/notificatio
 import { relationshipService } from '../../Model/Service/CoreService/relationshipService';
 import { voiceUploadService, type ChatContext } from '../../Model/Service/CoreService/voiceUploadHelper';
 import { voiceTranscriptionService, type TranscriptionResult } from '../../Model/Service/CoreService/voiceTranscriptionService';
+import { uploadChatImage, uploadChatVideo } from '../../Model/Service/CoreService/mediaUploadHelper';
 import type { Message, Relationship } from '../../Model/types';
 import type { RealtimeChannel } from '@home-sweet-home/model';
 
@@ -1017,6 +1018,44 @@ export class CommunicationViewModel {
    */
   async transcribeAudio(base64Audio: string): Promise<TranscriptionResult> {
     return voiceTranscriptionService.transcribeDiary(base64Audio);
+  }
+
+  /**
+   * Upload chat image to storage
+   * Called by View layer after reading file to base64
+   * 
+   * @param base64Data - Base64-encoded image data
+   * @param context - Chat context (preMatch or relationship)
+   * @param senderId - Current user ID
+   * @param fileExtension - File extension (default: 'jpg')
+   * @returns Public URL of uploaded file
+   */
+  async uploadChatImage(
+    base64Data: string,
+    context: ChatContext,
+    senderId: string,
+    fileExtension: string = 'jpg'
+  ): Promise<string> {
+    return uploadChatImage(base64Data, context, senderId, fileExtension);
+  }
+
+  /**
+   * Upload chat video to storage
+   * Called by View layer after reading file to base64
+   * 
+   * @param base64Data - Base64-encoded video data
+   * @param context - Chat context (preMatch or relationship)
+   * @param senderId - Current user ID
+   * @param fileExtension - File extension (default: 'mp4')
+   * @returns Public URL of uploaded file
+   */
+  async uploadChatVideo(
+    base64Data: string,
+    context: ChatContext,
+    senderId: string,
+    fileExtension: string = 'mp4'
+  ): Promise<string> {
+    return uploadChatVideo(base64Data, context, senderId, fileExtension);
   }
 }
 

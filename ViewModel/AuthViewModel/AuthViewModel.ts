@@ -271,6 +271,34 @@ export class AuthViewModel {
     }
   }
 
+  /**
+   * Get active relationship for a user
+   * Used during login to determine if user should go to bonding or matching
+   */
+  async getActiveRelationship(userId: string) {
+    const { relationshipService } = await import('@home-sweet-home/model');
+    return relationshipService.getActiveRelationship(userId);
+  }
+
+  /**
+   * Manually set auth state (for prototype mode)
+   * Used when login flow bypasses authService
+   */
+  setAuthState(state: AuthState) {
+    runInAction(() => {
+      this.authState = state;
+    });
+  }
+
+  /**
+   * Manually set user type
+   */
+  setUserType(userType: UserType) {
+    runInAction(() => {
+      this.userType = userType;
+    });
+  }
+
   // =============================================================
   // Profile Setup State Helpers
   // =============================================================

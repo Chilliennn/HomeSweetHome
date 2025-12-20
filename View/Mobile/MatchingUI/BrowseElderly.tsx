@@ -10,7 +10,6 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { observer } from 'mobx-react-lite';
 import { youthMatchingViewModel, communicationViewModel } from '@home-sweet-home/viewmodel';
-import { authViewModel } from '@home-sweet-home/viewmodel';
 import { User } from '@home-sweet-home/model';
 import { useTabNavigation, getAvatarDisplay } from '@/hooks';
 import {
@@ -77,8 +76,8 @@ export const BrowseElderly: React.FC<BrowseElderlyProps> = observer(({
   notificationCount: propNotificationCount,
 }) => {
   const vm = youthMatchingViewModel;
-  const authVM = authViewModel;
-  const currentUserId = authVM.authState.currentUserId;
+  // ✅ MVVM: Get userId from ViewModel (synced by Layout from authViewModel)
+  const currentUserId = vm.currentUserId;
 
   // Filter modal state
   const [showFilterModal, setShowFilterModal] = useState(false);

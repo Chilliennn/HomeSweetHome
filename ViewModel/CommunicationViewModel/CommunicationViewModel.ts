@@ -6,6 +6,7 @@ import { relationshipService } from '../../Model/Service/CoreService/relationshi
 import { voiceUploadService, type ChatContext } from '../../Model/Service/CoreService/voiceUploadHelper';
 import { voiceTranscriptionService, type TranscriptionResult } from '../../Model/Service/CoreService/voiceTranscriptionService';
 import { uploadChatImage, uploadChatVideo } from '../../Model/Service/CoreService/mediaUploadHelper';
+import * as contentFilterService from '../../Model/Service/CoreService/ContentFilterService';
 import type { Message, Relationship } from '../../Model/types';
 import type { RealtimeChannel } from '@home-sweet-home/model';
 
@@ -1018,6 +1019,27 @@ export class CommunicationViewModel {
    */
   async transcribeAudio(base64Audio: string): Promise<TranscriptionResult> {
     return voiceTranscriptionService.transcribeDiary(base64Audio);
+  }
+
+  /**
+   * Filter message content for inappropriate words
+   * UC403: Content moderation - View layer wrapper
+   * 
+   * @param message - Message content to check
+   * @returns Filter result with isBlocked flag
+   */
+  filterMessage(message: string): { isBlocked: boolean; blockedWord?: string; reason?: string } {
+    return contentFilterService.filterMessage(message);
+  }
+
+  /**
+   * Get blocked message alert text
+   * UC403: User-friendly error message for blocked content
+   * 
+   * @returns Alert message text
+   */
+  getBlockedMessageAlert(): string {
+    return contentFilterService.getBlockedMessageAlert();
   }
 
   /**

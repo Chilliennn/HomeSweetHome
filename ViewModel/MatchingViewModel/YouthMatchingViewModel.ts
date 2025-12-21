@@ -1,11 +1,13 @@
 import { makeAutoObservable, runInAction } from 'mobx';
 import { matchingService } from '../../Model/Service/CoreService/matchingService';
+import { notificationService } from '../../Model/Service/CoreService/notificationService';
 import { User } from '../../Model/types';
 import { RealtimeChannel, supabase, Interest } from '@home-sweet-home/model';
 import { ElderlyFilters } from '../../Model/Repository/UserRepository/matchingRepository';
 
 export class YouthMatchingViewModel {
     profiles: User[] = [];
+    allProfiles: User[] = []; // Store all profiles sorted by match score
     activeMatches: Interest[] = []; // Accepted interests (Notifications for Youth)
     expressedElderlyIds: Set<string> = new Set(); // Track elderly IDs that youth has already expressed interest to
     isLoading: boolean = false;
@@ -14,48 +16,138 @@ export class YouthMatchingViewModel {
     private subscription: RealtimeChannel | null = null;
     private notificationSubscription: RealtimeChannel | null = null;
 
+    // ✅ Current user ID synced from AuthViewModel via Layout
+    currentUserId: string | null = null;
+
+    // ✅ Unread notification count for bell icon
+    unreadNotificationCount: number = 0;
+
     // Filter and pagination state
     filters: ElderlyFilters = {};
     hasMoreProfiles: boolean = false;
     totalProfileCount: number = 0;
-    currentOffset: number = 0;
+    currentDisplayCount: number = 10; // How many to show initially
     private currentYouthProfile: User | null = null;
-    private readonly PAGE_SIZE = 10;
+    private readonly DISPLAY_INCREMENT = 10; // How many more to show when loading more
 
     constructor() {
         makeAutoObservable(this);
     }
 
     /**
+     * Set current user context (called by Layout when auth state changes)
+     * Automatically fetches and stores full user profile for match scoring
+     */
+    async setCurrentUser(userId: string | null): Promise<void> {
+        console.log('🟦 [YouthVM] setCurrentUser called with userId:', userId);
+        runInAction(() => {
+            this.currentUserId = userId;
+        });
+
+        // Fetch full user profile for match scoring via Service layer
+        if (userId) {
+            try {
+                console.log('🟦 [YouthVM] Fetching user profile via matchingService...');
+                const profile = await matchingService.getUserProfile(userId);
+                console.log('🟦 [YouthVM] User profile fetched:', {
+                    name: profile?.full_name,
+                    interests: profile?.profile_data?.interests,
+                    languages: profile?.languages,
+                    location: profile?.location
+                });
+                runInAction(() => {
+                    this.currentYouthProfile = profile;
+                });
+                
+                // ✅ Always reload profiles after fetching user data for accurate match scoring
+                // This ensures correct scores even if profiles loaded before user data was ready
+                if (profile) {
+                    console.log('🔄 [YouthVM] Reloading profiles with user data for accurate scoring...');
+                    await this.loadProfiles();
+                }
+            } catch (error) {
+                console.error('❌ [YouthVM] Failed to fetch user profile:', error);
+            }
+        } else {
+            runInAction(() => {
+                this.currentYouthProfile = null;
+            });
+        }
+    }
+
+    /**
+     * Set current youth profile for match scoring
+     * Should be called when profile data is available
+     */
+    setYouthProfile(profile: User | null): void {
+        runInAction(() => {
+            this.currentYouthProfile = profile;
+        });
+    }
+
+    /**
+     * Clear user context (on logout)
+     */
+    clearUser(): void {
+        runInAction(() => {
+            this.currentUserId = null;
+            this.profiles = [];
+            this.activeMatches = [];
+            this.expressedElderlyIds.clear();
+        });
+    }
+
+    /**
      * Load available elderly profiles with current filters.
-     * Fetches first page of results.
+     * Fetches ALL profiles, sorts by match score, then paginates display.
      */
     async loadProfiles(youthProfile?: User) {
+        console.log('🟦 [YouthVM] loadProfiles called', {
+            providedProfile: !!youthProfile,
+            storedProfile: !!this.currentYouthProfile,
+            currentUserId: this.currentUserId
+        });
+        
         this.isLoading = true;
         this.error = null;
-        this.currentOffset = 0;
+        this.currentDisplayCount = 10; // Reset display count
 
+        // Update stored profile if provided
         if (youthProfile) {
+            console.log('🟦 [YouthVM] Using provided youth profile:', youthProfile.full_name);
             this.currentYouthProfile = youthProfile;
         }
 
         try {
-            const filtersWithPagination: ElderlyFilters = {
+            // ✅ Fetch ALL available elderly (no limit) for accurate sorting
+            const filtersWithoutPagination: ElderlyFilters = {
                 ...this.filters,
-                offset: 0,
-                limit: this.PAGE_SIZE
+                // No offset/limit - fetch all for sorting
             };
 
+            // Always pass youth profile for match scoring
+            const profileToUse = this.currentYouthProfile || undefined;
+            console.log('🟦 [YouthVM] Calling matchingService with profile:', {
+                hasProfile: !!profileToUse,
+                profileName: profileToUse?.full_name,
+                interests: profileToUse?.profile_data?.interests
+            });
+            
             const result = await matchingService.getAvailableElderlyProfiles(
-                filtersWithPagination,
-                this.currentYouthProfile || undefined
+                filtersWithoutPagination,
+                profileToUse
             );
 
+            console.log('✅ [YouthVM] Loaded profiles:', result.profiles.length);
+
             runInAction(() => {
-                this.profiles = result.profiles;
-                this.hasMoreProfiles = result.hasMore;
+                // Store all profiles (already sorted by match score)
+                this.allProfiles = result.profiles;
                 this.totalProfileCount = result.totalCount;
-                this.currentOffset = result.profiles.length;
+                
+                // Display first batch
+                this.profiles = this.allProfiles.slice(0, this.currentDisplayCount);
+                this.hasMoreProfiles = this.allProfiles.length > this.currentDisplayCount;
             });
         } catch (e: any) {
             runInAction(() => {
@@ -69,38 +161,23 @@ export class YouthMatchingViewModel {
     }
 
     /**
-     * Load more elderly profiles (pagination)
+     * Load more elderly profiles (client-side pagination from sorted results)
      */
     async loadMoreProfiles() {
         if (this.isLoading || !this.hasMoreProfiles) return;
 
-        this.isLoading = true;
-        try {
-            const filtersWithPagination: ElderlyFilters = {
-                ...this.filters,
-                offset: this.currentOffset,
-                limit: this.PAGE_SIZE
-            };
-
-            const result = await matchingService.getAvailableElderlyProfiles(
-                filtersWithPagination,
-                this.currentYouthProfile || undefined
-            );
-
-            runInAction(() => {
-                this.profiles = [...this.profiles, ...result.profiles];
-                this.hasMoreProfiles = result.hasMore;
-                this.currentOffset += result.profiles.length;
-            });
-        } catch (e: any) {
-            runInAction(() => {
-                this.error = e.message || 'Failed to load more profiles';
-            });
-        } finally {
-            runInAction(() => {
-                this.isLoading = false;
-            });
-        }
+        console.log('🟦 [YouthVM] Loading more profiles from cache...');
+        
+        runInAction(() => {
+            // Increase display count
+            this.currentDisplayCount += this.DISPLAY_INCREMENT;
+            
+            // Update displayed profiles
+            this.profiles = this.allProfiles.slice(0, this.currentDisplayCount);
+            this.hasMoreProfiles = this.allProfiles.length > this.currentDisplayCount;
+            
+            console.log('✅ [YouthVM] Now displaying:', this.profiles.length, 'of', this.allProfiles.length);
+        });
     }
 
     /**
@@ -176,15 +253,22 @@ export class YouthMatchingViewModel {
             if (!this.notificationSubscription) {
                 console.log('🟢 [YouthVM] Setting up realtime for notifications...');
 
-                this.notificationSubscription = matchingService.subscribeToNotifications(
+                this.notificationSubscription = notificationService.subscribeToNotifications(
                     youthId,
                     (notification) => {
                         console.log('🔔 [YouthVM] New notification:', notification.type);
+                        // ✅ Increment unread count immediately
+                        runInAction(() => {
+                            this.unreadNotificationCount += 1;
+                        });
                         // Reload to get updated data with elderly details
                         this.loadNotifications(youthId);
                     }
                 );
             }
+
+            // ✅ Load initial unread count
+            await this.loadUnreadNotificationCount(youthId);
         } catch (e: any) {
             console.error('❌ [YouthVM] Failed to load notifications', e);
         } finally {
@@ -247,13 +331,156 @@ export class YouthMatchingViewModel {
             this.subscription = null;
         }
         if (this.notificationSubscription) {
-            matchingService.unsubscribe(this.notificationSubscription);
+            notificationService.unsubscribe(this.notificationSubscription);
             this.notificationSubscription = null;
         }
     }
+
+    /**
+     * Get application by ID with partner info (sync - from cache)
+     * Used by ApplicationStatusScreen for quick access
+     * Returns undefined if not in cache - use loadApplicationById first
+     */
+    getApplicationById(applicationId: string): { application: Interest; partnerUser: User } | undefined {
+        // First check local cache (activeMatches)
+        const application = this.activeMatches.find(match => match.id === applicationId);
+        if (application) {
+            const partnerUser = application.elderly as User | undefined;
+            if (partnerUser) {
+                return { application, partnerUser };
+            }
+        }
+
+        // Check if we have it in loadedApplication
+        if (this.loadedApplication?.application.id === applicationId) {
+            return this.loadedApplication;
+        }
+
+        return undefined;
+    }
+
+    /** Temporarily loaded application (for ApplicationStatusScreen when not in activeMatches) */
+    loadedApplication: { application: Interest; partnerUser: User } | null = null;
+    isLoadingApplication: boolean = false;
+
+    /**
+     * ✅ Load application by ID from server (async - safe method)
+     * Used by ApplicationStatusScreen when data is not in cache
+     * This ensures data is always available even if user navigates directly to the page
+     */
+    async loadApplicationById(applicationId: string): Promise<{ application: Interest; partnerUser: User } | null> {
+        // First check cache
+        const cached = this.getApplicationById(applicationId);
+        if (cached) return cached;
+
+        // Load from server
+        this.isLoadingApplication = true;
+        try {
+            const application = await matchingService.getApplicationById(applicationId);
+            if (!application) {
+                runInAction(() => {
+                    this.isLoadingApplication = false;
+                    this.loadedApplication = null;
+                });
+                return null;
+            }
+
+            // Get partner user from application.elderly
+            const partnerUser = application.elderly as User | undefined;
+            if (!partnerUser) {
+                runInAction(() => {
+                    this.isLoadingApplication = false;
+                    this.loadedApplication = null;
+                });
+                return null;
+            }
+
+            const result = { application, partnerUser };
+            runInAction(() => {
+                this.loadedApplication = result;
+                this.isLoadingApplication = false;
+            });
+            return result;
+        } catch (error) {
+            console.error('[YouthVM] Failed to load application:', error);
+            runInAction(() => {
+                this.isLoadingApplication = false;
+                this.loadedApplication = null;
+            });
+            return null;
+        }
+    }
+
     clearMessages() {
         this.error = null;
         this.successMessage = null;
+    }
+
+    /**
+     * Load unread notification count from database
+     */
+    async loadUnreadNotificationCount(userId: string) {
+        try {
+            const count = await notificationService.getUnreadCount(userId);
+            runInAction(() => {
+                this.unreadNotificationCount = count;
+            });
+        } catch (e) {
+            console.error('[YouthVM] Failed to load notification count', e);
+        }
+    }
+
+    /**
+     * Subscribe to real-time general notifications
+     * Returns subscription that can be cleaned up
+     */
+    subscribeToGeneralNotifications(onNotification: (notification: any) => void): any {
+        if (!this.currentUserId) return null;
+        return notificationService.subscribeToNotifications(
+            this.currentUserId,
+            onNotification
+        );
+    }
+
+    /**
+     * Unsubscribe from real-time notifications
+     */
+    unsubscribeFromNotifications(subscription: any): void {
+        if (subscription) {
+            notificationService.unsubscribe(subscription);
+        }
+    }
+
+    /**
+     * Reset notification count (call when user visits notification screen)
+     */
+    resetNotificationCount() {
+        this.unreadNotificationCount = 0;
+    }
+
+    /**
+     * Get general notifications (calendar, system messages, etc.)
+     */
+    async getGeneralNotifications(): Promise<any[]> {
+        if (!this.currentUserId) return [];
+        return await notificationService.getGeneralNotifications(this.currentUserId);
+    }
+
+    /**
+     * Mark all notifications as read (called when entering notification screen)
+     */
+    async markAllNotificationsAsRead(): Promise<void> {
+        if (!this.currentUserId) return;
+        await notificationService.markAllNotificationsAsRead(this.currentUserId);
+        // Reset bell icon count
+        this.resetNotificationCount();
+    }
+
+    /**
+     * Delete a notification
+     */
+    async deleteNotification(notificationId: string): Promise<void> {
+        await notificationService.deleteNotification(notificationId);
     }
 
     /**

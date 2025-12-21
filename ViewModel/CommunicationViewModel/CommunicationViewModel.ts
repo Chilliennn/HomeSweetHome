@@ -1,9 +1,13 @@
 import { makeAutoObservable, runInAction } from 'mobx';
 import { communicationService, type PreMatchChat } from '../../Model/Service/CoreService/communicationService';
 import { familyService } from '../../Model/Service/CoreService/familyService';
-import { relationshipRepository, type Relationship } from '../../Model/Repository/UserRepository/relationshipRepository';
-import { messageRepository } from '../../Model/Repository/UserRepository/messageRepository';
-import type { Message } from '../../Model/types';
+import { notificationService } from '../../Model/Service/CoreService/notificationService';
+import { relationshipService } from '../../Model/Service/CoreService/relationshipService';
+import { voiceUploadService, type ChatContext } from '../../Model/Service/CoreService/voiceUploadHelper';
+import { voiceTranscriptionService, type TranscriptionResult } from '../../Model/Service/CoreService/voiceTranscriptionService';
+import { uploadChatImage, uploadChatVideo } from '../../Model/Service/CoreService/mediaUploadHelper';
+import * as contentFilterService from '../../Model/Service/CoreService/ContentFilterService';
+import type { Message, Relationship } from '../../Model/types';
 import type { RealtimeChannel } from '@home-sweet-home/model';
 
 // Type for channel subscription (works even if @supabase/supabase-js types aren't available)
@@ -50,8 +54,14 @@ export class CommunicationViewModel {
   /** Current relationship (if in relationship stage) */
   currentRelationship: Relationship | null = null;
 
+  /** ✅ Partner user info for relationship context (loaded when checking relationship) */
+  relationshipPartnerUser: import('../../Model/types').User | null = null;
+
   /** Total unread message count across all chats */
   unreadCount = 0;
+
+  /** ✅ Unread notification count for bell icon (realtime updated) */
+  unreadNotificationCount = 0;
 
   /** Loading state */
   isLoading = false;
@@ -79,6 +89,9 @@ export class CommunicationViewModel {
   /** Real-time subscription channel */
   private messageSubscription: ChannelType | null = null;
 
+  /** ✅ Notification subscription */
+  private notificationSubscription: ChannelType | null = null;
+
   constructor() {
     makeAutoObservable(this);
   }
@@ -104,6 +117,12 @@ export class CommunicationViewModel {
         this.isLoading = false;
         this.hasLoadedOnce = true; // ✅ Mark as loaded
       });
+
+      // ✅ Setup notification subscription for realtime count updates
+      this.setupNotificationSubscription();
+
+      // ✅ Load initial notification count
+      await this.loadUnreadNotificationCount();
     } catch (error) {
       runInAction(() => {
         this.errorMessage = error instanceof Error ? error.message : 'Failed to load chats';
@@ -120,6 +139,63 @@ export class CommunicationViewModel {
     await this.loadActiveChats();
   }
 
+  // =============================================================
+  // ✅ Notification Count Methods
+  // =============================================================
+
+  /**
+   * Setup notification realtime subscription
+   */
+  private setupNotificationSubscription(): void {
+    if (this.notificationSubscription || !this.currentUser) {
+      return;
+    }
+
+    console.log('[CommVM] Setting up notification subscription for:', this.currentUser);
+    this.notificationSubscription = notificationService.subscribeToNotifications(
+      this.currentUser,
+      (notification) => {
+        console.log('[CommVM] New notification received:', notification.type);
+        runInAction(() => {
+          this.unreadNotificationCount += 1;
+        });
+      }
+    );
+  }
+
+  /**
+   * Load unread notification count from database
+   */
+  async loadUnreadNotificationCount(): Promise<void> {
+    if (!this.currentUser) return;
+
+    try {
+      const count = await notificationService.getUnreadCount(this.currentUser);
+      runInAction(() => {
+        this.unreadNotificationCount = count;
+      });
+    } catch (error) {
+      console.error('[CommVM] Failed to load notification count', error);
+    }
+  }
+
+  /**
+   * Reset notification count (call when user visits notification screen)
+   */
+  resetNotificationCount(): void {
+    this.unreadNotificationCount = 0;
+  }
+
+  /**
+   * Cleanup notification subscription
+   */
+  cleanupNotificationSubscription(): void {
+    if (this.notificationSubscription) {
+      notificationService.unsubscribe(this.notificationSubscription);
+      this.notificationSubscription = null;
+    }
+  }
+
   /**
    * Check if user has active relationship
    * Called by ChatListHub to determine routing
@@ -128,19 +204,27 @@ export class CommunicationViewModel {
     if (!this.currentUser) return;
 
     try {
-      const relationship = await relationshipRepository.getActiveRelationshipByUserId(
+      const relationship = await relationshipService.getActiveRelationship(
         this.currentUser
       );
+
+      // ✅ Load partner user info if relationship exists
+      let partnerUser = null;
+      if (relationship && this.currentUser) {
+        partnerUser = await relationshipService.getPartnerUser(this.currentUser, relationship);
+      }
 
       runInAction(() => {
         this.hasActiveRelationship = relationship !== null;
         this.currentRelationship = relationship;
+        this.relationshipPartnerUser = partnerUser;
       });
     } catch (error) {
       console.error('[CommunicationViewModel] Error checking relationship:', error);
       runInAction(() => {
         this.hasActiveRelationship = false;
         this.currentRelationship = null;
+        this.relationshipPartnerUser = null;
       });
     }
   }
@@ -227,20 +311,27 @@ export class CommunicationViewModel {
 
     try {
       // Load relationship details
-      const relationship = await relationshipRepository.getRelationshipById(relationshipId);
+      const relationship = await relationshipService.getRelationshipById(relationshipId);
 
       // Load messages
-      const messages = await messageRepository.getMessagesByRelationship(relationshipId);
+      const messages = await communicationService.getRelationshipMessages(relationshipId);
+
+      // ✅ Load partner user info for display in ChatScreen
+      let partnerUser = null;
+      if (relationship && this.currentUser) {
+        partnerUser = await relationshipService.getPartnerUser(this.currentUser, relationship);
+      }
 
       runInAction(() => {
         this.currentRelationship = relationship;
         this.currentChatMessages = messages;
         this.currentChatContext = 'relationship';
+        this.relationshipPartnerUser = partnerUser;
         this.isLoading = false;
       });
 
       // Mark messages as read
-      await messageRepository.markMessagesAsRead(this.currentUser!, undefined, relationshipId);
+      await communicationService.markRelationshipMessagesAsRead(this.currentUser!, relationshipId);
 
       // Subscribe to real-time updates
       this.subscribeToChat({ type: 'relationship', relationshipId });
@@ -558,10 +649,7 @@ export class CommunicationViewModel {
                   console.log('[CommunicationViewModel] Incoming call detected!', { callType, callUrl });
                   // Store pending incoming call info for the UI to react
                   this.pendingIncomingCall = {
-                    callerName: this.currentChat?.partnerUser?.full_name ||
-                      this.currentRelationship?.elderly?.full_name ||
-                      this.currentRelationship?.youth?.full_name ||
-                      'Unknown',
+                    callerName: this.relationshipPartnerUser?.full_name || this.currentChat?.partnerUser?.full_name || 'Unknown Caller',
                     callType: callType as 'voice' | 'video',
                     roomUrl: callUrl,
                   };
@@ -851,7 +939,148 @@ export class CommunicationViewModel {
       return false;
     }
   }
+
+  // =============================================================
+  // Rejection Confirmation (Youth confirms elderly rejection)
+  // =============================================================
+
+  /**
+   * Youth confirms rejection and deletes the application/chat
+   * Called after youth sees rejection notification
+   */
+  async confirmRejectionAndDeleteChat(applicationId: string): Promise<boolean> {
+    if (!this.currentUser) {
+      this.errorMessage = 'User not logged in';
+      return false;
+    }
+
+    this.isLoading = true;
+    try {
+      // Import matchingService dynamically to avoid circular dependency
+      const { matchingService } = await import('../../Model/Service/CoreService/matchingService');
+
+      await matchingService.confirmAndDeleteRejectedApplication(applicationId, this.currentUser);
+
+      // Remove from active chats
+      runInAction(() => {
+        this.activePreMatchChats = this.activePreMatchChats.filter(
+          chat => chat.application.id !== applicationId
+        );
+        this.isLoading = false;
+      });
+
+      return true;
+    } catch (error) {
+      runInAction(() => {
+        this.errorMessage = error instanceof Error ? error.message : 'Failed to delete chat';
+        this.isLoading = false;
+      });
+      return false;
+    }
+  }
+
+  // =============================================================
+  // Voice Message Methods (for View layer hooks)
+  // =============================================================
+
+  /**
+   * Upload voice message to storage
+   * Called by View layer hooks after reading file to base64
+   * 
+   * @param base64Data - Base64-encoded audio data
+   * @param context - Chat context (preMatch or relationship)
+   * @param senderId - Current user ID
+   * @param durationSeconds - Optional duration
+   * @returns Public URL of uploaded file
+   */
+  async uploadVoiceMessage(
+    base64Data: string,
+    context: ChatContext,
+    senderId: string,
+    durationSeconds?: number
+  ): Promise<string> {
+    return voiceUploadService.uploadVoiceMessage(base64Data, context, senderId, durationSeconds);
+  }
+
+  /**
+   * Delete voice message from storage
+   * @param mediaUrl - Public URL of the voice message to delete
+   */
+  async deleteVoiceMessage(mediaUrl: string): Promise<void> {
+    return voiceUploadService.deleteVoiceMessage(mediaUrl);
+  }
+
+  /**
+   * Transcribe audio to text
+   * Called by View layer hooks after reading file to base64
+   * 
+   * @param base64Audio - Base64-encoded audio data
+   * @returns Transcription result with text
+   */
+  async transcribeAudio(base64Audio: string): Promise<TranscriptionResult> {
+    return voiceTranscriptionService.transcribeDiary(base64Audio);
+  }
+
+  /**
+   * Filter message content for inappropriate words
+   * UC403: Content moderation - View layer wrapper
+   * 
+   * @param message - Message content to check
+   * @returns Filter result with isBlocked flag
+   */
+  filterMessage(message: string): { isBlocked: boolean; blockedWord?: string; reason?: string } {
+    return contentFilterService.filterMessage(message);
+  }
+
+  /**
+   * Get blocked message alert text
+   * UC403: User-friendly error message for blocked content
+   * 
+   * @returns Alert message text
+   */
+  getBlockedMessageAlert(): string {
+    return contentFilterService.getBlockedMessageAlert();
+  }
+
+  /**
+   * Upload chat image to storage
+   * Called by View layer after reading file to base64
+   * 
+   * @param base64Data - Base64-encoded image data
+   * @param context - Chat context (preMatch or relationship)
+   * @param senderId - Current user ID
+   * @param fileExtension - File extension (default: 'jpg')
+   * @returns Public URL of uploaded file
+   */
+  async uploadChatImage(
+    base64Data: string,
+    context: ChatContext,
+    senderId: string,
+    fileExtension: string = 'jpg'
+  ): Promise<string> {
+    return uploadChatImage(base64Data, context, senderId, fileExtension);
+  }
+
+  /**
+   * Upload chat video to storage
+   * Called by View layer after reading file to base64
+   * 
+   * @param base64Data - Base64-encoded video data
+   * @param context - Chat context (preMatch or relationship)
+   * @param senderId - Current user ID
+   * @param fileExtension - File extension (default: 'mp4')
+   * @returns Public URL of uploaded file
+   */
+  async uploadChatVideo(
+    base64Data: string,
+    context: ChatContext,
+    senderId: string,
+    fileExtension: string = 'mp4'
+  ): Promise<string> {
+    return uploadChatVideo(base64Data, context, senderId, fileExtension);
+  }
 }
 
 // Singleton instance
 export const communicationViewModel = new CommunicationViewModel();
+

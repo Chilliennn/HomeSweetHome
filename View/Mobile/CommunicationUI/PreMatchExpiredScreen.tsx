@@ -6,7 +6,7 @@
  * 
  * MVVM: View layer - UI only, logic in CommunicationViewModel
  */
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
     View,
     Text,
@@ -32,19 +32,31 @@ export const PreMatchExpiredScreen = observer(function PreMatchExpiredScreen() {
     const vm = communicationViewModel;
 
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const hasRedirected = useRef(false);
 
     // Get chat data
     const chat = vm.getChatByApplicationId(applicationId);
     const partner = chat?.partnerUser;
     const application = chat?.application;
 
-    // Redirect if application is already pending review (youth already submitted)
+    // If application is already submitted (pending_review or approved), 
+    // don't show this screen - just go back or return null
+    // This prevents redirect loops
+    const status = application?.status;
+    const isAlreadySubmitted = status === 'pending_review' || status === 'approved';
+
     useEffect(() => {
-        if (application?.status === 'pending_review') {
-            console.log('[PreMatchExpiredScreen] Application already pending, redirecting to status screen');
-            router.replace({ pathname: '/application-status', params: { applicationId } } as any);
+        if (isAlreadySubmitted && !hasRedirected.current) {
+            hasRedirected.current = true;
+            console.log('[PreMatchExpiredScreen] Application already submitted, going back...');
+            // Just go back instead of redirecting to status screen
+            if (router.canGoBack()) {
+                router.back();
+            } else {
+                router.replace('/(main)/chat' as any);
+            }
         }
-    }, [applicationId, application?.status]);
+    }, [isAlreadySubmitted]);
 
     // Handle Apply - navigate to formal application form
     const handleApply = () => {

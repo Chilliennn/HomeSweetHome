@@ -2,18 +2,17 @@ import React, { useEffect, useRef } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { observer } from 'mobx-react-lite';
+import * as FileSystem from 'expo-file-system';
 import { authViewModel } from '@home-sweet-home/viewmodel';
 import { ProfileWelcome } from './ProfileWelcome';
 import { AgeVerification } from './AgeVerification';
 import { VerifyingLoader } from './VerifyingLoader';
 import { VerifiedSuccess } from './VerifiedSuccess';
 import { AgeVerificationCamera } from './AgeVerificationCamera';
-import { RealIdentityForm } from './RealIdentityForm';
-import { DisplayIdentityForm } from './DisplayIdentityForm';
+import { ProfileSetupForm } from './ProfileSetupForm';
 import { ProfileInfoForm } from './ProfileInfoForm';
 import { ProfileComplete } from './ProfileComplete';
-import type { RealIdentityData } from './RealIdentityForm';
-import type { DisplayIdentityData } from './DisplayIdentityForm';
+import type { ProfileSetupFormData } from './ProfileSetupForm';
 import type { ProfileInfoData } from './ProfileInfoForm';
 
 // ============================================================================
@@ -43,21 +42,44 @@ const ProfileSetupScreenComponent: React.FC = () => {
   const router = useRouter();
   const params = useLocalSearchParams();
   const initializedRef = useRef(false);
-  
-  // Extract user info from login
-  const userId = params.userId as string | undefined;
+  const stepRef = useRef<string | null>(null); // Track step changes for logging
+
+  // Extract user info from login or settings navigation
+  const userIdFromParams = params.userId as string | undefined;
   const userName = params.userName as string | undefined;
   const userTypeFromDB = params.userType as 'youth' | 'elderly' | undefined;
+  const editMode = params.editMode === 'true'; // Settings navigation passes this
+
+  // ✅ Fallback: Get userId from authViewModel if not in params (edit mode scenario)
+  const userId = userIdFromParams || authViewModel.authState.currentUserId || undefined;
 
   // One-time init: set default userType and hydrate profile state if available
   useEffect(() => {
     if (initializedRef.current) return;
     initializedRef.current = true;
-    authViewModel.resetFlow(userTypeFromDB || 'youth');
-    if (userId) {
-      authViewModel.loadProfile(userId);
-    }
-  }, [userId, userTypeFromDB]);
+    
+    console.log('[ProfileSetupScreen] Initializing - userId:', userId, 'editMode:', editMode, 'userType:', userTypeFromDB);
+    
+    // Initialize flow asynchronously to ensure profile loads first in editMode
+    const initFlow = async () => {
+      if (editMode) {
+        // Edit mode: Load profile data FIRST, then go to profile-form
+        authViewModel.resetFlow(userTypeFromDB || 'youth');
+        if (userId) {
+          await authViewModel.loadProfile(userId);
+        }
+        authViewModel.setStep('profile-form');
+      } else {
+        // Normal flow: start from welcome
+        authViewModel.resetFlow(userTypeFromDB || 'youth');
+        if (userId) {
+          authViewModel.loadProfile(userId);
+        }
+      }
+    };
+    
+    initFlow();
+  }, [userId, userTypeFromDB, editMode]);
 
   // Access observable properties directly from authViewModel in render
   // DO NOT destructure at the top level - it breaks MobX reactivity
@@ -101,14 +123,16 @@ const ProfileSetupScreenComponent: React.FC = () => {
       case 'camera':
         authViewModel.setStep('age-verification');
         break;
-      case 'real-identity':
-        authViewModel.setStep('verified');
-        break;
-      case 'display-identity':
-        authViewModel.setStep('real-identity');
+      case 'profile-form':
+        if (editMode) {
+          // In edit mode, go back to settings
+          router.back();
+        } else {
+          authViewModel.setStep('verified');
+        }
         break;
       case 'profile-info':
-        authViewModel.setStep('display-identity');
+        authViewModel.setStep('profile-form');
         break;
       case 'welcome':
         // At welcome step, go back to login
@@ -128,62 +152,108 @@ const ProfileSetupScreenComponent: React.FC = () => {
   /**
    * Called after camera capture completes. For prototype we immediately
    * consider verification successful and show loader before success state.
-   * TODO: Replace with authViewModel.uploadAndVerifyAge(photoUri)
    */
-  const handlePhotoCaptured = (photoUri: string) => {
-    // TODO: Pass photoUri to ViewModel when backend wiring is ready
+  const handlePhotoCaptured = async (photoUri: string) => {
+    console.log('[ProfileSetupScreen] handlePhotoCaptured called with:', photoUri?.substring(0, 50));
+
     if (!userId) {
+      console.error('[ProfileSetupScreen] Missing userId!');
       authViewModel.setError('Missing user context');
       authViewModel.setStep('age-verification');
       return;
     }
 
     const effectiveUserType: 'youth' | 'elderly' = userType === 'elderly' ? 'elderly' : 'youth';
+    console.log('[ProfileSetupScreen] effectiveUserType:', effectiveUserType);
 
-    authViewModel.verifyAgeWithCapture({
-      userId,
-      userType: effectiveUserType,
-      photoUri,
-    });
+    try {
+      await authViewModel.verifyAgeWithCapture({
+        userId,
+        userType: effectiveUserType,
+        photoUri,
+      });
+      console.log('[ProfileSetupScreen] verifyAgeWithCapture completed successfully');
+    } catch (error) {
+      console.error('[ProfileSetupScreen] verifyAgeWithCapture failed:', error);
+      // Error is already handled by ViewModel, just log here
+    }
   };
 
   /**
    * Handle "Continue to Profile" after successful age verification
-   * Proceeds to Real Identity Section (Step 1 of 3) - UC103_5, UC103_6
+   * Proceeds to Profile Setup Form (merged Step 1+2)
    */
   const handleContinueAfterVerification = () => {
-    authViewModel.setStep('real-identity');
+    authViewModel.setStep('profile-form');
   };
 
   /**
-   * Handle Real Identity form submission - UC103_5, UC103_6
-   * Proceeds to Display Identity Section (Step 2 of 3)
+   * Handle Profile Setup form submission (merged Step 1+2)
+   * Saves phone, location, fullName, avatar, and profile photo
+   * Proceeds to Profile Info Section (Step 3)
+   * 
+   * NOTE: File reading is done here in the View layer (using expo-file-system)
+   * before passing base64 data to the ViewModel. This follows MVVM architecture.
    */
-  const handleRealIdentitySubmit = async (data: RealIdentityData) => {
-    if (!userId) return;
-    await authViewModel.saveRealIdentity(userId, {
-      phoneNumber: data.phoneNumber,
-      location: data.location,
-      realPhotoUrl: data.realPhotoUri,
-    });
-    authViewModel.setStep('display-identity');
+  const handleProfileSetupSubmit = async (data: ProfileSetupFormData) => {
+    console.log('[ProfileSetupScreen] handleProfileSetupSubmit START', { userId, editMode, data: { ...data, profilePhotoUri: data.profilePhotoUri?.substring(0, 50) } });
+    
+    if (!userId) {
+      console.error('[ProfileSetupScreen] handleProfileSetupSubmit - No userId!');
+      return;
+    }
+    
+    // Read profile photo file in View layer if provided
+    let profilePhotoBase64: string | null = null;
+    let profilePhotoExtension: string | null = null;
+    
+    if (data.profilePhotoUri) {
+      console.log('[ProfileSetupScreen] Reading profile photo file...');
+      try {
+        // Extract file extension from URI
+        const uriParts = data.profilePhotoUri.split('.');
+        profilePhotoExtension = uriParts[uriParts.length - 1].toLowerCase();
+        
+        // Read file as base64 (View layer responsibility)
+        profilePhotoBase64 = await FileSystem.readAsStringAsync(
+          data.profilePhotoUri, 
+          { encoding: FileSystem.EncodingType.Base64 }
+        );
+        console.log('[ProfileSetupScreen] Photo file read successfully, size:', profilePhotoBase64.length);
+      } catch (error) {
+        console.error('[ProfileSetupScreen] Failed to read photo file:', error);
+        authViewModel.setError('Failed to read profile photo');
+        return;
+      }
+    }
+    
+    console.log('[ProfileSetupScreen] Calling authViewModel.saveProfileSetup...');
+    try {
+      await authViewModel.saveProfileSetup(userId, {
+        phoneNumber: data.phoneNumber,
+        location: data.location,
+        fullName: data.fullName,
+        avatarType: data.avatarType,
+        selectedAvatarId: data.selectedAvatarId,
+        profilePhotoBase64,
+        profilePhotoExtension,
+      });
+      console.log('[ProfileSetupScreen] saveProfileSetup completed successfully');
+    } catch (error) {
+      console.error('[ProfileSetupScreen] saveProfileSetup failed:', error);
+      return; // Don't navigate if save failed
+    }
+    
+    if (editMode) {
+      // In edit mode, go back to settings after saving
+      console.log('[ProfileSetupScreen] Edit mode - navigating back to settings');
+      router.back();
+    } else {
+      // Normal flow: proceed to profile info
+      console.log('[ProfileSetupScreen] Normal flow - proceeding to profile-info');
+      authViewModel.setStep('profile-info');
+    }
   };
-
-  /**
-   * Handle Display Identity form submission - UC103_7, UC103_8, UC103_9, UC103_10
-   * Proceeds to Profile Info Section (Step 3 of 3)
-   */
-  const handleDisplayIdentitySubmit = async (data: DisplayIdentityData) => {
-    if (!userId) return;
-    await authViewModel.saveDisplayIdentity(userId, {
-      displayName: data.displayName,
-      avatarType: data.avatarType,
-      selectedAvatarIndex: data.selectedAvatarIndex,
-      customAvatarUrl: data.customAvatarUri,
-    });
-    authViewModel.setStep('profile-info');
-  };
-
   /**
    * Handle Profile Info form submission - UC103_11 to UC103_17
    * Completes the profile and shows success screen
@@ -208,8 +278,8 @@ const ProfileSetupScreenComponent: React.FC = () => {
     const effectiveUserType: 'youth' | 'elderly' = userType === 'elderly' ? 'elderly' : 'youth';
     router.replace({
       pathname: '/(main)/matching',
-      params: { 
-        userId, 
+      params: {
+        userId,
         userName,
         userType: effectiveUserType,
         verifiedAge: (verifiedAge ?? '').toString(),
@@ -228,8 +298,8 @@ const ProfileSetupScreenComponent: React.FC = () => {
     // TODO: Navigate to profile screen when implemented
     router.replace({
       pathname: '/(main)/matching',
-      params: { 
-        userId, 
+      params: {
+        userId,
         userName,
         userType: effectiveUserType,
         verifiedAge: (verifiedAge ?? '').toString(),
@@ -252,37 +322,44 @@ const ProfileSetupScreenComponent: React.FC = () => {
         const age = authViewModel.verifiedAge ?? 0;
         const data = authViewModel.profileData;
 
-        const realIdentityInitial: RealIdentityData | undefined = data.realIdentity
-          ? {
-              phoneNumber: data.realIdentity.phoneNumber,
-              location: data.realIdentity.location,
-              realPhotoUri: data.realIdentity.realPhotoUrl,
-            }
-          : undefined;
+        // Debug: log only when step changes to avoid spam
+        if (stepRef.current !== step) {
+          console.log('[ProfileSetupScreen] Step changed:', stepRef.current, '→', step);
+          stepRef.current = step;
+        }
 
-        const displayIdentityInitial: DisplayIdentityData | undefined = data.displayIdentity
-          ? {
-              displayName: data.displayIdentity.displayName,
-              avatarType: data.displayIdentity.avatarType,
-              selectedAvatarIndex: data.displayIdentity.selectedAvatarIndex,
-              customAvatarUri: data.displayIdentity.customAvatarUrl,
-            }
-          : undefined;
+        // Build initial data for ProfileSetupForm from existing profile data
+        const profileSetupInitial: ProfileSetupFormData | undefined = 
+          (data.realIdentity || data.displayIdentity) ? {
+            phoneNumber: data.realIdentity?.phoneNumber || '',
+            location: data.realIdentity?.location || '',
+            fullName: userName || '', // Load full_name from params
+            avatarType: data.displayIdentity?.avatarType || 'default',
+            // Convert selectedAvatarIndex back to selectedAvatarId
+            selectedAvatarId: data.displayIdentity?.selectedAvatarIndex !== null && data.displayIdentity?.selectedAvatarIndex !== undefined
+              ? (data.displayIdentity.selectedAvatarIndex < 2 
+                  ? `img-${data.displayIdentity.selectedAvatarIndex}` 
+                  : `emoji-${data.displayIdentity.selectedAvatarIndex - 2}`)
+              : null,
+            profilePhotoUri: null, // Don't pre-load photo URI (will load from database if exists)
+          } : undefined;
 
         const profileInfoInitial: ProfileInfoData | undefined = data.profileInfo
           ? {
-              interests: data.profileInfo.interests,
-              customInterest: data.profileInfo.customInterest,
-              selfIntroduction: data.profileInfo.selfIntroduction,
-              languages: data.profileInfo.languages,
-              customLanguage: data.profileInfo.customLanguage,
-            }
+            interests: data.profileInfo.interests,
+            customInterest: data.profileInfo.customInterest,
+            selfIntroduction: data.profileInfo.selfIntroduction,
+            languages: data.profileInfo.languages,
+            customLanguage: data.profileInfo.customLanguage,
+          }
           : undefined;
 
         switch (step) {
           case 'welcome':
+            console.log('[ProfileSetupScreen] Rendering: ProfileWelcome');
             return <ProfileWelcome onStart={handleStart} isLoading={loading} />;
           case 'age-verification':
+            console.log('[ProfileSetupScreen] Rendering: AgeVerification');
             return (
               <AgeVerification
                 onStartVerification={handleStartVerification}
@@ -291,8 +368,10 @@ const ProfileSetupScreenComponent: React.FC = () => {
               />
             );
           case 'camera':
+            console.log('[ProfileSetupScreen] Rendering: AgeVerificationCamera');
             return <AgeVerificationCamera onCaptured={handlePhotoCaptured} onCancel={handleBack} />;
           case 'verifying':
+            console.log('[ProfileSetupScreen] Rendering: VerifyingLoader');
             return (
               <VerifyingLoader
                 title="Verifying..."
@@ -301,6 +380,7 @@ const ProfileSetupScreenComponent: React.FC = () => {
               />
             );
           case 'verified':
+            console.log('[ProfileSetupScreen] Rendering: VerifiedSuccess with age:', age);
             return (
               <VerifiedSuccess
                 verifiedAge={age}
@@ -309,23 +389,16 @@ const ProfileSetupScreenComponent: React.FC = () => {
                 isLoading={loading}
               />
             );
-          case 'real-identity':
+          case 'profile-form':
+            console.log('[ProfileSetupScreen] Rendering: ProfileSetupForm');
             return (
-              <RealIdentityForm
-                initialData={realIdentityInitial}
-                onNext={handleRealIdentitySubmit}
-                onBack={handleBack}
-                isLoading={loading}
-              />
-            );
-          case 'display-identity':
-            return (
-              <DisplayIdentityForm
-                initialData={displayIdentityInitial}
+              <ProfileSetupForm
+                initialData={profileSetupInitial}
                 userType={effectiveUserType}
-                onNext={handleDisplayIdentitySubmit}
+                onNext={handleProfileSetupSubmit}
                 onBack={handleBack}
                 isLoading={loading}
+                editMode={editMode}
               />
             );
           case 'profile-info':
@@ -346,7 +419,15 @@ const ProfileSetupScreenComponent: React.FC = () => {
               />
             );
           default:
-            return null;
+            console.warn('[ProfileSetupScreen] UNKNOWN STEP:', step, '- showing fallback');
+            // Return a loading state instead of null to avoid white screen
+            return (
+              <VerifyingLoader
+                title="Loading..."
+                message="Please wait..."
+                status="processing"
+              />
+            );
         }
       })()}
     </View>

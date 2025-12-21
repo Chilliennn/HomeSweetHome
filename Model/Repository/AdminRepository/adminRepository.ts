@@ -155,7 +155,8 @@ export const adminRepository = {
 				id: row.youth?.id,
 				full_name: row.youth?.full_name,
 				age: row.youth?.age || calculateAge(row.youth?.date_of_birth),
-				avatar_url: row.youth?.profile_photo_url || row.youth?.avatar_url,
+				// FIXED: Get avatar_url from profile_data.avatar_url (custom avatar storage location)
+				avatar_url: row.youth?.profile_data?.avatar_url || row.youth?.profile_photo_url || null,
 				age_verified: row.youth?.profile_data?.age_verified ?? row.youth?.age_verified ?? false,
 				occupation: row.youth?.profile_data?.occupation || row.youth?.occupation || null,
 				education: row.youth?.profile_data?.education || row.youth?.education || null,
@@ -166,7 +167,8 @@ export const adminRepository = {
 				id: row.elderly?.id,
 				full_name: row.elderly?.full_name,
 				age: row.elderly?.age || calculateAge(row.elderly?.date_of_birth),
-				avatar_url: row.elderly?.profile_photo_url || row.elderly?.avatar_url,
+				// FIXED: Get avatar_url from profile_data.avatar_url (custom avatar storage location)
+				avatar_url: row.elderly?.profile_data?.avatar_url || row.elderly?.profile_photo_url || null,
 				age_verified: row.elderly?.profile_data?.age_verified ?? row.elderly?.age_verified ?? false,
 				occupation: row.elderly?.profile_data?.occupation || row.elderly?.occupation || null,
 				education: row.elderly?.profile_data?.education || row.elderly?.education || null,
@@ -207,7 +209,8 @@ export const adminRepository = {
 				id: data.youth?.id,
 				full_name: data.youth?.full_name,
 				age: data.youth?.age || calculateAge(data.youth?.date_of_birth),
-				avatar_url: data.youth?.profile_photo_url || data.youth?.avatar_url,
+				// FIXED: Get avatar_url from profile_data.avatar_url (custom avatar storage location)
+				avatar_url: data.youth?.profile_data?.avatar_url || data.youth?.profile_photo_url || null,
 				age_verified: data.youth?.profile_data?.age_verified ?? data.youth?.age_verified ?? false,
 				occupation: data.youth?.profile_data?.occupation || data.youth?.occupation || null,
 				education: data.youth?.profile_data?.education || data.youth?.education || null,
@@ -218,7 +221,8 @@ export const adminRepository = {
 				id: data.elderly?.id,
 				full_name: data.elderly?.full_name,
 				age: data.elderly?.age || calculateAge(data.elderly?.date_of_birth),
-				avatar_url: data.elderly?.profile_photo_url || data.elderly?.avatar_url,
+				// FIXED: Get avatar_url from profile_data.avatar_url (custom avatar storage location)
+				avatar_url: data.elderly?.profile_data?.avatar_url || data.elderly?.profile_photo_url || null,
 				age_verified: data.elderly?.profile_data?.age_verified ?? data.elderly?.age_verified ?? false,
 				occupation: data.elderly?.profile_data?.occupation || data.elderly?.occupation || null,
 				education: data.elderly?.profile_data?.education || data.elderly?.education || null,

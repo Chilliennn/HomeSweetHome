@@ -3,9 +3,8 @@ import { View, Text, StyleSheet, ScrollView, ImageSourcePropType, TouchableOpaci
 import { useRouter } from 'expo-router';
 import { observer } from 'mobx-react-lite';
 import { elderMatchingViewModel, communicationViewModel } from '@home-sweet-home/viewmodel';
-import { authViewModel } from '@home-sweet-home/viewmodel';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useTabNavigation } from '@/hooks/use-tab-navigation';
+import { useTabNavigation, getAvatarDisplay } from '@/hooks';
 import {
   Card,
   NotificationBell,
@@ -60,10 +59,21 @@ export const ElderlyHome: React.FC<ElderlyHomeProps> = observer(({
   const { handleTabPress: hookHandleTabPress } = useTabNavigation(activeTab);
   const handleTabPress = onTabPress || hookHandleTabPress;
 
-  // Use real user ID from AuthViewModel
-  const currentElderlyId = authViewModel.authState.currentUserId;
-  // Use real name if not passed as prop
-  const displayName = propDisplayName || authViewModel.profileData.displayIdentity?.displayName || 'Elderly User';
+  // ✅ MVVM: Get user ID from ViewModel (synced by Layout from authViewModel)
+  const currentElderlyId = vm.currentUserId;
+  const displayName = propDisplayName || 'Elderly User';
+
+  // ✅ Default avatar for elderly (since we don't have profile data in this ViewModel)
+  // If custom avatar is needed, it should be passed as prop from parent
+  const avatarConfig = avatarSource ? {
+    icon: undefined,
+    imageSource: avatarSource,
+    backgroundColor: '#C8ADD6'
+  } : {
+    icon: '👵' as const,
+    imageSource: undefined,
+    backgroundColor: '#C8ADD6'
+  };
 
   // Poll for requests or load on mount
   useEffect(() => {
@@ -78,13 +88,17 @@ export const ElderlyHome: React.FC<ElderlyHomeProps> = observer(({
   }, [currentElderlyId]);
 
   const handleNotificationPress = () => {
-    console.log('🔔 [ElderlyHome] Notification bell pressed, pendingCount:', pendingCount);
+    console.log('🔔 [ElderlyHome] Notification bell pressed, pendingCount:', pendingInterestCount);
     // Navigate to the centralized Notification Screen
     router.push('/(main)/notification');
   };
 
-  const pendingCount = vm.incomingRequests.length;
-  console.log('🔵 [ElderlyHome] Rendering - pendingCount:', pendingCount, 'requests:', vm.incomingRequests.map(r => r.id));
+  // ✅ Use incomingRequests for "New Interest" alert (only youth interests)
+  const pendingInterestCount = vm.incomingRequests.length;
+  // ✅ Use unreadNotificationCount for bell icon (all notifications)
+  const notificationBellCount = vm.unreadNotificationCount;
+  
+  console.log('🔵 [ElderlyHome] Rendering - pendingInterests:', pendingInterestCount, 'totalNotifications:', notificationBellCount);
   // How it works items
   const howItWorksItems = [
     'Youth browse profiles and express interest in connecting',
@@ -105,7 +119,7 @@ export const ElderlyHome: React.FC<ElderlyHomeProps> = observer(({
       {/* Header */}
       <View style={styles.header}>
         <NotificationBell
-          count={pendingCount}
+          count={notificationBellCount}
           onPress={handleNotificationPress}
         />
         <Text style={styles.greeting}>
@@ -118,14 +132,14 @@ export const ElderlyHome: React.FC<ElderlyHomeProps> = observer(({
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        {/* PENDING REQUESTS ALERT (New Section) */}
-        {pendingCount > 0 && (
+        {/* PENDING REQUESTS ALERT (New Section) - Only shows for youth interests */}
+        {pendingInterestCount > 0 && (
           <Card style={styles.alertCard}>
             <View style={styles.alertHeader}>
               <Text style={styles.alertTitle}>New Interest Received! 🎉</Text>
             </View>
             <Text style={styles.alertText}>
-              {pendingCount} youth student{pendingCount > 1 ? 's are' : ' is'} interested in connecting with you.
+              {pendingInterestCount} youth student{pendingInterestCount > 1 ? 's are' : ' is'} interested in connecting with you.
             </Text>
             <Button
               title="View Requests"
@@ -136,13 +150,13 @@ export const ElderlyHome: React.FC<ElderlyHomeProps> = observer(({
           </Card>
         )}
 
-        {/* Welcome Icon */}
+        {/* Welcome Icon - FIXED: Uses user's actual avatar from profile */}
         <View style={styles.welcomeIconContainer}>
           <IconCircle
-            icon={avatarSource ? undefined : '👵'}
-            imageSource={avatarSource}
+            icon={avatarConfig.icon}
+            imageSource={avatarConfig.imageSource}
             size={100}
-            backgroundColor="#9DE2D0"
+            backgroundColor={avatarConfig.backgroundColor}
             contentScale={0.7}
           />
         </View>

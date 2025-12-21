@@ -4,14 +4,22 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { observer } from 'mobx-react-lite';
 import { elderMatchingViewModel, youthMatchingViewModel, matchingViewModel } from '@home-sweet-home/viewmodel';
-import { notificationRepository } from '@home-sweet-home/model';
-import { Card, Button, IconCircle, LoadingSpinner } from '@/components/ui';
+import { NotificationItem, LoadingSpinner } from '@/components/ui';
 import { Colors } from '@/constants/theme';
 
 // Helper for date formatting
 const formatDate = (dateString: string) => {
     if (!dateString) return 'Just now';
     const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffHours < 1) return 'Just now';
+    if (diffHours < 24) return `${diffHours} hours ago`;
+    if (diffDays === 1) return 'Yesterday';
+
     return date.toLocaleDateString('en-US', {
         month: 'short',
         day: 'numeric',
@@ -20,11 +28,28 @@ const formatDate = (dateString: string) => {
     });
 };
 
+// Map database notification types to NotificationItem types
+const mapNotificationType = (dbType: string): 'interest_sent' | 'interest_declined' | 'interest_accepted' | 'interest_received' | 'application_submitted' | 'message' | 'reminder' | 'system' => {
+    const typeMap: Record<string, any> = {
+        'interest_sent': 'interest_sent',
+        'new_interest': 'interest_received',          
+        'interest_accepted': 'interest_accepted',
+        'interest_rejected': 'interest_declined',    
+        'application_submitted': 'application_submitted',
+        'new_message': 'message',
+        'calendar_reminder': 'reminder',
+        'stage_milestone': 'system',
+        'admin_notice': 'system',
+        'consultation_assigned': 'system',
+        'advisor_assigned': 'system',
+        'application_update': 'system',
+        'safety_alert': 'reminder',
+    };
+    return typeMap[dbType] || 'system';
+};
+
 export const NotificationScreen = observer(() => {
     const router = useRouter();
-
-    // UC102_3: Track expanded state for each elderly notification
-    const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
 
     // View Models
     const matchVM = elderMatchingViewModel;
@@ -38,10 +63,6 @@ export const NotificationScreen = observer(() => {
     const [generalNotifications, setGeneralNotifications] = useState<any[]>([]);
     const [isLoadingGeneral, setIsLoadingGeneral] = useState(false);
 
-    // NEW: State for advisor/consultation notifications (addon by user)
-    const [advisorNotifications, setAdvisorNotifications] = useState<any[]>([]);
-    const [isLoadingAdvisor, setIsLoadingAdvisor] = useState(false);
-
     // Load notifications based on user type
     useEffect(() => {
         if (currentUserId) {
@@ -51,8 +72,11 @@ export const NotificationScreen = observer(() => {
                 youthVM.loadNotifications(currentUserId);
             }
 
-            // Load general notifications (calendar, memories, etc.)
-            loadGeneralNotifications(currentUserId);
+            // ✅ Load general notifications via ViewModel
+            loadGeneralNotifications();
+            
+            // ✅ Mark all as read when entering page
+            markAllAsRead();
         }
         return () => {
             if (isElderly) {
@@ -63,20 +87,13 @@ export const NotificationScreen = observer(() => {
         };
     }, [isElderly, currentUserId]);
 
-    // Load general notifications from notifications table
-    const loadGeneralNotifications = async (userId: string) => {
+    // ✅ Load general notifications via ViewModel (MVVM compliant)
+    const loadGeneralNotifications = async () => {
         setIsLoadingGeneral(true);
         try {
-            console.log('[NotificationScreen] Loading general notifications for user:', userId);
-            const notifications = await notificationRepository.getNotifications(userId, 50);
-            console.log('[NotificationScreen] All notifications:', notifications.length, notifications);
-            
-            // Filter out consultation_assigned (those go in advisor section)
-            const generalNotifs = notifications.filter(
-                (n: any) => n.type !== 'consultation_assigned'
-            );
-            console.log('[NotificationScreen] Filtered general notifications:', generalNotifs.length);
-            setGeneralNotifications(generalNotifs);
+            const vm = isElderly ? matchVM : youthVM;
+            const notifications = await vm.getGeneralNotifications();
+            setGeneralNotifications(notifications);
         } catch (error) {
             console.error('[NotificationScreen] Failed to load general notifications:', error);
         } finally {
@@ -84,50 +101,41 @@ export const NotificationScreen = observer(() => {
         }
     };
 
-    // NEW: Load advisor/consultation notifications (addon by user)
-    const loadAdvisorNotifications = async (userId: string) => {
-        setIsLoadingAdvisor(true);
+    // ✅ Mark all notifications as read via ViewModel (MVVM compliant)
+    const markAllAsRead = async () => {
         try {
-            console.log('[NotificationScreen] Loading advisor notifications for user:', userId);
-            const notifications = await notificationRepository.getNotifications(userId, 20);
-            const advisorNotifs = notifications.filter(
-                (n: any) => n.type === 'consultation_assigned' || n.type === 'advisor_assigned' || n.type === 'admin_notice'
-            );
-            console.log('[NotificationScreen] Advisor notifications:', advisorNotifs.length);
-            setAdvisorNotifications(advisorNotifs);
+            const vm = isElderly ? matchVM : youthVM;
+            await vm.markAllNotificationsAsRead();
+            console.log('[NotificationScreen] ✅ All notifications marked as read');
         } catch (error) {
-            console.error('[NotificationScreen] Failed to load advisor notifications:', error);
-        } finally {
-            setIsLoadingAdvisor(false);
+            console.error('[NotificationScreen] Failed to mark all as read:', error);
         }
     };
 
-    // NEW: Load advisor notifications when user is set
-    useEffect(() => {
-        if (currentUserId) {
-            loadAdvisorNotifications(currentUserId);
-        }
-    }, [currentUserId]);
-
-    // Setup real-time subscription for general notifications
+    // Setup real-time subscription for general notifications via ViewModel
     useEffect(() => {
         if (!currentUserId) return;
 
-        const subscription = notificationRepository.subscribeToNotifications(
-            currentUserId,
-            (notification) => {
-                console.log('[NotificationScreen] New notification received:', notification);
-                // Reload all notifications to get fresh data
-                loadGeneralNotifications(currentUserId);
-                loadAdvisorNotifications(currentUserId);
-            }
-        );
+        const vm = isElderly ? matchVM : youthVM;
+        // ✅ Subscribe via ViewModel (MVVM compliant)
+        const subscription = vm.subscribeToGeneralNotifications((notification) => {
+            console.log('[NotificationScreen] New notification received:', notification);
+            loadGeneralNotifications();
+        });
 
         return () => {
-            notificationRepository.unsubscribe(subscription);
+            // ✅ Unsubscribe via ViewModel
+            vm.unsubscribeFromNotifications(subscription);
         };
-    }, [currentUserId]);
+    }, [currentUserId, isElderly]);
 
+    // Mark notification as read when tapped (deprecated - auto mark all on page load)
+    const handleNotificationPress = async (notificationId: string) => {
+        // No action needed - all marked as read on page load
+        console.log('[NotificationScreen] Notification tapped:', notificationId);
+    };
+
+    // Accept interest (elderly action)
     const handleAccept = async (reqId: string, youthId: string) => {
         if (!currentUserId) return;
         await matchVM.respondToInterest(reqId, youthId, currentUserId, true);
@@ -139,41 +147,55 @@ export const NotificationScreen = observer(() => {
         else if (matchVM.error) Alert.alert("Error", matchVM.error);
     };
 
-    const handleDecline = async (reqId: string, youthId: string) => {
-        if (!currentUserId) return;
-        await matchVM.respondToInterest(reqId, youthId, currentUserId, false);
-
-        if (matchVM.error) {
-            Alert.alert('Error', matchVM.error);
-        }
-    };
-
-    // UC102_5: Navigate to full youth profile
+    // View youth profile (elderly action)
     const handleViewProfile = (applicationId: string) => {
         router.push(`/(main)/youth-profile?applicationId=${applicationId}`);
     };
 
-    // UC102_3: Toggle expand/collapse for elderly notifications
-    const toggleExpanded = (id: string) => {
-        setExpandedIds(prev => {
-            const newSet = new Set(prev);
-            if (newSet.has(id)) {
-                newSet.delete(id);
-            } else {
-                newSet.add(id);
-            }
-            return newSet;
-        });
-    };
-
-    // UC101_4: Navigate to PreMatchStarted screen when youth taps accepted notification
+    // Navigate to PreMatchStarted screen when youth taps accepted notification
     const handleMatchClick = (matchId: string) => {
         router.push(`/(main)/pre-match-started?matchId=${matchId}`);
     };
 
+    // Delete interest request (elderly action)
+    const handleDeleteRequest = async (requestId: string) => {
+        Alert.alert(
+            'Delete Request',
+            'Are you sure you want to delete this interest request?',
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Delete',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            await matchVM.deleteRequest(requestId);
+                        } catch (error) {
+                            Alert.alert('Error', 'Failed to delete request');
+                        }
+                    },
+                },
+            ]
+        );
+    };
+
+    // ✅ Delete general notification via ViewModel (MVVM compliant)
+    const handleDeleteNotification = async (notificationId: string) => {
+        try {
+            const vm = isElderly ? matchVM : youthVM;
+            await vm.deleteNotification(notificationId);
+            // Reload to update UI
+            loadGeneralNotifications();
+            console.log('[NotificationScreen] Notification deleted:', notificationId);
+        } catch (error) {
+            console.error('[NotificationScreen] Failed to delete notification:', error);
+            Alert.alert('Error', 'Failed to delete notification');
+        }
+    };
+
     /**
      * Render: Incoming Interest Request (Elderly)
-     * UC102_3: Collapsible notification with Accept/Decline actions
+     * Uses NotificationItem with expandable feature
      */
     const renderElderlyNotification = ({ item }: { item: any }) => {
         const youthName = item.youth?.full_name || 'Anonymous Youth';
@@ -181,185 +203,93 @@ export const NotificationScreen = observer(() => {
         const youthLocation = item.youth?.location || 'Unknown';
         const youthInterests = item.youth?.profile_data?.interests || [];
         const motivation = item.motivation_letter || 'No message provided';
-        const isExpanded = expandedIds.has(item.id);
 
         return (
-            <Card style={styles.requestCard}>
-                {/* Header Section - Always Visible */}
-                <TouchableOpacity
-                    onPress={() => toggleExpanded(item.id)}
-                    activeOpacity={0.8}
-                >
-                    <View style={styles.cardHeader}>
-                        <IconCircle
-                            icon="❤️"
-                            size={50}
-                            backgroundColor="#FDE8E8"
-                        />
-                        <View style={styles.headerInfo}>
-                            <Text style={styles.notifTitle}>Interest Received</Text>
-                            <Text style={styles.name}>
-                                <Text style={styles.boldText}>{youthName}</Text> is interested in becoming your companion
-                            </Text>
-                            <Text style={styles.timeText}>2 hours ago</Text>
-                        </View>
-                        <Text style={styles.expandIcon}>{isExpanded ? '▼' : '▶'}</Text>
-                    </View>
-                </TouchableOpacity>
-
-                {/* Expanded Details */}
-                {isExpanded && (
-                    <View style={styles.expandedContent}>
-                        <View style={styles.profileSection}>
-                            <IconCircle
-                                icon="👤"
-                                size={60}
-                                backgroundColor={Colors.light.secondary}
-                            />
-                            <View style={styles.profileDetails}>
-                                <Text style={styles.profileName}>{youthName}</Text>
-                                <Text style={styles.profileInfo}>
-                                    {youthAge} years old • {youthLocation}
-                                </Text>
-                            </View>
-                        </View>
-
-                        <View style={styles.detailRow}>
-                            <Text style={styles.label}>Location</Text>
-                            <Text style={styles.value}>{youthLocation}</Text>
-                        </View>
-
-                        {youthInterests.length > 0 && (
-                            <View style={styles.detailRow}>
-                                <Text style={styles.label}>Interests</Text>
-                                <Text style={styles.value}>{youthInterests.slice(0, 3).join(', ')}</Text>
-                            </View>
-                        )}
-
-                        <View style={styles.motivationSection}>
-                            <Text style={styles.motivationText}>
-                                "{motivation.substring(0, 120)}{motivation.length > 120 ? '...' : ''}"
-                            </Text>
-                        </View>
-
-                        <View style={styles.buttonRow}>
-                            <Button
-                                title="View Profile"
-                                onPress={() => handleViewProfile(item.id)}
-                                variant="outline"
-                                style={{ flex: 1 }}
-                                disabled={matchVM.isLoading}
-                            />
-                            <Button
-                                title="Accept"
-                                onPress={() => handleAccept(item.id, item.youth_id)}
-                                variant="primary"
-                                style={{ flex: 1 }}
-                                disabled={matchVM.isLoading}
-                            />
-                        </View>
-                    </View>
-                )}
-            </Card>
+            <NotificationItem
+                type="interest_received"
+                title="Interest Received"
+                message={`${youthName} is interested in becoming your companion`}
+                highlightName={youthName}
+                timestamp={formatDate(item.applied_at || item.created_at)}
+                expandable={true}
+                expandedContent={{
+                    profileName: youthName,
+                    profileInfo: `${youthAge} years old`,
+                    location: youthLocation,
+                    interests: youthInterests,
+                    motivation: motivation,
+                }}
+                actions={{
+                    onAccept: () => handleAccept(item.id, item.youth_id),
+                    onViewProfile: () => handleViewProfile(item.id),
+                }}
+                isLoading={matchVM.isLoading}
+                onDelete={() => handleDeleteRequest(item.id)}
+            />
         );
     };
 
     /**
      * Render: Match Update / System Notification (Youth)
-     * Ref: 101_4 & 101_5 flow
+     * Uses NotificationItem
      */
     const renderYouthNotification = ({ item }: { item: any }) => {
         const isAccepted = item.status === 'pre_chat_active';
         const elderlyName = item.elderly?.full_name || 'An Elderly';
-        const date = item.reviewed_at ? formatDate(item.reviewed_at) : 'Just now';
+        const date = formatDate(item.reviewed_at || item.created_at);
 
         if (isAccepted) {
             return (
-                <TouchableOpacity onPress={() => handleMatchClick(item.id)}>
-                    <Card style={[styles.notificationCard, styles.acceptedCard]}>
-                        <View style={styles.notifRow}>
-                            <IconCircle icon="🎉" size={40} backgroundColor="#E8F5E9" />
-                            <View style={styles.notifContent}>
-                                <Text style={styles.notifTitle}>Interest Accepted!</Text>
-                                <Text style={styles.notifText}>
-                                    <Text style={{ fontWeight: 'bold' }}>{elderlyName}</Text> accepted your interest. Tap to start chatting!
-                                </Text>
-                                <Text style={styles.timeText}>{date}</Text>
-                            </View>
-                        </View>
-                    </Card>
-                </TouchableOpacity>
+                <NotificationItem
+                    type="interest_accepted"
+                    title="Interest Accepted! 🎉"
+                    message={`${elderlyName} accepted your interest. Tap to start chatting!`}
+                    highlightName={elderlyName}
+                    timestamp={date}
+                    showArrow={true}
+                    onPress={() => handleMatchClick(item.id)}
+                />
             );
         } else {
             return (
-                <Card style={[styles.notificationCard, styles.rejectedCard]}>
-                    <View style={styles.notifRow}>
-                        <IconCircle icon="📪" size={40} backgroundColor="#F5F5F5" />
-                        <View style={styles.notifContent}>
-                            <Text style={styles.notifTitle}>Update on Interest</Text>
-                            <Text style={styles.notifText}>
-                                <Text style={{ fontWeight: 'bold' }}>{elderlyName}</Text> has declined your request. Keep browsing!
-                            </Text>
-                            <Text style={styles.timeText}>{date}</Text>
-                        </View>
-                    </View>
-                </Card>
+                <NotificationItem
+                    type="interest_declined"
+                    title="Update on Interest"
+                    message={`${elderlyName} has declined your request. Keep browsing!`}
+                    highlightName={elderlyName}
+                    timestamp={date}
+                />
             );
         }
     };
 
     /**
-     * Render: General System Notifications (e.g., Advisor Assigned)
+     * Render: General System Notifications
+     * Simple notifications (calendar, memories, system messages)
      */
-    const renderGeneralNotification = ({ item }: { item: any }) => {
-        const date = item.created_at ? formatDate(item.created_at) : 'Just now';
-
-        // Get icon based on notification type
-        const getIcon = () => {
-            switch (item.type) {
-                case 'consultation_assigned': return '🎉';
-                case 'admin_notice': return '📢';
-                default: return '🔔';
-            }
-        };
+    const renderGeneralNotification = (item: any) => {
+        const date = formatDate(item.created_at);
+        const type = mapNotificationType(item.type);
 
         return (
-            <Card style={[styles.notificationCard, styles.acceptedCard]}>
-                <View style={styles.notifRow}>
-                    <IconCircle icon={getIcon()} size={40} backgroundColor="#E8F5E9" />
-                    <View style={styles.notifContent}>
-                        <Text style={styles.notifTitle}>{item.title}</Text>
-                        <Text style={styles.notifText}>{item.message}</Text>
-                        <Text style={styles.timeText}>{date}</Text>
-                    </View>
-                </View>
-            </Card>
+            <NotificationItem
+                key={item.id}
+                type={type}
+                title={item.title || 'Notification'}
+                message={item.message || ''}
+                timestamp={date}
+                isRead={item.is_read}
+                onPress={() => handleNotificationPress(item.id)}
+                onDelete={() => handleDeleteNotification(item.id)}
+            />
         );
     };
 
     const isLoading = isElderly ? matchVM.isLoading : youthVM.isLoading;
-    const data = isElderly ? matchVM.incomingRequests : youthVM.activeMatches;
-
-    // TODO: Uncomment when notification system is fixed
-    // Combine match data with general notifications
-    // const allNotifications = [
-    //     ...generalNotifications.map(n => ({ ...n, _isGeneral: true })),
-    //     ...matchData.map((m: any) => ({ ...m, _isGeneral: false }))
-    // ].sort((a, b) => {
-    //     const dateA = new Date(a.created_at || a.applied_at || 0).getTime();
-    //     const dateB = new Date(b.created_at || b.applied_at || 0).getTime();
-    //     return dateB - dateA;
-    // });
-    //
-    // const renderNotification = ({ item }: { item: any }) => {
-    //     if (item._isGeneral) {
-    //         return renderGeneralNotification({ item });
-    //     }
-    //     return isElderly ? renderElderlyNotification({ item }) : renderYouthNotification({ item });
-    // };
+    const matchData = isElderly ? matchVM.incomingRequests : youthVM.activeMatches;
 
     // Loading State
-    if (isLoading) {
+    if (isLoading && matchData.length === 0) {
         return (
             <SafeAreaView style={styles.container}>
                 <View style={styles.header}>
@@ -385,73 +315,37 @@ export const NotificationScreen = observer(() => {
             </View>
 
             <FlatList
-                data={data}
+                data={matchData}
                 renderItem={isElderly ? renderElderlyNotification : renderYouthNotification}
                 keyExtractor={item => item.id}
                 contentContainerStyle={styles.list}
-                ListHeaderComponent={() => (
-                    <View>
-                        {/* General Notifications Section (Calendar, Memories, etc.) */}
-                        {generalNotifications.length > 0 && (
-                            <View style={styles.generalSection}>
-                                <Text style={styles.sectionTitle}>🔔 Recent Activity</Text>
-                                {generalNotifications.map((item) => {
-                                    const iconMap: Record<string, string> = {
-                                        'calendar_reminder': '📅',
-                                        'stage_milestone': '📸',
-                                        'new_message': '💬',
-                                        'safety_alert': '⚠️',
-                                        'admin_notice': '📢',
-                                        'application_update': '📋',
-                                    };
-                                    const icon = iconMap[item.type] || '🔔';
+                ListHeaderComponent={() => {
+                    // Filter out interest_received notifications for elderly (already shown in matchData)
+                    const filteredNotifications = isElderly
+                        ? generalNotifications.filter(n => n.type !== 'new_interest' && n.type !== 'interest_received')
+                        : generalNotifications;
 
-                                    return (
-                                        <Card key={item.id} style={[styles.notificationCard, !item.is_read && styles.unreadCard]}>
-                                            <View style={styles.notifRow}>
-                                                <IconCircle
-                                                    icon={icon}
-                                                    size={40}
-                                                    backgroundColor={!item.is_read ? '#E3F2FD' : '#F5F5F5'}
-                                                />
-                                                <View style={styles.notifContent}>
-                                                    <Text style={styles.notifTitle}>{item.title}</Text>
-                                                    <Text style={styles.notifText}>{item.message}</Text>
-                                                    <Text style={styles.timeText}>{formatDate(item.created_at)}</Text>
-                                                </View>
-                                            </View>
-                                        </Card>
-                                    );
-                                })}
-                            </View>
-                        )}
+                    return (
+                        <View>
+                            {/* General Notifications Section */}
+                            {filteredNotifications.length > 0 && (
+                                <View style={styles.section}>
+                                    <Text style={styles.sectionTitle}>🔔 Recent Activity</Text>
+                                    {filteredNotifications.map(item => renderGeneralNotification(item))}
+                                </View>
+                            )}
 
-                        {/* Advisor/Consultation Notifications */}
-                        {advisorNotifications.length > 0 && (
-                            <View style={styles.advisorSection}>
-                                <Text style={styles.sectionTitle}>📋 Advisor Updates</Text>
-                                {advisorNotifications.map((item) => (
-                                    <Card key={item.id} style={[styles.notificationCard, styles.advisorCard]}>
-                                        <View style={styles.notifRow}>
-                                            <IconCircle
-                                                icon={item.type === 'consultation_assigned' ? '🎉' : item.type === 'advisor_assigned' ? '👨‍⚕️' : '📢'}
-                                                size={40}
-                                                backgroundColor="#E8F5E9"
-                                            />
-                                            <View style={styles.notifContent}>
-                                                <Text style={styles.notifTitle}>{item.title || 'Advisor Update'}</Text>
-                                                <Text style={styles.notifText}>{item.message}</Text>
-                                                <Text style={styles.timeText}>{formatDate(item.created_at)}</Text>
-                                            </View>
-                                        </View>
-                                    </Card>
-                                ))}
-                            </View>
-                        )}
-                    </View>
-                )}
+                            {/* Match Notifications Section Header */}
+                            {matchData.length > 0 && (
+                                <Text style={styles.sectionTitle}>
+                                    {isElderly ? '❤️ Interest Requests' : '📬 Match Updates'}
+                                </Text>
+                            )}
+                        </View>
+                    );
+                }}
                 ListEmptyComponent={
-                    advisorNotifications.length === 0 && generalNotifications.length === 0 ? (
+                    generalNotifications.length === 0 ? (
                         <View style={styles.emptyContainer}>
                             <Text style={styles.placeholder}>No new notifications.</Text>
                             <Text style={styles.placeholderSub}>
@@ -468,55 +362,60 @@ export const NotificationScreen = observer(() => {
 });
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#FAF9F6' },
-    header: { flexDirection: 'row', alignItems: 'center', padding: 20, borderBottomWidth: 1, borderBottomColor: '#E0E0E0' },
-    backIcon: { fontSize: 24, color: '#333', marginRight: 16 },
-    title: { fontSize: 20, fontWeight: '700', color: '#333' },
-    content: { flex: 1 },
-    centerContent: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-    list: { padding: 20 },
-
-    // UC102_3: Elderly Request Card (Collapsible)
-    requestCard: { marginBottom: 16, padding: 0, backgroundColor: 'white', overflow: 'hidden' },
-    cardHeader: { flexDirection: 'row', alignItems: 'flex-start', padding: 16 },
-    headerInfo: { marginLeft: 12, flex: 1 },
-    name: { fontSize: 14, color: '#555', lineHeight: 20 },
-    expandIcon: { fontSize: 14, color: '#999', marginLeft: 8 },
-    boldText: { fontWeight: '600', color: '#333' },
-
-    // UC102_3: Expanded Content
-    expandedContent: { paddingHorizontal: 16, paddingBottom: 16, borderTopWidth: 1, borderTopColor: '#F0F0F0' },
-    profileSection: { flexDirection: 'row', alignItems: 'center', marginTop: 16, marginBottom: 16 },
-    profileDetails: { marginLeft: 12, flex: 1 },
-    profileName: { fontSize: 18, fontWeight: '700', color: '#333', marginBottom: 4 },
-    profileInfo: { fontSize: 14, color: '#666' },
-    detailRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 },
-    label: { fontSize: 14, color: '#999', fontWeight: '500' },
-    value: { fontSize: 14, color: '#333', flex: 1, textAlign: 'right', marginLeft: 16 },
-    motivationSection: { backgroundColor: '#F9F9F9', padding: 12, borderRadius: 8, marginVertical: 12 },
-    motivationText: { fontSize: 14, color: '#555', fontStyle: 'italic', lineHeight: 20 },
-    buttonRow: { flexDirection: 'row', gap: 12, marginTop: 16 },
-
-    // Youth Notification Card
-    notificationCard: { marginBottom: 12, padding: 16, backgroundColor: 'white' },
-    acceptedCard: { borderLeftWidth: 4, borderLeftColor: '#4CAF50' },
-    rejectedCard: { borderLeftWidth: 4, borderLeftColor: '#9E9E9E' },
-    notifRow: { flexDirection: 'row', alignItems: 'flex-start' },
-    notifContent: { marginLeft: 12, flex: 1 },
-    notifTitle: { fontSize: 16, fontWeight: '700', color: '#333', marginBottom: 4 },
-    notifText: { fontSize: 14, color: '#555', lineHeight: 20, marginBottom: 8 },
-    timeText: { fontSize: 12, color: '#999' },
-
-    emptyContainer: { alignItems: 'center', marginTop: 50 },
-    placeholder: { fontSize: 18, color: '#666', fontWeight: '500', marginBottom: 8 },
-    placeholderSub: { fontSize: 14, color: '#999' },
-
-    // General Notifications styles
-    generalSection: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 8 },
-    unreadCard: { borderLeftWidth: 4, borderLeftColor: '#2196F3' },
-
-    // NEW: Advisor Notifications styles (addon by user)
-    advisorSection: { paddingHorizontal: 20, paddingTop: 16 },
-    sectionTitle: { fontSize: 16, fontWeight: '700', color: '#333', marginBottom: 12 },
-    advisorCard: { borderLeftWidth: 4, borderLeftColor: '#9DE2D0' },
+    container: {
+        flex: 1,
+        backgroundColor: '#FAF9F6'
+    },
+    header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 20,
+        borderBottomWidth: 1,
+        borderBottomColor: '#E0E0E0'
+    },
+    backIcon: {
+        fontSize: 24,
+        color: '#333',
+        marginRight: 16
+    },
+    title: {
+        fontSize: 20,
+        fontWeight: '700',
+        color: '#333'
+    },
+    centerContent: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center'
+    },
+    list: {
+        padding: 16
+    },
+    section: {
+        marginBottom: 24
+    },
+    sectionTitle: {
+        fontSize: 16,
+        fontWeight: '700',
+        color: '#333',
+        marginBottom: 12,
+        marginTop: 8,
+    },
+    emptyContainer: {
+        alignItems: 'center',
+        marginTop: 50
+    },
+    placeholder: {
+        fontSize: 18,
+        color: '#666',
+        fontWeight: '500',
+        marginBottom: 8
+    },
+    placeholderSub: {
+        fontSize: 14,
+        color: '#999',
+        textAlign: 'center',
+        paddingHorizontal: 32,
+    },
 });
+

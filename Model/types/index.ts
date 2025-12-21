@@ -24,19 +24,14 @@ export interface User {
 }
 
 export interface UserProfileData {
-  // Display Identity (stored in profile_data)
-  display_name?: string;
-  avatar_url?: string;
+  // FIXED: Avatar display uses avatar_meta for preset avatars ONLY
+  // FIXED: profile_photo_url is stored in users table, not here
   avatar_meta?: {
     type?: "default" | "custom";
     selected_avatar_index?: number | null;
   };
 
-  // Real Identity - only private photo stored here
-  // (phone & location are stored in users table directly)
-  real_identity?: {
-    real_photo_url?: string | null;
-  };
+  // FIXED: Removed real_identity - profile_photo_url handles all photo needs
 
   // Profile Info - only user-type specific data
   // (languages stored in users table directly)
@@ -368,14 +363,14 @@ export interface AgeVerificationResult {
 export interface RealIdentityPayload {
   phoneNumber: string;
   location: string;
-  realPhotoUrl: string | null;
+  // FIXED: Removed realPhotoUrl - use profile_photo_url in users table
 }
 
 export interface DisplayIdentityPayload {
-  displayName: string;
+  // FIXED: Removed displayName - use full_name from users table
   avatarType: "default" | "custom";
   selectedAvatarIndex: number | null;
-  customAvatarUrl: string | null;
+  // FIXED: Removed customAvatarUrl - preset avatars only use avatar_meta
 }
 
 export interface ProfileInfoPayload {

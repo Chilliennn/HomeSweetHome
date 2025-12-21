@@ -226,7 +226,7 @@ export class StageService {
       },
       {
         key: "diary",
-        name: "Shared Diary",
+        name: "Personal Diary",
         description: "Document your journey",
       },
       {
@@ -527,7 +527,7 @@ export class StageService {
     // Determine newly unlocked features based on current stage
     const featuresByStage: Record<RelationshipStage, string[]> = {
       getting_to_know: ["Text Messaging", "Photo Sharing"],
-      trial_period: ["Video Calls", "Shared Diary", "Calendar Events"],
+      trial_period: ["Video Calls", "Personal Diary", "Calendar Events"],
       official_ceremony: ["Home Visits", "Family Activities"],
       family_life: ["Full Family Access", "Official Certificate"],
     };

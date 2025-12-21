@@ -1,2 +1,2 @@
-import { ApplicationStatusScreen } from '@/CommunicationUI/ApplicationStatusScreen';
+import { ApplicationStatusScreen } from '@/MatchingUI/ApplicationStatusScreen';
 export default ApplicationStatusScreen;

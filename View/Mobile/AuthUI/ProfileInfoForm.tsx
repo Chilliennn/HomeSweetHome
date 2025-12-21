@@ -45,8 +45,8 @@ interface ProfileInfoFormProps {
 // ============================================================================
 // CONSTANTS
 // ============================================================================
-const TOTAL_STEPS = 4;
-const CURRENT_STEP = 4; // Step 3 of 3 profile steps
+const TOTAL_STEPS = 3;
+const CURRENT_STEP = 3; 
 
 // Interests options - UC103_11
 const INTERESTS_OPTIONS = [
@@ -207,24 +207,22 @@ export const ProfileInfoForm: React.FC<ProfileInfoFormProps> = ({
   // ============================================================================
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
+    <SafeAreaView style={styles.safeArea} edges={['top','bottom']}>
       <View style={styles.container}>
         {/* Header */}
         <Header title="Step 3 of 3" onBack={onBack} />
-
+        {/* Step Indicator */}
+        <StepIndicator
+          totalSteps={TOTAL_STEPS}
+          currentStep={CURRENT_STEP}
+          style={styles.stepIndicator}
+        />
         <ScrollView
           style={styles.scrollView}
           contentContainerStyle={styles.content}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          {/* Step Indicator */}
-          <StepIndicator
-            totalSteps={TOTAL_STEPS}
-            currentStep={CURRENT_STEP}
-            style={styles.stepIndicator}
-          />
-
           {/* Interests Section - UC103_11 */}
           <View style={styles.section}>
             <Text style={styles.label}>

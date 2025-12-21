@@ -8,7 +8,8 @@ import {
   Alert,
 } from 'react-native';
 import { observer } from 'mobx-react-lite';
-import { familyViewModel, authViewModel } from '@home-sweet-home/viewmodel';
+import { useLocalSearchParams } from 'expo-router';
+import { familyViewModel } from '@home-sweet-home/viewmodel';
 import { ThemedText } from '@/components/themed-text';
 import { Button } from '@/components/ui/Button';
 import { AlertBanner } from '@/components/ui/AlertBanner';
@@ -36,29 +37,27 @@ const MOOD_OPTIONS: { value: MoodType; label: string; emoji: string }[] = [
  */
 export const DiaryScreen = observer(() => {
   const router = useRouter();
+  const params = useLocalSearchParams();
   const { diaryEntries, selectedMoodFilter, isLoading, errorMessage, successMessage } = familyViewModel;
+
+  // ✅ MVVM: Get userId from route params or use familyViewModel.currentUserId
+  const userId = (params.userId as string) || familyViewModel.currentUserId;
 
   useEffect(() => {
     const initializeIfNeeded = async () => {
-      if (!familyViewModel.currentRelationship) {
-        const userId = authViewModel.authState.currentUserId;
-        if (userId) {
-          await familyViewModel.initialize(userId);
-        }
+      if (!familyViewModel.currentRelationship && userId) {
+        await familyViewModel.initialize(userId);
       }
       // Load diary entries
-      if (familyViewModel.currentRelationship) {
-        const userId = authViewModel.authState.currentUserId;
-        if (userId) {
-          familyViewModel.loadDiaryEntries(
-            userId,
-            familyViewModel.currentRelationship.id
-          );
-        }
+      if (familyViewModel.currentRelationship && userId) {
+        familyViewModel.loadDiaryEntries(
+          userId,
+          familyViewModel.currentRelationship.id
+        );
       }
     };
     initializeIfNeeded();
-  }, [familyViewModel.currentRelationship?.id]);
+  }, [familyViewModel.currentRelationship?.id, userId]);
 
   const handleWriteNew = () => {
     router.push('/family/diary/write');

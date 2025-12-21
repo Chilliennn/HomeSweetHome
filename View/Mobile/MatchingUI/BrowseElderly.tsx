@@ -10,9 +10,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { observer } from 'mobx-react-lite';
 import { youthMatchingViewModel, communicationViewModel } from '@home-sweet-home/viewmodel';
-import { authViewModel } from '@home-sweet-home/viewmodel';
 import { User } from '@home-sweet-home/model';
-import { useTabNavigation } from '../hooks/use-tab-navigation';
+import { useTabNavigation, getAvatarDisplay } from '@/hooks';
 import {
   NotificationBell,
   JourneyProgressDropdown,
@@ -48,15 +47,30 @@ interface BrowseElderlyProps {
 // Tabs that are disabled (no function yet)
 const DISABLED_TABS = ['diary', 'memory'];
 
-// Helper to map User -> Display Data
+// FIXED: Helper to map User -> Display Data with proper avatar handling
 const mapUserToProfile = (user: User) => {
+  // Priority: profile_photo_url (real photo) > preset avatar from avatar_meta
+  const hasRealPhoto = !!user.profile_photo_url;
+  // Use user's actual user_type to get correct emoji/image arrays
+  // Filter out 'admin' type and cast to 'youth' | 'elderly'
+  const userTypeForAvatar: 'youth' | 'elderly' = 
+    user.user_type === 'youth' || user.user_type === 'elderly' 
+      ? user.user_type 
+      : 'elderly';
+  
+  const avatarConfig = hasRealPhoto 
+    ? { icon: undefined, imageSource: { uri: user.profile_photo_url! }, backgroundColor: '#9DE2D0' }
+    : getAvatarDisplay(user.profile_data, userTypeForAvatar);
+  
   return {
     id: user.id,
-    name: user.full_name || user.profile_data?.display_name || 'Anonymous',
-    age: user.profile_data?.verified_age || '60+', // Default or calculated
+    name: user.full_name || 'Anonymous',  // FIXED: Only use full_name
+    age: user.profile_data?.verified_age || '60+',
     location: user.location || 'Unknown',
-    avatarEmoji: user.profile_data?.avatar_meta?.type === 'default' ? '👵' : undefined, // Simplification
-    avatarColor: Colors.light.tertiary,
+    // Avatar properties: real photo OR preset avatar
+    avatarIcon: avatarConfig.icon,
+    avatarImageSource: avatarConfig.imageSource,
+    avatarColor: avatarConfig.backgroundColor,
     interests: (user.profile_data?.interests || []).map(i => ({ label: i, color: Colors.light.secondary })),
   };
 };
@@ -72,8 +86,8 @@ export const BrowseElderly: React.FC<BrowseElderlyProps> = observer(({
   notificationCount: propNotificationCount,
 }) => {
   const vm = youthMatchingViewModel;
-  const authVM = authViewModel;
-  const currentUserId = authVM.authState.currentUserId;
+  // ✅ MVVM: Get userId from ViewModel (synced by Layout from authViewModel)
+  const currentUserId = vm.currentUserId;
 
   // Filter modal state
   const [showFilterModal, setShowFilterModal] = useState(false);
@@ -85,11 +99,15 @@ export const BrowseElderly: React.FC<BrowseElderlyProps> = observer(({
   const { handleTabPress: hookHandleTabPress } = useTabNavigation(activeTab);
 
   useEffect(() => {
-    vm.loadProfiles();
-    // Load notifications for the youth user
+    console.log('🟦 [BrowseElderly] useEffect triggered, currentUserId:', currentUserId);
+    
     if (currentUserId) {
+      console.log('✅ [BrowseElderly] UserId available, ViewModel will handle profile loading');
       vm.loadNotifications(currentUserId);
+    } else {
+      console.log('⏳ [BrowseElderly] Waiting for userId...');
     }
+    
     return () => {
       vm.dispose();
     }
@@ -114,7 +132,7 @@ export const BrowseElderly: React.FC<BrowseElderlyProps> = observer(({
     return value !== undefined && value !== null && value !== '';
   }).length;
 
-  const notificationCount = propNotificationCount ?? vm.activeMatches.length;
+  const notificationCount = propNotificationCount ?? vm.unreadNotificationCount;
 
   const renderProfileCard = ({ item }: { item: User }) => {
     const profile = mapUserToProfile(item);
@@ -129,9 +147,10 @@ export const BrowseElderly: React.FC<BrowseElderlyProps> = observer(({
         disabled={hasExpressed}
       >
         <Card style={[styles.cardContainer, hasExpressed && styles.cardDisabled]}>
-          {/* Avatar */}
+          {/* Avatar - FIXED: Uses proper avatar from profile */}
           <IconCircle
-            icon={profile.avatarEmoji || '👤'}
+            icon={profile.avatarIcon}
+            imageSource={profile.avatarImageSource}
             size={64}
             backgroundColor={profile.avatarColor}
             contentScale={0.65}

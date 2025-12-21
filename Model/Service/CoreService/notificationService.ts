@@ -117,6 +117,89 @@ class NotificationService implements INotificationService {
     await notificationRepository.updateNotificationPreferences(userId, enabled);
     console.log(`✅ Notification preferences updated for user ${userId}: ${enabled}`);
   }
+
+  // ============================================================================
+  // Notification Count & Subscription Methods (for ViewModel use)
+  // ============================================================================
+
+  /**
+   * Get general notifications for a user
+   * Used by ViewModels to load notification list
+   */
+  async getGeneralNotifications(userId: string, limit: number = 50): Promise<any[]> {
+    if (!userId) return [];
+
+    try {
+      return await notificationRepository.getNotifications(userId, limit);
+    } catch (error) {
+      console.error('[NotificationService] Failed to get notifications:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Mark all notifications as read for a user
+   * Used when user enters notification screen
+   */
+  async markAllNotificationsAsRead(userId: string): Promise<void> {
+    if (!userId) return;
+
+    try {
+      await notificationRepository.markAllAsRead(userId);
+      console.log('[NotificationService] All notifications marked as read for user:', userId);
+    } catch (error) {
+      console.error('[NotificationService] Failed to mark all as read:', error);
+    }
+  }
+
+  /**
+   * Delete a notification
+   */
+  async deleteNotification(notificationId: string): Promise<void> {
+    if (!notificationId) return;
+
+    try {
+      await notificationRepository.deleteNotification(notificationId);
+      console.log('[NotificationService] Notification deleted:', notificationId);
+    } catch (error) {
+      console.error('[NotificationService] Failed to delete notification:', error);
+    }
+  }
+
+  /**
+   * Get unread notification count for a user
+   * Used by ViewModels for bell icon count
+   */
+  async getUnreadCount(userId: string): Promise<number> {
+    if (!userId) return 0;
+
+    try {
+      return await notificationRepository.getUnreadCount(userId);
+    } catch (error) {
+      console.error('[NotificationService] Failed to get unread count:', error);
+      return 0;
+    }
+  }
+
+  /**
+   * Subscribe to realtime notification updates
+   * Used by ViewModels for realtime bell icon count
+   */
+  subscribeToNotifications(
+    userId: string,
+    onInsert: (notification: any) => void
+  ): any {
+    return notificationRepository.subscribeToNotifications(userId, onInsert);
+  }
+
+  /**
+   * Unsubscribe from a notification channel
+   */
+  unsubscribe(channel: any): void {
+    if (channel) {
+      notificationRepository.unsubscribe(channel);
+    }
+  }
 }
 
 // Export singleton instance

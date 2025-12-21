@@ -2,6 +2,7 @@ import { makeAutoObservable, runInAction } from "mobx";
 import { stageService } from "../../Model/Service/CoreService/stage";
 import { familyService } from "../../Model/Service/CoreService/familyService";
 import { familyAIService } from "../../Model/Service/CoreService/familyAIService";
+import { notificationService } from "../../Model/Service/CoreService/notificationService";
 import type {
   Feature,
   LockedStageDetail,
@@ -75,6 +76,7 @@ export class StageViewModel {
 
   private relationshipSubscription: any = null;
   private activitiesSubscription: any = null;
+  private notificationSubscription: any = null;
   currentUserId: any;
 
   constructor() {
@@ -176,6 +178,7 @@ export class StageViewModel {
           const allDone = this.requirements.every((r) => !!r.is_completed);
           console.log("[StageViewModel] All requirements completed?", allDone);
 
+
           if (allDone) {
             console.log(
               "[StageViewModel] 🎉 All final stage requirements completed! Setting journey completed flag..."
@@ -221,6 +224,33 @@ export class StageViewModel {
       this.relationshipSubscription = null;
       this.activitiesSubscription = null;
     }
+    // Cleanup notification subscription
+    if (this.notificationSubscription) {
+      notificationService.unsubscribe(this.notificationSubscription);
+      this.notificationSubscription = null;
+    }
+  }
+
+  /**
+   * Setup notification realtime subscription
+   */
+  private setupNotificationSubscription(userId: string) {
+    if (this.notificationSubscription) {
+      console.log('[StageViewModel] Notification subscription already active');
+      return;
+    }
+
+    console.log('[StageViewModel] Setting up notification subscription for:', userId);
+    this.notificationSubscription = notificationService.subscribeToNotifications(
+      userId,
+      (notification) => {
+        console.log('[StageViewModel] New notification received:', notification.type);
+        // Reload notification count when new notification arrives
+        runInAction(() => {
+          this.unreadNotificationCount += 1;
+        });
+      }
+    );
   }
 
   /**
@@ -388,6 +418,12 @@ export class StageViewModel {
         }
         this.hasInitialized = true;
       });
+
+      // Setup notification realtime subscription
+      this.setupNotificationSubscription(userId);
+
+      // Load initial notification count
+      await this.loadUnreadNotifications();
     } catch (err: any) {
       runInAction(() => {
         this.error = err.message;
@@ -485,6 +521,43 @@ export class StageViewModel {
       runInAction(() => {
         this.requirements = reqs;
       });
+
+      // Run AI verification for topic-based activities
+      try {
+        const { runActivityVerificationCheck } = await import(
+          "../../Model/Service/CoreService/ActivityVerificationService"
+        );
+
+        // Map stage to DB stage name
+        const stageMap: Record<string, string> = {
+          getting_to_know: "getting_acquainted",
+          trial_period: "building_trust",
+          official_ceremony: "family_bond",
+          family_life: "full_adoption",
+        };
+        const dbStage = stageMap[this.currentStage] || this.currentStage;
+
+        const verificationResult = await runActivityVerificationCheck(
+          this.relationshipId,
+          dbStage
+        );
+
+        if (verificationResult.completed > 0) {
+          console.log(
+            `[StageViewModel] AI verified ${verificationResult.completed} activities as complete!`
+          );
+          // Reload requirements to get updated completion status
+          const updatedReqs = await stageService.getCurrentStageRequirements(
+            this.relationshipId,
+            this.currentStage
+          );
+          runInAction(() => {
+            this.requirements = updatedReqs;
+          });
+        }
+      } catch (verifyError) {
+        console.warn("[StageViewModel] AI verification error (non-fatal):", verifyError);
+      }
 
       try {
         const pct = await stageService.computeProgressPercent(
@@ -1113,11 +1186,9 @@ export class StageViewModel {
     if (!this.stageJustCompletedName || !this.currentStageDisplayName) {
       return "Congratulations on your progress!";
     }
-    return `Congratulations! You've successfully completed "${
-      this.stageJustCompletedName
-    }" and moved to Stage ${this.completedStageOrder + 1}: ${
-      this.currentStageDisplayName
-    }.`;
+    return `Congratulations! You've successfully completed "${this.stageJustCompletedName
+      }" and moved to Stage ${this.completedStageOrder + 1}: ${this.currentStageDisplayName
+      }.`;
   }
 
   // ============================================================================

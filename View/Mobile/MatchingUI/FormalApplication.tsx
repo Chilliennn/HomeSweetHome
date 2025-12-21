@@ -108,12 +108,16 @@ export const FormalApplication = observer(function FormalApplication() {
       console.log('🟢 [View] vm.submitFormalApplication returned:', success);
 
       if (success) {
-        console.log('🟢 [View] Success! Navigating to success screen...');
-        // Navigate to success screen
-        router.replace({
-          pathname: '/application-submitted',
-          params: { applicationId }
-        } as any);
+        console.log('🟢 [View] Success! Navigating to status screen...');
+        // Navigate to chat first to clear the stack, then push to status screen
+        // This ensures pre-match-expired is not in the navigation stack
+        router.dismissAll();
+        setTimeout(() => {
+          router.replace({
+            pathname: '/application-status',
+            params: { applicationId }
+          } as any);
+        }, 100);
       } else {
         console.log('🟢 [View] Submit returned false. vm.error:', vm.error);
         // ViewModel returned false, show error from ViewModel

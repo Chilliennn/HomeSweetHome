@@ -8,12 +8,12 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { observer } from 'mobx-react-lite';
-import { familyViewModel, authViewModel } from '@home-sweet-home/viewmodel';
+import { useRouter, useLocalSearchParams } from 'expo-router';
+import { familyViewModel } from '@home-sweet-home/viewmodel';
 import { ThemedText } from '@/components/themed-text';
 import { Button } from '@/components/ui/Button';
 import { AlertBanner } from '@/components/ui/AlertBanner';
 import { Header } from '@/components/ui/Header';
-import { useRouter } from 'expo-router';
 
 /**
  * AIRecommendationsScreen - View and use AI activity suggestions
@@ -56,7 +56,8 @@ export const AIRecommendationsScreen = observer(() => {
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
 
-    const userId = authViewModel.authState.currentUserId;
+    // ✅ MVVM: Use familyViewModel.currentUserId (synced from Layout)
+    const userId = familyViewModel.currentUserId;
     if (!userId) {
       Alert.alert('Error', 'User not authenticated');
       return;
@@ -71,12 +72,11 @@ export const AIRecommendationsScreen = observer(() => {
     );
   };
 
-  const handleDismissRecommation = (suggestionId: string) => {
-    // For now, just reload the list
-    // In a full implementation, this could mark as dismissed
-    if (currentRelationship) {
-      familyViewModel.loadAIRecommendations(currentRelationship.id);
-    }
+  const handleDismissRecommation = async (suggestionId: string) => {
+    if (!currentRelationship) return;
+    
+    // Mark suggestion as dismissed (using the same backend method as "used")
+    await familyViewModel.dismissAIRecommendation(suggestionId);
   };
 
   return (

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Alert } from "react-native";
+import { Alert, ActivityIndicator, View } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { observer } from "mobx-react-lite";
 import {
@@ -92,9 +92,67 @@ export const MatchingScreenComponent = observer(
       null
     );
     const [activeTab] = useState("matching"); // Always 'matching' for this screen
+    const [isCheckingRelationship, setIsCheckingRelationship] = useState(false);
 
     // Tab navigation hook
     const { handleTabPress } = useTabNavigation(activeTab);
+
+    useEffect(() => {
+      console.log('[MatchingScreen] useEffect[relationship] triggered - userId:', userId, 'userType:', userType);
+      
+      const checkRelationship = async () => {
+        if (!userId) {
+          console.log('[MatchingScreen] No userId, skipping relationship check');
+          return;
+        }
+
+        setIsCheckingRelationship(true);
+        console.log('[MatchingScreen] Starting relationship check for:', userType);
+
+        // Check appropriate ViewModel based on user type
+        if (userType === 'youth') {
+          console.log('[MatchingScreen] Checking youth relationship...');
+          await youthMatchingViewModel.checkActiveRelationship(userId);
+          console.log('[MatchingScreen] Youth hasActiveRelationship:', youthMatchingViewModel.hasActiveRelationship);
+          
+          if (youthMatchingViewModel.hasActiveRelationship) {
+            console.log('[MatchingScreen] Youth has relationship, redirecting to bonding');
+            router.replace({
+              pathname: '/(main)/bonding' as any,
+              params: { userId, userName, userType },
+            });
+            // Keep loading state true while redirecting
+            return;
+          } else {
+            console.log('[MatchingScreen] Youth has NO relationship, staying on matching page');
+          }
+        } else if (userType === 'elderly') {
+          console.log('[MatchingScreen] Checking elderly relationship...');
+          const elderVM = await import('@home-sweet-home/viewmodel').then(m => m.elderMatchingViewModel);
+          await elderVM.checkActiveRelationship(userId);
+          console.log('[MatchingScreen] Elderly hasActiveRelationship:', elderVM.hasActiveRelationship);
+          
+          if (elderVM.hasActiveRelationship) {
+            console.log('[MatchingScreen] Elderly has relationship, redirecting to bonding');
+            router.replace({
+              pathname: '/(main)/bonding' as any,
+              params: { userId, userName, userType },
+            });
+            // Keep loading state true while redirecting
+            return;
+          } else {
+            console.log('[MatchingScreen] Elderly has NO relationship, staying on matching page');
+          }
+        } else {
+          console.log('[MatchingScreen] Unknown userType:', userType);
+        }
+        
+        // Only set loading to false if we didn't redirect
+        setIsCheckingRelationship(false);
+      };
+      
+      checkRelationship();
+    }, [userId, userType]);
 
     // Check if walkthrough should be shown
     useEffect(() => {
@@ -190,9 +248,20 @@ export const MatchingScreenComponent = observer(
       return youthMatchingViewModel.profiles.find((p) => p.id === id);
     }
 
+    if (isCheckingRelationship) {
+      return (
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#FFFFFF' }}>
+          <ActivityIndicator size="large" color="#9DE2D0" />
+        </View>
+      );
+    }
+
     // Render based on current screen
+    console.log('[MatchingScreen] Rendering - currentScreen:', currentScreen, 'userType:', userType, 'hasRelationship:', userType === 'youth' ? youthMatchingViewModel.hasActiveRelationship : 'elderly');
+    
     switch (currentScreen) {
       case "profile-detail":
+        console.log('[MatchingScreen] Rendering profile-detail');
         return (
           <ElderlyProfileDetail
             profile={selectedProfile}
@@ -204,6 +273,7 @@ export const MatchingScreenComponent = observer(
         );
 
       case "interest-sent":
+        console.log('[MatchingScreen] Rendering interest-sent');
         return (
           <InterestSent
             elderlyName={selectedProfile?.name || "Elderly"}
@@ -215,6 +285,7 @@ export const MatchingScreenComponent = observer(
       default:
         // If Elderly, show ElderlyHome
         if (userType === "elderly") {
+          console.log('[MatchingScreen] Rendering ElderlyHome');
           return (
             <ElderlyHome
               displayName={userName}
@@ -226,6 +297,7 @@ export const MatchingScreenComponent = observer(
         }
 
         // If Youth (default), show BrowseElderly
+        console.log('[MatchingScreen] Rendering BrowseElderly for youth');
         return (
           <BrowseElderly
             onNotificationPress={handleNotificationPress}

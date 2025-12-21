@@ -28,13 +28,60 @@ import { useTabNavigation, getAvatarDisplay } from '../hooks';
  */
 const SettingsScreenComponent: React.FC = () => {
   const router = useRouter();
-  const { handleTabPress, userId: userIdFromParams, userName, userType } = useTabNavigation('settings');
-
-  // ✅ Fallback: Get userId from authViewModel if not in params
+  const params = useLocalSearchParams();
+  
+  const userIdFromParams = params.userId as string | undefined;
   const userId = userIdFromParams || authViewModel.authState.currentUserId || undefined;
 
-  // ✅ Add loading state
+  console.log('[SettingsScreen] Init - userId:', userId, 'params:', params);
+
   const [isLoading, setIsLoading] = React.useState(true);
+
+  // Load user profile data on mount
+  useEffect(() => {
+    const loadUserData = async () => {
+      if (userId) {
+        setIsLoading(true);
+        // Load profile data (realIdentity, displayIdentity, etc.)
+        await authViewModel.loadProfile(userId);
+        // Load full user object for profile_photo_url and user_type
+        await authViewModel.getCurrentUser(userId);
+        // Check active relationship status for tab disabling
+        await authViewModel.checkActiveRelationship(userId);
+        setIsLoading(false);
+      }
+    };
+    loadUserData();
+  }, [userId]);
+
+  // ✅ Get userType from authViewModel AFTER data is loaded (use authViewModel.userType or currentUser.user_type)
+  const userType = authViewModel.currentUser?.user_type || authViewModel.userType || (params.userType as 'youth' | 'elderly') || undefined;
+  const userName = (params.userName as string) || authViewModel.currentUser?.full_name || undefined;
+
+  console.log('[SettingsScreen] Current state - userId:', userId, 'userName:', userName, 'userType:', userType);
+  console.log('[SettingsScreen] AuthViewModel state - currentUser.user_type:', authViewModel.currentUser?.user_type, 'authViewModel.userType:', authViewModel.userType);
+
+  // Custom tab handler that ensures params are always passed
+  const handleTabPress = (tabKey: string) => {
+    if (tabKey === 'settings') return;
+    
+    console.log('[SettingsScreen] Tab press:', tabKey, 'with params:', { userId, userName, userType });
+    
+    const routeMap: Record<string, string> = {
+      matching: '/(main)/matching',
+      diary: '/(main)/diary',
+      memory: '/(main)/album',
+      chat: '/(main)/chat',
+      settings: '/(main)/settings',
+    };
+
+    if (routeMap[tabKey]) {
+      router.push({
+        pathname: routeMap[tabKey] as any,
+        params: { userId, userName, userType },
+      });
+    }
+  };
 
   // Load user profile data on mount
   useEffect(() => {

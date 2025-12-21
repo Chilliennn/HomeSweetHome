@@ -6,7 +6,7 @@ import { SentimentAnalyticsRepository } from '@home-sweet-home/model';
 import { supabase } from '@home-sweet-home/model';
 import type { SentimentDistribution, SentimentStats } from '@home-sweet-home/model';
 
-export class SentimentAnalysisViewModel {
+export class AdminSentimentAnalysisViewModel {
     // Loading and error states
     isLoading = true;
     errorMessage: string | null = null;
@@ -158,3 +158,5 @@ export class SentimentAnalysisViewModel {
         this.aiInsight = '';
     }
 }
+
+export const adminSentimentAnalysisViewModel = new AdminSentimentAnalysisViewModel();

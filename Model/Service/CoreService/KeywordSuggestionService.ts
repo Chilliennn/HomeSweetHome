@@ -77,7 +77,7 @@ export class KeywordSuggestionService {
         });
 
         // Generate suggestions from frequent phrases
-        const suggestions: SuggestionCandidate[] = [];
+        let suggestions: SuggestionCandidate[] = [];
 
         for (const [phrase, data] of phraseCounts.entries()) {
             // Only suggest if detected multiple times (Lowered to 1 for testing)
@@ -98,7 +98,35 @@ export class KeywordSuggestionService {
         // Sort by frequency (most common first)
         suggestions.sort((a, b) => b.frequency - a.frequency);
 
-        return suggestions.slice(0, 20); // Return top 20
+        // DEDUPLICATION: Remove phrases that are substrings of higher-ranked phrases
+        const deduplicatedSuggestions: SuggestionCandidate[] = [];
+        for (const suggestion of suggestions) {
+            const isSubset = deduplicatedSuggestions.some(existing =>
+                existing.phrase.includes(suggestion.phrase) ||
+                suggestion.phrase.includes(existing.phrase)
+            );
+            if (!isSubset) {
+                deduplicatedSuggestions.push(suggestion);
+            }
+        }
+
+        // Also check against existing suggestions in DB to avoid duplicates
+        const { data: existingSuggestions } = await supabase
+            .from('keyword_suggestions')
+            .select('keyword')
+            .eq('status', 'pending');
+
+        const existingSuggestionPhrases = new Set(
+            (existingSuggestions || []).map((s: { keyword: string }) => s.keyword.toLowerCase())
+        );
+
+        const finalSuggestions = deduplicatedSuggestions.filter(s =>
+            !existingSuggestionPhrases.has(s.phrase.toLowerCase())
+        );
+
+        console.log(`[AI Debug] After deduplication: ${finalSuggestions.length} unique suggestions (from ${suggestions.length})`);
+
+        return finalSuggestions.slice(0, 20); // Return top 20
     }
 
     /**

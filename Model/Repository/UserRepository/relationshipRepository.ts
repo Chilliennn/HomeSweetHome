@@ -29,6 +29,9 @@ export interface Relationship {
     certificate_url: string | null;
     created_at: string;
     ended_at: string | null;
+    // Additional fields for admin monitoring
+    last_message_at?: string;
+    risk_level?: 'healthy' | 'caution' | 'critical';
     // Populated relations
     youth?: User;
     elderly?: User;
@@ -43,6 +46,19 @@ export interface Relationship {
  * - Used by Services for business operations
  */
 export const relationshipRepository = {
+    /**
+     * Get all relationships (for admin monitoring)
+     */
+    async getAllRelationships(): Promise<Relationship[]> {
+        const { data, error } = await supabase
+            .from('relationships')
+            .select('*, youth:youth_id(*), elderly:elderly_id(*)')
+            .order('updated_at', { ascending: false });
+
+        if (error) throw error;
+        return (data || []) as Relationship[];
+    },
+
     /**
      * Get active relationship for a user (youth or elderly)
      */

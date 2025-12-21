@@ -134,18 +134,32 @@ export const PreMatchChatList = observer(function PreMatchChatList() {
         {/* Header with Avatar and Name - FIXED: Uses proper avatar from partner profile */}
         <View style={styles.cardHeader}>
           {(() => {
-            // Get partner's avatar config
+            // Priority: profile_photo_url (real photo) > preset avatar from avatar_meta
+            const hasRealPhoto = !!partner.profile_photo_url;
             const partnerType = isYouth ? 'elderly' : 'youth';
-            const avatarConfig = getAvatarDisplay(partner.profile_data, partnerType);
-            return (
-              <IconCircle
-                icon={avatarConfig.icon}
-                imageSource={avatarConfig.imageSource}
-                size={64}
-                backgroundColor={avatarConfig.backgroundColor}
-                contentScale={0.6}
-              />
-            );
+            
+            if (hasRealPhoto) {
+              return (
+                <IconCircle
+                  icon={undefined}
+                  imageSource={{ uri: partner.profile_photo_url }}
+                  size={64}
+                  backgroundColor="#9DE2D0"
+                  contentScale={0.6}
+                />
+              );
+            } else {
+              const avatarConfig = getAvatarDisplay(partner.profile_data, partnerType);
+              return (
+                <IconCircle
+                  icon={avatarConfig.icon}
+                  imageSource={avatarConfig.imageSource}
+                  size={64}
+                  backgroundColor={avatarConfig.backgroundColor}
+                  contentScale={0.6}
+                />
+              );
+            }
           })()}
           <View style={styles.headerInfo}>
             <Text style={styles.name}>{partner.profile_data?.display_name || partner.full_name || 'Partner'}</Text>

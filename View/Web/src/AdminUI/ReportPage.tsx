@@ -4,13 +4,7 @@ import { consultationViewModel, safetyViewModel } from '@home-sweet-home/viewmod
 import { ConsultationDashboard } from './ConsultationDashboard';
 import { ConsultationDetails } from './ConsultationDetails';
 import { SafetyAlertsDashboard, SafetyAlertDetails } from '../SafetyUI';
-
-// Simple content wrapper (replaces AdminLayout which requires Router)
-const ContentWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-    <div style={{ padding: '32px', width: '100%', boxSizing: 'border-box' as const }}>
-        {children}
-    </div>
-);
+import { AdminLayout } from '../components/ui';
 
 // Color constants from UC501UI.txt
 const colors = {
@@ -284,55 +278,55 @@ const ReportPage: React.FC = observer(() => {
     // Render Consultation Dashboard
     if (currentView === 'consultations') {
         return (
-            <ContentWrapper>
+            <AdminLayout>
                 <ConsultationDashboard
                     onBack={handleBackToReports}
                     onSelectRequest={handleSelectRequest}
                 />
-            </ContentWrapper>
+            </AdminLayout>
         );
     }
 
     // Render Consultation Details
     if (currentView === 'consultation-details' && selectedRequestId) {
         return (
-            <ContentWrapper>
+            <AdminLayout>
                 <ConsultationDetails
                     requestId={selectedRequestId}
                     onBack={handleBackToConsultations}
                 />
-            </ContentWrapper>
+            </AdminLayout>
         );
     }
 
     // Render Safety Alerts Dashboard
     if (currentView === 'safety-alerts') {
         return (
-            <ContentWrapper>
+            <AdminLayout>
                 <SafetyAlertsDashboard
                     onBack={handleBackToReports}
                     onSelectAlert={handleSelectAlert}
                 />
-            </ContentWrapper>
+            </AdminLayout>
         );
     }
 
     // Render Safety Alert Details
     if (currentView === 'safety-alert-details' && selectedAlertId) {
         return (
-            <ContentWrapper>
+            <AdminLayout>
                 <SafetyAlertDetails
                     alertId={selectedAlertId}
                     onBack={handleBackToSafetyAlerts}
                 />
-            </ContentWrapper>
+            </AdminLayout>
         );
     }
 
     // Main Reports Dashboard
 
     return (
-        <ContentWrapper>
+        <AdminLayout>
             <div style={styles.container}>
                 {/* Page Header */}
                 <div style={styles.header}>
@@ -458,7 +452,7 @@ const ReportPage: React.FC = observer(() => {
                     </div>
                 </div>
             </div>
-        </ContentWrapper>
+        </AdminLayout>
     );
 });
 

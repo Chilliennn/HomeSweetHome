@@ -100,6 +100,9 @@ export class AuthViewModel {
   // Current user object (for display purposes like profile_photo_url)
   currentUser: User | null = null;
 
+  /** Whether user has active relationship (for disabling tabs) */
+  hasActiveRelationship = false;
+
   constructor() {
     makeAutoObservable(this, {}, { autoBind: true });
   }
@@ -282,6 +285,24 @@ export class AuthViewModel {
   async getActiveRelationship(userId: string) {
     const { relationshipService } = await import('@home-sweet-home/model');
     return relationshipService.getActiveRelationship(userId);
+  }
+
+  /**
+   * Check if user has active relationship (for tab enabling/disabling)
+   */
+  async checkActiveRelationship(userId: string): Promise<void> {
+    try {
+      const { relationshipService } = await import('@home-sweet-home/model');
+      const relationship = await relationshipService.getActiveRelationship(userId);
+      runInAction(() => {
+        this.hasActiveRelationship = relationship !== null;
+      });
+    } catch (error) {
+      console.error('[AuthViewModel] Error checking active relationship:', error);
+      runInAction(() => {
+        this.hasActiveRelationship = false;
+      });
+    }
   }
 
   /**

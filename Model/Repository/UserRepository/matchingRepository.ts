@@ -38,7 +38,8 @@ export const matchingRepository = {
         filters?: ElderlyFilters,
         youthProfile?: User
     ): Promise<ElderlyProfilesResult> {
-        const limit = filters?.limit || 10;
+        // ✅ If no limit specified, fetch ALL profiles (for sorting by match score)
+        const limit = filters?.limit;
         const offset = filters?.offset || 0;
 
         // First, get elderly IDs that are in active relationships (to exclude)
@@ -72,8 +73,10 @@ export const matchingRepository = {
             query = query.overlaps('languages', filters.languages);
         }
 
-        // Pagination
-        query = query.range(offset, offset + limit - 1);
+        // ✅ Only apply pagination if limit is specified
+        if (limit !== undefined) {
+            query = query.range(offset, offset + limit - 1);
+        }
 
         const { data, error, count } = await query;
         if (error) throw error;

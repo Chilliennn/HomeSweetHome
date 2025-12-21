@@ -34,9 +34,13 @@ export default observer(function MainLayout() {
         ? authVM.userType
         : null;
 
+    console.log('🟦 [MainLayout] Syncing user to ViewModels:', { userId, userType });
+
     // ✅ Sync user context to all ViewModels
     commVM.setCurrentUser(userId!, userType!);
     matchVM.setCurrentUser(userId, userType);
+    // Note: youthVM.setCurrentUser is async but we don't await it here
+    // It will fetch the profile in the background
     youthVM.setCurrentUser(userId);
     elderVM.setCurrentUser(userId);
     familyVM.setCurrentUser(userId);

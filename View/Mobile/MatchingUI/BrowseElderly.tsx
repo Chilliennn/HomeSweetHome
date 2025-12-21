@@ -99,6 +99,8 @@ export const BrowseElderly: React.FC<BrowseElderlyProps> = observer(({
   const { handleTabPress: hookHandleTabPress } = useTabNavigation(activeTab);
 
   useEffect(() => {
+    console.log('🟦 [BrowseElderly] useEffect triggered, currentUserId:', currentUserId);
+    // ViewModel will auto-load profile when it has currentUserId
     vm.loadProfiles();
     // Load notifications for the youth user
     if (currentUserId) {

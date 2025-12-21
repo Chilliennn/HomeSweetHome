@@ -1,6 +1,7 @@
 import { makeAutoObservable, runInAction } from 'mobx';
 import { matchingService } from '../../Model/Service/CoreService/matchingService';
 import { notificationService } from '../../Model/Service/CoreService/notificationService';
+import { relationshipService } from '../../Model/Service/CoreService/relationshipService';
 import { supabase, Interest } from '@home-sweet-home/model';
 import type { RealtimeChannel } from '@home-sweet-home/model';
 
@@ -17,6 +18,12 @@ export class ElderMatchingViewModel {
 
     // ✅ Unread notification count for bell icon
     unreadNotificationCount: number = 0;
+
+    // ✅ Whether user has active relationship (for disabling tabs)
+    hasActiveRelationship: boolean = false;
+
+    // ✅ Current journey step for UI display (always 1 for elderly during matching phase)
+    currentJourneyStep: number = 1;
 
     constructor() {
         makeAutoObservable(this);
@@ -42,6 +49,23 @@ export class ElderMatchingViewModel {
     }
 
     /**
+     * Check if user has active relationship (for tab enabling/disabling)
+     */
+    async checkActiveRelationship(userId: string): Promise<void> {
+        try {
+            const relationship = await relationshipService.getActiveRelationship(userId);
+            runInAction(() => {
+                this.hasActiveRelationship = relationship !== null;
+            });
+        } catch (error) {
+            console.error('[ElderMatchingViewModel] Error checking active relationship:', error);
+            runInAction(() => {
+                this.hasActiveRelationship = false;
+            });
+        }
+    }
+
+    /**
      * Load incoming interest requests for the elderly user.
      * UC102_3: Real-time updates for new interests
      */
@@ -50,6 +74,9 @@ export class ElderMatchingViewModel {
 
         // ✅ Save elderly ID for later use
         this.currentUserId = elderlyId;
+
+        // ✅ Check active relationship status for tab disabling
+        await this.checkActiveRelationship(elderlyId);
 
         const data = await matchingService.getIncomingInterests(elderlyId);
         runInAction(() => {

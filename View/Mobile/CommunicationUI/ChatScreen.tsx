@@ -55,6 +55,9 @@ export const ChatScreen = observer(function ChatScreen() {
   const [isSendingVoice, setIsSendingVoice] = useState(false);
   const keyboardHeight = useRef(new Animated.Value(0)).current;
 
+  // More Menu State
+  const [showMoreMenu, setShowMoreMenu] = useState(false);
+
   // Advisor Request Modal State
   const [showAdvisorModal, setShowAdvisorModal] = useState(false);
   const [advisorConsultationType, setAdvisorConsultationType] = useState('');
@@ -456,6 +459,7 @@ export const ChatScreen = observer(function ChatScreen() {
 
   // Handler: Report/Warning
   const handleReport = () => {
+    setShowMoreMenu(false);
     Alert.alert(
       'Report Issue',
       'What would you like to report?',
@@ -491,6 +495,7 @@ export const ChatScreen = observer(function ChatScreen() {
 
   // Handler: Request Family Advisor
   const handleRequestAdvisor = () => {
+    setShowMoreMenu(false);
     Alert.alert(
       '📋 Request Family Advisor',
       'What type of consultation do you need?',
@@ -738,7 +743,20 @@ export const ChatScreen = observer(function ChatScreen() {
           <View style={styles.headerInfo}>
             <View style={styles.headerRow}>
               {(() => {
-                // FIXED: Get partner's avatar config properly
+                // Check if partner has a real profile photo first
+                const hasRealPhoto = !!partnerUser?.profile_photo_url;
+                
+                if (hasRealPhoto && partnerUser.profile_photo_url) {
+                  return (
+                    <IconCircle
+                      imageSource={{ uri: partnerUser.profile_photo_url }}
+                      size={40}
+                      contentScale={1}
+                    />
+                  );
+                }
+                
+                // Fall back to avatar_meta preset
                 const partnerType = currentUserType === 'youth' ? 'elderly' : 'youth';
                 const avatarConfig = getAvatarDisplay(partnerUser?.profile_data, partnerType);
                 return (
@@ -752,8 +770,9 @@ export const ChatScreen = observer(function ChatScreen() {
                 );
               })()}
               <View style={styles.headerText}>
-                <Text style={styles.partnerName}>{partnerUser?.full_name || 'Partner'}</Text>
-                <Text style={styles.dayLabel}>{headerInfo}</Text>
+                <Text style={styles.partnerName} numberOfLines={1} ellipsizeMode="tail">
+                  {partnerUser?.full_name || 'Partner'}
+                </Text>
               </View>
             </View>
           </View>
@@ -792,16 +811,12 @@ export const ChatScreen = observer(function ChatScreen() {
               )}
             </TouchableOpacity>
 
-            <TouchableOpacity onPress={handleReport} style={styles.headerButton}>
+            {/* More Menu Button */}
+            <TouchableOpacity onPress={() => setShowMoreMenu(true)} style={styles.headerButton}>
               <Image
-                source={require('@/assets/images/icon-warning.png')}
+                source={require('@/assets/images/icon-more.png')}
                 style={styles.headerIcon}
               />
-            </TouchableOpacity>
-
-            {/* Request Advisor Button */}
-            <TouchableOpacity onPress={handleRequestAdvisor} style={styles.headerButton}>
-              <Text style={{ fontSize: 18 }}>📋</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -923,6 +938,43 @@ export const ChatScreen = observer(function ChatScreen() {
           )}
         </Animated.View>
       </View>
+
+      {/* More Menu Modal */}
+      <Modal
+        visible={showMoreMenu}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowMoreMenu(false)}
+      >
+        <View style={styles.moreMenuOverlay}>
+          <TouchableOpacity 
+            style={StyleSheet.absoluteFill}
+            activeOpacity={1}
+            onPress={() => setShowMoreMenu(false)}
+          />
+          <View style={styles.moreMenuContent}>
+            {/* Request Family Advisor - Only for relationship chats */}
+            {isRelationshipChat && relationship && (
+              <TouchableOpacity
+                style={styles.moreMenuItem}
+                onPress={handleRequestAdvisor}
+              >
+                <Image source={require('@/assets/images/icon-question.png')} style={styles.moreMenuIcon} />
+                <Text style={styles.moreMenuText}>Request Family Advisor</Text>
+              </TouchableOpacity>
+            )}
+            
+            {/* Report/Warning */}
+            <TouchableOpacity
+              style={[styles.moreMenuItem, styles.moreMenuItemLast]}
+              onPress={handleReport}
+            >
+              <Image source={require('@/assets/images/icon-warning.png')} style={styles.moreMenuIcon} />
+              <Text style={styles.moreMenuText}>Report Issue</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
 
       {/* Advisor Request Modal */}
       <Modal
@@ -1085,16 +1137,12 @@ const styles = StyleSheet.create({
   },
   headerText: {
     marginLeft: 12,
+    flex: 1,
   },
   partnerName: {
     fontSize: 16,
     fontWeight: '600',
     color: '#333',
-  },
-  dayLabel: {
-    fontSize: 12,
-    color: '#999',
-    marginTop: 2,
   },
   headerActions: {
     flexDirection: 'row',
@@ -1126,6 +1174,53 @@ const styles = StyleSheet.create({
     width: 14,
     height: 14,
     resizeMode: 'contain',
+  },
+  moreDotsIcon: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#333',
+    lineHeight: 24,
+  },
+  moreMenuOverlay: {
+    flex: 1,
+    justifyContent: 'flex-start',
+    alignItems: 'flex-end',
+    paddingTop: 60,
+    paddingRight: 16,
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+  },
+  moreMenuContent: {
+    backgroundColor: '#FFF',
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 5,
+    minWidth: 220,
+    overflow: 'hidden',
+  },
+  moreMenuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+  moreMenuIcon: {
+    width: 24,
+    height: 24,
+    marginRight: 12,
+    resizeMode: 'contain',
+  },
+  moreMenuText: {
+    fontSize: 16,
+    color: '#333',
+    fontWeight: '500',
+  },
+  moreMenuItemLast: {
+    borderBottomWidth: 0,
   },
   messagesList: {
     paddingHorizontal: 16,

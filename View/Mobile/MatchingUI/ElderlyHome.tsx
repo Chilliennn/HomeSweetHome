@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, ImageSourcePropType, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { observer } from 'mobx-react-lite';
-import { elderMatchingViewModel, communicationViewModel } from '@home-sweet-home/viewmodel';
+import { elderMatchingViewModel } from '@home-sweet-home/viewmodel';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTabNavigation, getAvatarDisplay } from '@/hooks';
 import {
@@ -98,6 +98,9 @@ export const ElderlyHome: React.FC<ElderlyHomeProps> = observer(({
   // ✅ Use unreadNotificationCount for bell icon (all notifications)
   const notificationBellCount = vm.unreadNotificationCount;
   
+  // ✅ Disable memory and diary tabs if no active relationship (not in bonding stage)
+  const disabledTabs = vm.hasActiveRelationship ? [] : ['memory', 'diary'];
+  
   console.log('🔵 [ElderlyHome] Rendering - pendingInterests:', pendingInterestCount, 'totalNotifications:', notificationBellCount);
   // How it works items
   const howItWorksItems = [
@@ -170,7 +173,7 @@ export const ElderlyHome: React.FC<ElderlyHomeProps> = observer(({
 
         {/* Journey Progress Dropdown */}
         <JourneyProgressDropdown
-          currentStep={communicationViewModel.currentJourneyStep}
+          currentStep={vm.currentJourneyStep}
           steps={ELDERLY_JOURNEY_STEPS}
           currentDescription="Waiting for youth to express interest"
           nextDescription="Review & decide to connect"
@@ -219,6 +222,7 @@ export const ElderlyHome: React.FC<ElderlyHomeProps> = observer(({
         tabs={DEFAULT_TABS}
         activeTab={activeTab}
         onTabPress={onTabPress || (() => { })}
+        disabledTabs={disabledTabs}
       />
     </SafeAreaView>
   )

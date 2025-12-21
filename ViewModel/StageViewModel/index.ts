@@ -276,8 +276,8 @@ export class StageViewModel {
           `[Realtime] Stage completed: ${this.previousStage} → ${newData.current_stage}`
         );
 
-        // Don't navigate to journey-completed when entering family_life
-        // Navigation will be triggered by handleRealtimeActivityChange when all activities are completed
+        // Show stage-completed modal for ALL stage transitions (including Stage 3 → Stage 4)
+        // Journey-completed will be triggered separately by handleRealtimeActivityChange when all Stage 4 activities are done
         runInAction(() => {
           this.shouldNavigateToStageCompleted = true;
         });

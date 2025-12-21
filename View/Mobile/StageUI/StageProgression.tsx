@@ -274,6 +274,57 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
               ))}
             </View>
 
+            {/* AI Suggestions Section - Show after stage circles when journey is completed */}
+            {isJourneyCompleted && (
+              <>
+                <View style={styles.aiBanner}>
+                  <Text style={{ fontSize: 20 }}>🤖</Text>
+                  <Text style={styles.aiBannerText}>
+                    Based on your diaries and interests!
+                  </Text>
+                </View>
+
+                {vm.aiSuggestions.map((suggestion, index) => (
+                  <View
+                    key={suggestion.id}
+                    style={[
+                      styles.aiCard,
+                      {
+                        backgroundColor:
+                          index % 2 === 0 ? "#9DE2D0" : "#D4E5AE",
+                      },
+                    ]}
+                  >
+                    <View style={styles.aiBadge}>
+                      <Text style={styles.aiBadgeText}>✨ AI Recommended</Text>
+                    </View>
+                    <Text style={styles.aiCardTitle}>
+                      {suggestion.activity_title}
+                    </Text>
+                    <Text style={styles.aiCardDescription}>
+                      {suggestion.activity_description}
+                    </Text>
+                    <TouchableOpacity
+                      style={styles.useIdeaButton}
+                      onPress={() => vm.useAISuggestion(suggestion)}
+                    >
+                      <Text style={styles.useIdeaText}>Use This Idea</Text>
+                    </TouchableOpacity>
+                  </View>
+                ))}
+
+                <TouchableOpacity
+                  style={styles.generateButton}
+                  onPress={() => vm.generateNewIdeas()}
+                  disabled={vm.isLoading}
+                >
+                  <Text style={styles.generateButtonText}>
+                    {vm.isLoading ? "Generating..." : "Generate New Activities"}
+                  </Text>
+                </TouchableOpacity>
+              </>
+            )}
+
             {/* Error Display */}
             {vm.error && (
               <View style={styles.errorContainer}>
@@ -418,57 +469,6 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
                   </Text>
                 ))}
               </View>
-            )}
-
-            {/* AI Suggestions Section - Only show when journey is completed */}
-            {isJourneyCompleted && (
-              <>
-                <View style={styles.aiBanner}>
-                  <Text style={{ fontSize: 20 }}>🤖</Text>
-                  <Text style={styles.aiBannerText}>
-                    Based on your diaries and interests!
-                  </Text>
-                </View>
-
-                {vm.aiSuggestions.map((suggestion, index) => (
-                  <View
-                    key={suggestion.id}
-                    style={[
-                      styles.aiCard,
-                      {
-                        backgroundColor:
-                          index % 2 === 0 ? "#9DE2D0" : "#D4E5AE",
-                      },
-                    ]}
-                  >
-                    <View style={styles.aiBadge}>
-                      <Text style={styles.aiBadgeText}>✨ AI Recommended</Text>
-                    </View>
-                    <Text style={styles.aiCardTitle}>
-                      {suggestion.activity_title}
-                    </Text>
-                    <Text style={styles.aiCardDescription}>
-                      {suggestion.activity_description}
-                    </Text>
-                    <TouchableOpacity
-                      style={styles.useIdeaButton}
-                      onPress={() => vm.useAISuggestion(suggestion)}
-                    >
-                      <Text style={styles.useIdeaText}>Use This Idea</Text>
-                    </TouchableOpacity>
-                  </View>
-                ))}
-
-                <TouchableOpacity
-                  style={styles.generateButton}
-                  onPress={() => vm.generateNewIdeas()}
-                  disabled={vm.isLoading}
-                >
-                  <Text style={styles.generateButtonText}>
-                    {vm.isLoading ? "Generating..." : "Generate New Activities"}
-                  </Text>
-                </TouchableOpacity>
-              </>
             )}
           </ScrollView>
 

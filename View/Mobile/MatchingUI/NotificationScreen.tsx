@@ -4,7 +4,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { observer } from 'mobx-react-lite';
 import { elderMatchingViewModel, youthMatchingViewModel, matchingViewModel } from '@home-sweet-home/viewmodel';
-import { notificationRepository } from '@home-sweet-home/model';
 import { NotificationItem, LoadingSpinner } from '@/components/ui';
 import { Colors } from '@/constants/theme';
 
@@ -33,11 +32,9 @@ const formatDate = (dateString: string) => {
 const mapNotificationType = (dbType: string): 'interest_sent' | 'interest_declined' | 'interest_accepted' | 'interest_received' | 'application_submitted' | 'message' | 'reminder' | 'system' => {
     const typeMap: Record<string, any> = {
         'interest_sent': 'interest_sent',
-        'new_interest': 'interest_received',          // DB: new_interest -> UI: interest_received
-        'interest_received': 'interest_received',
+        'new_interest': 'interest_received',          
         'interest_accepted': 'interest_accepted',
-        'interest_rejected': 'interest_declined',     // DB: interest_rejected -> UI: interest_declined
-        'interest_declined': 'interest_declined',
+        'interest_rejected': 'interest_declined',    
         'application_submitted': 'application_submitted',
         'new_message': 'message',
         'calendar_reminder': 'reminder',
@@ -75,8 +72,11 @@ export const NotificationScreen = observer(() => {
                 youthVM.loadNotifications(currentUserId);
             }
 
-            // Load general notifications (calendar, memories, etc.)
-            loadGeneralNotifications(currentUserId);
+            // ✅ Load general notifications via ViewModel
+            loadGeneralNotifications();
+            
+            // ✅ Mark all as read when entering page
+            markAllAsRead();
         }
         return () => {
             if (isElderly) {
@@ -87,13 +87,12 @@ export const NotificationScreen = observer(() => {
         };
     }, [isElderly, currentUserId]);
 
-    // Load general notifications from notifications table
-    const loadGeneralNotifications = async (userId: string) => {
+    // ✅ Load general notifications via ViewModel (MVVM compliant)
+    const loadGeneralNotifications = async () => {
         setIsLoadingGeneral(true);
         try {
-            console.log('[NotificationScreen] Loading general notifications for user:', userId);
-            const notifications = await notificationRepository.getNotifications(userId, 50);
-            console.log('[NotificationScreen] All notifications:', notifications.length);
+            const vm = isElderly ? matchVM : youthVM;
+            const notifications = await vm.getGeneralNotifications();
             setGeneralNotifications(notifications);
         } catch (error) {
             console.error('[NotificationScreen] Failed to load general notifications:', error);
@@ -102,34 +101,38 @@ export const NotificationScreen = observer(() => {
         }
     };
 
-    // Setup real-time subscription for general notifications
+    // ✅ Mark all notifications as read via ViewModel (MVVM compliant)
+    const markAllAsRead = async () => {
+        try {
+            const vm = isElderly ? matchVM : youthVM;
+            await vm.markAllNotificationsAsRead();
+            console.log('[NotificationScreen] ✅ All notifications marked as read');
+        } catch (error) {
+            console.error('[NotificationScreen] Failed to mark all as read:', error);
+        }
+    };
+
+    // Setup real-time subscription for general notifications via ViewModel
     useEffect(() => {
         if (!currentUserId) return;
 
-        const subscription = notificationRepository.subscribeToNotifications(
-            currentUserId,
-            (notification) => {
-                console.log('[NotificationScreen] New notification received:', notification);
-                loadGeneralNotifications(currentUserId);
-            }
-        );
+        const vm = isElderly ? matchVM : youthVM;
+        // ✅ Subscribe via ViewModel (MVVM compliant)
+        const subscription = vm.subscribeToGeneralNotifications((notification) => {
+            console.log('[NotificationScreen] New notification received:', notification);
+            loadGeneralNotifications();
+        });
 
         return () => {
-            notificationRepository.unsubscribe(subscription);
+            // ✅ Unsubscribe via ViewModel
+            vm.unsubscribeFromNotifications(subscription);
         };
-    }, [currentUserId]);
+    }, [currentUserId, isElderly]);
 
-    // Mark notification as read when tapped
+    // Mark notification as read when tapped (deprecated - auto mark all on page load)
     const handleNotificationPress = async (notificationId: string) => {
-        try {
-            await notificationRepository.markAsRead(notificationId);
-            // Update local state to reflect the change
-            setGeneralNotifications(prev =>
-                prev.map(n => n.id === notificationId ? { ...n, is_read: true } : n)
-            );
-        } catch (error) {
-            console.error('[NotificationScreen] Failed to mark as read:', error);
-        }
+        // No action needed - all marked as read on page load
+        console.log('[NotificationScreen] Notification tapped:', notificationId);
     };
 
     // Accept interest (elderly action)
@@ -176,11 +179,14 @@ export const NotificationScreen = observer(() => {
         );
     };
 
-    // Delete general notification
+    // ✅ Delete general notification via ViewModel (MVVM compliant)
     const handleDeleteNotification = async (notificationId: string) => {
         try {
-            await notificationRepository.deleteNotification(notificationId);
-            setGeneralNotifications(prev => prev.filter(n => n.id !== notificationId));
+            const vm = isElderly ? matchVM : youthVM;
+            await vm.deleteNotification(notificationId);
+            // Reload to update UI
+            loadGeneralNotifications();
+            console.log('[NotificationScreen] Notification deleted:', notificationId);
         } catch (error) {
             console.error('[NotificationScreen] Failed to delete notification:', error);
             Alert.alert('Error', 'Failed to delete notification');

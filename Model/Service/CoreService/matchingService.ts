@@ -56,18 +56,35 @@ export const matchingService = {
         }
 
         // Match location
-        if (youthProfile.location && elderlyProfile.location) {
-            if (youthProfile.location.toLowerCase() === elderlyProfile.location.toLowerCase()) {
-                score += MATCH_SCORE_WEIGHTS.SAME_LOCATION;
-            }
+        const youthLocation = youthProfile.location?.toLowerCase() || '';
+        const elderlyLocation = elderlyProfile.location?.toLowerCase() || '';
+        const locationMatch = youthLocation && elderlyLocation && youthLocation === elderlyLocation;
+        if (locationMatch) {
+            score += MATCH_SCORE_WEIGHTS.SAME_LOCATION;
         }
 
+        // Detailed scoring breakdown for debugging
+        const matchedInterests = youthInterests.filter(i => elderlyInterests.includes(i));
+        const matchedLanguages = youthLanguages.filter(l => elderlyLanguages.includes(l));
+        
         console.log('🎯 Match Score:', {
             elderly: elderlyProfile.full_name,
-            score,
-            youthInterests,
-            elderlyInterests,
-            matchedInterests: youthInterests.filter(i => elderlyInterests.includes(i))
+            totalScore: score,
+            breakdown: {
+                interests: `${matchedInterests.length} matched × 10 = ${matchedInterests.length * MATCH_SCORE_WEIGHTS.SAME_INTEREST}`,
+                languages: `${matchedLanguages.length} matched × 15 = ${matchedLanguages.length * MATCH_SCORE_WEIGHTS.SAME_LANGUAGE}`,
+                location: locationMatch ? `✓ same (${youthLocation}) × 20 = 20` : `✗ different (${youthLocation} ≠ ${elderlyLocation})`,
+            },
+            details: {
+                youthInterests,
+                elderlyInterests,
+                matchedInterests,
+                youthLanguages,
+                elderlyLanguages,
+                matchedLanguages,
+                youthLocation,
+                elderlyLocation,
+            }
         });
 
         return score;
@@ -257,18 +274,9 @@ export const matchingService = {
             );
             console.log('[Service] Welcome message created');
         } else {
-            // Notify youth of rejection
-            const elderlyName = updatedApplication.elderly?.full_name || 'An Elderly';
-            console.log('[Service] Creating rejection notification for youth:', youthId);
-            await notificationRepository.createNotification({
-                user_id: youthId,
-                type: 'interest_rejected',
-                title: 'Interest Update',
-                message: `${elderlyName} has declined your interest. Keep browsing for other matches!`,
-                reference_id: interestId,
-                reference_table: 'applications',
-            });
-            console.log('[Service] Rejection notification created');
+            // ✅ Decline: DB trigger handles notification creation automatically
+            // No need to manually create notification here (prevents duplicates)
+            console.log('[Service] Interest declined - notification will be created by DB trigger');
         }
     },
     /**

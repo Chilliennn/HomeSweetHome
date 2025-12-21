@@ -182,10 +182,56 @@ export class ElderMatchingViewModel {
     }
 
     /**
+     * Subscribe to real-time general notifications
+     * Returns subscription that can be cleaned up
+     */
+    subscribeToGeneralNotifications(onNotification: (notification: any) => void): any {
+        if (!this.currentUserId) return null;
+        return notificationService.subscribeToNotifications(
+            this.currentUserId,
+            onNotification
+        );
+    }
+
+    /**
+     * Unsubscribe from real-time notifications
+     */
+    unsubscribeFromNotifications(subscription: any): void {
+        if (subscription) {
+            notificationService.unsubscribe(subscription);
+        }
+    }
+
+    /**
      * Reset notification count (call when user visits notification screen)
      */
     resetNotificationCount() {
         this.unreadNotificationCount = 0;
+    }
+
+    /**
+     * Get general notifications (calendar, system messages, etc.)
+     */
+    async getGeneralNotifications(): Promise<any[]> {
+        if (!this.currentUserId) return [];
+        return await notificationService.getGeneralNotifications(this.currentUserId);
+    }
+
+    /**
+     * Mark all notifications as read (called when entering notification screen)
+     */
+    async markAllNotificationsAsRead(): Promise<void> {
+        if (!this.currentUserId) return;
+        await notificationService.markAllNotificationsAsRead(this.currentUserId);
+        // Reset bell icon count
+        this.resetNotificationCount();
+    }
+
+    /**
+     * Delete a notification
+     */
+    async deleteNotification(notificationId: string): Promise<void> {
+        await notificationService.deleteNotification(notificationId);
     }
 
     /**

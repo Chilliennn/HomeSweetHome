@@ -5,7 +5,7 @@ import React, { useState, useEffect } from "react";
 import { observer } from 'mobx-react-lite';
 import { SentimentAnalysisViewModel } from '@home-sweet-home/viewmodel';
 import { relationshipRepository } from '@home-sweet-home/model';
-import type { Relationship as DBRelationship } from '@home-sweet-home/model';
+
 import { Line, Bar } from 'react-chartjs-2';
 import {
     Chart as ChartJS,

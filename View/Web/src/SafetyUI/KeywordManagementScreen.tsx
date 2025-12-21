@@ -27,7 +27,7 @@ const CATEGORY_ICONS: { [name: string]: string } = {
     "Abuse & Harassment": "🚫"
 };
 
-export const KeywordManagementScreen: React.FC<Props> = observer(({ vm, onNavigate }) => {
+export const KeywordManagementScreen: React.FC<Props> = observer(({ vm }) => {
     const [activeTab, setActiveTab] = useState<'new' | 'current'>('new');
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
@@ -48,7 +48,7 @@ export const KeywordManagementScreen: React.FC<Props> = observer(({ vm, onNaviga
         };
 
         vm.activeKeywords.forEach(kw => {
-            const categoryName = CATEGORY_MAP[kw.category_id] || "Financial Exploitation";
+            const categoryName = kw.category || "Financial Exploitation";
             if (grouped[categoryName]) {
                 grouped[categoryName].push({
                     id: kw.id,
@@ -294,9 +294,7 @@ export const KeywordManagementScreen: React.FC<Props> = observer(({ vm, onNaviga
                                             category: category,
                                             severity: kw.severity as 'low' | 'medium' | 'high' | 'critical',
                                             is_active: true,
-                                            created_at: '',
-                                            updated_at: '',
-                                            category_id: Object.keys(CATEGORY_MAP).find(k => CATEGORY_MAP[k] === category) || '1'
+                                            created_at: new Date().toISOString()
                                         })}
                                         onDeleteKeyword={(kw) => vm.setModalState("delete", {
                                             id: kw.id,
@@ -304,9 +302,7 @@ export const KeywordManagementScreen: React.FC<Props> = observer(({ vm, onNaviga
                                             category: category,
                                             severity: kw.severity as 'low' | 'medium' | 'high' | 'critical',
                                             is_active: true,
-                                            created_at: '',
-                                            updated_at: '',
-                                            category_id: Object.keys(CATEGORY_MAP).find(k => CATEGORY_MAP[k] === category) || '1'
+                                            created_at: new Date().toISOString()
                                         })}
                                     />
                                 ))}
@@ -326,7 +322,7 @@ export const KeywordManagementScreen: React.FC<Props> = observer(({ vm, onNaviga
                 <EditKeywordModal
                     isOpen={vm.activeModal === "edit"}
                     onClose={() => vm.setModalState(null)}
-                    keyword={vm.selectedKeyword}
+                    keyword={vm.selectedKeyword as any}
                     onUpdate={handleEditKeyword}
                     isMutating={vm.isMutating}
                 />
@@ -334,7 +330,7 @@ export const KeywordManagementScreen: React.FC<Props> = observer(({ vm, onNaviga
                 <DeleteKeywordModal
                     isOpen={vm.activeModal === "delete"}
                     onClose={() => vm.setModalState(null)}
-                    keyword={vm.selectedKeyword}
+                    keyword={vm.selectedKeyword as any}
                     onDelete={handleDeleteKeyword}
                     isMutating={vm.isMutating}
                 />

@@ -1,4 +1,4 @@
-import { makeAutoObservable } from 'mobx';
+import { makeAutoObservable, runInAction } from 'mobx';
 import { supabase } from '../../Model/Service/APIService/supabase';
 
 // Define KeywordRecord type locally (matches database schema)
@@ -79,7 +79,7 @@ export class KeywordManagementViewModel {
 
             if (error) throw error;
 
-            this.activeKeywords = (data || []).map((row: any) => {
+            const mappedKeywords = (data || []).map((row: any) => {
                 // Map category_id to category name
                 const categoryId = String(row.category_id || '1');
                 const categoryName = categoryIdToName[categoryId] || row.category || 'Financial Exploitation';
@@ -96,13 +96,19 @@ export class KeywordManagementViewModel {
                 };
             });
 
-            // Update stats after loading
-            this.updateStats();
+            runInAction(() => {
+                this.activeKeywords = mappedKeywords;
+                this.updateStats();
+            });
         } catch (error) {
             console.error('[KeywordManagementVM] Error loading keywords:', error);
-            this.errorMessage = error instanceof Error ? error.message : 'Failed to load keywords';
+            runInAction(() => {
+                this.errorMessage = error instanceof Error ? error.message : 'Failed to load keywords';
+            });
         } finally {
-            this.isLoading = false;
+            runInAction(() => {
+                this.isLoading = false;
+            });
         }
     }
 
@@ -118,7 +124,7 @@ export class KeywordManagementViewModel {
 
             if (error) throw error;
 
-            this.suggestions = (data || []).map((row: any) => ({
+            const mappedSuggestions = (data || []).map((row: any) => ({
                 id: row.id,
                 keyword: row.keyword,
                 category: row.category || 'Financial Exploitation',
@@ -126,13 +132,19 @@ export class KeywordManagementViewModel {
                 detectionSummary: row.detection_summary || `Detected ${row.detection_count || 0} times`
             }));
 
-            // Update stats after loading
-            this.updateStats();
+            runInAction(() => {
+                this.suggestions = mappedSuggestions;
+                this.updateStats();
+            });
         } catch (error) {
             console.error('[KeywordManagementVM] Error loading suggestions:', error);
-            this.errorMessage = error instanceof Error ? error.message : 'Failed to load suggestions';
+            runInAction(() => {
+                this.errorMessage = error instanceof Error ? error.message : 'Failed to load suggestions';
+            });
         } finally {
-            this.isLoading = false;
+            runInAction(() => {
+                this.isLoading = false;
+            });
         }
     }
 

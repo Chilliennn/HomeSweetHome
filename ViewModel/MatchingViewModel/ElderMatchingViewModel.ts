@@ -49,18 +49,40 @@ export class ElderMatchingViewModel {
     }
 
     /**
-     * Check if user has active relationship (for tab enabling/disabling)
+     * Check if user has active relationship (for tab enabling/disabling and journey step)
      */
     async checkActiveRelationship(userId: string): Promise<void> {
         try {
+            const { communicationService } = await import('@home-sweet-home/model');
             const relationship = await relationshipService.getActiveRelationship(userId);
+            
+            // Get active pre-match chats to determine journey step
+            const preMatchChats = await communicationService.getActivePreMatchChats(userId, 'elderly');
+            
             runInAction(() => {
                 this.hasActiveRelationship = relationship !== null;
+                
+                // Update journey step based on status
+                // 1 = Wait, 2 = Pre-match, 3 = Review (approved by admin), 4 = Bonding
+                if (relationship !== null) {
+                    // In bonding stage - but this should redirect to bonding home, not show this page
+                    this.currentJourneyStep = 4;
+                } else if (preMatchChats.some(chat => chat.application.status === 'approved')) {
+                    // Admin approved - elderly needs to review
+                    this.currentJourneyStep = 3;
+                } else if (preMatchChats.length > 0) {
+                    // Has active pre-match chats (pre_chat_active or pending_review)
+                    this.currentJourneyStep = 2;
+                } else {
+                    // Waiting for interest
+                    this.currentJourneyStep = 1;
+                }
             });
         } catch (error) {
             console.error('[ElderMatchingViewModel] Error checking active relationship:', error);
             runInAction(() => {
                 this.hasActiveRelationship = false;
+                this.currentJourneyStep = 1;
             });
         }
     }

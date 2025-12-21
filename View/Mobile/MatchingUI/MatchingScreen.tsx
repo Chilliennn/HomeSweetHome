@@ -220,6 +220,7 @@ export const MatchingScreenComponent = observer(
               displayName={userName}
               onTabPress={handleTabPress}
               activeTab={activeTab}
+              onLearnMorePress={handleLearnMorePress}
             />
           );
         }

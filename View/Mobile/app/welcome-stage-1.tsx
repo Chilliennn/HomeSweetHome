@@ -19,9 +19,9 @@ export default function WelcomeStage1Screen() {
         || 'Your Partner';
 
     const handleStartJourney = () => {
-        console.log('[WelcomeStage1] Start Journey pressed, navigating to home...');
-        // Navigate to main home page (which will show StageProgression for relationship users)
-        router.replace('/(main)/home' as any);
+        console.log('[WelcomeStage1] Start Journey pressed, navigating to bonding...');
+        // Navigate to bonding/stage progression page (which shows StageProgression for relationship users)
+        router.replace('/(main)/bonding' as any);
     };
 
     return (

@@ -134,11 +134,6 @@ export const JourneyWalkthrough: React.FC<JourneyWalkthroughProps> = ({
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
       <View style={styles.container}>
-        {/* Skip Button */}
-        <TouchableOpacity style={styles.skipButton} onPress={handleSkip}>
-          <Text style={styles.skipText}>Skip</Text>
-        </TouchableOpacity>
-
         {/* Content */}
         <View style={styles.content}>
           {/* Icon - emoji for first screen, number for others */}

@@ -50,6 +50,10 @@ interface NotificationItemProps {
     location?: string;
     interests?: string[];
     motivation?: string;
+    /** Avatar data for profile photo */
+    avatarIcon?: string;
+    avatarImageSource?: { uri: string };
+    avatarColor?: string;
   };
   /** Action handlers for interest notifications */
   actions?: {
@@ -200,9 +204,11 @@ export const NotificationItem: React.FC<NotificationItemProps> = ({
             {/* Profile Section */}
             <View style={styles.profileRow}>
               <IconCircle
-                icon="👤"
+                icon={expandedContent.avatarIcon}
+                imageSource={expandedContent.avatarImageSource}
                 size={60}
-                backgroundColor={Colors.light.secondary}
+                backgroundColor={expandedContent.avatarColor || Colors.light.secondary}
+                contentScale={0.65}
               />
               <View style={styles.profileInfo}>
                 <Text style={styles.profileName}>{expandedContent.profileName}</Text>

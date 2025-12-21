@@ -51,8 +51,18 @@ export const ChatListHub = observer(function ChatListHub() {
       const loadData = async () => {
         console.log('[ChatListHub] loadData START');
         await vm.loadActiveChats();
-        vm.checkActiveRelationship();
-        console.log('[ChatListHub] loadData COMPLETE - setting isLoadingFresh=false');
+        await vm.checkActiveRelationship();
+        console.log('[ChatListHub] loadData COMPLETE - hasActiveRelationship:', vm.hasActiveRelationship);
+        
+        // Check if should redirect to relationship chat IMMEDIATELY after loading
+        if (vm.hasActiveRelationship && vm.currentRelationship && !hasRedirectedToRelationship.current) {
+          hasRedirectedToRelationship.current = true;
+          console.log('[ChatListHub] Redirecting to relationship chat immediately');
+          router.replace(`/(main)/chat?relationshipId=${vm.currentRelationship.id}`);
+          return; // Don't set isLoadingFresh to false, keep showing loading until redirect
+        }
+        
+        console.log('[ChatListHub] No relationship, setting isLoadingFresh=false');
         setIsLoadingFresh(false);
       };
       loadData();
@@ -102,6 +112,7 @@ export const ChatListHub = observer(function ChatListHub() {
   }, [isLoadingFresh, vm.hasActiveRelationship, currentUserType]);
 
   // ✅ Show loading while fetching fresh data
+  // After loading, redirect logic will run if needed before rendering PreMatchChatList
   if (isLoadingFresh) {
     return (
       <View style={styles.loadingContainer}>

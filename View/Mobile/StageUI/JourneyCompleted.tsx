@@ -14,16 +14,20 @@ import { Colors } from "@/constants/theme";
 import { Button } from "../components/ui/Button";
 import { Ionicons } from "@expo/vector-icons";
 
-export const JourneyCompletedScreen = observer(() => {
+interface JourneyCompletedScreenProps {
+  userId: string;
+}
+
+export const JourneyCompletedScreen = observer(({ userId }: JourneyCompletedScreenProps) => {
   const router = useRouter();
 
   useEffect(() => {
-    vm.loadJourneyStats();
-  }, []);
+    if (userId) {
+      vm.loadJourneyStats();
+    }
+  }, [userId]);
 
   const handleContinue = () => {
-    const userId = vm.currentUserId;
-    
     if (!userId) {
       console.error("Cannot navigate: No userId available");
       return;

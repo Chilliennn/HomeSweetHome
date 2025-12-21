@@ -276,23 +276,13 @@ export class StageViewModel {
           `[Realtime] Stage completed: ${this.previousStage} → ${newData.current_stage}`
         );
 
-        // If advanced TO family_life (final stage), navigate to journey-completed instead of stage-completed
-        if (newData.current_stage === "family_life") {
-          console.log(
-            "[Realtime] Advanced to final stage (family_life) - triggering journey completed!"
-          );
-          runInAction(() => {
-            this.shouldNavigateToJourneyCompleted = true;
-          });
-          // Load completion info for the previous stage (official_ceremony)
-          await this.loadStageCompletionInfo(this.previousStage);
-        } else {
-          runInAction(() => {
-            this.shouldNavigateToStageCompleted = true;
-          });
-          // Also load full stage completion info
-          this.loadStageCompletionInfo();
-        }
+        // Don't navigate to journey-completed when entering family_life
+        // Navigation will be triggered by handleRealtimeActivityChange when all activities are completed
+        runInAction(() => {
+          this.shouldNavigateToStageCompleted = true;
+        });
+        // Load full stage completion info
+        this.loadStageCompletionInfo();
       } else if (prevIndex !== -1 && newIndex !== -1 && newIndex < prevIndex) {
         console.log(
           "[Realtime] Stage moved backward - skipping completion page"

@@ -178,13 +178,7 @@ const SettingsScreenComponent: React.FC = () => {
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       {/* Header */}
       <View style={styles.header}>
-        <NotificationBell
-          count={0}
-          onPress={handleNotificationBellPress}
-          size={48}
-        />
         <Text style={styles.headerTitle}>Settings</Text>
-        <View style={styles.headerRight} />
       </View>
 
       {isLoading ? (
@@ -374,13 +368,10 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
+    justifyContent: 'center',
+    paddingHorizontal: 18,
     paddingTop: 12,
     paddingBottom: 12,
-  },
-  headerRight: {
-    width: 48,
   },
   headerTitle: {
     fontSize: 20,

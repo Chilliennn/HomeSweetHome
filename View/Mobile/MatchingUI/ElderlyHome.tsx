@@ -25,6 +25,8 @@ interface ElderlyHomeProps {
   currentStep?: number;
   onTabPress?: (tabKey: string) => void;
   activeTab?: string;
+  /** Called when "Learn more" about journey is pressed */
+  onLearnMorePress?: () => void;
 }
 
 // ============================================================================
@@ -48,6 +50,7 @@ export const ElderlyHome: React.FC<ElderlyHomeProps> = observer(({
   currentStep = 1,
   onTabPress,
   activeTab: propActiveTab,
+  onLearnMorePress,
 }) => {
   const router = useRouter();
   const vm = elderMatchingViewModel;
@@ -177,7 +180,7 @@ export const ElderlyHome: React.FC<ElderlyHomeProps> = observer(({
           steps={ELDERLY_JOURNEY_STEPS}
           currentDescription="Waiting for youth to express interest"
           nextDescription="Review & decide to connect"
-          onLearnMore={() => { }}
+          onLearnMore={onLearnMorePress}
           style={styles.journeyDropdown}
         />
 
@@ -221,7 +224,7 @@ export const ElderlyHome: React.FC<ElderlyHomeProps> = observer(({
       <BottomTabBar
         tabs={DEFAULT_TABS}
         activeTab={activeTab}
-        onTabPress={onTabPress || (() => { })}
+        onTabPress={handleTabPress}
         disabledTabs={disabledTabs}
       />
     </SafeAreaView>

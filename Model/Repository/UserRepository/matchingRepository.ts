@@ -42,11 +42,11 @@ export const matchingRepository = {
         const limit = filters?.limit;
         const offset = filters?.offset || 0;
 
-    
+        // Get all elderly_id from active or paused relationships (these elderly are already matched)
         const { data: activeRelationships, error: relError } = await supabase
             .from('relationships')
             .select('elderly_id')
-            .eq('status', 'active');
+            .in('status', ['active', 'paused']);
 
         if (relError) throw relError;
         const excludedElderlyIds = (activeRelationships || []).map(r => r.elderly_id);
@@ -229,6 +229,8 @@ export const matchingRepository = {
 
     /**
      * Count active pre-matches for limit checking
+     * Includes: pre_chat_active, pending_review, approved
+     * (All states that occupy a pre-match slot)
      */
     async getActivePreMatchCount(userId: string, userType: 'youth' | 'elderly'): Promise<number> {
         const column = userType === 'youth' ? 'youth_id' : 'elderly_id';
@@ -237,7 +239,7 @@ export const matchingRepository = {
             .from('applications')
             .select('*', { count: 'exact', head: true })
             .eq(column, userId)
-            .eq('status', 'pre_chat_active');
+            .in('status', ['pre_chat_active', 'pending_review', 'approved']);
 
         if (error) throw error;
         return count || 0;

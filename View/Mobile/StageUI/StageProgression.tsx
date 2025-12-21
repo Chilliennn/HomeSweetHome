@@ -223,7 +223,7 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
     )?.is_completed;
 
     return (
-      <SafeAreaView style={styles.safeArea} edges={["top"]}>
+      <SafeAreaView style={styles.safeArea} edges={["top",'bottom']}>
         <View style={styles.container}>
           {/* Header */}
           <View style={styles.header}>

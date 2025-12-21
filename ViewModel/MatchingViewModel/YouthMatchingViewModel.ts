@@ -22,6 +22,12 @@ export class YouthMatchingViewModel {
     // ✅ Unread notification count for bell icon
     unreadNotificationCount: number = 0;
 
+    // ✅ Current journey step for UI display (1 = Browse, updates based on relationship status)
+    currentJourneyStep: number = 1;
+
+    // ✅ Whether user has active relationship (for disabling tabs)
+    hasActiveRelationship: boolean = false;
+
     // Filter and pagination state
     filters: ElderlyFilters = {};
     hasMoreProfiles: boolean = false;
@@ -94,7 +100,35 @@ export class YouthMatchingViewModel {
             this.profiles = [];
             this.activeMatches = [];
             this.expressedElderlyIds.clear();
+            this.hasActiveRelationship = false;
+            this.currentJourneyStep = 1;
         });
+    }
+
+    /**
+     * Check if user has active relationship (for tab enabling/disabling and journey step)
+     */
+    async checkActiveRelationship(userId: string): Promise<void> {
+        try {
+            const { relationshipService } = await import('@home-sweet-home/model');
+            const relationship = await relationshipService.getActiveRelationship(userId);
+            runInAction(() => {
+                this.hasActiveRelationship = relationship !== null;
+                // Update journey step based on relationship status
+                // 1 = Browse, 2 = Pre-match, 3 = Review, 4 = Bonding
+                if (relationship !== null) {
+                    this.currentJourneyStep = 4; // In bonding stage
+                } else {
+                    this.currentJourneyStep = 1; // Still browsing
+                }
+            });
+        } catch (error) {
+            console.error('[YouthMatchingViewModel] Error checking active relationship:', error);
+            runInAction(() => {
+                this.hasActiveRelationship = false;
+                this.currentJourneyStep = 1;
+            });
+        }
     }
 
     /**

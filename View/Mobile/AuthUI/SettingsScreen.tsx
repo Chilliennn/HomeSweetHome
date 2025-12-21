@@ -45,6 +45,8 @@ const SettingsScreenComponent: React.FC = () => {
         await authViewModel.loadProfile(userId);
         // Load full user object for profile_photo_url
         await authViewModel.getCurrentUser(userId);
+        // Check active relationship status for tab disabling
+        await authViewModel.checkActiveRelationship(userId);
         setIsLoading(false);
       }
     };
@@ -168,6 +170,9 @@ const SettingsScreenComponent: React.FC = () => {
       params: { userId, userName, userType },
     });
   };
+
+  // ✅ Disable memory and diary tabs if no active relationship (not in bonding stage)
+  const disabledTabs = authViewModel.hasActiveRelationship ? [] : ['memory', 'diary'];
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
@@ -351,6 +356,7 @@ const SettingsScreenComponent: React.FC = () => {
         tabs={DEFAULT_TABS}
         activeTab="settings"
         onTabPress={handleTabPress}
+        disabledTabs={disabledTabs}
       />
     </SafeAreaView>
   );

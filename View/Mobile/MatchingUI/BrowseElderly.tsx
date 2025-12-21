@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { observer } from 'mobx-react-lite';
-import { youthMatchingViewModel, communicationViewModel } from '@home-sweet-home/viewmodel';
+import { youthMatchingViewModel } from '@home-sweet-home/viewmodel';
 import { User } from '@home-sweet-home/model';
 import { useTabNavigation, getAvatarDisplay } from '@/hooks';
 import {
@@ -44,37 +44,6 @@ interface BrowseElderlyProps {
   notificationCount?: number;
 }
 
-// Tabs that are disabled (no function yet)
-const DISABLED_TABS = ['diary', 'memory'];
-
-// FIXED: Helper to map User -> Display Data with proper avatar handling
-const mapUserToProfile = (user: User) => {
-  // Priority: profile_photo_url (real photo) > preset avatar from avatar_meta
-  const hasRealPhoto = !!user.profile_photo_url;
-  // Use user's actual user_type to get correct emoji/image arrays
-  // Filter out 'admin' type and cast to 'youth' | 'elderly'
-  const userTypeForAvatar: 'youth' | 'elderly' = 
-    user.user_type === 'youth' || user.user_type === 'elderly' 
-      ? user.user_type 
-      : 'elderly';
-  
-  const avatarConfig = hasRealPhoto 
-    ? { icon: undefined, imageSource: { uri: user.profile_photo_url! }, backgroundColor: '#9DE2D0' }
-    : getAvatarDisplay(user.profile_data, userTypeForAvatar);
-  
-  return {
-    id: user.id,
-    name: user.full_name || 'Anonymous',  // FIXED: Only use full_name
-    age: user.profile_data?.verified_age || '60+',
-    location: user.location || 'Unknown',
-    // Avatar properties: real photo OR preset avatar
-    avatarIcon: avatarConfig.icon,
-    avatarImageSource: avatarConfig.imageSource,
-    avatarColor: avatarConfig.backgroundColor,
-    interests: (user.profile_data?.interests || []).map(i => ({ label: i, color: Colors.light.secondary })),
-  };
-};
-
 export const BrowseElderly: React.FC<BrowseElderlyProps> = observer(({
   onNotificationPress,
   onFilterPress,
@@ -92,6 +61,9 @@ export const BrowseElderly: React.FC<BrowseElderlyProps> = observer(({
   // Filter modal state
   const [showFilterModal, setShowFilterModal] = useState(false);
 
+  // ✅ Disable memory and diary tabs if no active relationship (not in bonding stage)
+  const disabledTabs = vm.hasActiveRelationship ? [] : ['memory', 'diary'];
+
   // Use activeTab from prop or default to 'matching'
   const activeTab = propActiveTab || 'matching';
 
@@ -104,6 +76,8 @@ export const BrowseElderly: React.FC<BrowseElderlyProps> = observer(({
     if (currentUserId) {
       console.log('✅ [BrowseElderly] UserId available, ViewModel will handle profile loading');
       vm.loadNotifications(currentUserId);
+      // Check active relationship status for tab disabling and journey step
+      vm.checkActiveRelationship(currentUserId);
     } else {
       console.log('⏳ [BrowseElderly] Waiting for userId...');
     }
@@ -114,7 +88,7 @@ export const BrowseElderly: React.FC<BrowseElderlyProps> = observer(({
   }, [currentUserId]);
 
   const handleTabPress = (key: string) => {
-    if (DISABLED_TABS.includes(key)) {
+    if (disabledTabs.includes(key)) {
       return;
     }
     // Use custom handler if provided, otherwise use hook
@@ -133,6 +107,34 @@ export const BrowseElderly: React.FC<BrowseElderlyProps> = observer(({
   }).length;
 
   const notificationCount = propNotificationCount ?? vm.unreadNotificationCount;
+
+  // FIXED: Helper to map User -> Display Data with proper avatar handling
+  const mapUserToProfile = (user: User) => {
+    // Priority: profile_photo_url (real photo) > preset avatar from avatar_meta
+    const hasRealPhoto = !!user.profile_photo_url;
+    // Use user's actual user_type to get correct emoji/image arrays
+    // Filter out 'admin' type and cast to 'youth' | 'elderly'
+    const userTypeForAvatar: 'youth' | 'elderly' = 
+      user.user_type === 'youth' || user.user_type === 'elderly' 
+        ? user.user_type 
+        : 'elderly';
+    
+    const avatarConfig = hasRealPhoto 
+      ? { icon: undefined, imageSource: { uri: user.profile_photo_url! }, backgroundColor: '#9DE2D0' }
+      : getAvatarDisplay(user.profile_data, userTypeForAvatar);
+    
+    return {
+      id: user.id,
+      name: user.full_name || 'Anonymous',  // FIXED: Only use full_name
+      age: user.profile_data?.verified_age || '60+',
+      location: user.location || 'Unknown',
+      // Avatar properties: real photo OR preset avatar
+      avatarIcon: avatarConfig.icon,
+      avatarImageSource: avatarConfig.imageSource,
+      avatarColor: avatarConfig.backgroundColor,
+      interests: (user.profile_data?.interests || []).map(i => ({ label: i, color: Colors.light.secondary })),
+    };
+  };
 
   const renderProfileCard = ({ item }: { item: User }) => {
     const profile = mapUserToProfile(item);
@@ -234,7 +236,7 @@ export const BrowseElderly: React.FC<BrowseElderlyProps> = observer(({
       {/* Journey Progress Dropdown */}
       <View style={styles.journeySection}>
         <JourneyProgressDropdown
-          currentStep={communicationViewModel.currentJourneyStep}
+          currentStep={vm.currentJourneyStep}
           currentDescription="Browse elders to find your match"
           nextDescription="Choose & chat anonymously for 7-14 days"
           onLearnMore={onLearnMorePress}
@@ -281,7 +283,7 @@ export const BrowseElderly: React.FC<BrowseElderlyProps> = observer(({
         tabs={DEFAULT_TABS}
         activeTab={activeTab}
         onTabPress={handleTabPress}
-        disabledTabs={DISABLED_TABS}
+        disabledTabs={disabledTabs}
       />
     </SafeAreaView>
   );

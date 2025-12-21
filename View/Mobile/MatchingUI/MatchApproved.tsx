@@ -23,7 +23,7 @@ import {
 import { observer } from 'mobx-react-lite';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Card, IconCircle, Button, Chip } from '../components/ui';
-import { youthMatchingViewModel, communicationViewModel } from '@home-sweet-home/viewmodel';
+import { youthMatchingViewModel } from '@home-sweet-home/viewmodel';
 import { Colors } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -36,7 +36,6 @@ export const MatchApproved = observer(function MatchApproved() {
   const applicationId = params.applicationId as string;
 
   const vm = youthMatchingViewModel;
-  const commVM = communicationViewModel;
   const [isConfirming, setIsConfirming] = useState(false);
   const [application, setApplication] = useState<any>(null);
 

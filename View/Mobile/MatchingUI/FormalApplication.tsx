@@ -22,7 +22,7 @@ import {
 import { observer } from 'mobx-react-lite';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Header, Button, AlertBanner, FormField, Card, IconCircle, SelectModal } from '../components/ui';
-import { youthMatchingViewModel, communicationViewModel } from '@home-sweet-home/viewmodel';
+import { youthMatchingViewModel } from '@home-sweet-home/viewmodel';
 import { Colors } from '@/constants/theme';
 
 // Project icons
@@ -34,7 +34,6 @@ export const FormalApplication = observer(function FormalApplication() {
   const applicationId = params.applicationId as string;
 
   const vm = youthMatchingViewModel;
-  const commVM = communicationViewModel;
 
   // Form state
   const [motivationLetter, setMotivationLetter] = useState('');
@@ -42,6 +41,7 @@ export const FormalApplication = observer(function FormalApplication() {
   const [commitmentLevel, setCommitmentLevel] = useState('');
   const [whatCanOffer, setWhatCanOffer] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [application, setApplication] = useState<any>(null);
 
   // Modal visibility state
   const [showAvailabilityModal, setShowAvailabilityModal] = useState(false);
@@ -61,10 +61,25 @@ export const FormalApplication = observer(function FormalApplication() {
     { label: 'Short-term (1-3 months)', value: 'Short-term (1-3 months)' },
   ];
 
+  // Load application data
+  useEffect(() => {
+    const loadApplication = async () => {
+      try {
+        const data = await vm.getApplicationById(applicationId);
+        setApplication(data);
+      } catch (error) {
+        console.error('Failed to load application:', error);
+      }
+    };
+
+    if (applicationId) {
+      loadApplication();
+    }
+  }, [applicationId]);
+
   // Get application data
-  const chat = commVM.getChatByApplicationId(applicationId);
-  const partner = chat?.partnerUser;
-  const status = commVM.getPreMatchStatus(applicationId);
+  const partner = application?.elderly;
+  const daysPassed = application?.days_passed || 7;
 
   const characterCount = motivationLetter.length;
   const isValid =
@@ -82,9 +97,9 @@ export const FormalApplication = observer(function FormalApplication() {
     console.log('🟢 [View] handleSubmit called, isValid:', isValid);
     if (!isValid) return;
 
-    // Get user ID from communicationViewModel (set during app initialization)
-    const youthId = commVM.currentUser;
-    console.log('🟢 [View] youthId from commVM:', youthId);
+    // Get user ID from youthMatchingViewModel (set during app initialization)
+    const youthId = vm.currentUserId;
+    console.log('🟢 [View] youthId from vm:', youthId);
     if (!youthId) {
       Alert.alert('Error', 'User not logged in');
       return;
@@ -165,11 +180,9 @@ export const FormalApplication = observer(function FormalApplication() {
                 <Text style={styles.partnerName}>
                   For {partner?.full_name || 'your partner'}
                 </Text>
-                {status && (
-                  <Text style={styles.daysText}>
-                    Day {status.daysPassed} of pre-match
-                  </Text>
-                )}
+                <Text style={styles.daysText}>
+                  Day {daysPassed} of pre-match
+                </Text>
               </View>
             </View>
           </Card>

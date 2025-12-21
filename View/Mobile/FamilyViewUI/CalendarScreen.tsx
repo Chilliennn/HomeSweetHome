@@ -23,7 +23,6 @@ import { Header } from '@/components/ui/Header';
  * Allows creating, editing, and deleting events
  * Shows AI recommendations section
  * 
- * FR 3.2.1 - 3.2.13
  */
 export const CalendarScreen = observer(() => {
   const router = useRouter();

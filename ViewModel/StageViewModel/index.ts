@@ -885,7 +885,7 @@ export class StageViewModel {
     if (!this.relationshipId || !this.userId) return;
     this.isLoading = true;
     try {
-      // 1. Create calendar event (FR 3.2.1)
+      // 1. Create calendar event 
       // Use tomorrow's date to ensure it passes the "future date" validation in familyService
       const tomorrow = new Date(Date.now() + 86400000);
       const dateString = tomorrow.toISOString().split("T")[0];

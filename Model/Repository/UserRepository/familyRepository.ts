@@ -27,7 +27,6 @@ export const familyRepository = {
 
   /**
    * Upload media to family album with file storage
-   * FR 3.1.1, 3.1.9
    * 
    * Uploads the actual file to Supabase Storage and stores the public URL
    */
@@ -123,7 +122,6 @@ export const familyRepository = {
 
   /**
    * Get all media for a relationship, organized by date
-   * FR 3.1.3 - organized by date
    */
   async getMediaByRelationship(
     relationship_id: string,
@@ -161,7 +159,6 @@ export const familyRepository = {
 
   /**
    * Update media caption
-   * FR 3.1.4
    */
   async updateMediaCaption(
     id: string,
@@ -180,7 +177,6 @@ export const familyRepository = {
 
   /**
    * Delete media
-   * FR 3.1.2
    */
   async deleteMedia(id: string): Promise<void> {
     const { error } = await supabase
@@ -353,7 +349,6 @@ export const familyRepository = {
 
   /**
    * Delete a memory and all associated media (cascaded via DB constraint)
-   * FR 3.1.2 (batch delete)
    */
   async deleteMemory(id: string): Promise<void> {
     try {
@@ -395,7 +390,6 @@ export const familyRepository = {
 
   /**
    * Create new diary entry
-   * FR 3.3.1, 3.3.4, 3.3.5
    */
   async createDiaryEntry(
     user_id: string,
@@ -422,7 +416,6 @@ export const familyRepository = {
 
   /**
    * Get all diary entries for a user
-   * FR 3.3.1, 3.3.7
    */
   async getDiaryEntriesByUser(
     user_id: string,
@@ -461,7 +454,6 @@ export const familyRepository = {
 
   /**
    * Update diary entry
-   * FR 3.3.1
    */
   async updateDiaryEntry(
     id: string,
@@ -481,7 +473,6 @@ export const familyRepository = {
 
   /**
    * Delete diary entry
-   * FR 3.3.1
    */
   async deleteDiaryEntry(id: string): Promise<void> {
     const { error } = await supabase
@@ -498,7 +489,6 @@ export const familyRepository = {
 
   /**
    * Create calendar event
-   * FR 3.2.1
    */
   async createCalendarEvent(
     relationship_id: string,
@@ -531,7 +521,6 @@ export const familyRepository = {
 
   /**
    * Get all calendar events for a relationship
-   * FR 3.2.4
    */
   async getCalendarEventsByRelationship(
     relationship_id: string
@@ -562,7 +551,6 @@ export const familyRepository = {
 
   /**
    * Update calendar event
-   * FR 3.2.1, 3.2.9
    */
   async updateCalendarEvent(
     id: string,
@@ -589,7 +577,6 @@ export const familyRepository = {
 
   /**
    * Delete calendar event
-   * FR 3.2.1, 3.2.11
    */
   async deleteCalendarEvent(id: string): Promise<void> {
     const { error } = await supabase
@@ -630,7 +617,6 @@ export const familyRepository = {
 
   /**
    * Create AI suggestion
-   * FR 3.4.2, 3.4.4, 3.4.5
    */
   async createAISuggestion(
     relationship_id: string,
@@ -659,7 +645,6 @@ export const familyRepository = {
 
   /**
    * Get recent AI suggestions for a relationship
-   * FR 3.2.5, 3.4.4 (maximum 3 recommendations)
    */
   async getAISuggestions(
     relationship_id: string,
@@ -681,7 +666,6 @@ export const familyRepository = {
 
   /**
    * Mark suggestion as used
-   * FR 3.4.6, 3.4.7
    */
   async markSuggestionAsUsed(id: string): Promise<AISuggestion> {
     const { data, error } = await supabase

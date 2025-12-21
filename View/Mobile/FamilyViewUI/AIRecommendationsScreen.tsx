@@ -23,7 +23,6 @@ import { Header } from '@/components/ui/Header';
  * Allows accepting suggestions to pre-fill event creation
  * Shows up to 3 recommendations
  * 
- * FR 3.2.5, 3.4.1, 3.4.4, 3.4.5, 3.4.6, 3.4.7
  */
 export const AIRecommendationsScreen = observer(() => {
   const router = useRouter();

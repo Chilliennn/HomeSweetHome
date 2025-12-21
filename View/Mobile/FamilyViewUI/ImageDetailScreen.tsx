@@ -25,7 +25,6 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
  * UC-300: Image details and management
  * Shows full image, allows caption editing, download, and removal
  * 
- * FR 3.1.3, 3.1.4, 3.1.7, 3.1.10
  */
 export const ImageDetailScreen = observer(() => {
   const router = useRouter();

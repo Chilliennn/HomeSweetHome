@@ -50,7 +50,7 @@ export const StageCompletedScreen: React.FC<StageCompletedScreenProps> =
       vm.completedStageOrder !== undefined ? vm.completedStageOrder + 2 : 1;
 
     return (
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={styles.safeArea} edges={['top','bottom']}>
         <ScrollView
           contentContainerStyle={styles.content}
           showsVerticalScrollIndicator={false}

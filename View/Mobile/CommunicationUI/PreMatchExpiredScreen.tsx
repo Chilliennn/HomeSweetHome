@@ -68,7 +68,7 @@ export const PreMatchExpiredScreen = observer(function PreMatchExpiredScreen() {
 
     // Handle End - navigate to end confirmation
     const handleEnd = () => {
-        router.push({ pathname: '/end-pre-match', params: { applicationId, fromExpired: 'true' } } as any);
+        router.push({ pathname: '/end-pre-match', params: { applicationId, fromExpired: 'true', userId: params.userId, userName: params.userName, userType: params.userType } } as any);
     };
 
     // Loading state

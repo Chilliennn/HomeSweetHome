@@ -63,7 +63,7 @@ export const PreMatchDecisionScreen = observer(function PreMatchDecisionScreen()
 
     // Handle Decline button - navigate to end confirmation
     const handleDecline = () => {
-        router.push({ pathname: '/end-pre-match', params: { applicationId } } as any);
+        router.push({ pathname: '/end-pre-match', params: { applicationId, userId: params.userId, userName: params.userName, userType: params.userType } } as any);
     };
 
     // Handle back

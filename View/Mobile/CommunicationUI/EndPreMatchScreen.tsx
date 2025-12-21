@@ -12,11 +12,11 @@ import {
     View,
     Text,
     StyleSheet,
-    SafeAreaView,
     TouchableOpacity,
     ActivityIndicator,
     Image,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { observer } from 'mobx-react-lite';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { communicationViewModel } from '@home-sweet-home/viewmodel';
@@ -36,6 +36,9 @@ export const EndPreMatchScreen = observer(function EndPreMatchScreen() {
     const params = useLocalSearchParams();
     const applicationId = params.applicationId as string;
     const fromExpired = params.fromExpired === 'true';
+    const userId = params.userId as string | undefined;
+    const userName = params.userName as string | undefined;
+    const userType = params.userType as 'youth' | 'elderly' | undefined;
     const vm = communicationViewModel;
 
     const [step, setStep] = useState<Step>('confirm');
@@ -83,14 +86,17 @@ export const EndPreMatchScreen = observer(function EndPreMatchScreen() {
     };
 
     const handleDone = () => {
-        // Navigate back to chat list
-        router.replace('/(main)/chat' as any);
+        // Navigate back to chat list with proper params
+        router.replace({
+            pathname: '/(main)/chat' as any,
+            params: { userId, userName, userType },
+        });
     };
 
     // Loading state - only show in confirm step (not in success step)
     if (!chat && step === 'confirm') {
         return (
-            <SafeAreaView style={styles.container}>
+            <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
                 <View style={styles.loadingContainer}>
                     <ActivityIndicator size="large" color={Colors.light.primary} />
                 </View>
@@ -104,7 +110,7 @@ export const EndPreMatchScreen = observer(function EndPreMatchScreen() {
     // Step 2: Success screen (104_4)
     if (step === 'success') {
         return (
-            <SafeAreaView style={styles.container}>
+            <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
                 <View style={styles.content}>
                     {/* Bye-Bye Icon */}
                     <View style={styles.iconContainer}>
@@ -142,7 +148,7 @@ export const EndPreMatchScreen = observer(function EndPreMatchScreen() {
 
     // Step 1: Confirmation screen (104_3)
     return (
-        <SafeAreaView style={styles.container}>
+        <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
             {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity onPress={handleBack} style={styles.backButton}>

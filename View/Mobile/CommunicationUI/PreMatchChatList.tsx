@@ -79,7 +79,7 @@ export const PreMatchChatList = observer(function PreMatchChatList() {
 
   // Handler: End pre-match - navigate to end confirmation
   const handleEnd = (applicationId: string) => {
-    router.push({ pathname: '/end-pre-match', params: { applicationId } } as any);
+    router.push({ pathname: '/end-pre-match', params: { applicationId, userId: currentUserId, userType: currentUserType } } as any);
   };
 
   // Handler: Notification press

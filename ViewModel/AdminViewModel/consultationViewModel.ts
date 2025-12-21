@@ -1,4 +1,4 @@
-import { makeAutoObservable } from 'mobx';
+import { makeAutoObservable, runInAction } from 'mobx';
 import { consultationService } from '../../Model/Service/CoreService/consultationService';
 import type { ConsultationRequest, Advisor, ConsultationStats } from '../../Model/Repository/AdminRepository/adminRepository';
 
@@ -40,7 +40,10 @@ export class ConsultationViewModel {
      */
     async loadStats(): Promise<void> {
         try {
-            this.stats = await consultationService.getConsultationStats();
+            const stats = await consultationService.getConsultationStats();
+            runInAction(() => {
+                this.stats = stats;
+            });
         } catch (error) {
             console.error('Error loading consultation stats:', error);
         }

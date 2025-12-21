@@ -236,6 +236,24 @@ export const ApplicationQueue: React.FC<ApplicationQueueProps> = observer(({ onS
     return `${days}d`;
   };
 
+  // Calculate avg waiting time for filtered applications
+  const getFilteredAvgWaitingTime = (): number => {
+    const apps = adminViewModel.applications;
+    if (!apps || apps.length === 0) return 0;
+
+    const now = new Date().getTime();
+    const totalHours = apps.reduce((sum, app) => {
+      const appliedAt = new Date(app.applied_at).getTime();
+      const diffHours = Math.floor((now - appliedAt) / (1000 * 60 * 60));
+      return sum + diffHours;
+    }, 0);
+
+    return Math.floor(totalHours / apps.length);
+  };
+
+  const filteredAvgWaitingTime = getFilteredAvgWaitingTime();
+
+
   const renderApplicationCard = (app: ApplicationWithProfiles) => {
     // Data binding: reading from ViewModel methods
     const waitingTime = adminViewModel.getWaitingTime(app.applied_at);
@@ -320,9 +338,10 @@ export const ApplicationQueue: React.FC<ApplicationQueueProps> = observer(({ onS
         />
         <StatCard
           label="Avg Waiting Time"
-          value={adminViewModel.stats ? formatWaitingTime(adminViewModel.stats.avgWaitingTimeHours) : '-'}
-          alert={(adminViewModel.stats?.avgWaitingTimeHours || 0) >= 72}
+          value={formatWaitingTime(filteredAvgWaitingTime)}
+          alert={filteredAvgWaitingTime >= 72}
         />
+
       </div>
 
       {/* Main Container: Sidebar + Content */}

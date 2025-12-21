@@ -7,7 +7,7 @@ type TabKey = "new" | "current";
 
 export type ModalType = "add" | "edit" | "delete" | null;
 
-export class KeywordManagementViewModel {
+export class KeywordAdminViewModel {
     // observable state
     stats: KeywordDashboardStats | null = null;
     suggestions: NormalizedSuggestion[] = [];

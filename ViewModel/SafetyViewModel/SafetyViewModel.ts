@@ -1,4 +1,4 @@
-import { makeAutoObservable } from 'mobx';
+import { makeAutoObservable, runInAction } from 'mobx';
 import { safetyService } from '../../Model/Service/CoreService/safetyService';
 import type { SafetyAlertWithProfiles, SafetyAlertStats } from '../../Model/Repository/AdminRepository';
 import type { Severity, IncidentStatus } from '../../Model/types';
@@ -73,7 +73,10 @@ export class SafetyViewModel {
      */
     async loadStats(): Promise<void> {
         try {
-            this.stats = await safetyService.getAlertStats();
+            const stats = await safetyService.getAlertStats();
+            runInAction(() => {
+                this.stats = stats;
+            });
         } catch (error) {
             console.error('Error loading safety stats:', error);
         }

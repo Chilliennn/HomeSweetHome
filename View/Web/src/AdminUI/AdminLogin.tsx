@@ -1,6 +1,96 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import logoImage from './IMG_4545 1.png';
+
+// CSS Keyframes for animations (injected via style tag)
+const animationStyles = `
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  @keyframes pulse {
+    0%, 100% {
+      transform: scale(1);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    }
+    50% {
+      transform: scale(1.03);
+      box-shadow: 0 12px 40px rgba(157, 226, 208, 0.3);
+    }
+  }
+  
+  @keyframes float {
+    0%, 100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-8px);
+    }
+  }
+  
+  @keyframes shimmer {
+    0% {
+      background-position: -200% 0;
+    }
+    100% {
+      background-position: 200% 0;
+    }
+  }
+  
+  @keyframes floatBubble1 {
+    0%, 100% {
+      transform: translate(0, 0) scale(1);
+    }
+  
+  @keyframes gradientShift {
+    0% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+    100% {
+      background-position: 0% 50%;
+    }
+  }
+  
+  @keyframes floatHeart {
+    0% {
+      transform: translateY(100vh) rotate(0deg);
+      opacity: 0;
+    }
+    10% {
+      opacity: 0.6;
+    }
+    90% {
+      opacity: 0.6;
+    }
+    100% {
+      transform: translateY(-100vh) rotate(360deg);
+      opacity: 0;
+    }
+  }
+  
+  @keyframes sparkle {
+    0%, 100% {
+      opacity: 0.3;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.8;
+      transform: scale(1.2);
+    }
+  }
+`;
+
+
 
 // Styles following UC1ui.txt design specifications
 const styles = {
@@ -14,6 +104,7 @@ const styles = {
     justifyContent: 'center',
     background: '#FFFDF5', // Quarter Pearl Lusta
   },
+
   loginCard: {
     position: 'relative' as const,
     width: '400px',
@@ -25,6 +116,7 @@ const styles = {
     flexDirection: 'column' as const,
     alignItems: 'center',
     gap: '20px',
+    animation: 'fadeInUp 0.6s ease-out forwards',
   },
   avatar: {
     width: '130px',
@@ -78,10 +170,12 @@ const styles = {
     letterSpacing: '0.01em',
     color: '#333333',
     outline: 'none',
-    transition: 'border-color 0.2s ease',
+    transition: 'all 0.3s ease',
   },
   inputFocused: {
     border: '5px solid #9DE2D0',
+    transform: 'scale(1.02)',
+    boxShadow: '0 4px 20px rgba(157, 226, 208, 0.3)',
   },
   inputPlaceholder: {
     color: '#8B8B8B',
@@ -99,13 +193,13 @@ const styles = {
     border: 'none',
     cursor: 'pointer',
     marginTop: '12px',
-    transition: 'all 0.2s ease',
+    transition: 'all 0.3s ease',
     whiteSpace: 'nowrap' as const,
   },
   loginButtonHover: {
     background: '#d87c6d',
-    transform: 'translateY(-2px)',
-    boxShadow: '0 4px 12px rgba(235, 143, 128, 0.4)',
+    transform: 'translateY(-3px) scale(1.05)',
+    boxShadow: '0 8px 25px rgba(235, 143, 128, 0.5)',
   },
   loginButtonText: {
     fontFamily: 'Inter, sans-serif',
@@ -124,6 +218,8 @@ const styles = {
     fontSize: '10px',
     lineHeight: '32px',
     color: '#666666',
+    animation: 'fadeInUp 0.8s ease-out 0.3s forwards',
+    opacity: 0,
   },
   errorMessage: {
     color: '#EB8F80',
@@ -131,8 +227,10 @@ const styles = {
     fontSize: '14px',
     marginTop: '8px',
     textAlign: 'center' as const,
+    animation: 'fadeInUp 0.3s ease-out',
   },
 };
+
 
 const AdminLogin: React.FC = () => {
   const navigate = useNavigate();
@@ -142,6 +240,17 @@ const AdminLogin: React.FC = () => {
   const [error, setError] = useState('');
   const [focusedField, setFocusedField] = useState<string | null>(null);
   const [isButtonHovered, setIsButtonHovered] = useState(false);
+
+  // Inject animation styles on mount
+  useEffect(() => {
+    const styleElement = document.createElement('style');
+    styleElement.textContent = animationStyles;
+    document.head.appendChild(styleElement);
+    return () => {
+      document.head.removeChild(styleElement);
+    };
+  }, []);
+
 
   const handleLogin = async () => {
     setError('');
@@ -187,6 +296,7 @@ const AdminLogin: React.FC = () => {
   return (
     <div style={styles.page}>
       <div style={styles.loginCard}>
+
         {/* Avatar / Logo Area */}
         <div style={styles.avatar}>
           <img src={logoImage} alt="HomeSweetHome Logo" style={styles.avatarImage} />

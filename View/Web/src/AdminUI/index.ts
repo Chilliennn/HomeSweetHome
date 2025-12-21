@@ -11,3 +11,6 @@ export { ConsultationDashboard } from './ConsultationDashboard';
 export { ConsultationDetails } from './ConsultationDetails';
 export { AdvisorAssignmentModal } from './AdvisorAssignmentModal';
 export { DismissalModal } from './DismissalModal';
+
+// Relationship Monitoring
+export { RelationshipsScreen } from './RelationshipsScreen';

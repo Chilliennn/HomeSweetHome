@@ -104,7 +104,7 @@ const LoginScreen = observer(function LoginScreen() {
         if (relationship.status === "paused") {
           console.log('[Login] User has paused relationship → journey-pause');
           router.replace({
-            pathname: "/(main)/journey-pause",
+            pathname: "/journey-pause",
             params: { userId: user.id },
           });
           return;
@@ -114,7 +114,7 @@ const LoginScreen = observer(function LoginScreen() {
         if (relationship.status === "active") {
           console.log('[Login] User has active relationship → bonding');
           router.replace({
-            pathname: "/(main)/bonding",
+            pathname: "/bonding",
             params: { userId: user.id, userName: user.full_name },
           });
           return;

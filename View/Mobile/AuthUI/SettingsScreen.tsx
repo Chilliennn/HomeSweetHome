@@ -33,14 +33,19 @@ const SettingsScreenComponent: React.FC = () => {
   // ✅ Fallback: Get userId from authViewModel if not in params
   const userId = userIdFromParams || authViewModel.authState.currentUserId || undefined;
 
+  // ✅ Add loading state
+  const [isLoading, setIsLoading] = React.useState(true);
+
   // Load user profile data on mount
   useEffect(() => {
     const loadUserData = async () => {
       if (userId) {
+        setIsLoading(true);
         // Load profile data (realIdentity, displayIdentity, etc.)
-        authViewModel.loadProfile(userId);
+        await authViewModel.loadProfile(userId);
         // Load full user object for profile_photo_url
         await authViewModel.getCurrentUser(userId);
+        setIsLoading(false);
       }
     };
     loadUserData();
@@ -54,14 +59,14 @@ const SettingsScreenComponent: React.FC = () => {
   // ============================================================================
   // RENDER DATA
   // ============================================================================
-  // FIXED: Get user display name from full_name (userName param)
-  const displayName = userName || 'User';
+  // ✅ MVVM: Get display data from authViewModel.currentUser (single source of truth)
+  const displayName = userName || authViewModel.currentUser?.full_name || 'User';
   
-  // Get user location from real identity
-  const location = realIdentity?.location || 'Kuala Lumpur';
+  // ✅ Get location from database user record
+  const location = authViewModel.currentUser?.location || 'Unknown';
   
-  // Get user age from verified age
-  const age = verifiedAge || 25;
+  // ✅ Get verified age from profile_data
+  const age = authViewModel.currentUser?.profile_data?.verified_age || 18;
 
   // Get avatar config from user's profile data
   // Priority: profile_photo_url (real photo) > preset avatar from avatar_meta
@@ -177,7 +182,12 @@ const SettingsScreenComponent: React.FC = () => {
         <View style={styles.headerRight} />
       </View>
 
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+      {isLoading ? (
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>Loading...</Text>
+        </View>
+      ) : (
+        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {/* User Profile Header - FIXED: Uses proper avatar from profile */}
         <View style={styles.profileHeader}>
           <View style={styles.avatarContainer}>
@@ -334,6 +344,7 @@ const SettingsScreenComponent: React.FC = () => {
         {/* Bottom Spacing for Tab Bar */}
         <View style={{ height: 80 }} />
       </ScrollView>
+      )}
 
       {/* Bottom Tab Bar */}
       <BottomTabBar
@@ -471,6 +482,15 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     color: '#EB8F80',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#666666',
   },
 });
 

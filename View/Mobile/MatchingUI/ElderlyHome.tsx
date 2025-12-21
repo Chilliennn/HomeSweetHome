@@ -88,13 +88,17 @@ export const ElderlyHome: React.FC<ElderlyHomeProps> = observer(({
   }, [currentElderlyId]);
 
   const handleNotificationPress = () => {
-    console.log('🔔 [ElderlyHome] Notification bell pressed, pendingCount:', pendingCount);
+    console.log('🔔 [ElderlyHome] Notification bell pressed, pendingCount:', pendingInterestCount);
     // Navigate to the centralized Notification Screen
     router.push('/(main)/notification');
   };
 
-  const pendingCount = vm.unreadNotificationCount;
-  console.log('🔵 [ElderlyHome] Rendering - pendingCount:', pendingCount, 'requests:', vm.incomingRequests.map(r => r.id));
+  // ✅ Use incomingRequests for "New Interest" alert (only youth interests)
+  const pendingInterestCount = vm.incomingRequests.length;
+  // ✅ Use unreadNotificationCount for bell icon (all notifications)
+  const notificationBellCount = vm.unreadNotificationCount;
+  
+  console.log('🔵 [ElderlyHome] Rendering - pendingInterests:', pendingInterestCount, 'totalNotifications:', notificationBellCount);
   // How it works items
   const howItWorksItems = [
     'Youth browse profiles and express interest in connecting',
@@ -115,7 +119,7 @@ export const ElderlyHome: React.FC<ElderlyHomeProps> = observer(({
       {/* Header */}
       <View style={styles.header}>
         <NotificationBell
-          count={pendingCount}
+          count={notificationBellCount}
           onPress={handleNotificationPress}
         />
         <Text style={styles.greeting}>
@@ -128,14 +132,14 @@ export const ElderlyHome: React.FC<ElderlyHomeProps> = observer(({
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        {/* PENDING REQUESTS ALERT (New Section) */}
-        {pendingCount > 0 && (
+        {/* PENDING REQUESTS ALERT (New Section) - Only shows for youth interests */}
+        {pendingInterestCount > 0 && (
           <Card style={styles.alertCard}>
             <View style={styles.alertHeader}>
               <Text style={styles.alertTitle}>New Interest Received! 🎉</Text>
             </View>
             <Text style={styles.alertText}>
-              {pendingCount} youth student{pendingCount > 1 ? 's are' : ' is'} interested in connecting with you.
+              {pendingInterestCount} youth student{pendingInterestCount > 1 ? 's are' : ' is'} interested in connecting with you.
             </Text>
             <Button
               title="View Requests"

@@ -38,11 +38,11 @@ export const matchingRepository = {
         filters?: ElderlyFilters,
         youthProfile?: User
     ): Promise<ElderlyProfilesResult> {
-        // ✅ If no limit specified, fetch ALL profiles (for sorting by match score)
+        
         const limit = filters?.limit;
         const offset = filters?.offset || 0;
 
-        // First, get elderly IDs that are in active relationships (to exclude)
+    
         const { data: activeRelationships, error: relError } = await supabase
             .from('relationships')
             .select('elderly_id')
@@ -63,14 +63,9 @@ export const matchingRepository = {
             query = query.not('id', 'in', `(${excludedElderlyIds.join(',')})`);
         }
 
-        // Apply location filter
+        // Apply location filter (case-insensitive exact match)
         if (filters?.location) {
-            query = query.ilike('location', `%${filters.location}%`);
-        }
-
-        // Apply language filter (contains any of the selected languages)
-        if (filters?.languages && filters.languages.length > 0) {
-            query = query.overlaps('languages', filters.languages);
+            query = query.ilike('location', filters.location);
         }
 
         // ✅ Only apply pagination if limit is specified
@@ -83,12 +78,22 @@ export const matchingRepository = {
 
         let profiles = data || [];
 
-        // Post-query filtering for interests (in profile_data jsonb)
+        // Post-query filtering for interests (in profile_data jsonb) 
         if (filters?.interests && filters.interests.length > 0) {
             profiles = profiles.filter(user => {
-                const userInterests = user.profile_data?.interests || [];
+                const userInterests = (user.profile_data?.interests || []).map((i: string) => i.toLowerCase());
                 return filters.interests!.some(interest =>
-                    userInterests.includes(interest)
+                    userInterests.includes(interest.toLowerCase())
+                );
+            });
+        }
+
+        // Post-query filtering for languages - Case-insensitive
+        if (filters?.languages && filters.languages.length > 0) {
+            profiles = profiles.filter(user => {
+                const userLanguages = (user.languages || []).map((lang: string) => lang.toLowerCase());
+                return filters.languages!.some(lang =>
+                    userLanguages.includes(lang.toLowerCase())
                 );
             });
         }

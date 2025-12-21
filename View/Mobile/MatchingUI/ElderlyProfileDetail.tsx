@@ -189,6 +189,18 @@ export const ElderlyProfileDetail: React.FC<ElderlyProfileDetailProps> = ({
             content={profile.aboutMe}
           />
           
+          {profile.location && (
+            <>
+              <View style={styles.divider} />
+              <ProfileInfoRow
+                icon="📍"
+                iconColor="#C8ADD6"
+                title="Location"
+                content={profile.location}
+              />
+            </>
+          )}
+          
           {profile.languages && profile.languages.length > 0 && (
             <>
               <View style={styles.divider} />

@@ -6,6 +6,9 @@ import {
   StyleSheet,
   ScrollView,
   ImageSourcePropType,
+  TouchableOpacity,
+  Modal,
+  FlatList,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
@@ -62,6 +65,28 @@ interface ProfileSetupFormProps {
 // ============================================================================
 const TOTAL_STEPS = 3; // Age verification, Profile Setup, Interests
 const CURRENT_STEP = 2; // Profile Setup step
+
+// Malaysia Location Options - States and Federal Territories
+const LOCATION_OPTIONS = [
+  // States (13)
+  { id: 'johor', label: 'Johor' },
+  { id: 'kedah', label: 'Kedah' },
+  { id: 'kelantan', label: 'Kelantan' },
+  { id: 'melaka', label: 'Malacca (Melaka)' },
+  { id: 'negeri-sembilan', label: 'Negeri Sembilan' },
+  { id: 'pahang', label: 'Pahang' },
+  { id: 'penang', label: 'Penang (Pulau Pinang)' },
+  { id: 'perak', label: 'Perak' },
+  { id: 'perlis', label: 'Perlis' },
+  { id: 'sabah', label: 'Sabah' },
+  { id: 'sarawak', label: 'Sarawak' },
+  { id: 'selangor', label: 'Selangor' },
+  { id: 'terengganu', label: 'Terengganu' },
+  // Federal Territories (3)
+  { id: 'kuala-lumpur', label: 'Kuala Lumpur' },
+  { id: 'labuan', label: 'Labuan' },
+  { id: 'putrajaya', label: 'Putrajaya' },
+];
 
 // Avatar background colors - RESTORED: matching original DisplayIdentityForm.tsx
 const AVATAR_COLORS = [
@@ -150,6 +175,9 @@ export const ProfileSetupForm: React.FC<ProfileSetupFormProps> = ({
 
   // Validation errors
   const [errors, setErrors] = useState<Record<string, string>>({});
+  
+  // Location picker state
+  const [showLocationPicker, setShowLocationPicker] = useState(false);
 
   // Build avatar options based on user type
   const avatarOptions = buildAvatarOptions(userType);
@@ -157,6 +185,15 @@ export const ProfileSetupForm: React.FC<ProfileSetupFormProps> = ({
   // ============================================================================
   // HANDLERS
   // ============================================================================
+
+  /**
+   * Handle location selection from picker
+   */
+  const handleSelectLocation = (locationLabel: string) => {
+    setLocation(locationLabel);
+    setShowLocationPicker(false);
+    setErrors((prev) => ({ ...prev, location: '' }));
+  };
 
   /**
    * Handle avatar selection from default options
@@ -238,8 +275,8 @@ export const ProfileSetupForm: React.FC<ProfileSetupFormProps> = ({
     // Validate location
     if (!location.trim()) {
       newErrors.location = 'Location is required';
-    } else if (location.trim().length < 3) {
-      newErrors.location = 'Please enter a valid location';
+    } else if (!LOCATION_OPTIONS.some(opt => opt.label === location)) {
+      newErrors.location = 'Please select a valid location from the list';
     }
 
     // Validate full name
@@ -350,20 +387,22 @@ export const ProfileSetupForm: React.FC<ProfileSetupFormProps> = ({
             {errors.phone && <Text style={styles.errorText}>{errors.phone}</Text>}
           </View>
 
-          {/* Location Field */}
+          {/* Location Field - Dropdown Selector */}
           <View style={styles.fieldContainer}>
             <Text style={styles.label}>
               Location <Text style={styles.required}>*</Text>
             </Text>
-            <TextInput
-              style={[styles.input, errors.location && styles.inputError]}
-              placeholder="e.g. Kuala Lumpur, Malaysia"
-              placeholderTextColor="#A0A0A0"
-              value={location}
-              onChangeText={setLocation}
-              autoCapitalize="words"
-              editable={!isSubmitting}
-            />
+            <TouchableOpacity
+              style={[styles.input, styles.selectInput, errors.location && styles.inputError]}
+              onPress={() => setShowLocationPicker(true)}
+              disabled={isSubmitting}
+            >
+              <Text style={[styles.selectText, !location && styles.placeholderText]}>
+                {location || 'Select your state/territory'}
+              </Text>
+              <Text style={styles.dropdownIcon}>▼</Text>
+            </TouchableOpacity>
+            <Text style={styles.hint}>Select from Malaysian states and federal territories</Text>
             {errors.location && <Text style={styles.errorText}>{errors.location}</Text>}
           </View>
 
@@ -447,6 +486,55 @@ export const ProfileSetupForm: React.FC<ProfileSetupFormProps> = ({
             disabled={isSubmitting}
           />
         </ScrollView>
+
+        {/* Location Picker Modal */}
+        <Modal
+          visible={showLocationPicker}
+          transparent
+          animationType="slide"
+          onRequestClose={() => setShowLocationPicker(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Select Location</Text>
+                <TouchableOpacity
+                  onPress={() => setShowLocationPicker(false)}
+                  style={styles.modalCloseButton}
+                >
+                  <Text style={styles.modalCloseText}>✕</Text>
+                </TouchableOpacity>
+              </View>
+              <FlatList
+                data={LOCATION_OPTIONS}
+                keyExtractor={(item) => item.id}
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    style={[
+                      styles.locationOption,
+                      location === item.label && styles.locationOptionSelected,
+                    ]}
+                    onPress={() => handleSelectLocation(item.label)}
+                  >
+                    <Text
+                      style={[
+                        styles.locationOptionText,
+                        location === item.label && styles.locationOptionTextSelected,
+                      ]}
+                    >
+                      {item.label}
+                    </Text>
+                    {location === item.label && (
+                      <Text style={styles.checkmark}>✓</Text>
+                    )}
+                  </TouchableOpacity>
+                )}
+                ItemSeparatorComponent={() => <View style={styles.separator} />}
+                showsVerticalScrollIndicator={false}
+              />
+            </View>
+          </View>
+        </Modal>
       </View>
     </SafeAreaView>
   );
@@ -525,6 +613,92 @@ const styles = StyleSheet.create({
   },
   nextButton: {
     marginTop: 24,
+  },
+  selectInput: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  selectText: {
+    fontSize: 16,
+    color: '#333',
+    flex: 1,
+  },
+  placeholderText: {
+    color: '#A0A0A0',
+  },
+  dropdownIcon: {
+    fontSize: 12,
+    color: '#666',
+    marginLeft: 8,
+  },
+  // Modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    maxHeight: '70%',
+    paddingBottom: 20,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 24,
+    paddingVertical: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#333',
+  },
+  modalCloseButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#F5F5F5',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalCloseText: {
+    fontSize: 18,
+    color: '#666',
+  },
+  locationOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 24,
+    paddingVertical: 16,
+  },
+  locationOptionSelected: {
+    backgroundColor: '#F0F9F7',
+  },
+  locationOptionText: {
+    fontSize: 16,
+    color: '#333',
+    flex: 1,
+  },
+  locationOptionTextSelected: {
+    fontWeight: '600',
+    color: '#9DE2D0',
+  },
+  checkmark: {
+    fontSize: 18,
+    color: '#9DE2D0',
+    fontWeight: '700',
+  },
+  separator: {
+    height: 1,
+    backgroundColor: '#F5F5F5',
+    marginHorizontal: 24,
   },
 });
 

@@ -1,5 +1,6 @@
 import { matchingRepository, ElderlyFilters, ElderlyProfilesResult } from '../../Repository/UserRepository/matchingRepository';
 import { notificationRepository } from '../../Repository/UserRepository/notificationRepository';
+import { userRepository } from '../../Repository/UserRepository/userRepository';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import { User, UserType } from '../../types';
 import type { Interest } from '../../Repository/UserRepository/matchingRepository';
@@ -36,9 +37,9 @@ export const matchingService = {
 
         let score = 0;
 
-        // Match interests
-        const youthInterests = youthProfile.profile_data?.interests || [];
-        const elderlyInterests = elderlyProfile.profile_data?.interests || [];
+        // Match interests (case-insensitive)
+        const youthInterests = (youthProfile.profile_data?.interests || []).map(i => i.toLowerCase());
+        const elderlyInterests = (elderlyProfile.profile_data?.interests || []).map(i => i.toLowerCase());
         for (const interest of youthInterests) {
             if (elderlyInterests.includes(interest)) {
                 score += MATCH_SCORE_WEIGHTS.SAME_INTEREST;
@@ -61,6 +62,14 @@ export const matchingService = {
             }
         }
 
+        console.log('🎯 Match Score:', {
+            elderly: elderlyProfile.full_name,
+            score,
+            youthInterests,
+            elderlyInterests,
+            matchedInterests: youthInterests.filter(i => elderlyInterests.includes(i))
+        });
+
         return score;
     },
 
@@ -72,6 +81,12 @@ export const matchingService = {
         filters?: ElderlyFilters,
         youthProfile?: User
     ): Promise<ElderlyProfilesResult> {
+        console.log('🔍 Getting elderly profiles with youth profile:', {
+            hasYouthProfile: !!youthProfile,
+            youthName: youthProfile?.full_name,
+            youthInterests: youthProfile?.profile_data?.interests
+        });
+
         const result = await matchingRepository.getAvailableElderlyProfiles(filters, youthProfile);
 
         // Calculate match scores and sort by score (highest first)
@@ -82,6 +97,11 @@ export const matchingService = {
 
         profilesWithScores.sort((a, b) => b.score - a.score);
 
+        console.log('✅ Sorted profiles by match score:', profilesWithScores.map(p => ({
+            name: p.profile.full_name,
+            score: p.score
+        })));
+
         return {
             profiles: profilesWithScores.map(p => p.profile),
             totalCount: result.totalCount,
@@ -91,6 +111,14 @@ export const matchingService = {
 
     async getIncomingInterests(elderlyId: string) {
         return await matchingRepository.getIncomingInterests(elderlyId);
+    },
+
+    /**
+     * Get user profile by ID
+     * Used by ViewModel to fetch current user data for match scoring
+     */
+    async getUserProfile(userId: string): Promise<User | null> {
+        return await userRepository.getById(userId);
     },
 
     async getYouthApplications(youthId: string) {

@@ -7,6 +7,7 @@ import { ElderlyFilters } from '../../Model/Repository/UserRepository/matchingRe
 
 export class YouthMatchingViewModel {
     profiles: User[] = [];
+    allProfiles: User[] = []; // Store all profiles sorted by match score
     activeMatches: Interest[] = []; // Accepted interests (Notifications for Youth)
     expressedElderlyIds: Set<string> = new Set(); // Track elderly IDs that youth has already expressed interest to
     isLoading: boolean = false;
@@ -25,9 +26,9 @@ export class YouthMatchingViewModel {
     filters: ElderlyFilters = {};
     hasMoreProfiles: boolean = false;
     totalProfileCount: number = 0;
-    currentOffset: number = 0;
+    currentDisplayCount: number = 10; // How many to show initially
     private currentYouthProfile: User | null = null;
-    private readonly PAGE_SIZE = 10;
+    private readonly DISPLAY_INCREMENT = 10; // How many more to show when loading more
 
     constructor() {
         makeAutoObservable(this);
@@ -35,10 +36,52 @@ export class YouthMatchingViewModel {
 
     /**
      * Set current user context (called by Layout when auth state changes)
+     * Automatically fetches and stores full user profile for match scoring
      */
-    setCurrentUser(userId: string | null): void {
+    async setCurrentUser(userId: string | null): Promise<void> {
+        console.log('🟦 [YouthVM] setCurrentUser called with userId:', userId);
         runInAction(() => {
             this.currentUserId = userId;
+        });
+
+        // Fetch full user profile for match scoring via Service layer
+        if (userId) {
+            try {
+                console.log('🟦 [YouthVM] Fetching user profile via matchingService...');
+                const profile = await matchingService.getUserProfile(userId);
+                console.log('🟦 [YouthVM] User profile fetched:', {
+                    name: profile?.full_name,
+                    interests: profile?.profile_data?.interests,
+                    languages: profile?.languages,
+                    location: profile?.location
+                });
+                runInAction(() => {
+                    this.currentYouthProfile = profile;
+                });
+                
+                // ✅ Always reload profiles after fetching user data for accurate match scoring
+                // This ensures correct scores even if profiles loaded before user data was ready
+                if (profile) {
+                    console.log('🔄 [YouthVM] Reloading profiles with user data for accurate scoring...');
+                    await this.loadProfiles();
+                }
+            } catch (error) {
+                console.error('❌ [YouthVM] Failed to fetch user profile:', error);
+            }
+        } else {
+            runInAction(() => {
+                this.currentYouthProfile = null;
+            });
+        }
+    }
+
+    /**
+     * Set current youth profile for match scoring
+     * Should be called when profile data is available
+     */
+    setYouthProfile(profile: User | null): void {
+        runInAction(() => {
+            this.currentYouthProfile = profile;
         });
     }
 
@@ -56,34 +99,55 @@ export class YouthMatchingViewModel {
 
     /**
      * Load available elderly profiles with current filters.
-     * Fetches first page of results.
+     * Fetches ALL profiles, sorts by match score, then paginates display.
      */
     async loadProfiles(youthProfile?: User) {
+        console.log('🟦 [YouthVM] loadProfiles called', {
+            providedProfile: !!youthProfile,
+            storedProfile: !!this.currentYouthProfile,
+            currentUserId: this.currentUserId
+        });
+        
         this.isLoading = true;
         this.error = null;
-        this.currentOffset = 0;
+        this.currentDisplayCount = 10; // Reset display count
 
+        // Update stored profile if provided
         if (youthProfile) {
+            console.log('🟦 [YouthVM] Using provided youth profile:', youthProfile.full_name);
             this.currentYouthProfile = youthProfile;
         }
 
         try {
-            const filtersWithPagination: ElderlyFilters = {
+            // ✅ Fetch ALL available elderly (no limit) for accurate sorting
+            const filtersWithoutPagination: ElderlyFilters = {
                 ...this.filters,
-                offset: 0,
-                limit: this.PAGE_SIZE
+                // No offset/limit - fetch all for sorting
             };
 
+            // Always pass youth profile for match scoring
+            const profileToUse = this.currentYouthProfile || undefined;
+            console.log('🟦 [YouthVM] Calling matchingService with profile:', {
+                hasProfile: !!profileToUse,
+                profileName: profileToUse?.full_name,
+                interests: profileToUse?.profile_data?.interests
+            });
+            
             const result = await matchingService.getAvailableElderlyProfiles(
-                filtersWithPagination,
-                this.currentYouthProfile || undefined
+                filtersWithoutPagination,
+                profileToUse
             );
 
+            console.log('✅ [YouthVM] Loaded profiles:', result.profiles.length);
+
             runInAction(() => {
-                this.profiles = result.profiles;
-                this.hasMoreProfiles = result.hasMore;
+                // Store all profiles (already sorted by match score)
+                this.allProfiles = result.profiles;
                 this.totalProfileCount = result.totalCount;
-                this.currentOffset = result.profiles.length;
+                
+                // Display first batch
+                this.profiles = this.allProfiles.slice(0, this.currentDisplayCount);
+                this.hasMoreProfiles = this.allProfiles.length > this.currentDisplayCount;
             });
         } catch (e: any) {
             runInAction(() => {
@@ -97,38 +161,23 @@ export class YouthMatchingViewModel {
     }
 
     /**
-     * Load more elderly profiles (pagination)
+     * Load more elderly profiles (client-side pagination from sorted results)
      */
     async loadMoreProfiles() {
         if (this.isLoading || !this.hasMoreProfiles) return;
 
-        this.isLoading = true;
-        try {
-            const filtersWithPagination: ElderlyFilters = {
-                ...this.filters,
-                offset: this.currentOffset,
-                limit: this.PAGE_SIZE
-            };
-
-            const result = await matchingService.getAvailableElderlyProfiles(
-                filtersWithPagination,
-                this.currentYouthProfile || undefined
-            );
-
-            runInAction(() => {
-                this.profiles = [...this.profiles, ...result.profiles];
-                this.hasMoreProfiles = result.hasMore;
-                this.currentOffset += result.profiles.length;
-            });
-        } catch (e: any) {
-            runInAction(() => {
-                this.error = e.message || 'Failed to load more profiles';
-            });
-        } finally {
-            runInAction(() => {
-                this.isLoading = false;
-            });
-        }
+        console.log('🟦 [YouthVM] Loading more profiles from cache...');
+        
+        runInAction(() => {
+            // Increase display count
+            this.currentDisplayCount += this.DISPLAY_INCREMENT;
+            
+            // Update displayed profiles
+            this.profiles = this.allProfiles.slice(0, this.currentDisplayCount);
+            this.hasMoreProfiles = this.allProfiles.length > this.currentDisplayCount;
+            
+            console.log('✅ [YouthVM] Now displaying:', this.profiles.length, 'of', this.allProfiles.length);
+        });
     }
 
     /**

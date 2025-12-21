@@ -72,21 +72,31 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
     useEffect(() => {
       if (vm.consumeStageCompletionNavigation()) {
         (async () => {
-          console.log("[StageProgression] Stage completion detected, loading info ->", {
-            stageJustCompleted: vm.stageJustCompleted,
-            stageJustCompletedName: vm.stageJustCompletedName,
-            userId,
-          });
+          console.log(
+            "[StageProgression] Stage completion detected, loading info ->",
+            {
+              stageJustCompleted: vm.stageJustCompleted,
+              stageJustCompletedName: vm.stageJustCompletedName,
+              userId,
+            }
+          );
 
           try {
             // Ensure VM has the latest completion info
-            await vm.loadStageCompletionInfo(vm.stageJustCompleted ?? undefined);
+            await vm.loadStageCompletionInfo(
+              vm.stageJustCompleted ?? undefined
+            );
 
             // If the just completed stage is the final stage (family_life),
             // navigate to the Journey Completed screen instead.
             if (vm.stageJustCompleted === ("family_life" as any)) {
-              console.log("[StageProgression] Navigating to journey-completed page");
-              router.push({ pathname: "/(main)/journey-completed", params: { userId } });
+              console.log(
+                "[StageProgression] Navigating to journey-completed page"
+              );
+              router.push({
+                pathname: "/(main)/journey-completed",
+                params: { userId },
+              });
             } else {
               router.push({
                 pathname: "/(main)/stage-completed",
@@ -110,7 +120,7 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
     // Watch for auto-navigation to Journey Pause page
     useEffect(() => {
       if (vm.consumeJourneyPauseNavigation()) {
-        router.push({ pathname: "/(main)/journey-pause", params: { userId } });
+        router.push({ pathname: "/journey-pause", params: { userId } });
       }
     }, [vm.shouldNavigateToJourneyPause, router, userId, vm]);
 
@@ -121,7 +131,10 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
           try {
             // Ensure completion info loaded
             await vm.loadStageCompletionInfo(vm.currentStage ?? undefined);
-            router.push({ pathname: "/(main)/journey-completed", params: { userId } });
+            router.push({
+              pathname: "/(main)/journey-completed",
+              params: { userId },
+            });
           } catch (err) {
             console.error("Failed to navigate to journey-completed:", err);
           }
@@ -186,9 +199,28 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
       }
     };
 
-    if (vm.isLoading && !vm.stages.length) {
+    if (
+      (vm.isLoading || !vm.hasInitialized) &&
+      !vm.stages.length &&
+      !vm.error
+    ) {
       return <LoadingSpinner />;
     }
+
+    // Navigation Guard: If we are about to navigate to a completion/milestone/pause screen,
+    // don't render the rest of the UI to avoid flickering the "next" stage state.
+    if (
+      vm.shouldNavigateToStageCompleted ||
+      vm.shouldNavigateToJourneyCompleted ||
+      vm.shouldNavigateToMilestone ||
+      vm.shouldNavigateToJourneyPause
+    ) {
+      return <LoadingSpinner />;
+    }
+
+    const isJourneyCompleted = !!vm.stages.find(
+      (s) => s.stage === "family_life"
+    )?.is_completed;
 
     return (
       <SafeAreaView style={styles.safeArea} edges={["top"]}>
@@ -277,7 +309,7 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
                       {vm.lockedStageDetails.stage_order}:
                     </Text>
                     {vm.lockedStageDetails.preview_requirements.map(
-                      (req, i) => (
+                      (req: string, i: number) => (
                         <View key={i} style={styles.previewRow}>
                           <View style={styles.previewBulletWrapper}>
                             <Text style={styles.previewBullet}>○</Text>
@@ -342,7 +374,7 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
                   {vm.newlyUnlockedFeatures.length === 0 ? (
                     <Text style={styles.previewText}>No new features</Text>
                   ) : (
-                    vm.newlyUnlockedFeatures.map((f, i) => (
+                    vm.newlyUnlockedFeatures.map((f: string, i: number) => (
                       <View key={i} style={styles.previewRow}>
                         <View style={styles.previewBulletWrapper}>
                           <Text style={styles.previewBullet}>✓</Text>
@@ -353,7 +385,10 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
                   )}
                 </View>
               </View>
-            ) : (
+            ) : null}
+
+            {/* Current Stage Card - Hide if journey is completed */}
+            {!isJourneyCompleted && !vm.showLockedStageDetail && (
               <View style={styles.currentStageCard}>
                 <Text style={styles.cardTitle}>
                   Current Stage:{" "}
@@ -365,9 +400,9 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
                 <View style={styles.progressBar}>
                   <View
                     style={[
-                  styles.progressFill, 
-                  { width: `${progressWidthPct}%` }
-                ]}
+                      styles.progressFill,
+                      { width: `${progressWidthPct}%` },
+                    ]}
                   />
                 </View>
 
@@ -384,34 +419,57 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
                 ))}
               </View>
             )}
-            {!vm.showLockedStageDetail &&
-              !vm.showStageCompleted &&
-              vm.stages.some((s) => s.is_current) && (
-                <>
-                  <TouchableOpacity
-                    style={[styles.actionButton, styles.primaryButton]}
-                    onPress={() => router.push("/(main)/stageRequirements")}
-                  >
-                    <Text style={styles.actionButtonText}>
-                      View All Requirements
-                    </Text>
-                  </TouchableOpacity>
 
-                  <TouchableOpacity
-                    style={[styles.actionButton, styles.secondaryButton]}
-                    onPress={() => router.push("/(main)/availableFeatures")}
+            {/* AI Suggestions Section - Only show when journey is completed */}
+            {isJourneyCompleted && (
+              <>
+                <View style={styles.aiBanner}>
+                  <Text style={{ fontSize: 20 }}>🤖</Text>
+                  <Text style={styles.aiBannerText}>
+                    Based on your diaries and interests!
+                  </Text>
+                </View>
+
+                {vm.aiSuggestions.map((suggestion, index) => (
+                  <View
+                    key={suggestion.id}
+                    style={[
+                      styles.aiCard,
+                      {
+                        backgroundColor:
+                          index % 2 === 0 ? "#9DE2D0" : "#D4E5AE",
+                      },
+                    ]}
                   >
-                    <Text
-                      style={[
-                        styles.actionButtonText,
-                        styles.secondaryButtonText,
-                      ]}
-                    >
-                      View Available Features
+                    <View style={styles.aiBadge}>
+                      <Text style={styles.aiBadgeText}>✨ AI Recommended</Text>
+                    </View>
+                    <Text style={styles.aiCardTitle}>
+                      {suggestion.activity_title}
                     </Text>
-                  </TouchableOpacity>
-                </>
-              )}
+                    <Text style={styles.aiCardDescription}>
+                      {suggestion.activity_description}
+                    </Text>
+                    <TouchableOpacity
+                      style={styles.useIdeaButton}
+                      onPress={() => vm.useAISuggestion(suggestion)}
+                    >
+                      <Text style={styles.useIdeaText}>Use This Idea</Text>
+                    </TouchableOpacity>
+                  </View>
+                ))}
+
+                <TouchableOpacity
+                  style={styles.generateButton}
+                  onPress={() => vm.generateNewIdeas()}
+                  disabled={vm.isLoading}
+                >
+                  <Text style={styles.generateButtonText}>
+                    {vm.isLoading ? "Generating..." : "Generate New Activities"}
+                  </Text>
+                </TouchableOpacity>
+              </>
+            )}
           </ScrollView>
 
           {/* Bottom Navigation */}
@@ -465,13 +523,9 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
 
                   <TouchableOpacity
                     onPress={async () => {
-                      const success = await vm.submitWithdrawal();
-                      if (success) {
-                        router.push({
-                          pathname: "/(main)/journey-pause",
-                          params: { userId },
-                        });
-                      }
+                      // submitWithdrawal now sets the navigation flag automatically
+                      // The useEffect above will handle the actual navigation
+                      await vm.submitWithdrawal();
                     }}
                     style={styles.modalWithdrawButton}
                     disabled={vm.isLoading}
@@ -853,6 +907,77 @@ const styles = StyleSheet.create({
   },
   modalWithdrawText: {
     color: "#fff",
+    fontSize: 16,
+    fontWeight: "700",
+  },
+  aiBanner: {
+    backgroundColor: "#C8ADD6",
+    borderRadius: 16,
+    padding: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 20,
+    gap: 10,
+  },
+  aiBannerText: {
+    color: "#333",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  aiCard: {
+    borderRadius: 24,
+    padding: 24,
+    marginBottom: 20,
+    width: "100%",
+  },
+  aiBadge: {
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+    alignSelf: "flex-start",
+    marginBottom: 12,
+  },
+  aiBadgeText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#333",
+  },
+  aiCardTitle: {
+    fontSize: 22,
+    fontWeight: "700",
+    color: "#333",
+    marginBottom: 8,
+  },
+  aiCardDescription: {
+    fontSize: 15,
+    color: "#444",
+    lineHeight: 22,
+    marginBottom: 20,
+  },
+  useIdeaButton: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    paddingVertical: 14,
+    alignItems: "center",
+    width: "100%",
+  },
+  useIdeaText: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#333",
+  },
+  generateButton: {
+    borderWidth: 2,
+    borderColor: "#EA8A7F",
+    borderRadius: 12,
+    paddingVertical: 16,
+    alignItems: "center",
+    marginTop: 10,
+    marginBottom: 40,
+  },
+  generateButtonText: {
+    color: "#EA8A7F",
     fontSize: 16,
     fontWeight: "700",
   },

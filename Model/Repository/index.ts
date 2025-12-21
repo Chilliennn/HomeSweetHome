@@ -11,8 +11,7 @@ export type { Interest } from './UserRepository';
 export { matchingRepository } from './UserRepository';
 export type { ElderlyFilters, ElderlyProfilesResult } from './UserRepository/matchingRepository';
 
-// Relationship Repository
-export { relationshipRepository } from './UserRepository';
+// Relationship Repository (relationshipRepository already exported above)
 export type { Relationship } from './UserRepository';
 
 // Admin Repository  

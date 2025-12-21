@@ -100,12 +100,14 @@ export const BrowseElderly: React.FC<BrowseElderlyProps> = observer(({
 
   useEffect(() => {
     console.log('🟦 [BrowseElderly] useEffect triggered, currentUserId:', currentUserId);
-    // ViewModel will auto-load profile when it has currentUserId
-    vm.loadProfiles();
-    // Load notifications for the youth user
+    
     if (currentUserId) {
+      console.log('✅ [BrowseElderly] UserId available, ViewModel will handle profile loading');
       vm.loadNotifications(currentUserId);
+    } else {
+      console.log('⏳ [BrowseElderly] Waiting for userId...');
     }
+    
     return () => {
       vm.dispose();
     }

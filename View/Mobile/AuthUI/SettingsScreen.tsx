@@ -7,7 +7,7 @@ import { authViewModel, settingsViewModel } from '@home-sweet-home/viewmodel';
 import { SettingItem } from '../components/ui/SettingItem';
 import { ToggleSettingItem } from '../components/ui/ToggleSettingItem';
 import { BottomTabBar, DEFAULT_TABS, NotificationBell, IconCircle } from '../components/ui';
-import { useTabNavigation, getAvatarDisplay } from '../hooks'; 
+import { useTabNavigation, getAvatarDisplay } from '../hooks';
 
 
 /**
@@ -110,10 +110,10 @@ const SettingsScreenComponent: React.FC = () => {
   // ============================================================================
   // ✅ MVVM: Get display data from authViewModel.currentUser (single source of truth)
   const displayName = userName || authViewModel.currentUser?.full_name || 'User';
-  
+
   // ✅ Get location from database user record
   const location = authViewModel.currentUser?.location || 'Unknown';
-  
+
   // ✅ Get verified age from profile_data
   const age = authViewModel.currentUser?.profile_data?.verified_age || 18;
 
@@ -123,19 +123,19 @@ const SettingsScreenComponent: React.FC = () => {
   const hasRealPhoto = !!authViewModel.currentUser?.profile_photo_url;
   const avatarConfig = hasRealPhoto && authViewModel.currentUser
     ? {
-        icon: undefined,
-        imageSource: { uri: authViewModel.currentUser.profile_photo_url! },
-        backgroundColor: '#9DE2D0',
-      }
+      icon: undefined,
+      imageSource: { uri: authViewModel.currentUser.profile_photo_url! },
+      backgroundColor: '#9DE2D0',
+    }
     : getAvatarDisplay(
-        displayIdentity ? {
-          avatar_meta: {
-            type: displayIdentity.avatarType || 'default',
-            selected_avatar_index: displayIdentity.selectedAvatarIndex ?? null,
-          },
-        } : null,
-        (userType as 'youth' | 'elderly') || 'youth'
-      );
+      displayIdentity ? {
+        avatar_meta: {
+          type: displayIdentity.avatarType || 'default',
+          selected_avatar_index: displayIdentity.selectedAvatarIndex ?? null,
+        },
+      } : null,
+      (userType as 'youth' | 'elderly') || 'youth'
+    );
 
 
 
@@ -156,8 +156,10 @@ const SettingsScreenComponent: React.FC = () => {
   };
 
   const handleSafetyReports = () => {
-    // TODO: Navigate to safety reports screen
-    Alert.alert('Safety Reports', 'View your report history');
+    router.push({
+      pathname: '/(main)/report-history',
+      params: { userId, userName, userType },
+    });
   };
 
   // const handleSafetyResources = () => {
@@ -187,27 +189,27 @@ const SettingsScreenComponent: React.FC = () => {
 
   const handleLogout = async () => {
     Alert.alert(
-    'Log Out',
-    'Are you sure you want to log out?',
-    [
+      'Log Out',
+      'Are you sure you want to log out?',
+      [
         { text: 'Cancel', style: 'cancel' },
         {
-        text: 'Log Out',
-        style: 'destructive',
-        onPress: async () => {
+          text: 'Log Out',
+          style: 'destructive',
+          onPress: async () => {
             try {
-            // Step 1: Sign out using authViewModel
-            await authViewModel.signOut();
-            
-            // Step 2: Navigate to login
-            router.replace('/(auth)/login');
+              // Step 1: Sign out using authViewModel
+              await authViewModel.signOut();
+
+              // Step 2: Navigate to login
+              router.replace('/(auth)/login');
             } catch (error: any) {
-            console.error('Logout error:', error);
-            Alert.alert('Error', error?.message || 'Failed to log out. Please try again.');
+              console.error('Logout error:', error);
+              Alert.alert('Error', error?.message || 'Failed to log out. Please try again.');
             }
+          },
         },
-        },
-    ]
+      ]
     );
   };
 
@@ -234,73 +236,73 @@ const SettingsScreenComponent: React.FC = () => {
         </View>
       ) : (
         <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        {/* User Profile Header - FIXED: Uses proper avatar from profile */}
-        <View style={styles.profileHeader}>
-          <View style={styles.avatarContainer}>
-            <IconCircle
-              icon={avatarConfig.icon}
-              imageSource={avatarConfig.imageSource}
-              size={64}
-              backgroundColor={avatarConfig.backgroundColor}
-              contentScale={0.7}
-            />
-          </View>
-          <View style={styles.profileInfo}>
-            <Text style={styles.profileName}>{displayName}</Text>
-            <Text style={styles.profileDetails}>
-              {age} years old • {location}
-            </Text>
-            <View style={styles.verifiedBadge}>
-              <Text style={styles.verifiedText}>✓ Verified</Text>
+          {/* User Profile Header - FIXED: Uses proper avatar from profile */}
+          <View style={styles.profileHeader}>
+            <View style={styles.avatarContainer}>
+              <IconCircle
+                icon={avatarConfig.icon}
+                imageSource={avatarConfig.imageSource}
+                size={64}
+                backgroundColor={avatarConfig.backgroundColor}
+                contentScale={0.7}
+              />
+            </View>
+            <View style={styles.profileInfo}>
+              <Text style={styles.profileName}>{displayName}</Text>
+              <Text style={styles.profileDetails}>
+                {age} years old • {location}
+              </Text>
+              <View style={styles.verifiedBadge}>
+                <Text style={styles.verifiedText}>✓ Verified</Text>
+              </View>
             </View>
           </View>
-        </View>
 
-        {/* Account Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>ACCOUNT</Text>
-          <View style={styles.sectionContent}>
-            <SettingItem
-              icon={require('../assets/images/icon-profile.png')}
-              iconBackgroundColor="#9DE2D0"
-              title="Edit Profile"
-              subtitle="Update your information"
-              onPress={handleEditProfile}
-            />
-            <SettingItem
-              icon={require('../assets/images/icon-smallcorrect.png')}
-              iconBackgroundColor="#D4E5AE"
-              title="Age Verification"
-              subtitle="Status: Verified"
-              onPress={handleAgeVerification}
-              rightContent={<Text style={styles.verifiedLabel}>Verified</Text>}
-              showArrow={false}
-            />
+          {/* Account Section */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>ACCOUNT</Text>
+            <View style={styles.sectionContent}>
+              <SettingItem
+                icon={require('../assets/images/icon-profile.png')}
+                iconBackgroundColor="#9DE2D0"
+                title="Edit Profile"
+                subtitle="Update your information"
+                onPress={handleEditProfile}
+              />
+              <SettingItem
+                icon={require('../assets/images/icon-smallcorrect.png')}
+                iconBackgroundColor="#D4E5AE"
+                title="Age Verification"
+                subtitle="Status: Verified"
+                onPress={handleAgeVerification}
+                rightContent={<Text style={styles.verifiedLabel}>Verified</Text>}
+                showArrow={false}
+              />
+            </View>
           </View>
-        </View>
 
-        {/* Privacy & Safety Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>PRIVACY & SAFETY</Text>
-          <View style={styles.sectionContent}>
-            <SettingItem
-              icon={require('../assets/images/icon-warning.png')}
-              iconBackgroundColor="#EB8F80"
-              title="Safety Reports"
-              subtitle="View your report history"
-              onPress={handleSafetyReports}
-            />
-            {/* <SettingItem
+          {/* Privacy & Safety Section */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>PRIVACY & SAFETY</Text>
+            <View style={styles.sectionContent}>
+              <SettingItem
+                icon={require('../assets/images/icon-warning.png')}
+                iconBackgroundColor="#EB8F80"
+                title="Safety Reports"
+                subtitle="View your report history"
+                onPress={handleSafetyReports}
+              />
+              {/* <SettingItem
               icon={require('../assets/images/icon-question.png')}
               iconBackgroundColor="#9DE2D0"
               title="Safety Resources"
               subtitle="Guidelines & tips"
               onPress={handleSafetyResources}
             /> */}
+            </View>
           </View>
-        </View>
 
-        {/* Notifications Section
+          {/* Notifications Section
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>NOTIFICATIONS</Text>
           <View style={styles.sectionContent}>
@@ -347,7 +349,7 @@ const SettingsScreenComponent: React.FC = () => {
           </View>
         </View> */}
 
-        {/* Support & Help Section
+          {/* Support & Help Section
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>SUPPORT & HELP</Text>
           <View style={styles.sectionContent}>
@@ -382,14 +384,14 @@ const SettingsScreenComponent: React.FC = () => {
           </View>
         </View> */}
 
-        {/* Log Out Button */}
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <Text style={styles.logoutText}>Log Out</Text>
-        </TouchableOpacity>
+          {/* Log Out Button */}
+          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+            <Text style={styles.logoutText}>Log Out</Text>
+          </TouchableOpacity>
 
-        {/* Bottom Spacing for Tab Bar */}
-        <View style={{ height: 80 }} />
-      </ScrollView>
+          {/* Bottom Spacing for Tab Bar */}
+          <View style={{ height: 80 }} />
+        </ScrollView>
       )}
 
       {/* Bottom Tab Bar */}

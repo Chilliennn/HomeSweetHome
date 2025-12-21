@@ -26,7 +26,6 @@ import { useRouter } from 'expo-router';
  * Validates file format and size
  * Allows caption input
  * 
- * FR 3.1.1, 3.1.5, 3.1.6, 3.1.8, 3.1.11, 3.1.12
  */
 export const UploadImageScreen = observer(() => {
   const router = useRouter();

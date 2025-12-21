@@ -175,7 +175,6 @@ export class FamilyViewModel {
 
   /**
    * Load media for relationship
-   * FR 3.1.3, 3.1.4
    */
   async loadMedia(relationship_id: string) {
     runInAction(() => {
@@ -206,7 +205,6 @@ export class FamilyViewModel {
 
   /**
    * Upload media
-   * FR 3.1.1, 3.1.5, 3.1.6, 3.1.8, 3.1.9, 3.1.10
    * 
    * @param fileData - File data with base64 already read (View layer responsibility)
    * @param caption - Optional caption
@@ -338,7 +336,6 @@ export class FamilyViewModel {
 
   /**
    * Update media caption
-   * FR 3.1.4
    */
   async updateMediaCaption(mediaId: string, caption: string) {
     runInAction(() => {
@@ -368,7 +365,6 @@ export class FamilyViewModel {
 
   /**
    * Remove media from album
-   * FR 3.1.2
    */
   async removeMedia(mediaId: string) {
     runInAction(() => {
@@ -621,7 +617,6 @@ export class FamilyViewModel {
 
   /**
    * Load diary entries
-   * FR 3.3.1, 3.3.7
    */
   async loadDiaryEntries(user_id: string, relationship_id: string) {
     runInAction(() => {
@@ -649,7 +644,6 @@ export class FamilyViewModel {
 
   /**
    * Filter diary entries by mood
-   * FR 3.3.7
    */
   async filterByMood(mood: MoodType | null) {
     this.selectedMoodFilter = mood;
@@ -694,7 +688,6 @@ export class FamilyViewModel {
 
   /**
    * Create new diary entry
-   * FR 3.3.1, 3.3.2, 3.3.4, 3.3.5
    */
   async createDiaryEntry(
     user_id: string,
@@ -733,7 +726,6 @@ export class FamilyViewModel {
 
   /**
    * Update diary entry
-   * FR 3.3.1
    */
   async updateDiaryEntry(
     id: string,
@@ -774,7 +766,6 @@ export class FamilyViewModel {
   /**
    * Transcribe voice audio to text for diary entry
    * UC-301: Voice input for diary writing
-   * FR 3.3.1, 3.3.2, 3.3.4, 3.3.5
    *
    * Called from WriteDiaryScreen when user stops recording
    * Calls voiceTranscriptionService (AssemblyAI STT)
@@ -828,7 +819,6 @@ export class FamilyViewModel {
 
   /**
    * Delete diary entry
-   * FR 3.3.1, 3.3.3
    */
   async deleteDiaryEntry(id: string) {
     runInAction(() => {
@@ -876,7 +866,6 @@ export class FamilyViewModel {
 
   /**
    * Load calendar events
-   * FR 3.2.4
    */
   async loadCalendarEvents(relationship_id: string) {
     runInAction(() => {
@@ -943,7 +932,6 @@ export class FamilyViewModel {
 
   /**
    * Create calendar event
-   * FR 3.2.1, 3.2.2, 3.2.3, 3.2.7
    */
   async createCalendarEvent(
     relationship_id: string,
@@ -990,7 +978,6 @@ export class FamilyViewModel {
 
   /**
    * Update calendar event
-   * FR 3.2.1, 3.2.9
    */
   async updateCalendarEvent(
     id: string,
@@ -1042,7 +1029,6 @@ export class FamilyViewModel {
 
   /**
    * Delete calendar event
-   * FR 3.2.1, 3.2.11, 3.2.12
    */
   async deleteCalendarEvent(id: string) {
     if (!this.currentUserId) {
@@ -1085,7 +1071,6 @@ export class FamilyViewModel {
 
   /**
    * Load AI activity recommendations
-   * FR 3.2.5, 3.4.4
    */
   async loadAIRecommendations(relationship_id: string) {
     runInAction(() => {
@@ -1111,7 +1096,6 @@ export class FamilyViewModel {
 
   /**
    * Accept and use an AI recommendation to create event
-   * FR 3.4.1, 3.4.6
    */
   async useAIRecommendation(
     suggestionId: string,
@@ -1160,7 +1144,6 @@ export class FamilyViewModel {
 
   /**
    * Dismiss an AI recommendation (mark as used/dismissed without creating event)
-   * FR 3.4.6, 3.4.7
    */
   async dismissAIRecommendation(suggestionId: string) {
     try {
@@ -1182,7 +1165,6 @@ export class FamilyViewModel {
 
   /**
    * Generate new AI recommendations
-   * FR 3.4.2, 3.4.3
    */
   async generateNewRecommendations(
     relationship_id: string,

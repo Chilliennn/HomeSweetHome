@@ -18,10 +18,10 @@ import type {
  * FamilyService - Business logic for Family Life & Memory features
  * 
  * Handles:
- * - Media validation and upload logic (FR 3.1)
- * - Diary entry validation (FR 3.3)
- * - Calendar event validation (FR 3.2)
- * - AI suggestion coordination (FR 3.4)
+ * - Media validation and upload logic 
+ * - Diary entry validation 
+ * - Calendar event validation 
+ * - AI suggestion coordination 
  * 
  * Single Responsibility: Enforces business rules and constraints
  * No direct database access - uses familyRepository
@@ -93,7 +93,6 @@ export const familyService = {
 
   /**
    * Validate media file before upload
-   * FR 3.1.5, 3.1.6, 3.1.11, 3.1.12
    */
   validateMediaFile(
     file: {
@@ -169,7 +168,6 @@ export const familyService = {
 
   /**
    * Check if media upload is allowed based on relationship stage
-   * FR 3.1 - Must be Stage 2 (trial_period) or higher
    */
   canAccessFamilyAlbum(relationship: Relationship): boolean {
     const allowedStages = ['trial_period', 'official_ceremony', 'family_life'];
@@ -178,7 +176,6 @@ export const familyService = {
 
   /**
    * Upload media with validation
-   * FR 3.1.1, 3.1.2, 3.1.8, 3.1.9
    * 
    * Accepts file data with base64 content for upload to storage
    */
@@ -226,7 +223,6 @@ export const familyService = {
 
   /**
    * Get media for relationship organized by date
-   * FR 3.1.3
    */
   async getMediaByRelationship(
     relationship_id: string,
@@ -240,7 +236,6 @@ export const familyService = {
 
   /**
    * Remove media from album
-   * FR 3.1.2
    */
   async removeMedia(id: string): Promise<void> {
     return familyRepository.deleteMedia(id);
@@ -248,7 +243,6 @@ export const familyService = {
 
   /**
    * Update media caption
-   * FR 3.1.4
    */
   async updateMediaCaption(id: string, caption: string): Promise<MediaItem> {
     const captionValidation = this.validateCaption(caption);
@@ -321,7 +315,6 @@ export const familyService = {
   /**
    * Upload multiple media files as a single memory
    * Groups multiple files under one memory entry with shared metadata
-   * FR 3.1.1, 3.1.9 (batch upload support)
    */
   async uploadMultipleMediaAsMemory(
     uploader_id: string,
@@ -437,7 +430,6 @@ export const familyService = {
 
   /**
    * Get all memories for a relationship
-   * FR 3.1.3 (organized by date)
    */
   async getMemoriesByRelationship(
     relationship_id: string
@@ -454,7 +446,6 @@ export const familyService = {
 
   /**
    * Remove a memory and all associated media
-   * FR 3.1.2 (batch delete)
    */
   async removeMemory(memory_id: string, actor_id: string): Promise<void> {
     const existing = await familyRepository.getMemoryById(memory_id);
@@ -491,7 +482,6 @@ export const familyService = {
 
   /**
    * Check if diary is available based on relationship stage
-   * FR 3.3 - Available from Stage 1 onwards
    */
   canWriteDiary(): boolean {
     // Available in all stages
@@ -500,7 +490,6 @@ export const familyService = {
 
   /**
    * Validate diary entry content
-   * FR 3.3.4, 3.3.10
    */
   validateDiaryEntry(content: string): { valid: boolean; error?: string } {
     if (!content || content.trim().length < MIN_DIARY_LENGTH) {
@@ -522,7 +511,6 @@ export const familyService = {
 
   /**
    * Create diary entry
-   * FR 3.3.1, 3.3.2, 3.3.4, 3.3.5
    */
   async createDiaryEntry(
     user_id: string,
@@ -547,7 +535,6 @@ export const familyService = {
 
   /**
    * Get diary entries filtered by mood
-   * FR 3.3.7
    */
   async getDiaryEntriesByMood(
     user_id: string,
@@ -559,7 +546,6 @@ export const familyService = {
 
   /**
    * Update diary entry
-   * FR 3.3.1
    */
   async updateDiaryEntry(
     id: string,
@@ -577,7 +563,6 @@ export const familyService = {
 
   /**
    * Delete diary entry
-   * FR 3.3.1
    */
   async deleteDiaryEntry(id: string): Promise<void> {
     return familyRepository.deleteDiaryEntry(id);
@@ -596,7 +581,6 @@ export const familyService = {
 
   /**
    * Check if calendar events are available
-   * FR 3.2 - Available from Stage 2 onwards
    */
   canAccessCalendar(relationship: Relationship): boolean {
     const allowedStages = ['trial_period', 'official_ceremony', 'family_life'];
@@ -605,7 +589,6 @@ export const familyService = {
 
   /**
    * Validate event date (must be future date)
-   * FR 3.2.10
    */
   validateEventDate(event_date: string): { valid: boolean; error?: string } {
     const eventDate = new Date(event_date);
@@ -624,7 +607,6 @@ export const familyService = {
 
   /**
    * Create calendar event
-   * FR 3.2.1, 3.2.2, 3.2.7
    */
   async createCalendarEvent(
     relationship_id: string,
@@ -666,7 +648,6 @@ export const familyService = {
 
   /**
    * Update calendar event
-   * FR 3.2.1, 3.2.9
    */
   async updateCalendarEvent(
     id: string,
@@ -708,7 +689,6 @@ export const familyService = {
 
   /**
    * Delete calendar event
-   * FR 3.2.1, 3.2.11, 3.2.12
    */
   async deleteCalendarEvent(id: string, actor_id: string): Promise<void> {
     const existing = await familyRepository.getCalendarEventById(id);
@@ -729,7 +709,6 @@ export const familyService = {
 
   /**
    * Get calendar events for relationship
-   * FR 3.2.4
    */
   async getCalendarEvents(relationship_id: string): Promise<CalendarEvent[]> {
     return familyRepository.getCalendarEventsByRelationship(relationship_id);
@@ -758,7 +737,6 @@ export const familyService = {
 
   /**
    * Create AI activity suggestion
-   * FR 3.4.2, 3.4.5
    */
   async createAISuggestion(
     relationship_id: string,
@@ -775,7 +753,6 @@ export const familyService = {
 
   /**
    * Get AI recommendations for event creation
-   * FR 3.2.5, 3.4.4 (maximum 3 recommendations)
    */
   async getActivityRecommendations(
     relationship_id: string
@@ -789,7 +766,6 @@ export const familyService = {
 
   /**
    * Mark suggestion as used
-   * FR 3.4.6, 3.4.7
    */
   async useSuggestion(id: string): Promise<AISuggestion> {
     return familyRepository.markSuggestionAsUsed(id);

@@ -31,7 +31,6 @@ const EVENT_TYPES: { value: EventType; label: string; emoji: string }[] = [
  * UC-302: Event details, editing, and deletion
  * Shows full event details, allows editing and deletion with confirmation
  * 
- * FR 3.2.1, 3.2.8, 3.2.9, 3.2.11, 3.2.12
  */
 export const EventDetailScreen = observer(() => {
   const router = useRouter();

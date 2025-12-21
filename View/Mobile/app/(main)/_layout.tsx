@@ -35,15 +35,26 @@ export default observer(function MainLayout() {
         : null;
 
     console.log('🟦 [MainLayout] Syncing user to ViewModels:', { userId, userType });
-
-    // ✅ Sync user context to all ViewModels
-    commVM.setCurrentUser(userId!, userType!);
-    matchVM.setCurrentUser(userId, userType);
-    // Note: youthVM.setCurrentUser is async but we don't await it here
-    // It will fetch the profile in the background
-    youthVM.setCurrentUser(userId);
-    elderVM.setCurrentUser(userId);
-    familyVM.setCurrentUser(userId);
+    // Clear or set user context across ViewModels
+    if (!userId) {
+      console.log('🟦 [MainLayout] User logged out, clearing ViewModels');
+      // CommunicationViewModel expects string userId; pass empty string to clear
+      commVM.setCurrentUser('', null);
+      // Known clearUser implementations
+      matchVM.clearUser();
+      elderVM.clearUser();
+      familyVM.clearUser();
+      // Youth VM may not implement clearUser; reset via setCurrentUser(null)
+      youthVM.setCurrentUser(null);
+    } else {
+      // ✅ Sync user context to all ViewModels
+      commVM.setCurrentUser(userId, userType);
+      matchVM.setCurrentUser(userId, userType);
+      // Note: youthVM.setCurrentUser is async but we don't await it here
+      youthVM.setCurrentUser(userId);
+      elderVM.setCurrentUser(userId);
+      familyVM.setCurrentUser(userId);
+    }
   }, [authVM.authState.currentUserId, authVM.userType]);
   return (
     <Stack

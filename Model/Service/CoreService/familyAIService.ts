@@ -22,7 +22,6 @@ function getConfig(key: string): string | undefined {
  * - Current weather and time
  * - User location
  * 
- * FR 3.4.1, 3.4.2, 3.4.3, 3.4.5
  */
 
 interface AIActivityRecommendation {
@@ -36,7 +35,6 @@ interface AIActivityRecommendation {
 export const familyAIService = {
   /**
    * Generate activity recommendations using Gemini API
-   * FR 3.4.2, 3.4.3, 3.4.4, 3.4.5
    * 
    * Considers:
    * - User mood history (from diary entries)
@@ -268,7 +266,6 @@ Keep descriptions concise. Return only the JSON array, nothing else.`;
 
   /**
    * Generate and save recommendations to database
-   * FR 3.4.2, 3.4.4
    */
   async generateAndSaveRecommendations(
     relationship_id: string,
@@ -301,7 +298,6 @@ Keep descriptions concise. Return only the JSON array, nothing else.`;
 
   /**
    * Generate conversation topic recommendations
-   * Could be extended for FR 3.4 if needed
    */
   async generateConversationTopics(
     relationship: RelationshipType

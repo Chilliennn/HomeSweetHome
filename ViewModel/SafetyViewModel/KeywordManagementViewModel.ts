@@ -62,6 +62,14 @@ export class KeywordManagementViewModel {
     async loadActiveKeywords(): Promise<void> {
         this.isLoading = true;
         try {
+            // Category ID to name mapping
+            const categoryIdToName: { [key: string]: string } = {
+                '1': 'Financial Exploitation',
+                '2': 'Personal Information',
+                '3': 'Inappropriate Content',
+                '4': 'Abuse & Harassment'
+            };
+
             // Fetch active keywords from Supabase
             const { data, error } = await supabase
                 .from('keywords')
@@ -71,16 +79,22 @@ export class KeywordManagementViewModel {
 
             if (error) throw error;
 
-            this.activeKeywords = (data || []).map((row: any) => ({
-                id: row.id,
-                keyword: row.keyword,
-                category: row.category || '',
-                category_id: row.category_id || '1',
-                severity: row.severity || 'medium',
-                is_active: row.is_active ?? true,
-                created_at: row.created_at,
-                updated_at: row.updated_at || row.created_at
-            }));
+            this.activeKeywords = (data || []).map((row: any) => {
+                // Map category_id to category name
+                const categoryId = String(row.category_id || '1');
+                const categoryName = categoryIdToName[categoryId] || row.category || 'Financial Exploitation';
+
+                return {
+                    id: row.id,
+                    keyword: row.keyword,
+                    category: categoryName,
+                    category_id: categoryId,
+                    severity: row.severity || 'medium',
+                    is_active: row.is_active ?? true,
+                    created_at: row.created_at,
+                    updated_at: row.updated_at || row.created_at
+                };
+            });
 
             // Update stats after loading
             this.updateStats();

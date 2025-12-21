@@ -1,16 +1,13 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { observer } from 'mobx-react-lite';
 import { AdminLayout } from '../components/ui';
 import { KeywordManagementScreen } from '../SafetyUI';
-import { KeywordManagementViewModel } from '@home-sweet-home/viewmodel/AdminViewModel';
-import { KeywordService, KeywordRepository, supabase } from '@home-sweet-home/model';
+import { keywordManagementViewModel } from '@home-sweet-home/viewmodel';
 
 const KeywordManagementPage: React.FC = observer(() => {
-    const [vm] = useState(() => new KeywordManagementViewModel(new KeywordService(new KeywordRepository(supabase))));
-
     return (
         <AdminLayout>
-            <KeywordManagementScreen vm={vm} />
+            <KeywordManagementScreen vm={keywordManagementViewModel} />
         </AdminLayout>
     );
 });

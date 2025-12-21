@@ -12,6 +12,7 @@ import {
   Keyboard,
   Animated,
   Modal,
+  FlatListProps,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { observer } from 'mobx-react-lite';
@@ -54,6 +55,7 @@ export const ChatScreen = observer(function ChatScreen() {
   const [messageInput, setMessageInput] = useState('');
   const [isSendingVoice, setIsSendingVoice] = useState(false);
   const keyboardHeight = useRef(new Animated.Value(0)).current;
+  const flatListRef = useRef<FlatList>(null);
 
   // More Menu State
   const [showMoreMenu, setShowMoreMenu] = useState(false);
@@ -195,6 +197,9 @@ export const ChatScreen = observer(function ChatScreen() {
     : chat?.partnerUser;
 
   const messages = vm.currentChatMessages;
+  
+  // ✅ Reverse messages for inverted FlatList (newest at index 0 = bottom of screen)
+  const reversedMessages = [...messages].reverse();
 
   // Calculate day label or stage info
   let headerInfo = '';
@@ -823,14 +828,19 @@ export const ChatScreen = observer(function ChatScreen() {
 
         {/* Messages List */}
         <FlatList
-          data={messages}
+          ref={flatListRef}
+          data={reversedMessages}
           extraData={messages.length}
           renderItem={renderMessage}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.messagesList}
-          inverted={false}
+          inverted={true}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
+          maintainVisibleContentPosition={{
+            minIndexForVisible: 0,
+            autoscrollToTopThreshold: 10,
+          }}
         />
 
         {/* Input Area */}

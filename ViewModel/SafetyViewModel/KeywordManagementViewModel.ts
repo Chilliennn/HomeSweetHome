@@ -1,5 +1,7 @@
 import { makeAutoObservable } from 'mobx';
 import { supabase } from '../../Model/Service/APIService/supabase';
+import { KeywordSuggestionService } from '../../Model/Service/CoreService/KeywordSuggestionService';
+import { KeywordRepository } from '../../Model/Repository/AdminRepository/KeywordRepository';
 
 // Define KeywordRecord type locally (matches database schema)
 export interface KeywordRecord {
@@ -45,14 +47,41 @@ export class KeywordManagementViewModel {
     async loadDashboard(): Promise<void> {
         this.isLoading = true;
         try {
-            // Update stats based on loaded data
+            // Get real detections count from database
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            const { count: detectionsCount, error: detectionsError } = await supabase
+                .from('keyword_detections')
+                .select('*', { count: 'exact', head: true })
+                .gte('detected_at', today.toISOString());
+
+            if (detectionsError) {
+                console.warn('[KeywordManagementVM] Error fetching detections:', detectionsError);
+            }
+
+            // Get keywords added this week
+            const oneWeekAgo = new Date();
+            oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+
+            const { count: weekCount, error: weekError } = await supabase
+                .from('keywords')
+                .select('*', { count: 'exact', head: true })
+                .gte('created_at', oneWeekAgo.toISOString());
+
+            if (weekError) {
+                console.warn('[KeywordManagementVM] Error fetching week count:', weekError);
+            }
+
+            // Update stats with real data
             this.stats = {
                 activeKeywordCount: this.activeKeywords.length,
                 suggestionsRemaining: this.suggestions.length,
-                detectionsToday: 12,
-                keywordsAddedThisWeek: 3
+                detectionsToday: detectionsCount || 0,
+                keywordsAddedThisWeek: weekCount || 0
             };
         } catch (error) {
+            console.error('[KeywordManagementVM] Error loading dashboard:', error);
             this.errorMessage = error instanceof Error ? error.message : 'Failed to load dashboard';
         } finally {
             this.isLoading = false;
@@ -62,6 +91,14 @@ export class KeywordManagementViewModel {
     async loadActiveKeywords(): Promise<void> {
         this.isLoading = true;
         try {
+            // Map category_id to category name
+            const categoryIdToName: Record<string, string> = {
+                '1': 'Financial Exploitation',
+                '2': 'Personal Information',
+                '3': 'Inappropriate Content',
+                '4': 'Abuse & Harassment'
+            };
+
             // Fetch active keywords from Supabase
             const { data, error } = await supabase
                 .from('keywords')
@@ -74,7 +111,8 @@ export class KeywordManagementViewModel {
             this.activeKeywords = (data || []).map((row: any) => ({
                 id: row.id,
                 keyword: row.keyword,
-                category: row.category || '',
+                // Use stored category name OR map from category_id
+                category: row.category || categoryIdToName[row.category_id] || 'Financial Exploitation',
                 category_id: row.category_id || '1',
                 severity: row.severity || 'medium',
                 is_active: row.is_active ?? true,
@@ -126,10 +164,26 @@ export class KeywordManagementViewModel {
 
     async generateSuggestions(): Promise<void> {
         this.isMutating = true;
+        this.errorMessage = null;
         try {
-            // Stub: AI analysis would go here
-            console.log('[KeywordManagementVM] AI suggestion generation not implemented');
+            console.log('[KeywordManagementVM] Starting AI chat analysis...');
+
+            // Create service instances
+            const keywordRepo = new KeywordRepository(supabase);
+            const suggestionService = new KeywordSuggestionService(keywordRepo);
+
+            // Run AI analysis on messages from last 30 days
+            const suggestionsGenerated = await suggestionService.runSuggestionGeneration(30);
+
+            console.log(`[KeywordManagementVM] AI generated ${suggestionsGenerated} new suggestions`);
+
+            // Reload suggestions to show new ones
+            await this.loadSuggestions();
+
+            // Update dashboard stats
+            await this.loadDashboard();
         } catch (error) {
+            console.error('[KeywordManagementVM] AI analysis error:', error);
             this.errorMessage = error instanceof Error ? error.message : 'Failed to generate suggestions';
         } finally {
             this.isMutating = false;
@@ -139,20 +193,32 @@ export class KeywordManagementViewModel {
     async addKeyword(keyword: string, category: string, severity: 'Low' | 'Medium' | 'High' | 'Critical'): Promise<void> {
         this.isMutating = true;
         try {
-            // Stub: Add to database later
-            const newKeyword: KeywordRecord = {
-                id: crypto.randomUUID(),
-                keyword,
-                category,
-                severity: severity.toLowerCase() as any,
-                is_active: true,
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString(),
-                category_id: '1'
+            // Map category name to ID
+            const categoryMap: Record<string, string> = {
+                'Financial Exploitation': '1',
+                'Personal Information': '2',
+                'Inappropriate Content': '3',
+                'Abuse & Harassment': '4'
             };
-            this.activeKeywords.push(newKeyword);
-            this.updateStats();
+            const category_id = categoryMap[category] || '1';
+
+            // Insert into Supabase
+            const { error } = await supabase
+                .from('keywords')
+                .insert({
+                    keyword,
+                    category_id,
+                    severity: severity.toLowerCase(),
+                    is_active: true,
+                });
+
+            if (error) throw error;
+
+            // Reload from database to get the new keyword with proper ID
+            await this.loadActiveKeywords();
+            this.setModalState(null);
         } catch (error) {
+            console.error('[KeywordManagementVM] Error adding keyword:', error);
             this.errorMessage = error instanceof Error ? error.message : 'Failed to add keyword';
         } finally {
             this.isMutating = false;
@@ -162,18 +228,33 @@ export class KeywordManagementViewModel {
     async updateKeyword(id: string, keyword: string, category: string, severity: 'Low' | 'Medium' | 'High' | 'Critical'): Promise<void> {
         this.isMutating = true;
         try {
-            const index = this.activeKeywords.findIndex(k => k.id === id);
-            if (index !== -1) {
-                this.activeKeywords[index] = {
-                    ...this.activeKeywords[index],
+            // Map category name to ID
+            const categoryMap: Record<string, string> = {
+                'Financial Exploitation': '1',
+                'Personal Information': '2',
+                'Inappropriate Content': '3',
+                'Abuse & Harassment': '4'
+            };
+            const category_id = categoryMap[category] || '1';
+
+            // Update in Supabase
+            const { error } = await supabase
+                .from('keywords')
+                .update({
                     keyword,
-                    category,
-                    severity: severity.toLowerCase() as any,
-                    updated_at: new Date().toISOString()
-                };
-            }
+                    category_id,
+                    severity: severity.toLowerCase(),
+                    updated_at: new Date().toISOString(),
+                })
+                .eq('id', id);
+
+            if (error) throw error;
+
+            // Reload from database
+            await this.loadActiveKeywords();
             this.setModalState(null);
         } catch (error) {
+            console.error('[KeywordManagementVM] Error updating keyword:', error);
             this.errorMessage = error instanceof Error ? error.message : 'Failed to update keyword';
         } finally {
             this.isMutating = false;
@@ -183,10 +264,22 @@ export class KeywordManagementViewModel {
     async deleteKeyword(id: string): Promise<void> {
         this.isMutating = true;
         try {
-            this.activeKeywords = this.activeKeywords.filter(k => k.id !== id);
-            this.updateStats();
+            // Soft delete: set is_active to false
+            const { error } = await supabase
+                .from('keywords')
+                .update({
+                    is_active: false,
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', id);
+
+            if (error) throw error;
+
+            // Reload from database
+            await this.loadActiveKeywords();
             this.setModalState(null);
         } catch (error) {
+            console.error('[KeywordManagementVM] Error deleting keyword:', error);
             this.errorMessage = error instanceof Error ? error.message : 'Failed to delete keyword';
         } finally {
             this.isMutating = false;
@@ -198,10 +291,22 @@ export class KeywordManagementViewModel {
         try {
             const suggestion = this.suggestions.find(s => s.id === suggestionId);
             if (suggestion) {
+                // Add keyword to database
                 await this.addKeyword(suggestion.keyword, suggestion.category, suggestion.severity);
-                this.suggestions = this.suggestions.filter(s => s.id !== suggestionId);
+
+                // Mark suggestion as accepted in database
+                const { error } = await supabase
+                    .from('keyword_suggestions')
+                    .update({ status: 'accepted' })
+                    .eq('id', suggestionId);
+
+                if (error) throw error;
+
+                // Reload suggestions
+                await this.loadSuggestions();
             }
         } catch (error) {
+            console.error('[KeywordManagementVM] Error accepting suggestion:', error);
             this.errorMessage = error instanceof Error ? error.message : 'Failed to accept suggestion';
         } finally {
             this.isMutating = false;
@@ -211,8 +316,18 @@ export class KeywordManagementViewModel {
     async rejectSuggestion(suggestionId: string): Promise<void> {
         this.isMutating = true;
         try {
-            this.suggestions = this.suggestions.filter(s => s.id !== suggestionId);
+            // Mark suggestion as rejected in database
+            const { error } = await supabase
+                .from('keyword_suggestions')
+                .update({ status: 'rejected' })
+                .eq('id', suggestionId);
+
+            if (error) throw error;
+
+            // Reload suggestions
+            await this.loadSuggestions();
         } catch (error) {
+            console.error('[KeywordManagementVM] Error rejecting suggestion:', error);
             this.errorMessage = error instanceof Error ? error.message : 'Failed to reject suggestion';
         } finally {
             this.isMutating = false;

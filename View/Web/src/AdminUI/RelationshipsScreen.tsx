@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect } from "react";
 import { observer } from 'mobx-react-lite';
-import { SentimentAnalysisViewModel } from '@home-sweet-home/viewmodel';
+import { AdminSentimentAnalysisViewModel } from '@home-sweet-home/viewmodel';
 import { relationshipRepository } from '@home-sweet-home/model';
 
 import { Line, Bar } from 'react-chartjs-2';
@@ -401,7 +401,7 @@ interface SentimentAnalysisViewProps {
 }
 
 const SentimentAnalysisView: React.FC<SentimentAnalysisViewProps> = observer(({ relationship, onBack }) => {
-    const [vm] = React.useState(() => new SentimentAnalysisViewModel());
+    const [vm] = React.useState(() => new AdminSentimentAnalysisViewModel());
     const loadedRef = React.useRef<string | null>(null);
 
     React.useEffect(() => {
@@ -514,7 +514,7 @@ interface CommunicationFrequencyViewProps {
 }
 
 const CommunicationFrequencyView: React.FC<CommunicationFrequencyViewProps> = observer(({ relationship, onBack }) => {
-    const [vm] = React.useState(() => new SentimentAnalysisViewModel());
+    const [vm] = React.useState(() => new AdminSentimentAnalysisViewModel());
     const loadedRef = React.useRef<string | null>(null);
 
     React.useEffect(() => {
@@ -737,7 +737,7 @@ interface UpdateRiskLevelViewProps {
 }
 
 const UpdateRiskLevelView: React.FC<UpdateRiskLevelViewProps> = observer(({ relationship, onBack }) => {
-    const [vm] = React.useState(() => new SentimentAnalysisViewModel());
+    const [vm] = React.useState(() => new AdminSentimentAnalysisViewModel());
     const [isUpdating, setIsUpdating] = React.useState(false);
     const [localStatus, setLocalStatus] = React.useState(relationship.status);
     const loadedRef = React.useRef<string | null>(null);
@@ -927,7 +927,7 @@ interface Recommendation {
 }
 
 const RecommendationsView: React.FC<RecommendationsViewProps> = observer(({ relationship, onBack }) => {
-    const [vm] = React.useState(() => new SentimentAnalysisViewModel());
+    const [vm] = React.useState(() => new AdminSentimentAnalysisViewModel());
     const [recommendations, setRecommendations] = React.useState<Recommendation[]>([]);
     const [isLoading, setIsLoading] = React.useState(true);
     const loadedRef = React.useRef<string | null>(null);

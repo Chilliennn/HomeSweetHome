@@ -11,11 +11,11 @@ import {
     View,
     Text,
     StyleSheet,
-    SafeAreaView,
     Alert,
     ActivityIndicator,
     Image,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { observer } from 'mobx-react-lite';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { communicationViewModel } from '@home-sweet-home/viewmodel';
@@ -74,7 +74,7 @@ export const PreMatchExpiredScreen = observer(function PreMatchExpiredScreen() {
     // Loading state
     if (!chat) {
         return (
-            <SafeAreaView style={styles.container}>
+            <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
                 <View style={styles.loadingContainer}>
                     <ActivityIndicator size="large" color={Colors.light.primary} />
                 </View>
@@ -83,7 +83,7 @@ export const PreMatchExpiredScreen = observer(function PreMatchExpiredScreen() {
     }
 
     return (
-        <SafeAreaView style={styles.container}>
+        <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
             <View style={styles.content}>
                 {/* Clock Icon */}
                 <View style={styles.iconContainer}>

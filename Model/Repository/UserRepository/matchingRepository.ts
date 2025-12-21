@@ -42,11 +42,11 @@ export const matchingRepository = {
         const limit = filters?.limit;
         const offset = filters?.offset || 0;
 
-    
+        // Get all elderly_id from active or paused relationships (these elderly are already matched)
         const { data: activeRelationships, error: relError } = await supabase
             .from('relationships')
             .select('elderly_id')
-            .eq('status', 'active');
+            .in('status', ['active', 'paused']);
 
         if (relError) throw relError;
         const excludedElderlyIds = (activeRelationships || []).map(r => r.elderly_id);

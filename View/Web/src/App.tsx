@@ -3,6 +3,8 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import AdminLogin from './AdminUI/AdminLogin';
 const AdminPage = React.lazy(() => import('./AdminUI/AdminPage'));
 const ReportPage = React.lazy(() => import('./AdminUI/ReportPage'));
+const RelationshipsPage = React.lazy(() => import('./pages/RelationshipsPage'));
+const KeywordManagementPage = React.lazy(() => import('./pages/KeywordManagementPage'));
 
 function RequireAuth({ children }: { children: React.ReactElement }) {
   const loggedIn = typeof window !== 'undefined' && !!localStorage.getItem('adminLoggedIn');
@@ -55,6 +57,8 @@ function App() {
             <Route path="/" element={<AdminLogin />} />
             <Route path="/admin" element={<RequireAuth><AdminPage /></RequireAuth>} />
             <Route path="/admin/reports" element={<RequireAuth><ReportPage /></RequireAuth>} />
+            <Route path="/admin/relationships" element={<RequireAuth><RelationshipsPage /></RequireAuth>} />
+            <Route path="/admin/keywords" element={<RequireAuth><KeywordManagementPage /></RequireAuth>} />
           </Routes>
         </Suspense>
       </ErrorBoundary>
@@ -63,4 +67,3 @@ function App() {
 }
 
 export default App;
-

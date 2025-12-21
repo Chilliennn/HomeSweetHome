@@ -1,5 +1,7 @@
 import { makeAutoObservable, runInAction } from "mobx";
 import { stageService } from "../../Model/Service/CoreService/stage";
+import { familyService } from "../../Model/Service/CoreService/familyService";
+import { familyAIService } from "../../Model/Service/CoreService/familyAIService";
 import type {
   Feature,
   LockedStageDetail,
@@ -7,6 +9,7 @@ import type {
   StageInfo,
   StageRequirement,
   JourneyStats,
+  AISuggestion,
 } from "../../Model/types/index";
 
 export class StageViewModel {
@@ -64,6 +67,7 @@ export class StageViewModel {
   // Manual sign-off observables
   showManualSignOffModal: boolean = false;
   selectedActivity: StageRequirement | null = null;
+  aiSuggestions: AISuggestion[] = [];
 
   // Tracking state for realtime detection
   private previousStage: RelationshipStage | null = null;
@@ -371,6 +375,7 @@ export class StageViewModel {
       await this.loadCoolingPeriodInfo();
       await this.loadStageCompletionInfo();
       await this.loadJourneyStats(); // Load journey stats on initialization
+      await this.loadAISuggestions(); // Load AI suggestions on initialization
 
       if (this.relationshipId) {
         this.setupRealtimeSubscription(this.relationshipId);
@@ -786,11 +791,100 @@ export class StageViewModel {
 
       return true;
     } catch (err: any) {
+      console.error("[StageViewModel] submitWithdrawal error:", err);
       runInAction(() => {
         this.error = err.message;
         this.isLoading = false;
       });
       return false;
+    }
+  }
+
+  // ===========================
+  // AI SUGGESTIONS
+  // ===========================
+
+  async loadAISuggestions() {
+    if (!this.relationshipId) return;
+    try {
+      const suggestions = await familyService.getActivityRecommendations(
+        this.relationshipId
+      );
+      runInAction(() => {
+        this.aiSuggestions = suggestions;
+      });
+    } catch (e) {
+      console.error("Error loading AI suggestions", e);
+    }
+  }
+
+  async useAISuggestion(suggestion: AISuggestion) {
+    if (!this.relationshipId || !this.userId) return;
+    this.isLoading = true;
+    try {
+      // 1. Create calendar event (FR 3.2.1)
+      // Use tomorrow's date to ensure it passes the "future date" validation in familyService
+      const tomorrow = new Date(Date.now() + 86400000);
+      const dateString = tomorrow.toISOString().split("T")[0];
+
+      await familyService.createCalendarEvent(
+        this.relationshipId,
+        this.userId,
+        suggestion.activity_title || "New Activity",
+        "activity",
+        dateString,
+        undefined,
+        suggestion.activity_description || undefined
+      );
+
+      // 2. Mark suggestion as used
+      await familyService.useSuggestion(suggestion.id);
+
+      // 3. Reload suggestions
+      await this.loadAISuggestions();
+    } catch (e: any) {
+      console.error("Error using AI suggestion", e);
+      // alert the user that creation failed
+      runInAction(() => {
+        this.error = e.message || "Failed to add activity to calendar";
+      });
+    } finally {
+      runInAction(() => {
+        this.isLoading = false;
+      });
+    }
+  }
+
+  async generateNewIdeas() {
+    if (!this.relationshipId || !this.userId) return;
+    this.isLoading = true;
+    try {
+      // Fetch stats to get context (using existing method)
+      const stats = await stageService.getJourneyStats(this.relationshipId);
+
+      // Need relationship object for generation
+      // We'll add this to stageService or use a workaround if needed.
+      // For now, let's assume we can get it from userRepository if we must,
+      // but let's try to stay in service layer.
+      const relationship = await stageService.getRelationshipById(
+        this.relationshipId
+      );
+      if (relationship) {
+        // Mood and location could be more dynamic, using defaults for now
+        await familyAIService.generateAndSaveRecommendations(
+          this.relationshipId,
+          "neutral",
+          "Singapore",
+          relationship as any
+        );
+        await this.loadAISuggestions();
+      }
+    } catch (e) {
+      console.error("Error generating new ideas", e);
+    } finally {
+      runInAction(() => {
+        this.isLoading = false;
+      });
     }
   }
 

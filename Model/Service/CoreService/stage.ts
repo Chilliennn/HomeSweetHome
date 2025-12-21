@@ -9,6 +9,14 @@ import type {
 } from "../../types";
 
 export class StageService {
+  async getRelationshipById(id: string) {
+    return userRepository.getRelationshipById(id);
+  }
+
+  async getAnyRelationship(userId: string) {
+    return userRepository.getAnyRelationship(userId);
+  }
+
   async getStageProgression(userId: string): Promise<{
     stages: StageInfo[];
     currentStage: RelationshipStage;
@@ -37,13 +45,23 @@ export class StageService {
 
     const currentStageIndex = stageOrder.indexOf(relationship.current_stage);
 
-    const stages: StageInfo[] = stageOrder.map((stage, index) => ({
-      stage,
-      display_name: stageNames[stage],
-      order: index + 1,
-      is_current: stage === relationship.current_stage,
-      is_completed: index < currentStageIndex,
-    }));
+    const stages: StageInfo[] = stageOrder.map((stage, index) => {
+      const is_current = stage === relationship.current_stage;
+      let is_completed = index < currentStageIndex;
+
+      // Special case: Stage 4 is completed if we are in family_life and requirements are met
+      if (index === 3 && relationship.current_stage === "family_life") {
+        is_completed = !!relationship.stage_metrics?.requirements_met;
+      }
+
+      return {
+        stage,
+        display_name: stageNames[stage],
+        order: index + 1,
+        is_current,
+        is_completed,
+      };
+    });
 
     return {
       stages,

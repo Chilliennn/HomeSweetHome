@@ -9,12 +9,12 @@ import {
 } from 'react-native';
 import { observer } from 'mobx-react-lite';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { familyViewModel, authViewModel } from '@home-sweet-home/viewmodel';
+import { useRouter, useLocalSearchParams } from 'expo-router';
+import { familyViewModel } from '@home-sweet-home/viewmodel';
 import { ThemedText } from '@/components/themed-text';
 import { Button } from '@/components/ui/Button';
 import { AlertBanner } from '@/components/ui/AlertBanner';
 import { Header } from '@/components/ui/Header';
-import { useRouter } from 'expo-router';
 import type { EventType } from '@home-sweet-home/model';
 
 const EVENT_TYPES: { value: EventType; label: string; emoji: string }[] = [
@@ -36,7 +36,11 @@ const EVENT_TYPES: { value: EventType; label: string; emoji: string }[] = [
  */
 export const CreateEventScreen = observer(() => {
   const router = useRouter();
+  const params = useLocalSearchParams();
   const { currentRelationship, isLoading, errorMessage } = familyViewModel;
+
+  // ✅ MVVM: Get userId from route params or familyViewModel
+  const userId = (params.userId as string) || familyViewModel.currentUserId;
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -74,11 +78,10 @@ export const CreateEventScreen = observer(() => {
 
     const timeString = eventTime.toLocaleTimeString('en-US', {
       hour: '2-digit',
-      minute: '2-digit',
       hour12: false,
     });
 
-    const userId = authViewModel.authState.currentUserId;
+    // ✅ MVVM: Use familyViewModel.currentUserId (synced from Layout)
     if (!userId) {
       Alert.alert('Error', 'User not authenticated');
       return;

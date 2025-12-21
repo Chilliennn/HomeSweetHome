@@ -6,12 +6,6 @@ const ReportPage = React.lazy(() => import('./AdminUI/ReportPage'));
 const RelationshipsPage = React.lazy(() => import('./pages/RelationshipsPage'));
 const KeywordManagementPage = React.lazy(() => import('./pages/KeywordManagementPage'));
 
-function RequireAuth({ children }: { children: React.ReactElement }) {
-  const loggedIn = typeof window !== 'undefined' && !!localStorage.getItem('adminLoggedIn');
-  if (!loggedIn) return <Navigate to="/" replace />;
-  return children;
-}
-
 class ErrorBoundary extends React.Component<
   { children: React.ReactNode },
   { hasError: boolean; error: Error | null }
@@ -47,6 +41,15 @@ class ErrorBoundary extends React.Component<
     return this.props.children;
   }
 }
+
+// Auth check component
+const RequireAuth: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const isLoggedIn = localStorage.getItem('adminLoggedIn') === 'true';
+  if (!isLoggedIn) {
+    return <Navigate to="/" replace />;
+  }
+  return <>{children}</>;
+};
 
 function App() {
   return (

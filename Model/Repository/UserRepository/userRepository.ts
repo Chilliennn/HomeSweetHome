@@ -166,6 +166,7 @@ export const userRepository = {
   async updateUser(
     userId: string,
     update: {
+      full_name?: string;
       phone?: string;
       location?: string;
       languages?: string[];
@@ -345,7 +346,7 @@ export const userRepository = {
       ],
       trial_period: [
         "Weekly video calls",
-        "Shared diary entries",
+        "Personal Diary entries",
         "Complete trust exercises",
       ],
       official_ceremony: [
@@ -409,7 +410,7 @@ export const userRepository = {
       },
       {
         key: "diary",
-        name: "Shared Diary",
+        name: "Personal Diary",
         description: "Document your journey",
         unlockStage: "trial_period" as RelationshipStage,
       },

@@ -10,7 +10,6 @@ import {
 } from 'react-native';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { userRepository } from '@home-sweet-home/model/Repository/UserRepository/userRepository';
 import { authViewModel } from '@home-sweet-home/viewmodel';
 import { useNavigation } from '@react-navigation/native';
 
@@ -46,40 +45,34 @@ export default function LoginScreen() {
     setLoading(true);
 
     try {
-      const user = await userRepository.getByEmail(email.trim());
-      console.log('userRepository.getByEmail result:', user);
+      // ✅ MVVM: Use authViewModel.signIn() instead of direct repository access
+      const result = await authViewModel.signIn(email.trim(), password);
+      console.log('authViewModel.signIn result:', result);
 
-      if (!user) {
+      if (!result.appUser) {
         Alert.alert('Error', 'No account found with this email');
         setLoading(false);
         return;
       }
 
-      // ✅ Set authViewModel state for other ViewModels to access
-      authViewModel.setAuthState({
-        isLoggedIn: true,
-        currentUserId: user.id,
-        isProfileComplete: true,
-      });
-      authViewModel.setUserType(user.user_type as 'youth' | 'elderly');
-
-      const relationship = await userRepository.getActiveRelationship(user.id);
-      console.log('userRepository.getActiveRelationship result:', relationship);
+      // ✅ MVVM: Use authViewModel method to get relationship
+      const relationship = await authViewModel.getActiveRelationship(result.appUser.id);
+      console.log('authViewModel.getActiveRelationship result:', relationship);
 
       if (relationship) {
         router.replace({
           pathname: '/bonding',
-          params: { userId: user.id, userName: user.full_name },
+          params: { userId: result.appUser.id, userName: result.appUser.full_name },
         });
 
         router.replace({
           pathname: '/(main)/bonding',
-          params: { userId: user.id, userName: user.full_name },
+          params: { userId: result.appUser.id, userName: result.appUser.full_name },
         });
       } else {
         router.replace({
           pathname: '/matching',
-          params: { userId: user.id, userName: user.full_name },
+          params: { userId: result.appUser.id, userName: result.appUser.full_name },
         });
       }
     } catch (error) {

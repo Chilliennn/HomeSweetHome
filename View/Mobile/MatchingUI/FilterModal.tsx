@@ -21,33 +21,49 @@ interface FilterModalProps {
 }
 
 // Available options (based on UC101_C6)
+
 const INTEREST_OPTIONS = [
-    'Reading', 'Gardening', 'Cooking', 'Music', 'Art',
-    'Photography', 'Travel', 'Sports', 'Games', 'Movies',
-    'Walking', 'Crafts', 'Technology', 'History', 'Nature'
+    'cooking',
+    'music', 
+    'gardening',
+    'arts',
+    'reading',
+    'games',
+    'travel',
+    'exercise',
+    'photography',
+    'crafts',
+    'technology',
+    'history',
+    'nature',
+    'movies',
+    'sports',
+    'walking',
 ];
 
-const LANGUAGE_OPTIONS = ['English', 'Malay', 'Mandarin', 'Tamil'];
+// ⚠️ IMPORTANT: Must match ProfileInfoForm's LANGUAGE_OPTIONS ids (lowercase)
+const LANGUAGE_OPTIONS = ['malay', 'english', 'mandarin', 'tamil', 'cantonese', 'hokkien'];
 
+// Malaysia Location Options - Must match ProfileSetupForm for consistent filtering
 const LOCATION_OPTIONS = [
-    'Kuala Lumpur', 'Selangor', 'Penang', 'Johor',
-    'Perak', 'Sabah', 'Sarawak', 'Melaka'
-];
-
-// UC101 C6: Communication preference filter
-const COMMUNICATION_PREFERENCE_OPTIONS = [
-    { value: 'text', label: '💬 Text Chat' },
-    { value: 'voice', label: '📞 Voice Calls' },
-    { value: 'video', label: '📹 Video Calls' },
-];
-
-// Age range bounds for elderly (UC103: elderly 60+)
-const AGE_RANGE_OPTIONS = [
-    { label: '60-65', min: 60, max: 65 },
-    { label: '66-70', min: 66, max: 70 },
-    { label: '71-75', min: 71, max: 75 },
-    { label: '76-80', min: 76, max: 80 },
-    { label: '80+', min: 80, max: 100 },
+    // States (13)
+    'Johor',
+    'Kedah',
+    'Kelantan',
+    'Malacca (Melaka)',
+    'Negeri Sembilan',
+    'Pahang',
+    'Penang (Pulau Pinang)',
+    'Perak',
+    'Perlis',
+    'Sabah',
+    'Sarawak',
+    'Selangor',
+    'Terengganu',
+    // Federal Territories (3)
+    'Kuala Lumpur',
+    'Labuan',
+    'Putrajaya',
 ];
 
 export const FilterModal: React.FC<FilterModalProps> = ({
@@ -64,10 +80,6 @@ export const FilterModal: React.FC<FilterModalProps> = ({
     );
     const [selectedLocation, setSelectedLocation] = useState<string>(
         currentFilters.location || ''
-    );
-    const [selectedCommunicationPref, setSelectedCommunicationPref] = useState<string[]>([]);
-    const [selectedAgeRange, setSelectedAgeRange] = useState<{ min: number; max: number } | null>(
-        currentFilters.ageRange || null
     );
 
     const toggleInterest = (interest: string) => {
@@ -86,14 +98,6 @@ export const FilterModal: React.FC<FilterModalProps> = ({
         );
     };
 
-    const toggleCommunicationPref = (pref: string) => {
-        setSelectedCommunicationPref(prev =>
-            prev.includes(pref)
-                ? prev.filter(p => p !== pref)
-                : [...prev, pref]
-        );
-    };
-
     const handleApply = () => {
         const filters: ElderlyFilters = {};
 
@@ -106,9 +110,6 @@ export const FilterModal: React.FC<FilterModalProps> = ({
         if (selectedLocation) {
             filters.location = selectedLocation;
         }
-        if (selectedAgeRange) {
-            filters.ageRange = selectedAgeRange;
-        }
 
         onApply(filters);
         onClose();
@@ -118,16 +119,12 @@ export const FilterModal: React.FC<FilterModalProps> = ({
         setSelectedInterests([]);
         setSelectedLanguages([]);
         setSelectedLocation('');
-        setSelectedCommunicationPref([]);
-        setSelectedAgeRange(null);
     };
 
     const activeFilterCount =
         (selectedInterests.length > 0 ? 1 : 0) +
         (selectedLanguages.length > 0 ? 1 : 0) +
-        (selectedLocation ? 1 : 0) +
-        (selectedCommunicationPref.length > 0 ? 1 : 0) +
-        (selectedAgeRange ? 1 : 0);
+        (selectedLocation ? 1 : 0);
 
     return (
         <Modal
@@ -160,7 +157,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                                     onPress={() => toggleInterest(interest)}
                                 >
                                     <Chip
-                                        label={interest}
+                                        label={interest.charAt(0).toUpperCase() + interest.slice(1)}
                                         color={selectedInterests.includes(interest) ? Colors.light.primary : '#E0E0E0'}
                                         size="small"
                                     />
@@ -180,7 +177,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                                     onPress={() => toggleLanguage(lang)}
                                 >
                                     <Chip
-                                        label={lang}
+                                        label={lang.charAt(0).toUpperCase() + lang.slice(1)}
                                         color={selectedLanguages.includes(lang) ? Colors.light.primary : '#E0E0E0'}
                                         size="small"
                                     />
@@ -202,50 +199,6 @@ export const FilterModal: React.FC<FilterModalProps> = ({
                                     <Chip
                                         label={loc}
                                         color={selectedLocation === loc ? Colors.light.primary : '#E0E0E0'}
-                                        size="small"
-                                    />
-                                </TouchableOpacity>
-                            ))}
-                        </View>
-                    </View>
-
-                    {/* Communication Preference Section - UC101 C6 */}
-                    <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>Communication Preference</Text>
-                        <Text style={styles.sectionHint}>Filter by preferred communication style</Text>
-                        <View style={styles.chipsContainer}>
-                            {COMMUNICATION_PREFERENCE_OPTIONS.map(pref => (
-                                <TouchableOpacity
-                                    key={pref.value}
-                                    onPress={() => toggleCommunicationPref(pref.value)}
-                                >
-                                    <Chip
-                                        label={pref.label}
-                                        color={selectedCommunicationPref.includes(pref.value) ? Colors.light.primary : '#E0E0E0'}
-                                        size="small"
-                                    />
-                                </TouchableOpacity>
-                            ))}
-                        </View>
-                    </View>
-
-                    {/* Age Range Section - UC101 C6 */}
-                    <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>Age Range</Text>
-                        <Text style={styles.sectionHint}>Filter by elder's age group</Text>
-                        <View style={styles.chipsContainer}>
-                            {AGE_RANGE_OPTIONS.map(range => (
-                                <TouchableOpacity
-                                    key={range.label}
-                                    onPress={() => setSelectedAgeRange(
-                                        selectedAgeRange?.min === range.min && selectedAgeRange?.max === range.max
-                                            ? null
-                                            : { min: range.min, max: range.max }
-                                    )}
-                                >
-                                    <Chip
-                                        label={range.label}
-                                        color={selectedAgeRange?.min === range.min && selectedAgeRange?.max === range.max ? Colors.light.primary : '#E0E0E0'}
                                         size="small"
                                     />
                                 </TouchableOpacity>

@@ -22,6 +22,7 @@ export const AgeVerificationCamera: React.FC<AgeVerificationCameraProps> = ({
   const cameraRef = useRef<CameraView | null>(null);
   const [permission, requestPermission] = useCameraPermissions();
   const [isReady, setIsReady] = useState(false);
+  const [isCapturing, setIsCapturing] = useState(false);
 
   useEffect(() => {
     if (!permission?.granted) {
@@ -29,18 +30,42 @@ export const AgeVerificationCamera: React.FC<AgeVerificationCameraProps> = ({
     }
   }, [permission?.granted, requestPermission]);
 
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      console.log('[AgeVerificationCamera] Unmounting - cleaning up');
+      cameraRef.current = null;
+    };
+  }, []);
+
   const handleTakePhoto = async () => {
-    if (!cameraRef.current || !isReady) return;
+    if (!cameraRef.current || !isReady || isCapturing) return;
+
+    setIsCapturing(true);
+    console.log('[AgeVerificationCamera] Taking photo...');
+
     try {
       const photo = await cameraRef.current.takePictureAsync({
         quality: 0.6,
         skipProcessing: true,
       });
+
       if (photo?.uri) {
-        onCaptured(photo.uri);
+        console.log('[AgeVerificationCamera] Photo captured, uri:', photo.uri.substring(0, 50));
+
+        // Clear camera ref before calling onCaptured
+        cameraRef.current = null;
+
+        // Small delay to ensure camera is fully stopped before transitioning
+        // This helps prevent the camera from staying on top on some devices
+        setTimeout(() => {
+          console.log('[AgeVerificationCamera] Calling onCaptured');
+          onCaptured(photo.uri);
+        }, 100);
       }
     } catch (error) {
-      console.warn('Camera capture failed', error);
+      console.warn('[AgeVerificationCamera] Capture failed:', error);
+      setIsCapturing(false);
     }
   };
 

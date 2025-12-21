@@ -1,5 +1,6 @@
 import { matchingRepository, ElderlyFilters, ElderlyProfilesResult } from '../../Repository/UserRepository/matchingRepository';
 import { notificationRepository } from '../../Repository/UserRepository/notificationRepository';
+import { userRepository } from '../../Repository/UserRepository/userRepository';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import { User, UserType } from '../../types';
 import type { Interest } from '../../Repository/UserRepository/matchingRepository';
@@ -36,9 +37,9 @@ export const matchingService = {
 
         let score = 0;
 
-        // Match interests
-        const youthInterests = youthProfile.profile_data?.interests || [];
-        const elderlyInterests = elderlyProfile.profile_data?.interests || [];
+        // Match interests (case-insensitive)
+        const youthInterests = (youthProfile.profile_data?.interests || []).map(i => i.toLowerCase());
+        const elderlyInterests = (elderlyProfile.profile_data?.interests || []).map(i => i.toLowerCase());
         for (const interest of youthInterests) {
             if (elderlyInterests.includes(interest)) {
                 score += MATCH_SCORE_WEIGHTS.SAME_INTEREST;
@@ -55,11 +56,36 @@ export const matchingService = {
         }
 
         // Match location
-        if (youthProfile.location && elderlyProfile.location) {
-            if (youthProfile.location.toLowerCase() === elderlyProfile.location.toLowerCase()) {
-                score += MATCH_SCORE_WEIGHTS.SAME_LOCATION;
-            }
+        const youthLocation = youthProfile.location?.toLowerCase() || '';
+        const elderlyLocation = elderlyProfile.location?.toLowerCase() || '';
+        const locationMatch = youthLocation && elderlyLocation && youthLocation === elderlyLocation;
+        if (locationMatch) {
+            score += MATCH_SCORE_WEIGHTS.SAME_LOCATION;
         }
+
+        // Detailed scoring breakdown for debugging
+        const matchedInterests = youthInterests.filter(i => elderlyInterests.includes(i));
+        const matchedLanguages = youthLanguages.filter(l => elderlyLanguages.includes(l));
+        
+        console.log('🎯 Match Score:', {
+            elderly: elderlyProfile.full_name,
+            totalScore: score,
+            breakdown: {
+                interests: `${matchedInterests.length} matched × 10 = ${matchedInterests.length * MATCH_SCORE_WEIGHTS.SAME_INTEREST}`,
+                languages: `${matchedLanguages.length} matched × 15 = ${matchedLanguages.length * MATCH_SCORE_WEIGHTS.SAME_LANGUAGE}`,
+                location: locationMatch ? `✓ same (${youthLocation}) × 20 = 20` : `✗ different (${youthLocation} ≠ ${elderlyLocation})`,
+            },
+            details: {
+                youthInterests,
+                elderlyInterests,
+                matchedInterests,
+                youthLanguages,
+                elderlyLanguages,
+                matchedLanguages,
+                youthLocation,
+                elderlyLocation,
+            }
+        });
 
         return score;
     },
@@ -72,6 +98,12 @@ export const matchingService = {
         filters?: ElderlyFilters,
         youthProfile?: User
     ): Promise<ElderlyProfilesResult> {
+        console.log('🔍 Getting elderly profiles with youth profile:', {
+            hasYouthProfile: !!youthProfile,
+            youthName: youthProfile?.full_name,
+            youthInterests: youthProfile?.profile_data?.interests
+        });
+
         const result = await matchingRepository.getAvailableElderlyProfiles(filters, youthProfile);
 
         // Calculate match scores and sort by score (highest first)
@@ -82,6 +114,11 @@ export const matchingService = {
 
         profilesWithScores.sort((a, b) => b.score - a.score);
 
+        console.log('✅ Sorted profiles by match score:', profilesWithScores.map(p => ({
+            name: p.profile.full_name,
+            score: p.score
+        })));
+
         return {
             profiles: profilesWithScores.map(p => p.profile),
             totalCount: result.totalCount,
@@ -91,6 +128,14 @@ export const matchingService = {
 
     async getIncomingInterests(elderlyId: string) {
         return await matchingRepository.getIncomingInterests(elderlyId);
+    },
+
+    /**
+     * Get user profile by ID
+     * Used by ViewModel to fetch current user data for match scoring
+     */
+    async getUserProfile(userId: string): Promise<User | null> {
+        return await userRepository.getById(userId);
     },
 
     async getYouthApplications(youthId: string) {
@@ -147,6 +192,7 @@ export const matchingService = {
     /**
      * Youth expresses interest in an elderly profile.
      * First checks limits, then creates the interest record.
+     * UC101_6: Creates notification for elderly when youth expresses interest
      */
     async expressInterest(youthId: string, elderlyId: string) {
         // 1. Check Youth Limit
@@ -156,7 +202,21 @@ export const matchingService = {
         }
 
         // 2. Create Interest
-        return await matchingRepository.createInterest(youthId, elderlyId);
+        const interest = await matchingRepository.createInterest(youthId, elderlyId);
+
+        // 3. Send notification to elderly
+        const youthName = interest.youth?.full_name || 'A Youth';
+        await notificationRepository.createNotification({
+            user_id: elderlyId,
+            type: 'new_interest',
+            title: 'New Interest Received! 💚',
+            message: `${youthName} is interested in becoming your companion. Review their profile and respond!`,
+            reference_id: interest.id,
+            reference_table: 'applications',
+        });
+        console.log('[Service] Interest notification sent to elderly:', elderlyId);
+
+        return interest;
     },
 
     /**
@@ -214,18 +274,9 @@ export const matchingService = {
             );
             console.log('[Service] Welcome message created');
         } else {
-            // Optional: Notify rejection
-            const elderlyName = updatedApplication.elderly?.full_name || 'An Elderly';
-            console.log('[Service] Creating rejection notification for youth:', youthId);
-            await notificationRepository.createNotification({
-                user_id: youthId,
-                type: 'interest_rejected',
-                title: 'Interest Update',
-                message: `${elderlyName} has declined your interest. Keep browsing for other matches!`,
-                reference_id: interestId,
-                reference_table: 'applications',
-            });
-            console.log('[Service] Rejection notification created');
+            // ✅ Decline: DB trigger handles notification creation automatically
+            // No need to manually create notification here (prevents duplicates)
+            console.log('[Service] Interest declined - notification will be created by DB trigger');
         }
     },
     /**
@@ -246,17 +297,6 @@ export const matchingService = {
         callback: (application: Interest) => void
     ): RealtimeChannel {
         return matchingRepository.subscribeToApplicationUpdates(youthId, callback);
-    },
-
-    /**
-     * Subscribe to notifications through Repository
-     * UC101_4: Real-time notification updates
-     */
-    subscribeToNotifications(
-        userId: string,
-        callback: (notification: any) => void
-    ): RealtimeChannel {
-        return matchingRepository.subscribeToNotifications(userId, callback);
     },
 
     /**
@@ -290,12 +330,16 @@ export const matchingService = {
     ): Promise<Interest> {
         console.log('🔵 [matchingService] submitFormalApplication START', { applicationId, youthId });
 
-        // NEW: Check if youth already has a pending application
-        console.log('🔵 [matchingService] Step 0: Checking for existing pending applications...');
+        // NEW: Check if youth already has a pending application (pending_review or approved)
+        console.log('🔵 [matchingService] Step 0: Checking for existing applications under review...');
         const existingPending = await matchingRepository.getYouthPendingApplications(youthId);
         if (existingPending.length > 0) {
-            console.error('❌ [matchingService] Youth already has pending application');
-            throw new Error('You already have a pending application. Please wait for the decision before submitting another.');
+            const existingApp = existingPending[0];
+            const statusText = existingApp.status === 'pending_review'
+                ? 'under admin review'
+                : 'awaiting elderly decision';
+            console.error('❌ [matchingService] Youth already has application:', existingApp.status);
+            throw new Error(`You already have an application ${statusText}. You can only submit one application at a time.`);
         }
 
         // Verify the application belongs to this youth
@@ -441,8 +485,8 @@ export const matchingService = {
         // End each pre-match and notify the elderly
         for (const app of otherActivePreMatches) {
             try {
-                // Update application status to 'ended'
-                await matchingRepository.updateApplicationStatus(app.id, 'ended');
+                // Update application status to 'withdrawn' (ended by system)
+                await matchingRepository.updateApplicationStatus(app.id, 'withdrawn');
 
                 // Send apology notification to elderly
                 await notificationRepository.createNotification({
@@ -475,5 +519,157 @@ export const matchingService = {
     async getPendingApplicationsForElderly(elderlyId: string): Promise<Interest[]> {
         const allApplications = await matchingRepository.getElderlyApplications(elderlyId);
         return allApplications.filter(app => app.status === 'pending_review');
+    },
+
+    /**
+     * Get applications pending elderly review (status = 'approved')
+     * Called after admin approves, waiting for elderly decision
+     */
+    async getApplicationsPendingElderlyReview(elderlyId: string): Promise<Interest[]> {
+        return await matchingRepository.getApplicationsPendingElderlyReview(elderlyId);
+    },
+
+    /**
+     * Elderly responds to admin-approved application
+     * Called when application status is 'approved' (after admin approval)
+     * 
+     * @param applicationId - Application ID
+     * @param elderlyId - Elderly user ID (for verification)
+     * @param decision - 'accept' or 'reject'
+     * @param rejectReason - Optional rejection reason
+     */
+    async elderlyRespondToApprovedApplication(
+        applicationId: string,
+        elderlyId: string,
+        decision: 'accept' | 'reject',
+        rejectReason?: string
+    ): Promise<Interest> {
+        console.log('[matchingService] elderlyRespondToApprovedApplication', { applicationId, elderlyId, decision });
+
+        // Verify the application
+        const application = await matchingRepository.getApplicationById(applicationId);
+        if (!application) {
+            throw new Error('Application not found');
+        }
+        if (application.elderly_id !== elderlyId) {
+            throw new Error('You are not authorized to review this application');
+        }
+        if (application.status !== 'approved') {
+            throw new Error(`This application is not awaiting your review. Current status: ${application.status}`);
+        }
+
+        // Update application via repository
+        const updated = await matchingRepository.elderlyRespondToApprovedApplication(
+            applicationId,
+            decision === 'accept' ? 'accept' : 'decline',
+            rejectReason
+        );
+
+        const elderlyName = application.elderly?.full_name || 'The Elderly';
+        const youthName = application.youth?.full_name || 'The Youth';
+
+        if (decision === 'accept') {
+            // Notify youth of success
+            await notificationRepository.createNotification({
+                user_id: application.youth_id,
+                type: 'application_approved',
+                title: 'Application Approved! 🎉',
+                message: `${elderlyName} has accepted your application. Welcome to the bonding stage!`,
+                reference_id: applicationId,
+                reference_table: 'applications',
+            });
+
+            // Create relationship record
+            console.log('[matchingService] Creating relationship for approved application');
+            try {
+                const { supabase } = await import('../APIService/supabase');
+                await supabase.from('relationships').insert({
+                    youth_id: application.youth_id,
+                    elderly_id: application.elderly_id,
+                    application_id: applicationId,
+                    current_stage: 'getting_to_know',
+                    status: 'active',
+                });
+                console.log('[matchingService] Relationship created successfully');
+            } catch (error) {
+                console.error('[matchingService] Failed to create relationship:', error);
+            }
+
+            // Auto-end other pre-matches for this youth
+            await this.endOtherPreMatchesOnApproval(application.youth_id, applicationId, youthName);
+
+        } else {
+            // Notify youth of rejection with optional reason
+            const reasonText = rejectReason
+                ? `Reason: ${rejectReason}`
+                : 'Please confirm to close this chat.';
+
+            await notificationRepository.createNotification({
+                user_id: application.youth_id,
+                type: 'application_rejected',
+                title: 'Application Not Approved',
+                message: `${elderlyName} has decided not to proceed with your application. ${reasonText}`,
+                reference_id: applicationId,
+                reference_table: 'applications',
+            });
+        }
+
+        console.log('[matchingService] Elderly response processed:', decision);
+        return updated;
+    },
+
+    /**
+     * Youth confirms rejection and deletes the application/chat
+     * Called after youth sees rejection notification
+     */
+    async confirmAndDeleteRejectedApplication(
+        applicationId: string,
+        youthId: string
+    ): Promise<void> {
+        console.log('[matchingService] confirmAndDeleteRejectedApplication', { applicationId, youthId });
+
+        // Verify the application
+        const application = await matchingRepository.getApplicationById(applicationId);
+        if (!application) {
+            throw new Error('Application not found');
+        }
+        if (application.youth_id !== youthId) {
+            throw new Error('You are not authorized to delete this application');
+        }
+        if (application.status !== 'rejected') {
+            throw new Error('This application is not in rejected status');
+        }
+
+        // Delete application and messages
+        await matchingRepository.deleteApplication(applicationId);
+        console.log('[matchingService] Application deleted successfully');
+    },
+
+    // ============================================
+    // WALKTHROUGH OPERATIONS (UC101)
+    // ============================================
+
+    /**
+     * Get walkthrough completion status for a user
+     * UC101: Check if user has seen journey walkthrough
+     * Data stored in users table, but logic belongs to matching domain
+     */
+    async getWalkthroughStatus(userId: string): Promise<boolean> {
+        if (!userId) {
+            throw new Error('userId is required');
+        }
+        return await matchingRepository.getWalkthroughStatus(userId);
+    },
+
+    /**
+     * Update walkthrough completion status for a user
+     * UC101: Mark journey walkthrough as completed
+     * Data stored in users table, but logic belongs to matching domain
+     */
+    async updateWalkthroughStatus(userId: string, completed: boolean): Promise<void> {
+        if (!userId) {
+            throw new Error('userId is required');
+        }
+        await matchingRepository.updateWalkthroughStatus(userId, completed);
     }
 };

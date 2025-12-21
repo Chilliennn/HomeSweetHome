@@ -7,11 +7,11 @@
  * UC101_12: Youth tracks application status
  */
 import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { observer } from 'mobx-react-lite';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { communicationViewModel } from '@home-sweet-home/viewmodel';
+import { youthMatchingViewModel } from '@home-sweet-home/viewmodel';
 import { Header, Button, Card, IconCircle, TimelineItem } from '@/components/ui';
 import { Colors } from '@/constants/theme';
 
@@ -20,12 +20,19 @@ export const ApplicationStatusScreen = observer(function ApplicationStatusScreen
     const params = useLocalSearchParams();
     const applicationId = params.applicationId as string;
 
-    const vm = communicationViewModel;
+    const vm = youthMatchingViewModel;
 
-    // Get application and partner data
-    const chat = vm.getChatByApplicationId(applicationId);
-    const application = chat?.application;
-    const partner = chat?.partnerUser;
+    // ✅ Safely load application data on mount
+    useEffect(() => {
+        if (applicationId) {
+            vm.loadApplicationById(applicationId);
+        }
+    }, [applicationId]);
+
+    // Get application and partner data from MatchingViewModel (sync from cache)
+    const data = vm.getApplicationById(applicationId);
+    const application = data?.application;
+    const partner = data?.partnerUser;
 
     // Calculate days since application submitted
     const getSubmittedDaysAgo = () => {
@@ -110,12 +117,30 @@ export const ApplicationStatusScreen = observer(function ApplicationStatusScreen
     const statusMessage = getStatusMessage();
 
     const handleBack = () => {
-        router.back();
+        console.log('[ApplicationStatusScreen] handleBack called');
+        // Navigate to chat list (original behavior)
+        console.log('[ApplicationStatusScreen] Navigating to /(main)/chat...');
+        router.push('/(main)/chat' as any);
     };
 
     const handleBackToChats = () => {
-        router.replace('/(main)/chat' as any);
+        console.log('[ApplicationStatusScreen] handleBackToChats called');
+        console.log('[ApplicationStatusScreen] Navigating to /(main)/chat...');
+        router.push('/(main)/chat' as any);
     };
+
+    // ✅ Show loading state while fetching data
+    if (vm.isLoadingApplication) {
+        return (
+            <SafeAreaView style={styles.container}>
+                <Header title="Application Status" onBack={handleBack} />
+                <View style={styles.errorContainer}>
+                    <ActivityIndicator size="large" color={Colors.light.primary} />
+                    <Text style={[styles.errorText, { marginTop: 16 }]}>Loading application...</Text>
+                </View>
+            </SafeAreaView>
+        );
+    }
 
     if (!application || !partner) {
         return (
@@ -175,7 +200,7 @@ export const ApplicationStatusScreen = observer(function ApplicationStatusScreen
                     <TimelineItem
                         title="Admin Review"
                         subtitle="Our team reviews your application (24-48 hours)"
-                        icon="👨‍�"
+                        icon="👨‍"
                         status={step2Status}
                         showLine={true}
                     />

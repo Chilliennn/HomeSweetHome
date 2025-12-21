@@ -11,12 +11,12 @@ import {
 } from 'react-native';
 import { observer } from 'mobx-react-lite';
 import { useFocusEffect } from '@react-navigation/native';
-import { familyViewModel, authViewModel } from '@home-sweet-home/viewmodel';
+import { useRouter, useLocalSearchParams } from 'expo-router';
+import { familyViewModel } from '@home-sweet-home/viewmodel';
 import { ThemedText } from '@/components/themed-text';
 import { Button } from '@/components/ui/Button';
 import { AlertBanner } from '@/components/ui/AlertBanner';
 import { Header } from '@/components/ui/Header';
-import { useRouter } from 'expo-router';
 
 /**
  * AlbumScreen - Main Family Photo Album interface
@@ -30,21 +30,19 @@ import { useRouter } from 'expo-router';
  */
 export const AlbumScreen = observer(() => {
   const router = useRouter();
+  const params = useLocalSearchParams();
   const { memories, isLoading, errorMessage, successMessage, canAccessFamilyAlbum } = familyViewModel;
+  const userId = (params.userId as string) || familyViewModel.currentUserId;
 
   useEffect(() => {
     // Initialize if needed (fallback if not initialized from login)
     const initializeIfNeeded = async () => {
-      if (!familyViewModel.currentRelationship) {
-        // Try to load from authViewModel or stored userId
-        const userId = authViewModel.authState.currentUserId;
-        if (userId) {
-          await familyViewModel.initialize(userId);
-        }
+      if (!familyViewModel.currentRelationship && userId) {
+        await familyViewModel.initialize(userId);
       }
     };
     initializeIfNeeded();
-  }, []);
+  }, [userId]);
 
   // Reload memories when screen gains focus (e.g., after saving from chat)
   useFocusEffect(

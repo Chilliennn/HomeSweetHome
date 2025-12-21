@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { observer } from 'mobx-react-lite';
 import { useRouter } from 'expo-router';
 import { communicationViewModel } from '@home-sweet-home/viewmodel';
-import { useTabNavigation } from '@/hooks/use-tab-navigation';
+import { useTabNavigation, getAvatarDisplay } from '@/hooks';
 import { Card, IconCircle, NotificationBell, ProgressBar, Button } from '@/components/ui';
 import { BottomTabBar, DEFAULT_TABS } from '@/components/ui/BottomTabBar';
 import { Colors } from '@/constants/theme';
@@ -103,39 +103,64 @@ export const PreMatchChatList = observer(function PreMatchChatList() {
     const messagesExchanged = item.messages.length;
     const voiceCalls = item.messages.filter((m: any) => m.message_type === 'voice').length;
     const canApply = daysPassed >= 7;
+    const isExpired = daysPassed >= 14;
 
     // Check if this is youth or elderly side
     const isYouth = currentUserType === 'youth';
     const isElderly = currentUserType === 'elderly';
 
-    // Check application status for elderly side
-    // When youth submits formal application, status becomes 'pending_review'
+    // Check application status
+    // pending_review = admin is reviewing
+    // approved = admin approved, waiting for elderly decision
     const isPendingReview = application.status === 'pending_review';
+    const isApproved = application.status === 'approved';
     const isBothAccepted = application.status === 'both_accepted';
+    const isRejected = application.status === 'rejected';
 
-    // For elderly: lock chat when youth has submitted formal application
-    const isChatLocked = isElderly && isPendingReview;
+    // For elderly: lock chat when youth has submitted formal application (pending_review or approved)
+    const isChatLocked = isElderly && (isPendingReview || isApproved);
 
     // For youth: show status tracking when they have submitted application
-    const isYouthApplicationPending = isYouth && isPendingReview;
+    const isYouthApplicationPending = isYouth && (isPendingReview || isApproved);
+
+    // For youth: show rejection confirmation when status is rejected
+    const isYouthRejected = isYouth && isRejected;
+
+    // For elderly: pre-match expired, waiting for youth decision
+    const isElderlyExpired = isElderly && isExpired && application.status === 'pre_chat_active';
 
     return (
       <Card style={styles.chatCard}>
-        {/* Header with Avatar and Name */}
+        {/* Header with Avatar and Name - FIXED: Uses proper avatar from partner profile */}
         <View style={styles.cardHeader}>
-          <IconCircle
-            icon={partner.profile_data?.avatar_meta?.type === 'default' ? (isYouth ? '👵' : '🧑') : '👤'}
-            size={64}
-            backgroundColor={isYouth ? '#C8ADD6' : '#B8D4E3'}
-            contentScale={0.6}
-          />
+          {(() => {
+            // Get partner's avatar config
+            const partnerType = isYouth ? 'elderly' : 'youth';
+            const avatarConfig = getAvatarDisplay(partner.profile_data, partnerType);
+            return (
+              <IconCircle
+                icon={avatarConfig.icon}
+                imageSource={avatarConfig.imageSource}
+                size={64}
+                backgroundColor={avatarConfig.backgroundColor}
+                contentScale={0.6}
+              />
+            );
+          })()}
           <View style={styles.headerInfo}>
-            <Text style={styles.name}>{partner.full_name || 'Partner'}</Text>
+            <Text style={styles.name}>{partner.profile_data?.display_name || partner.full_name || 'Partner'}</Text>
             <View style={styles.badgeRow}>
               {isChatLocked ? (
                 <>
-                  <View style={[styles.onlineIndicator, { backgroundColor: '#FF9800' }]} />
-                  <Text style={[styles.onlineText, { color: '#FF9800' }]}>Application Pending</Text>
+                  <View style={[styles.onlineIndicator, { backgroundColor: isApproved ? '#4CAF50' : '#FF9800' }]} />
+                  <Text style={[styles.onlineText, { color: isApproved ? '#4CAF50' : '#FF9800' }]}>
+                    {isApproved ? 'Awaiting Your Review' : 'Application Pending'}
+                  </Text>
+                </>
+              ) : isYouthRejected ? (
+                <>
+                  <View style={[styles.onlineIndicator, { backgroundColor: '#E53935' }]} />
+                  <Text style={[styles.onlineText, { color: '#E53935' }]}>Application Declined</Text>
                 </>
               ) : (
                 <>
@@ -161,7 +186,7 @@ export const PreMatchChatList = observer(function PreMatchChatList() {
           <View style={styles.progressFooter}>
             <Text style={styles.progressSubtext}>
               {isChatLocked
-                ? '⏳ Waiting for review...'
+                ? isApproved ? '✅ Admin approved - Your review needed' : '⏳ Waiting for admin review...'
                 : canApply
                   ? '✅ Minimum period completed'
                   : `${daysUntilCanApply} days until you can apply`}
@@ -183,15 +208,57 @@ export const PreMatchChatList = observer(function PreMatchChatList() {
           </View>
         </View>
 
-        {/* Elderly: Pending Review Message */}
-        {isChatLocked && (
+        {/* Elderly: Banner for pending_review or approved */}
+        {isElderly && isPendingReview && (
           <View style={styles.pendingBanner}>
             <Text style={styles.pendingIcon}>📋</Text>
             <View style={styles.pendingTextContainer}>
-              <Text style={styles.pendingTitle}>Formal Application Submitted</Text>
+              <Text style={styles.pendingTitle}>Under Admin Review</Text>
               <Text style={styles.pendingSubtext}>
-                {partner.full_name || 'The youth'} has submitted a formal adoption application.
-                Please review it in your notifications.
+                {partner.full_name || 'The youth'} has submitted a formal application.
+                Our team is reviewing it.
+              </Text>
+            </View>
+          </View>
+        )}
+
+        {isElderly && isApproved && (
+          <View style={[styles.pendingBanner, { backgroundColor: '#E8F5E9' }]}>
+            <Text style={styles.pendingIcon}>✅</Text>
+            <View style={styles.pendingTextContainer}>
+              <Text style={[styles.pendingTitle, { color: '#4CAF50' }]}>Ready for Your Review</Text>
+              <Text style={styles.pendingSubtext}>
+                Admin has approved this application.
+                Please review and decide whether to accept.
+              </Text>
+            </View>
+          </View>
+        )}
+
+        {/* Youth: Rejection Banner */}
+        {isYouthRejected && (
+          <View style={[styles.pendingBanner, { backgroundColor: '#FFEBEE' }]}>
+            <Text style={styles.pendingIcon}>😔</Text>
+            <View style={styles.pendingTextContainer}>
+              <Text style={[styles.pendingTitle, { color: '#E53935' }]}>Application Declined</Text>
+              <Text style={styles.pendingSubtext}>
+                {partner.full_name || 'The elderly'} has decided not to proceed.
+                Tap "Confirm" to close this chat.
+              </Text>
+            </View>
+          </View>
+        )}
+
+        {/* Elderly: Pre-match period expired, waiting for youth decision */}
+        {isElderlyExpired && (
+          <View style={[styles.pendingBanner, { backgroundColor: '#FFF3E0' }]}>
+            <Text style={styles.pendingIcon}>⏰</Text>
+            <View style={styles.pendingTextContainer}>
+              <Text style={[styles.pendingTitle, { color: '#FF9800' }]}>Pre-Match Period Ended</Text>
+              <Text style={styles.pendingSubtext}>
+                The 14-day pre-match period has ended.
+                Please wait for {partner.full_name || 'the youth'}'s decision.
+                You can "End" this chat if there is no response.
               </Text>
             </View>
           </View>
@@ -199,18 +266,41 @@ export const PreMatchChatList = observer(function PreMatchChatList() {
 
         {/* Action Buttons */}
         <View style={styles.buttonRow}>
-          {/* Chat Button - disabled for elderly if pending review */}
+          {/* Chat Button - disabled for elderly if pending review or for rejected apps */}
           <Button
-            title={isChatLocked ? 'Chat Locked' : 'Chat'}
+            title={isChatLocked || isYouthRejected ? 'Chat Locked' : 'Chat'}
             onPress={() => handleChat(application.id)}
             variant="primary"
             style={styles.chatButton}
-            disabled={isChatLocked}
+            disabled={isChatLocked || isYouthRejected}
           />
 
-          {/* Youth side: View Status (if pending), View Details (if can apply), or End button */}
+          {/* Youth side: View Status (if pending), Confirm (if rejected), View Details (if can apply), or End button */}
           {isYouth && (
-            isYouthApplicationPending ? (
+            isYouthRejected ? (
+              <Button
+                title="Confirm"
+                onPress={() => {
+                  Alert.alert(
+                    'Confirm Deletion',
+                    'This will permanently remove this chat. Are you sure?',
+                    [
+                      { text: 'Cancel', style: 'cancel' },
+                      {
+                        text: 'Confirm',
+                        style: 'destructive',
+                        onPress: async () => {
+                          // Delegate to communicationViewModel
+                          await vm.confirmRejectionAndDeleteChat(application.id);
+                        }
+                      }
+                    ]
+                  );
+                }}
+                variant="destructive"
+                style={styles.actionButton}
+              />
+            ) : isYouthApplicationPending ? (
               <Button
                 title="View Status"
                 onPress={() => handleViewStatus(application.id)}
@@ -234,12 +324,33 @@ export const PreMatchChatList = observer(function PreMatchChatList() {
             )
           )}
 
-          {/* Elderly side: Review button if pending */}
-          {isElderly && isPendingReview && (
+          {/* Elderly side: Review button if approved (after admin approval) */}
+          {isElderly && isApproved && (
             <Button
               title="Review"
-              onPress={() => router.push({ pathname: '/review-application', params: { applicationId: application.id } } as any)}
+              onPress={() => router.push({ pathname: '/elderly-review-application', params: { applicationId: application.id } } as any)}
+              variant="primary"
+              style={{ ...styles.actionButton, backgroundColor: '#4CAF50' }}
+            />
+          )}
+
+          {/* Elderly side: Info button if pending_review */}
+          {isElderly && isPendingReview && (
+            <Button
+              title="Under Review"
+              onPress={() => Alert.alert('Under Review', 'This application is being reviewed by our admin team.')}
               variant="secondary"
+              style={styles.actionButton}
+              disabled
+            />
+          )}
+
+          {/* Elderly side: End button if pre_chat_active (no formal application yet) */}
+          {isElderly && !isPendingReview && !isApproved && !isRejected && !isBothAccepted && (
+            <Button
+              title="End"
+              onPress={() => handleEnd(application.id)}
+              variant="destructive"
               style={styles.actionButton}
             />
           )}
@@ -255,7 +366,7 @@ export const PreMatchChatList = observer(function PreMatchChatList() {
         <View style={styles.headerSpacer} />
         <Text style={styles.headerTitle}>Pre-Match Chats</Text>
         <NotificationBell
-          count={vm.unreadCount}
+          count={vm.unreadNotificationCount}
           onPress={handleNotificationPress}
         />
       </View>

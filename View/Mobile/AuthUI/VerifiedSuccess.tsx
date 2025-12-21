@@ -51,56 +51,71 @@ export const VerifiedSuccess: React.FC<VerifiedSuccessProps> = ({
 }) => {
   const userTypeLabel = USER_TYPE_LABELS[userType];
 
-  return (
-    <SafeAreaView style={styles.safeArea}>
-      <ScrollView 
-        style={styles.container} 
-        contentContainerStyle={styles.content}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Success Icon */}
-        <IconCircle icon="✓" size={120} backgroundColor="#7ECEC5" contentScale={0.5} style={styles.icon} />
+  // Debug logging
+  console.log('[VerifiedSuccess] Component rendering with:', { verifiedAge, userType, isLoading });
 
-        {/* Success Title */}
-        <Text style={styles.title}>{title}</Text>
-        <Text style={styles.subtitle}>{subtitle}</Text>
+  // Render with try-catch to catch any rendering errors
+  try {
+    return (
+      <SafeAreaView style={styles.safeArea} edges={['top','bottom']}>
+        <ScrollView
+          style={styles.container}
+          contentContainerStyle={styles.content}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Success Icon */}
+          <IconCircle icon="✓" size={120} backgroundColor="#7ECEC5" contentScale={0.5} style={styles.icon} />
 
-        {/* Verification Result Card */}
-        <Card style={styles.resultCard}>
-          <View style={styles.resultHeader}>
-            <View style={styles.resultIndicator} />
-            <Text style={styles.resultTitle}>✓ Age Verification Complete</Text>
-          </View>
-          <View style={styles.resultContent}>
-            <Text style={styles.resultText}>
-              Verified age: <Text style={styles.bold}>{verifiedAge} years old</Text>
-            </Text>
-            <Text style={styles.resultText}>
-              Category: <Text style={styles.bold}>{userTypeLabel}</Text>
-            </Text>
-          </View>
-        </Card>
+          {/* Success Title */}
+          <Text style={styles.title}>{title}</Text>
+          <Text style={styles.subtitle}>{subtitle}</Text>
 
-        {/* Security Notice */}
-        <AlertBanner
-          type="success"
-          message={SECURITY_MESSAGE}
-          icon="🔒"
-          style={styles.alert}
-        />
+          {/* Verification Result Card */}
+          <Card style={styles.resultCard}>
+            <View style={styles.resultHeader}>
+              <View style={styles.resultIndicator} />
+              <Text style={styles.resultTitle}>✓ Age Verification Complete</Text>
+            </View>
+            <View style={styles.resultContent}>
+              <Text style={styles.resultText}>
+                Verified age: <Text style={styles.bold}>{verifiedAge} years old</Text>
+              </Text>
+              <Text style={styles.resultText}>
+                Category: <Text style={styles.bold}>{userTypeLabel}</Text>
+              </Text>
+            </View>
+          </Card>
 
-        {/* Continue Button */}
-        <Button
-          title="Continue to Profile"
-          onPress={onContinue}
-          variant="primary"
-          style={styles.button}
-          loading={isLoading}
-          disabled={isLoading}
-        />
-      </ScrollView>
-    </SafeAreaView>
-  );
+          {/* Security Notice */}
+          <AlertBanner
+            type="success"
+            message={SECURITY_MESSAGE}
+            icon="🔒"
+            style={styles.alert}
+          />
+
+          {/* Continue Button */}
+          <Button
+            title="Continue to Profile"
+            onPress={onContinue}
+            variant="primary"
+            style={styles.button}
+            loading={isLoading}
+            disabled={isLoading}
+          />
+        </ScrollView>
+      </SafeAreaView>
+    );
+  } catch (error) {
+    console.error('[VerifiedSuccess] Render error:', error);
+    // Fallback UI in case of error
+    return (
+      <SafeAreaView style={[styles.safeArea, { justifyContent: 'center', alignItems: 'center' }]}>
+        <Text style={{ fontSize: 18, color: '#333' }}>Age Verified: {verifiedAge}</Text>
+        <Button title="Continue" onPress={onContinue} variant="primary" />
+      </SafeAreaView>
+    );
+  }
 };
 
 // ============================================================================

@@ -26,6 +26,13 @@ export const relationshipService = {
   },
 
   /**
+   * Get relationship by ID
+   */
+  async getRelationshipById(relationshipId: string): Promise<Relationship | null> {
+    return userRepository.getRelationshipById(relationshipId);
+  },
+
+  /**
    * Get user's relationship regardless of status (active, paused, etc.)
    * Used to check if user is in a cooling period
    */
@@ -47,6 +54,19 @@ export const relationshipService = {
       return relationship.youth_id;
     }
     return null;
+  },
+
+  /**
+   * Get the partner's user info in a relationship
+   * @param userId - Current user ID
+   * @param relationship - The relationship to check
+   * @returns Partner's User object or null
+   */
+  async getPartnerUser(userId: string, relationship: Relationship): Promise<User | null> {
+    const partnerId = this.getPartnerId(userId, relationship);
+    if (!partnerId) return null;
+
+    return userRepository.getById(partnerId);
   },
 
   /**

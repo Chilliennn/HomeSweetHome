@@ -12,6 +12,10 @@ export default defineConfig(({ mode }) => {
     // Inject VITE_* env vars into process.env so the shared Model layer can access them
     // This allows Model code to use process.env.EXPO_PUBLIC_* consistently
     define: {
+      // Legacy VITE_ direct access
+      'process.env.VITE_SUPABASE_URL': JSON.stringify(env.VITE_SUPABASE_URL),
+      'process.env.VITE_SUPABASE_ANON_KEY': JSON.stringify(env.VITE_SUPABASE_ANON_KEY),
+      // EXPO_PUBLIC_ compatibility layer (for shared Model code)
       'process.env.EXPO_PUBLIC_SUPABASE_URL': JSON.stringify(env.VITE_SUPABASE_URL),
       'process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY': JSON.stringify(env.VITE_SUPABASE_ANON_KEY),
       'process.env.EXPO_PUBLIC_ASSEMBLYAI_API_KEY': JSON.stringify(env.VITE_ASSEMBLYAI_API_KEY),

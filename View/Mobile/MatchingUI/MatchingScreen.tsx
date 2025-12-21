@@ -24,24 +24,29 @@ interface ElderlyProfile {
   name: string;
   age: number;
   location: string;
+  profilePhotoUrl?: string;
   avatarEmoji?: string;
   avatarColor?: string;
   isOnline?: boolean;
   interests: Array<{ label: string; color?: string }>;
   aboutMe: string;
   languages: string[];
-  communicationStyle: string[];
-  availability: string;
+  communicationStyle?: string[];
+  availability?: string;
 }
 
 const mapUserToProfile = (user: User): ElderlyProfile => {
+  // Priority: profile_photo_url (real photo) > preset avatar emoji
+  const hasRealPhoto = !!user.profile_photo_url;
+  const presetEmoji = user.profile_data?.avatar_meta?.type === "default" ? "👵" : undefined;
+  
   return {
     id: user.id,
-    name: user.full_name || user.profile_data?.display_name || "Anonymous",
+    name: user.full_name || "Anonymous",  // FIXED: Only use full_name
     age: user.profile_data?.verified_age || 60,
     location: user.location || "Unknown",
-    avatarEmoji:
-      user.profile_data?.avatar_meta?.type === "default" ? "👵" : undefined,
+    profilePhotoUrl: hasRealPhoto ? user.profile_photo_url! : undefined,
+    avatarEmoji: hasRealPhoto ? undefined : presetEmoji,
     avatarColor: "#C8ADD6", // Default
     isOnline: false,
     interests: (user.profile_data?.interests || []).map((i) => ({
@@ -50,8 +55,6 @@ const mapUserToProfile = (user: User): ElderlyProfile => {
     })),
     aboutMe: user.profile_data?.self_introduction || "No bio available.",
     languages: user.languages || [],
-    communicationStyle: [],
-    availability: "Flexible",
   };
 };
 
@@ -95,11 +98,16 @@ export const MatchingScreenComponent = observer(
 
     // Check if walkthrough should be shown
     useEffect(() => {
+      // Wait for walkthrough status to load from database
+      if (matchingViewModel.isLoadingWalkthrough) {
+        return; // Wait until loading completes
+      }
+
       // Show walkthrough if coming from profile completion (first time)
       if (isFirstTime === "true") {
         matchingViewModel.checkWalkthroughStatus(true);
       }
-    }, [isFirstTime]);
+    }, [isFirstTime, matchingViewModel.isLoadingWalkthrough]);
 
     const handleWalkthroughComplete = () => {
       matchingViewModel.completeWalkthrough();
@@ -117,7 +125,8 @@ export const MatchingScreenComponent = observer(
     };
 
     const handleExpressInterest = async () => {
-      const youthId = matchingViewModel.currentUserId;
+      // Get userId from youthMatchingViewModel (synced by Layout)
+      const youthId = youthMatchingViewModel.currentUserId;
       if (!youthId) {
         Alert.alert("Error", "You must be logged in to express interest.");
         return;

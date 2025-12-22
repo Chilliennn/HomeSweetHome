@@ -110,10 +110,11 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
               params: { userId, stage: completedStage },
             });
           } catch (err) {
-            console.error(
-              "[StageProgression] Failed to navigate to stage-completed:",
-              err
-            );
+            console.error("[StageProgression] Failed navigating to stage-completed:", err);
+          } finally {
+            runInAction(() => {
+              vm.shouldNavigateToStageCompleted = false;
+            });
           }
         })();
       }

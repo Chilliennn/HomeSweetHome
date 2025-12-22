@@ -281,11 +281,10 @@ export class StageViewModel {
 
         const completedStage = this.previousStage;
         try {
-          // Load completion info for the completed stage first so vm.stageJustCompleted is accurate
-          await this.loadStageCompletionInfo(completedStage ?? undefined);
-
-          // Now signal the UI to navigate to the stage-completed screen.
           runInAction(() => {
+            this.stageJustCompleted = completedStage;
+            this.stageJustCompletedName =
+              this.stages.find((s) => s.stage === completedStage)?.display_name || "";
             this.shouldNavigateToStageCompleted = true;
           });
         } catch (err) {

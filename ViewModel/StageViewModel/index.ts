@@ -174,6 +174,16 @@ export class StageViewModel {
           }
         );
 
+        if (this.previousStage !== this.currentStage) {
+          console.log(
+            "[StageViewModel] Skipping journey completion check - still transitioning from:",
+            this.previousStage,
+            "to:",
+            this.currentStage
+          );
+          return;
+        }
+
         if (this.requirements && this.requirements.length > 0) {
           const allDone = this.requirements.every((r) => !!r.is_completed);
           console.log("[StageViewModel] All requirements completed?", allDone);
@@ -1255,11 +1265,9 @@ export class StageViewModel {
     if (!this.stageJustCompletedName || !this.currentStageDisplayName) {
       return "Congratulations on your progress!";
     }
-    return `Congratulations! You've successfully completed "${
-      this.stageJustCompletedName
-    }" and moved to Stage ${this.completedStageOrder + 1}: ${
-      this.currentStageDisplayName
-    }.`;
+    return `Congratulations! You've successfully completed "${this.stageJustCompletedName
+      }" and moved to Stage ${this.completedStageOrder + 1}: ${this.currentStageDisplayName
+      }.`;
   }
 
   // ============================================================================

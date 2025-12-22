@@ -430,6 +430,12 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
                     const completedName = collapseSpaces(
                       completedStage?.display_name || ""
                     );
+
+                    
+                    if (!nextStage || completedOrder >= vm.stages.length - 1) {
+                      return `Congratulations! You've successfully completed "${completedName}"! Your journey together is complete! 🎉`;
+                    }
+
                     const nextNumber = completedOrder + 2;
                     const nextName = collapseSpaces(
                       nextStage?.display_name || ""

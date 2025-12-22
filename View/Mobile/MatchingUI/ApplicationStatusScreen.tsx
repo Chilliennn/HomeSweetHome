@@ -7,7 +7,7 @@
  * UC101_12: Youth tracks application status
  */
 import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { observer } from 'mobx-react-lite';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -161,12 +161,19 @@ export const ApplicationStatusScreen = observer(function ApplicationStatusScreen
                 {/* Partner Card */}
                 <Card style={styles.partnerCard}>
                     <View style={styles.partnerRow}>
-                        <IconCircle
-                            icon="👵"
-                            size={64}
-                            backgroundColor="#C8ADD6"
-                            contentScale={0.6}
-                        />
+                        {partner.profile_photo_url ? (
+                            <Image
+                                source={{ uri: partner.profile_photo_url }}
+                                style={styles.profilePhoto}
+                            />
+                        ) : (
+                            <IconCircle
+                                icon="👵"
+                                size={64}
+                                backgroundColor="#C8ADD6"
+                                contentScale={0.6}
+                            />
+                        )}
                         <View style={styles.partnerInfo}>
                             <Text style={styles.partnerName}>{partner.full_name || 'Partner'}</Text>
                             <Text style={styles.submittedText}>
@@ -258,6 +265,12 @@ const styles = StyleSheet.create({
     partnerCard: {
         padding: 16,
         marginBottom: 16,
+    },
+    profilePhoto: {
+        width: 64,
+        height: 64,
+        borderRadius: 32,
+        backgroundColor: '#E0E0E0',
     },
     partnerRow: {
         flexDirection: 'row',

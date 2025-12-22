@@ -188,7 +188,7 @@ export const ElderlyProfileDetail: React.FC<ElderlyProfileDetailProps> = ({
             title="About Me"
             content={profile.aboutMe}
           />
-          
+
           {profile.location && (
             <>
               <View style={styles.divider} />
@@ -200,7 +200,7 @@ export const ElderlyProfileDetail: React.FC<ElderlyProfileDetailProps> = ({
               />
             </>
           )}
-          
+
           {profile.languages && profile.languages.length > 0 && (
             <>
               <View style={styles.divider} />
@@ -212,7 +212,7 @@ export const ElderlyProfileDetail: React.FC<ElderlyProfileDetailProps> = ({
               />
             </>
           )}
-          
+
           {profile.communicationStyle && profile.communicationStyle.length > 0 && (
             <>
               <View style={styles.divider} />
@@ -224,7 +224,7 @@ export const ElderlyProfileDetail: React.FC<ElderlyProfileDetailProps> = ({
               />
             </>
           )}
-          
+
           {profile.availability && (
             <>
               <View style={styles.divider} />
@@ -238,7 +238,6 @@ export const ElderlyProfileDetail: React.FC<ElderlyProfileDetailProps> = ({
           )}
         </Card>
 
-        {/* Express Interest Button */}
         <TouchableOpacity
           style={styles.expressInterestButton}
           onPress={onExpressInterest}
@@ -247,14 +246,6 @@ export const ElderlyProfileDetail: React.FC<ElderlyProfileDetailProps> = ({
           <Text style={styles.expressInterestText}>Express Interest</Text>
         </TouchableOpacity>
       </ScrollView>
-
-      {/* Bottom Tab Bar */}
-      <BottomTabBar
-        tabs={DEFAULT_TABS}
-        activeTab={activeTab}
-        onTabPress={handleTabPress}
-        disabledTabs={DISABLED_TABS}
-      />
     </SafeAreaView>
   );
 };

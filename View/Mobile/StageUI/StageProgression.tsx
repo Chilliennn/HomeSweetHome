@@ -92,7 +92,6 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
       }
     }, [vm.shouldNavigateToMilestone, router, userId, vm]);
 
-    // Watch for auto-navigation to Journey Pause page
     useEffect(() => {
       if (vm.consumeJourneyPauseNavigation()) {
         router.push({ pathname: "/journey-pause", params: { userId } });
@@ -120,16 +119,39 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
       }
     }, [vm.shouldNavigateToStageCompleted, router, userId, vm]);
 
+    useEffect(() => {
+      if (vm.consumeJourneyCompletedNavigation()) {
+        (async () => {
+          try {
+            const completed = vm.stageJustCompleted ?? vm.currentStage;
+            const FINAL_STAGE = ("family_life" as any) as RelationshipStage;
+            if (completed !== FINAL_STAGE) {
+              console.log(
+                "[StageProgression] Suppressing journey-completed navigation; completed stage:",
+                completed
+              );
+              return;
+            }
+            await vm.loadStageCompletionInfo(completed ?? undefined);
+            router.push({ pathname: "/(main)/journey-completed", params: { userId } });
+          } catch (err) {
+            console.error("[StageProgression] Failed to navigate to journey-completed:", err);
+          } finally {
+            runInAction(() => {
+              vm.shouldNavigateToJourneyCompleted = false;
+            });
+          }
+        })();
+      }
+    }, [vm.shouldNavigateToJourneyCompleted, router, userId, vm]);
+
     const handleStagePress = async (targetStage: RelationshipStage) => {
       try {
-        // Close any open modals before navigating
         if (vm.showStageCompleted) vm.closeStageCompleted();
         if (vm.showLockedStageDetail) vm.closeLockedStageDetail();
 
-        // If clicking current stage, just close modals to show current stage card
         const currentStageInfo = vm.stages.find((s) => s.is_current);
         if (currentStageInfo?.stage === targetStage) {
-          // Modals already closed above, current stage card will show
           return;
         }
 

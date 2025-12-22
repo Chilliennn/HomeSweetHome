@@ -23,7 +23,7 @@ export type ProfileSetupStep =
   | 'camera'
   | 'verifying'
   | 'verified'
-  | 'profile-form'      
+  | 'profile-form'
   | 'profile-info'
   | 'complete';
 
@@ -136,7 +136,7 @@ export class AuthViewModel {
       'camera': 1,
       'verifying': 1,
       'verified': 1,
-      'profile-form': 2, 
+      'profile-form': 2,
       'profile-info': 3,
       'complete': 4,
     };
@@ -302,6 +302,20 @@ export class AuthViewModel {
       runInAction(() => {
         this.hasActiveRelationship = false;
       });
+    }
+  }
+
+  /**
+   * Check if user account is suspended (is_active = false)
+   * Used by main layout to force logout suspended users
+   * @returns true if user is suspended, false otherwise
+   */
+  async checkSuspensionStatus(userId: string): Promise<boolean> {
+    try {
+      return await authService.checkSuspensionStatus(userId);
+    } catch (error) {
+      console.error('[AuthViewModel] Error checking suspension status:', error);
+      return false;
     }
   }
 
@@ -498,7 +512,7 @@ export class AuthViewModel {
 
     try {
       const user = await profileCompletionService.saveProfileSetup(userId, data);
-      
+
       // Convert selectedAvatarId to index for storage in profileData
       let avatarIndex: number | null = null;
       if (data.selectedAvatarId) {

@@ -9,6 +9,7 @@ export type UserProfile = {
 	occupation?: string | null;
 	education?: string | null;
 	location?: string | null;
+	warning_count?: number;
 	created_at?: string | null;
 };
 
@@ -81,6 +82,26 @@ export async function getAdminNotifications(limit = 10): Promise<AdminNotificati
 				reference_id: alert.id,
 				is_read: false,
 				created_at: alert.detected_at
+			});
+		});
+
+		// Get recent safety reports (manual)
+		const { data: safetyReports } = await supabase
+			.from('safety_reports')
+			.select('id, report_type, severity_level, created_at')
+			.eq('status', 'Pending')
+			.order('created_at', { ascending: false })
+			.limit(3);
+
+		safetyReports?.forEach((report: any) => {
+			notifications.push({
+				id: `report-${report.id}`,
+				type: 'safety_alert',
+				title: `${report.severity_level?.toUpperCase()} Safety Report`,
+				message: `${report.report_type?.replace(/_/g, ' ')} submitted`,
+				reference_id: report.id,
+				is_read: false,
+				created_at: report.created_at
 			});
 		});
 
@@ -385,109 +406,275 @@ export const adminRepository = {
 	// ============================================
 
 	async getSafetyAlerts(severity?: string, status?: string, sortBy: 'newest' | 'oldest' = 'newest', limit = 50, offset = 0): Promise<SafetyAlertWithProfiles[]> {
-		let query = supabase
-			.from('safety_incidents')
-			.select(`
-				*,
-				reporter:users!reporter_id(*),
-				reported_user:users!reported_user_id(*),
-				relationship:relationships(*)
-			`)
-			.order('detected_at', { ascending: sortBy === 'oldest' });
+		// Only query safety_reports table (safety_incidents table was removed)
+		let reportsQuery = supabase
+			.from('safety_reports')
+			.select(`*`)
+			.order('created_at', { ascending: sortBy === 'oldest' });
 
-		if (severity) query = query.eq('severity', severity);
-		if (status) query = query.eq('status', status);
-		if (limit) query = query.range(offset, offset + limit - 1);
+		if (severity) {
+			const severityRepMap: Record<string, string> = {
+				'critical': 'Critical',
+				'high': 'High',
+				'medium': 'Medium',
+				'low': 'Low'
+			};
+			reportsQuery = reportsQuery.eq('severity_level', severityRepMap[severity.toLowerCase()] || severity);
+		}
 
-		const { data, error } = await query;
+		if (status) {
+			const statusRepMap: Record<string, string> = {
+				'new': 'Pending',
+				'Pending Review': 'Pending',
+				'under_review': 'In Review',
+				'Under Review': 'In Review',
+				'resolved': 'Resolved',
+				'Resolved': 'Resolved'
+			};
+			const reportStatus = statusRepMap[status] || statusRepMap[status.toLowerCase()] || status;
+			reportsQuery = reportsQuery.eq('status', reportStatus);
+		}
+		if (limit) reportsQuery = reportsQuery.range(offset, offset + limit - 1);
+
+		const { data: reportsData, error } = await reportsQuery;
 		if (error) throw error;
 
-		return (data || []).map((row: any) => mapRowToSafetyAlert(row));
+		// Manually fetch reporters and partners for reports
+		const manualReports = reportsData || [];
+		if (manualReports.length > 0) {
+			const reporterIds = [...new Set(manualReports.map((r: any) => r.user_id))];
+
+			// Fetch reporters, relationships, and partners in parallel
+			const [reportersRes, relationshipsRes] = await Promise.all([
+				supabase.from('users').select('*').in('id', reporterIds),
+				supabase.from('relationships').select('*, youth:youth_id(*), elderly:elderly_id(*)').or(`youth_id.in.(${reporterIds.join(',')}),elderly_id.in.(${reporterIds.join(',')})`).eq('status', 'active')
+			]);
+
+			const reporterMap = (reportersRes.data || []).reduce((acc: any, u: any) => { acc[u.id] = u; return acc; }, {});
+			const relMap = (relationshipsRes.data || []).reduce((acc: any, r: any) => {
+				acc[r.youth_id] = r;
+				acc[r.elderly_id] = r;
+				return acc;
+			}, {});
+
+			manualReports.forEach((r: any) => {
+				r.reporter = reporterMap[r.user_id];
+				const rel = relMap[r.user_id];
+				if (rel) {
+					r.relationship = rel;
+					r.reported_user = rel.youth_id === r.user_id ? rel.elderly : rel.youth;
+				}
+			});
+		}
+
+		return manualReports.map((row: any) => {
+			const alert = mapRowToSafetyAlert(row, 'manual_report');
+			if (row.reported_user) alert.reported_user = row.reported_user;
+			if (row.relationship) {
+				alert.relationship_id = row.relationship.id;
+				alert.relationship_stage = row.relationship.current_stage;
+				const now = new Date();
+				const days = Math.floor((now.getTime() - new Date(row.relationship.created_at).getTime()) / (1000 * 60 * 60 * 24));
+				alert.relationship_duration = `${days} days`;
+			}
+			return alert;
+		});
 	},
 
 	async getSafetyAlertById(alertId: string): Promise<SafetyAlertWithProfiles | null> {
-		const { data, error } = await supabase
-			.from('safety_incidents')
-			.select(`
-				*,
-				reporter:users!reporter_id(*),
-				reported_user:users!reported_user_id(*),
-				relationship:relationships(*)
-			`)
+		// Only query safety_reports table
+		const { data: report, error: reportError } = await supabase
+			.from('safety_reports')
+			.select(`*`)
 			.eq('id', alertId)
 			.maybeSingle();
 
-		if (error) throw error;
-		if (!data) return null;
+		if (reportError) throw reportError;
+		if (!report) return null;
 
-		return mapRowToSafetyAlert(data);
+		const [reporterRes, relationshipRes] = await Promise.all([
+			supabase.from('users').select('*').eq('id', report.user_id).maybeSingle(),
+			supabase.from('relationships').select('*, youth:youth_id(*), elderly:elderly_id(*)').or(`youth_id.eq.${report.user_id},elderly_id.eq.${report.user_id}`).eq('status', 'active').maybeSingle()
+		]);
+
+		report.reporter = reporterRes.data;
+		const alert = mapRowToSafetyAlert(report, 'manual_report');
+
+		if (relationshipRes.data) {
+			const rel = relationshipRes.data;
+			alert.reported_user = rel.youth_id === report.user_id ? rel.elderly : rel.youth;
+			alert.relationship_id = rel.id;
+			alert.relationship_stage = rel.current_stage;
+			const now = new Date();
+			const days = Math.floor((now.getTime() - new Date(rel.created_at).getTime()) / (1000 * 60 * 60 * 24));
+			alert.relationship_duration = `${days} days`;
+		}
+
+		return alert;
 	},
 
 	async getSafetyAlertStats(): Promise<SafetyAlertStats> {
+		// Query safety_reports table
 		const [
-			{ count: critical },
-			{ count: high },
-			{ count: medium },
-			{ count: low },
-			{ count: pending },
-			{ data: resolvedIncidents }
+			{ count: critRep }, { count: highRep }, { count: medRep }, { count: lowRep }, { count: pendingRep },
+			{ data: pendingReports }
 		] = await Promise.all([
-			supabase.from('safety_incidents').select('*', { count: 'exact', head: true }).eq('severity', 'critical').eq('status', 'new'),
-			supabase.from('safety_incidents').select('*', { count: 'exact', head: true }).eq('severity', 'high').eq('status', 'new'),
-			supabase.from('safety_incidents').select('*', { count: 'exact', head: true }).eq('severity', 'medium').eq('status', 'new'),
-			supabase.from('safety_incidents').select('*', { count: 'exact', head: true }).eq('severity', 'low').eq('status', 'new'),
-			supabase.from('safety_incidents').select('*', { count: 'exact', head: true }).eq('status', 'new'),
-			supabase.from('safety_incidents').select('detected_at, resolved_at').in('status', ['resolved', 'false_positive']).not('resolved_at', 'is', null).limit(100)
+			supabase.from('safety_reports').select('*', { count: 'exact', head: true }).eq('severity_level', 'Critical').eq('status', 'Pending'),
+			supabase.from('safety_reports').select('*', { count: 'exact', head: true }).eq('severity_level', 'High').eq('status', 'Pending'),
+			supabase.from('safety_reports').select('*', { count: 'exact', head: true }).eq('severity_level', 'Medium').eq('status', 'Pending'),
+			supabase.from('safety_reports').select('*', { count: 'exact', head: true }).eq('severity_level', 'Low').eq('status', 'Pending'),
+			supabase.from('safety_reports').select('*', { count: 'exact', head: true }).eq('status', 'Pending'),
+			// Get pending reports to calculate average waiting time
+			supabase.from('safety_reports').select('created_at').eq('status', 'Pending').limit(100)
 		]);
 
-		// Calculate average response time
-		let avgResponseTime = 0;
-		if (resolvedIncidents && resolvedIncidents.length > 0) {
-			const totalMinutes = resolvedIncidents.reduce((acc: number, incident: any) => {
-				const start = new Date(incident.detected_at).getTime();
-				const end = new Date(incident.resolved_at).getTime();
-				const diffMinutes = Math.round((end - start) / 1000 / 60);
-				return acc + diffMinutes;
+		// Calculate average waiting time for pending reports
+		let avgWaitingTime = 0;
+		if (pendingReports && pendingReports.length > 0) {
+			const now = new Date().getTime();
+			const totalMinutes = pendingReports.reduce((acc: number, report: any) => {
+				const created = new Date(report.created_at).getTime();
+				return acc + Math.round((now - created) / 1000 / 60);
 			}, 0);
-			avgResponseTime = Math.round(totalMinutes / resolvedIncidents.length);
+			avgWaitingTime = Math.round(totalMinutes / pendingReports.length);
 		}
 
-		return { critical: critical || 0, high: high || 0, medium: medium || 0, low: low || 0, pending: pending || 0, avgResponseTimeMinutes: avgResponseTime };
+		return {
+			critical: critRep || 0,
+			high: highRep || 0,
+			medium: medRep || 0,
+			low: lowRep || 0,
+			pending: pendingRep || 0,
+			avgResponseTimeMinutes: avgWaitingTime
+		};
 	},
 
 	async issueWarning(alertId: string, adminId: string, notes: string): Promise<void> {
-		const { error } = await supabase
-			.from('safety_incidents')
-			.update({ status: 'resolved', assigned_admin_id: adminId, admin_notes: notes, admin_action_taken: 'warning_issued', resolved_at: new Date().toISOString() })
+		console.log('[adminRepository] issueWarning called:', { alertId, adminId, notes: notes?.substring(0, 50) });
+		let userId: string | null = null;
+
+		// Query safety_reports only
+		const { data: report, error: repFetchErr } = await supabase.from('safety_reports').select('id, user_id').eq('id', alertId).maybeSingle();
+		console.log('[adminRepository] issueWarning report fetch:', { report, error: repFetchErr });
+		if (repFetchErr) throw repFetchErr;
+
+		if (!report) {
+			throw new Error(`Could not find alert with ID: ${alertId}`);
+		}
+
+		// Find partner (reported user)
+		const { data: rel } = await supabase
+			.from('relationships')
+			.select('youth_id, elderly_id')
+			.or(`youth_id.eq.${report.user_id},elderly_id.eq.${report.user_id}`)
+			.eq('status', 'active')
+			.maybeSingle();
+
+		if (rel) {
+			userId = rel.youth_id === report.user_id ? rel.elderly_id : rel.youth_id;
+		}
+
+		// Update report status
+		const { error, count } = await supabase
+			.from('safety_reports')
+			.update({ status: 'Resolved', updated_at: new Date().toISOString() }, { count: 'exact' })
 			.eq('id', alertId);
+
+		console.log('[adminRepository] issueWarning report update:', { error, count });
 		if (error) throw error;
+		if (!count || count === 0) {
+			throw new Error(`Could not update alert with ID: ${alertId}`);
+		}
+
+		// Perform user updates if we found the user
+		if (userId) {
+			const { data: userData } = await supabase.from('users').select('warning_count').eq('id', userId).maybeSingle();
+			const currentCount = userData?.warning_count || 0;
+			const { error: userUpdateErr } = await supabase.from('users').update({ warning_count: currentCount + 1 }).eq('id', userId);
+			if (userUpdateErr) console.error('[adminRepository] User warning update failed:', userUpdateErr);
+
+			const { error: notifErr } = await supabase.from('notifications').insert({
+				user_id: userId,
+				type: 'safety_alert',
+				title: 'Safety Warning Issued',
+				message: 'An administrator has issued a warning regarding your recent activity. Please review our safety guidelines.',
+				is_read: false
+			});
+			if (notifErr) console.error('[adminRepository] Warning notification failed:', notifErr);
+		}
 	},
 
 	async suspendUser(alertId: string, userId: string, adminId: string, notes: string): Promise<void> {
-		const { error: incidentError } = await supabase
-			.from('safety_incidents')
-			.update({ status: 'resolved', assigned_admin_id: adminId, admin_notes: notes, admin_action_taken: 'user_suspended', resolved_at: new Date().toISOString() })
-			.eq('id', alertId);
-		if (incidentError) throw incidentError;
+		console.log('[adminRepository] suspendUser called:', { alertId, userId, adminId });
 
+		// Query safety_reports only
+		const { data: report, error: repFetchErr } = await supabase.from('safety_reports').select('id').eq('id', alertId).maybeSingle();
+		console.log('[adminRepository] suspendUser report fetch:', { report, error: repFetchErr });
+		if (repFetchErr) throw repFetchErr;
+
+		if (!report) {
+			throw new Error(`Could not find alert with ID: ${alertId}`);
+		}
+
+		// Update report status
+		const { error, count } = await supabase.from('safety_reports').update({ status: 'Resolved', updated_at: new Date().toISOString() }, { count: 'exact' }).eq('id', alertId);
+		console.log('[adminRepository] suspendUser report update:', { error, count });
+		if (error) throw error;
+		if (!count || count === 0) {
+			throw new Error(`Could not update alert with ID: ${alertId}`);
+		}
+
+		// Actually suspend the user
 		const { error: userError } = await supabase.from('users').update({ is_active: false }).eq('id', userId);
 		if (userError) throw userError;
+
+		// Send notification
+		const { error: notifError } = await supabase.from('notifications').insert({
+			user_id: userId,
+			type: 'safety_alert',
+			title: 'Account Suspended',
+			message: 'Your account has been suspended due to a violation of safety policies. Please contact support for more information.',
+			is_read: false
+		});
+		if (notifError) console.error('[adminRepository] Suspension notification failed:', notifError);
 	},
 
 	async dismissReport(alertId: string, adminId: string, reason: string): Promise<void> {
-		const { error } = await supabase
-			.from('safety_incidents')
-			.update({ status: 'false_positive', assigned_admin_id: adminId, admin_notes: reason, admin_action_taken: 'dismissed', resolved_at: new Date().toISOString() })
-			.eq('id', alertId);
+		// Consolidate with deleteAlert as requested: dismiss is same as delete
+		return this.deleteAlert(alertId);
+	},
+
+	async deleteAlert(alertId: string): Promise<void> {
+		console.log('[adminRepository] deleteAlert called:', { alertId });
+
+		// Query safety_reports only
+		const { data: report, error: repFetchErr } = await supabase.from('safety_reports').select('id').eq('id', alertId).maybeSingle();
+		console.log('[adminRepository] deleteAlert report fetch:', { report, error: repFetchErr });
+		if (repFetchErr) throw repFetchErr;
+
+		if (!report) {
+			throw new Error(`Could not find alert with ID: ${alertId}`);
+		}
+
+		const { error, count } = await supabase.from('safety_reports').delete({ count: 'exact' }).eq('id', alertId);
+		console.log('[adminRepository] deleteAlert report delete:', { error, count });
 		if (error) throw error;
+		if (!count || count === 0) {
+			throw new Error(`Could not delete alert with ID: ${alertId}`);
+		}
 	},
 
 	async assignAlert(alertId: string, adminId: string): Promise<void> {
-		const { error } = await supabase
-			.from('safety_incidents')
-			.update({ status: 'under_review', assigned_admin_id: adminId })
+		// Query safety_reports only
+		const { error, count } = await supabase
+			.from('safety_reports')
+			.update({ status: 'In Review', updated_at: new Date().toISOString() }, { count: 'exact' })
 			.eq('id', alertId);
+
 		if (error) throw error;
+		if (!count || count === 0) {
+			throw new Error(`Could not find or update alert with ID: ${alertId}`);
+		}
 	},
 };
 
@@ -498,8 +685,8 @@ export const adminRepository = {
 export type SafetyAlertWithProfiles = {
 	id: string;
 	reporter: { id: string; full_name: string; age: number; location: string | null; user_type: 'youth' | 'elderly'; account_created: string; previous_reports: number; avatar_url: string | null; phone_number: string | null; };
-	reported_user: { id: string; full_name: string; age: number; occupation: string | null; user_type: 'youth' | 'elderly'; account_status: 'active' | 'suspended' | 'banned'; previous_warnings: number; avatar_url: string | null; phone_number: string | null; };
-	relationship_id: string;
+	reported_user?: { id: string; full_name: string; age: number; occupation: string | null; user_type: 'youth' | 'elderly'; account_status: 'active' | 'suspended' | 'banned'; previous_warnings: number; avatar_url: string | null; phone_number: string | null; };
+	relationship_id?: string;
 	incident_type: string;
 	severity: 'critical' | 'high' | 'medium' | 'low';
 	status: 'new' | 'under_review' | 'resolved' | 'false_positive';
@@ -523,10 +710,10 @@ export type SafetyAlertStats = {
 };
 
 // Helper function to map database row to typed alert
-function mapRowToSafetyAlert(row: any): SafetyAlertWithProfiles {
-	const detectedAt = new Date(row.detected_at);
+function mapRowToSafetyAlert(row: any, source: 'incident' | 'manual_report' = 'incident'): SafetyAlertWithProfiles {
+	const detectedAtDate = new Date(row.detected_at || row.created_at);
 	const now = new Date();
-	const waitingTimeMinutes = Math.round((now.getTime() - detectedAt.getTime()) / (1000 * 60));
+	const waitingTimeMinutes = Math.round((now.getTime() - detectedAtDate.getTime()) / (1000 * 60));
 
 	let relationshipDuration = 'Unknown';
 	if (row.relationship?.created_at) {
@@ -541,6 +728,42 @@ function mapRowToSafetyAlert(row: any): SafetyAlertWithProfiles {
 		if (now.getMonth() < dobDate.getMonth() || (now.getMonth() === dobDate.getMonth() && now.getDate() < dobDate.getDate())) age--;
 		return age;
 	};
+
+	if (source === 'manual_report') {
+		const severityMap: Record<string, any> = { 'Low': 'low', 'Medium': 'medium', 'High': 'high', 'Critical': 'critical' };
+		const statusMap: Record<string, any> = { 'Pending': 'new', 'In Review': 'under_review', 'Resolved': 'resolved' };
+
+		return {
+			id: row.id,
+			reporter: {
+				id: row.reporter?.id || '',
+				full_name: row.reporter?.full_name || 'Anonymous User',
+				age: calculateAge(row.reporter?.date_of_birth),
+				location: row.reporter?.location || 'Unknown',
+				user_type: row.reporter?.user_type || 'elderly',
+				account_created: row.reporter?.created_at || '',
+				previous_reports: 0,
+				avatar_url: row.reporter?.profile_photo_url || null,
+				phone_number: row.reporter?.phone || 'N/A'
+			},
+			incident_type: 'manual_report',
+			severity: severityMap[row.severity_level] || 'low',
+			status: statusMap[row.status] || 'new',
+			description: row.description || '',
+			subject: row.subject || 'Manual Safety Report',
+			evidence: (row.evidence_urls || []).map((url: string) => ({ name: 'Evidence', type: 'image', size: 'Unknown', url })),
+			detected_keywords: [],
+			ai_analysis: null,
+			relationship_stage: 'N/A',
+			relationship_duration: 'N/A',
+			detected_at: row.created_at,
+			waiting_time_minutes: waitingTimeMinutes,
+			assigned_admin_id: null,
+			admin_notes: null,
+			admin_action_taken: null,
+			resolved_at: row.updated_at !== row.created_at ? row.updated_at : null
+		};
+	}
 
 	const incidentTypeSubjects: Record<string, string> = {
 		financial_request: 'Financial Exploitation Request Detected',
@@ -571,7 +794,7 @@ function mapRowToSafetyAlert(row: any): SafetyAlertWithProfiles {
 			occupation: row.reported_user?.profile_data?.occupation || null,
 			user_type: row.reported_user?.user_type || 'youth',
 			account_status: row.reported_user?.is_active ? 'active' : 'suspended',
-			previous_warnings: 0,
+			previous_warnings: row.reported_user?.warning_count || 0,
 			avatar_url: row.reported_user?.profile_photo_url || row.reported_user?.avatar_url || null,
 			phone_number: row.reported_user?.phone || 'N/A'
 		},

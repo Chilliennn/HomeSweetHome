@@ -88,6 +88,16 @@ const LoginScreen = observer(function LoginScreen() {
         return;
       }
 
+      // ✅ Check if user is suspended (is_active = false)
+      if (result.appUser.is_active === false) {
+        Alert.alert(
+          'Account Suspended',
+          'Your account has been suspended due to a violation of safety policies. Please contact support for more information.',
+          [{ text: 'OK' }]
+        );
+        return;
+      }
+
       const user = result.appUser;
 
       // ============================================================================

@@ -1,14 +1,16 @@
-import { Stack } from 'expo-router';
-import React, { useEffect } from 'react';
+import { Stack, useRouter } from 'expo-router';
+import React, { useEffect, useRef } from 'react';
+import { Alert } from 'react-native';
 import { observer } from 'mobx-react-lite';
-import { 
-  authViewModel, 
+import {
+  authViewModel,
   communicationViewModel,
   matchingViewModel,
   youthMatchingViewModel,
   elderMatchingViewModel,
   familyViewModel,
 } from '@home-sweet-home/viewmodel';
+
 
 /**
  * Main Group Layout
@@ -18,6 +20,7 @@ import {
  * - bonding: Active relationship management
  * 
  * Syncs authViewModel state to other ViewModels for global user context.
+ * Also monitors user suspension status and forces logout if suspended.
  */
 export default observer(function MainLayout() {
   const authVM = authViewModel;
@@ -26,6 +29,59 @@ export default observer(function MainLayout() {
   const youthVM = youthMatchingViewModel;
   const elderVM = elderMatchingViewModel;
   const familyVM = familyViewModel;
+  const router = useRouter();
+  const suspensionCheckRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Check if user is suspended and force logout
+  useEffect(() => {
+    const checkSuspensionStatus = async () => {
+      const userId = authVM.authState.currentUserId;
+      if (!userId) return;
+
+      try {
+        // ✅ MVVM: Use ViewModel method instead of directly accessing Repository
+        const isSuspended = await authVM.checkSuspensionStatus(userId);
+        if (isSuspended) {
+          // User has been suspended - force logout
+          console.log('[MainLayout] User suspended, forcing logout');
+
+          // Clear the interval
+          if (suspensionCheckRef.current) {
+            clearInterval(suspensionCheckRef.current);
+            suspensionCheckRef.current = null;
+          }
+
+          // Sign out the user
+          await authVM.signOut();
+
+          // Show alert and redirect to login
+          Alert.alert(
+            'Account Suspended',
+            'Your account has been suspended due to a violation of safety policies. Please contact support for more information.',
+            [{ text: 'OK', onPress: () => router.replace('/login') }]
+          );
+        }
+      } catch (error) {
+        console.error('[MainLayout] Error checking suspension status:', error);
+      }
+    };
+
+    // Start periodic check (every 30 seconds)
+    const userId = authVM.authState.currentUserId;
+    if (userId) {
+      // Check immediately
+      checkSuspensionStatus();
+      // Then check every 30 seconds
+      suspensionCheckRef.current = setInterval(checkSuspensionStatus, 30000);
+    }
+
+    return () => {
+      if (suspensionCheckRef.current) {
+        clearInterval(suspensionCheckRef.current);
+        suspensionCheckRef.current = null;
+      }
+    };
+  }, [authVM.authState.currentUserId]);
 
   useEffect(() => {
     const userId = authVM.authState.currentUserId || null;

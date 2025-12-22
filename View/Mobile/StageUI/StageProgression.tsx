@@ -86,48 +86,6 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
       );
     }, [initialOpenStage, vm]);
 
-    // Watch for auto-navigation to Stage Completed page
-    useEffect(() => {
-      if (vm.consumeStageCompletionNavigation()) {
-        (async () => {
-          console.log(
-            "[StageProgression] Stage completion detected, loading info ->",
-            {
-              stageJustCompleted: vm.stageJustCompleted,
-              stageJustCompletedName: vm.stageJustCompletedName,
-              userId,
-            }
-          );
-
-          try {
-            // Ensure VM has the latest completion info
-            await vm.loadStageCompletionInfo(
-              vm.stageJustCompleted ?? undefined
-            );
-
-            const completedStage = vm.stageJustCompleted;
-            if (completedStage === ("family_life" as any)) {
-              console.log(
-                "[StageProgression] Completed stage is family_life -> navigate to journey-completed"
-              );
-              router.push({
-                pathname: "/(main)/journey-completed",
-                params: { userId },
-              });
-            } else {
-              router.push({
-                pathname: "/(main)/stage-completed",
-                params: { userId, stage: completedStage ?? "" },
-              });
-            }
-          } catch (err) {
-            console.error("Failed to handle stage completion navigation:", err);
-          }
-        })();
-      }
-    }, [vm, vm.shouldNavigateToStageCompleted, router, userId]);
-
-    // Watch for auto-navigation to Milestone page
     useEffect(() => {
       if (vm.consumeMilestoneNavigation()) {
         router.push({ pathname: "/(main)/milestone", params: { userId } });
@@ -141,23 +99,25 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
       }
     }, [vm.shouldNavigateToJourneyPause, router, userId, vm]);
 
-    // Watch for auto-navigation to Journey Completed page (final stage fully completed)
     useEffect(() => {
-      if (vm.consumeJourneyCompletedNavigation()) {
+      if (vm.consumeStageCompletionNavigation()) {
         (async () => {
           try {
-            // Ensure completion info loaded
-            await vm.loadStageCompletionInfo(vm.currentStage ?? undefined);
+            const completedStage = vm.stageJustCompleted ?? undefined;
+            await vm.loadStageCompletionInfo(completedStage);
             router.push({
-              pathname: "/(main)/journey-completed",
-              params: { userId },
+              pathname: "/(main)/stage-completed",
+              params: { userId, stage: completedStage },
             });
           } catch (err) {
-            console.error("Failed to navigate to journey-completed:", err);
+            console.error(
+              "[StageProgression] Failed to navigate to stage-completed:",
+              err
+            );
           }
         })();
       }
-    }, [vm.shouldNavigateToJourneyCompleted, router, userId, vm]);
+    }, [vm.shouldNavigateToStageCompleted, router, userId, vm]);
 
     const handleStagePress = async (targetStage: RelationshipStage) => {
       try {
@@ -237,8 +197,6 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
       return <LoadingSpinner />;
     }
 
-    // Navigation Guard: If we are about to navigate to a completion/milestone/pause screen,
-    // don't render the rest of the UI to avoid flickering the "next" stage state.
     if (
       vm.shouldNavigateToStageCompleted ||
       vm.shouldNavigateToJourneyCompleted ||
@@ -1039,4 +997,3 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
 });
-

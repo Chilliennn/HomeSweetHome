@@ -20,6 +20,10 @@ const CATEGORY_MAP: { [id: string]: string } = {
     "4": "Abuse & Harassment"
 };
 
+const CATEGORY_TO_ID: { [name: string]: string } = Object.fromEntries(
+    Object.entries(CATEGORY_MAP).map(([id, name]) => [name, id])
+);
+
 const CATEGORY_ICONS: { [name: string]: string } = {
     "Financial Exploitation": "💰",
     "Personal Information": "👤",
@@ -74,7 +78,7 @@ export const KeywordManagementScreen: React.FC<Props> = observer(({ vm }) => {
         await vm.deleteKeyword(id);
     };
 
-    const categories = ["Financial Exploitation", "Personal Information", "Inappropriate Content", "Abuse & Harassment"];
+    const categories = Object.values(CATEGORY_MAP);
 
     // Styles matching ApplicationQueue
     const styles = {
@@ -288,22 +292,30 @@ export const KeywordManagementScreen: React.FC<Props> = observer(({ vm }) => {
                                         icon={CATEGORY_ICONS[category]}
                                         count={keywords.length}
                                         keywords={keywords}
-                                        onEditKeyword={(kw) => vm.setModalState("edit", {
-                                            id: kw.id,
-                                            keyword: kw.keyword,
-                                            category: category,
-                                            severity: kw.severity as 'low' | 'medium' | 'high' | 'critical',
-                                            is_active: true,
-                                            created_at: new Date().toISOString()
-                                        })}
-                                        onDeleteKeyword={(kw) => vm.setModalState("delete", {
-                                            id: kw.id,
-                                            keyword: kw.keyword,
-                                            category: category,
-                                            severity: kw.severity as 'low' | 'medium' | 'high' | 'critical',
-                                            is_active: true,
-                                            created_at: new Date().toISOString()
-                                        })}
+                                        onEditKeyword={(kw) => {
+                                            vm.setModalState("edit", {
+                                                id: kw.id,
+                                                keyword: kw.keyword,
+                                                category: category,
+                                                category_id: CATEGORY_TO_ID[category] || '1',
+                                                severity: kw.severity as 'low' | 'medium' | 'high' | 'critical',
+                                                is_active: true,
+                                                created_at: new Date().toISOString(),
+                                                updated_at: new Date().toISOString()
+                                            });
+                                        }}
+                                        onDeleteKeyword={(kw) => {
+                                            vm.setModalState("delete", {
+                                                id: kw.id,
+                                                keyword: kw.keyword,
+                                                category: category,
+                                                category_id: CATEGORY_TO_ID[category] || '1',
+                                                severity: kw.severity as 'low' | 'medium' | 'high' | 'critical',
+                                                is_active: true,
+                                                created_at: new Date().toISOString(),
+                                                updated_at: new Date().toISOString()
+                                            });
+                                        }}
                                     />
                                 ))}
                         </div>

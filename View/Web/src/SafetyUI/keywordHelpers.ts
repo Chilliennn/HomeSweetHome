@@ -20,7 +20,7 @@ export function groupKeywordsByCategory(keywords: KeywordRecord[]): { [category:
     };
 
     keywords.forEach(kw => {
-        const categoryName = categoryIdToName[kw.category_id] || "Financial Exploitation";
+        const categoryName = categoryIdToName[kw.category] || "Financial Exploitation";
         if (grouped[categoryName]) {
             grouped[categoryName].push({
                 keyword: kw.keyword,

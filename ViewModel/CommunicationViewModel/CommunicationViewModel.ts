@@ -1029,7 +1029,15 @@ export class CommunicationViewModel {
    * @returns Filter result with isBlocked flag
    */
   filterMessage(message: string): { isBlocked: boolean; blockedWord?: string; reason?: string } {
-    return contentFilterService.filterMessage(message);
+    return contentFilterService.filterMessageSync(message);
+  }
+
+  /**
+   * Initialize keyword loading from database
+   * Call this on app startup to preload keywords
+   */
+  async initializeKeywords(): Promise<void> {
+    await contentFilterService.loadKeywordsFromDatabase();
   }
 
   /**

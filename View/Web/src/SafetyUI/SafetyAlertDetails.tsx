@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { observer } from 'mobx-react-lite';
 import { safetyViewModel } from '@home-sweet-home/viewmodel';
 import { Modal, ModalHeader, ModalBody, ModalFooter, Button } from '../components/ui';
+import { EvidenceFileCard } from '../components/EvidenceFileCard';
 
 // Color constants matching existing design
 const colors = {
@@ -538,9 +539,6 @@ export const SafetyAlertDetails: React.FC<SafetyAlertDetailsProps> = observer(({
         );
     }
 
-    const riskFactors = safetyViewModel.getRiskFactors(alert);
-    const recommendation = safetyViewModel.getRecommendation(alert);
-
     return (
         <div style={styles.container}>
             {/* Processing Overlay */}
@@ -708,50 +706,24 @@ export const SafetyAlertDetails: React.FC<SafetyAlertDetailsProps> = observer(({
             </div>
 
             {/* Evidence Attached */}
-            {alert.evidence.length > 0 && (
+            {alert.evidence && alert.evidence.length > 0 && (
                 <div style={styles.detailsCard}>
                     <h3 style={styles.cardTitle}>
-                        <span style={styles.cardEmoji}>📎</span> Evidence Attached
+                        <span style={styles.cardEmoji}>📎</span> Evidence Attached ({alert.evidence.length} file{alert.evidence.length > 1 ? 's' : ''})
                     </h3>
-                    <div style={styles.evidenceGrid}>
-                        {alert.evidence.map((item: { name: string; type: string; size: string }, index: number) => (
-                            <div key={index} style={styles.evidenceItem}>
-                                <div style={styles.evidenceIcon}>
-                                    {item.type === 'image' ? '💬' : '📝'}
-                                </div>
-                                <p style={styles.evidenceName}>{item.name}</p>
-                                <p style={styles.evidenceSize}>{item.size}</p>
-                            </div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                        {alert.evidence.map((item: { name: string; type: string; size: string; url?: string }, index: number) => (
+                            <EvidenceFileCard
+                                key={index}
+                                fileName={item.name || `Evidence ${index + 1}`}
+                                fileUrl={item.url || ''}
+                                fileSize={item.size}
+                            />
                         ))}
                     </div>
                 </div>
             )}
 
-            {/* AI Severity Analysis */}
-            <div style={styles.aiCard}>
-                <h3 style={styles.cardTitle}>
-                    <span style={styles.cardEmoji}>🤖</span> AI Severity Analysis
-                </h3>
-
-                <div>
-                    <p style={styles.detailLabel}>Severity Assessment</p>
-                    <p style={styles.aiSeverity}>{alert.severity.toUpperCase()} - Requires {alert.severity === 'critical' ? 'immediate' : 'timely'} attention</p>
-                </div>
-
-                <div>
-                    <p style={styles.riskFactorsLabel}>Risk Factors Identified</p>
-                    <ul style={styles.riskFactorsList}>
-                        {riskFactors.map((factor: string, index: number) => (
-                            <li key={index} style={styles.riskFactor}>{factor}</li>
-                        ))}
-                    </ul>
-                </div>
-
-                <div style={styles.recommendationBox}>
-                    <p style={styles.recommendationLabel}>Recommended Action</p>
-                    <p style={styles.recommendationText}>{recommendation}</p>
-                </div>
-            </div>
 
             {/* Take Action */}
             <div style={styles.actionsCard}>

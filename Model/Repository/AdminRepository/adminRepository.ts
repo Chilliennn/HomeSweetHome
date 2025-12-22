@@ -405,6 +405,41 @@ export const adminRepository = {
 	// SAFETY ALERTS (UC503)
 	// ============================================
 
+	/**
+	 * Get public URLs for evidence files from storage paths
+	 */
+	getEvidencePublicUrls(evidencePaths: string[]): string[] {
+		if (!evidencePaths || evidencePaths.length === 0) {
+			return [];
+		}
+
+		return evidencePaths.map(path => {
+			// Remove any existing base URL if present
+			let cleanPath = path;
+
+			if (path.includes('storage/v1/object/public/safety-evidence/')) {
+				cleanPath = path.split('safety-evidence/')[1];
+			} else if (path.startsWith('http')) {
+				// If it's already a full URL, extract just the path
+				try {
+					const url = new URL(path);
+					const pathParts = url.pathname.split('/safety-evidence/');
+					cleanPath = pathParts[1] || path;
+				} catch {
+					cleanPath = path;
+				}
+			}
+
+			// Generate fresh public URL
+			const { data } = supabase.storage
+				.from('safety-evidence')
+				.getPublicUrl(cleanPath);
+
+			console.log('[AdminRepository] Generated URL for path:', cleanPath, '→', data.publicUrl);
+			return data.publicUrl;
+		});
+	},
+
 	async getSafetyAlerts(severity?: string, status?: string, sortBy: 'newest' | 'oldest' = 'newest', limit = 50, offset = 0): Promise<SafetyAlertWithProfiles[]> {
 		// Only query safety_reports table (safety_incidents table was removed)
 		let reportsQuery = supabase
@@ -508,6 +543,38 @@ export const adminRepository = {
 			const now = new Date();
 			const days = Math.floor((now.getTime() - new Date(rel.created_at).getTime()) / (1000 * 60 * 60 * 24));
 			alert.relationship_duration = `${days} days`;
+		}
+
+		// Fallback: If no evidence URLs in DB, try to find in storage bucket (for existing reports)
+		if (!alert.evidence || alert.evidence.length === 0) {
+			console.log('[getSafetyAlertById] No evidence in DB, checking bucket for:', alertId);
+			const { data: files } = await supabase.storage
+				.from('safety-evidence')
+				.list(alert.id);
+
+			if (files && files.length > 0) {
+				console.log('[getSafetyAlertById] Found files in bucket:', files.length);
+				const formatEvidenceSize = (bytes: number) => {
+					if (bytes === 0) return '0 B';
+					const k = 1024;
+					const sizes = ['B', 'KB', 'MB', 'GB'];
+					const i = Math.floor(Math.log(bytes) / Math.log(k));
+					return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+				};
+
+				const evidence = files.map(file => {
+					const { data } = supabase.storage
+						.from('safety-evidence')
+						.getPublicUrl(`${alert.id}/${file.name}`);
+					return {
+						name: file.name,
+						type: file.metadata?.mimetype?.startsWith('image') ? 'image' : 'document',
+						size: formatEvidenceSize(file.metadata?.size || 0),
+						url: data.publicUrl
+					};
+				});
+				alert.evidence = evidence as any;
+			}
 		}
 
 		return alert;
@@ -751,7 +818,18 @@ function mapRowToSafetyAlert(row: any, source: 'incident' | 'manual_report' = 'i
 			status: statusMap[row.status] || 'new',
 			description: row.description || '',
 			subject: row.subject || 'Manual Safety Report',
-			evidence: (row.evidence_urls || []).map((url: string) => ({ name: 'Evidence', type: 'image', size: 'Unknown', url })),
+			evidence: (() => {
+				if (row.evidence_urls && row.evidence_urls.length > 0) {
+					console.log('[AdminRepo] Found evidence URLs/paths for report', row.id, row.evidence_urls);
+				}
+				const urls = adminRepository.getEvidencePublicUrls(row.evidence_urls || []);
+				return urls.map((url: string, index: number) => ({
+					name: `Evidence ${index + 1}`,
+					type: 'image',
+					size: 'Unknown',
+					url
+				}));
+			})(),
 			detected_keywords: [],
 			ai_analysis: null,
 			relationship_stage: 'N/A',

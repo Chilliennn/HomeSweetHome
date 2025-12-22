@@ -449,7 +449,6 @@ interface SafetyAlertDetailsProps {
 }
 
 export const SafetyAlertDetails: React.FC<SafetyAlertDetailsProps> = observer(({ alertId, onBack }) => {
-    const [actionSuccess, setActionSuccess] = useState<string | null>(null);
     const [showContactModal, setShowContactModal] = useState(false);
     const [showSuspendModal, setShowSuspendModal] = useState(false);
     const [showWarningModal, setShowWarningModal] = useState(false);
@@ -488,32 +487,30 @@ export const SafetyAlertDetails: React.FC<SafetyAlertDetailsProps> = observer(({
             return;
         }
 
-        let success = false;
-        switch (action) {
-            case 'dismiss':
-                success = await safetyViewModel.dismissReport('False positive - no violation detected');
-                break;
-        }
-
-        if (success) {
-            setActionSuccess(`Action "${action}" completed successfully`);
-            setTimeout(() => setActionSuccess(null), 3000);
+        if (action === 'dismiss') {
+            if (window.confirm('Are you sure you want to dismiss and permanently delete this report? This action cannot be undone.')) {
+                const success = await safetyViewModel.dismissReport('False positive - no violation detected');
+                if (success && onBack) {
+                    onBack();
+                }
+            }
+            return;
         }
     };
 
     const confirmSuspend = async () => {
         const success = await safetyViewModel.suspendUser(suspendReason, suspendDuration);
         setShowSuspendModal(false);
-        if (success) {
-            setActionSuccess('User account suspended successfully');
+        if (success && onBack) {
+            onBack();
         }
     };
 
     const confirmWarning = async () => {
         const success = await safetyViewModel.issueWarning(warningType, warningNotes);
         setShowWarningModal(false);
-        if (success) {
-            setActionSuccess(`Warning issued successfully`);
+        if (success && onBack) {
+            onBack();
         }
     };
 
@@ -564,11 +561,6 @@ export const SafetyAlertDetails: React.FC<SafetyAlertDetailsProps> = observer(({
             {errorMessage && (
                 <div style={styles.errorState}>{errorMessage}</div>
             )}
-            {actionSuccess && (
-                <div style={{ ...styles.actionsInfo, marginBottom: '20px' }}>
-                    <p style={styles.actionsInfoText}>✓ {actionSuccess}</p>
-                </div>
-            )}
 
             {/* Header Card */}
             <div style={styles.headerCard}>
@@ -579,14 +571,14 @@ export const SafetyAlertDetails: React.FC<SafetyAlertDetailsProps> = observer(({
                         <div style={styles.headerMeta}>
                             <span style={styles.metaItem}>📅 Submitted: {new Date(alert.detected_at).toLocaleString()}</span>
                             <span style={styles.metaItem}>⏱️ Response Time Remaining: {safetyViewModel.getResponseTimeRemaining(alert)}</span>
-                            {alert.detected_keywords.length > 0 && (
+                            {alert.detected_keywords && alert.detected_keywords.length > 0 && (
                                 <span style={styles.metaItem}>🔍 Keyword: "{alert.detected_keywords.join('", "')}"</span>
                             )}
                         </div>
                     </div>
                     <div style={styles.headerBadges}>
-                        <span style={styles.severityBadge}>{alert.severity.toUpperCase()}</span>
-                        <span style={styles.statusBadge}>{safetyViewModel.getStatusLabel(alert.status)}</span>
+                        <span style={styles.severityBadge}>{(alert.severity || 'low').toUpperCase()}</span>
+                        <span style={styles.statusBadge}>{safetyViewModel.getStatusLabel(alert.status || 'new')}</span>
                     </div>
                 </div>
 
@@ -594,7 +586,7 @@ export const SafetyAlertDetails: React.FC<SafetyAlertDetailsProps> = observer(({
                     <div style={styles.criticalAlert}>
                         <p style={styles.criticalAlertTitle}>⚠️ Critical Alert</p>
                         <p style={styles.criticalAlertText}>
-                            This report contains patterns associated with {alert.incident_type.replace('_', ' ')}. Immediate review and action required.
+                            This report contains patterns associated with {(alert.incident_type || 'safety_concern').replace('_', ' ')}. Immediate review and action required.
                         </p>
                     </div>
                 )}
@@ -605,19 +597,19 @@ export const SafetyAlertDetails: React.FC<SafetyAlertDetailsProps> = observer(({
                 {/* Reporter Profile */}
                 <div style={styles.profileCard}>
                     <h3 style={styles.cardTitle}>
-                        <span style={styles.cardEmoji}>👵</span> Reporter Profile ({alert.reporter.user_type === 'elderly' ? 'Elderly' : 'Youth'})
+                        <span style={styles.cardEmoji}>👵</span> Reporter Profile ({alert.reporter?.user_type === 'elderly' ? 'Elderly' : 'Youth'})
                     </h3>
                     <div style={styles.infoRow}>
                         <p style={styles.infoLabel}>Full Name</p>
-                        <p style={styles.infoValue}>{alert.reporter.full_name}</p>
+                        <p style={styles.infoValue}>{alert.reporter?.full_name || 'N/A'}</p>
                     </div>
                     <div style={styles.infoRow}>
                         <p style={styles.infoLabel}>User ID</p>
-                        <p style={styles.infoValue}>{alert.reporter.id}</p>
+                        <p style={styles.infoValue}>{alert.reporter?.id || 'N/A'}</p>
                     </div>
                     <div style={styles.infoRow}>
                         <p style={styles.infoLabel}>Age</p>
-                        <p style={styles.infoValue}>{alert.reporter.age} years old</p>
+                        <p style={styles.infoValue}>{alert.reporter?.age || 'N/A'} years old</p>
                     </div>
                     <div style={styles.infoRow}>
                         <p style={styles.infoLabel}>Location</p>
@@ -629,44 +621,57 @@ export const SafetyAlertDetails: React.FC<SafetyAlertDetailsProps> = observer(({
                     </div>
                     <div style={{ ...styles.infoRow, borderBottom: 'none' }}>
                         <p style={styles.infoLabel}>Previous Reports</p>
-                        <p style={styles.infoValue}>{alert.reporter.previous_reports} reports</p>
+                        <p style={styles.infoValue}>{alert.reporter?.previous_reports || 0} reports</p>
                     </div>
                 </div>
 
                 {/* Reported User Profile */}
-                <div style={styles.profileCard}>
-                    <h3 style={styles.cardTitle}>
-                        <span style={styles.cardEmoji}>👨</span> Reported User Profile ({alert.reported_user.user_type === 'youth' ? 'Youth' : 'Elderly'})
-                    </h3>
-                    <div style={styles.infoRow}>
-                        <p style={styles.infoLabel}>Full Name</p>
-                        <p style={styles.infoValue}>{alert.reported_user.full_name}</p>
+                {alert.reported_user ? (
+                    <div style={styles.profileCard}>
+                        <h3 style={styles.cardTitle}>
+                            <span style={styles.cardEmoji}>👨</span> Reported User Profile ({(alert.reported_user?.user_type || 'youth') === 'youth' ? 'Youth' : 'Elderly'})
+                        </h3>
+                        <div style={styles.infoRow}>
+                            <p style={styles.infoLabel}>Full Name</p>
+                            <p style={styles.infoValue}>{alert.reported_user?.full_name || 'N/A'}</p>
+                        </div>
+                        <div style={styles.infoRow}>
+                            <p style={styles.infoLabel}>User ID</p>
+                            <p style={styles.infoValue}>{alert.reported_user?.id || 'N/A'}</p>
+                        </div>
+                        <div style={styles.infoRow}>
+                            <p style={styles.infoLabel}>Age</p>
+                            <p style={styles.infoValue}>{alert.reported_user?.age || 'N/A'} years old</p>
+                        </div>
+                        <div style={styles.infoRow}>
+                            <p style={styles.infoLabel}>Occupation</p>
+                            <p style={styles.infoValue}>{alert.reported_user.occupation || 'N/A'}</p>
+                        </div>
+                        <div style={styles.infoRow}>
+                            <p style={styles.infoLabel}>Account Status</p>
+                            <p style={{ ...styles.infoValue, ...(alert.reported_user.account_status === 'active' ? styles.infoValueActive : styles.infoValueWarning) }}>
+                                {alert.reported_user.account_status ? (alert.reported_user.account_status.charAt(0).toUpperCase() + alert.reported_user.account_status.slice(1)) : 'Active'}
+                            </p>
+                        </div>
+                        <div style={{ ...styles.infoRow, borderBottom: 'none' }}>
+                            <p style={styles.infoLabel}>Previous Warnings</p>
+                            <p style={{ ...styles.infoValue, ...styles.infoValueWarning }}>
+                                {alert.reported_user.previous_warnings || 0} warning{(alert.reported_user.previous_warnings || 0) !== 1 ? 's' : ''}
+                            </p>
+                        </div>
                     </div>
-                    <div style={styles.infoRow}>
-                        <p style={styles.infoLabel}>User ID</p>
-                        <p style={styles.infoValue}>{alert.reported_user.id}</p>
+                ) : (
+                    <div style={styles.profileCard}>
+                        <h3 style={styles.cardTitle}>
+                            <span style={styles.cardEmoji}>🚫</span> No Target User
+                        </h3>
+                        <div style={styles.descriptionBox}>
+                            <p style={styles.descriptionText}>
+                                This manual report was submitted as general feedback or a safety concern without tagging a specific user.
+                            </p>
+                        </div>
                     </div>
-                    <div style={styles.infoRow}>
-                        <p style={styles.infoLabel}>Age</p>
-                        <p style={styles.infoValue}>{alert.reported_user.age} years old</p>
-                    </div>
-                    <div style={styles.infoRow}>
-                        <p style={styles.infoLabel}>Occupation</p>
-                        <p style={styles.infoValue}>{alert.reported_user.occupation || 'N/A'}</p>
-                    </div>
-                    <div style={styles.infoRow}>
-                        <p style={styles.infoLabel}>Account Status</p>
-                        <p style={{ ...styles.infoValue, ...(alert.reported_user.account_status === 'active' ? styles.infoValueActive : styles.infoValueWarning) }}>
-                            {alert.reported_user.account_status.charAt(0).toUpperCase() + alert.reported_user.account_status.slice(1)}
-                        </p>
-                    </div>
-                    <div style={{ ...styles.infoRow, borderBottom: 'none' }}>
-                        <p style={styles.infoLabel}>Previous Warnings</p>
-                        <p style={{ ...styles.infoValue, ...styles.infoValueWarning }}>
-                            {alert.reported_user.previous_warnings} warning{alert.reported_user.previous_warnings !== 1 ? 's' : ''}
-                        </p>
-                    </div>
-                </div>
+                )}
             </div>
 
             {/* Report Details */}
@@ -787,7 +792,7 @@ export const SafetyAlertDetails: React.FC<SafetyAlertDetailsProps> = observer(({
                         onClick={() => handleAction('dismiss')}
                         disabled={isProcessing}
                     >
-                        ✓ Dismiss Report
+                        🗑️ Dismiss & Delete Report
                     </button>
                 </div>
             </div>
@@ -802,13 +807,15 @@ export const SafetyAlertDetails: React.FC<SafetyAlertDetailsProps> = observer(({
                 </ModalHeader>
                 <ModalBody>
                     <div style={styles.phoneDisplay}>
-                        <p style={styles.phoneLabel}>Reporter ({alert.reporter.full_name})</p>
-                        <p style={styles.phoneNumber}>{alert.reporter.phone_number || '+60 12-345 6789'}</p>
+                        <p style={styles.phoneLabel}>Reporter ({alert.reporter?.full_name || 'N/A'})</p>
+                        <p style={styles.phoneNumber}>{alert.reporter?.phone_number || 'N/A'}</p>
                     </div>
-                    <div style={styles.phoneDisplay}>
-                        <p style={styles.phoneLabel}>Reported User ({alert.reported_user.full_name})</p>
-                        <p style={styles.phoneNumber}>{alert.reported_user.phone_number || '+60 11-8765 4321'}</p>
-                    </div>
+                    {alert.reported_user && (
+                        <div style={styles.phoneDisplay}>
+                            <p style={styles.phoneLabel}>Reported User ({alert.reported_user.full_name})</p>
+                            <p style={styles.phoneNumber}>{alert.reported_user.phone_number || 'N/A'}</p>
+                        </div>
+                    )}
                 </ModalBody>
                 <ModalFooter>
                     <Button variant="primary" onClick={() => setShowContactModal(false)}>
@@ -827,7 +834,7 @@ export const SafetyAlertDetails: React.FC<SafetyAlertDetailsProps> = observer(({
                 </ModalHeader>
                 <ModalBody>
                     <p style={{ ...styles.detailLabel, marginBottom: '20px' }}>
-                        You are about to suspend <strong>{alert.reported_user.full_name}</strong>. This will prevent them from accessing the platform.
+                        You are about to suspend <strong>{alert.reported_user?.full_name || 'this user'}</strong>. This will prevent them from accessing the platform.
                     </p>
 
                     <label style={styles.modalLabel}>Suspension Duration</label>

@@ -325,6 +325,20 @@ export class AuthViewModel {
   }
 
   /**
+   * Check if user account is suspended (is_active = false)
+   * Used by main layout to force logout suspended users
+   * @returns true if user is suspended, false otherwise
+   */
+  async checkSuspensionStatus(userId: string): Promise<boolean> {
+    try {
+      return await authService.checkSuspensionStatus(userId);
+    } catch (error) {
+      console.error('[AuthViewModel] Error checking suspension status:', error);
+      return false;
+    }
+  }
+
+  /**
    * Manually set auth state (for prototype mode)
    * Used when login flow bypasses authService
    */

@@ -188,6 +188,13 @@ export const safetyService = {
     },
 
     /**
+     * Delete alert entirely
+     */
+    async deleteAlert(alertId: string): Promise<void> {
+        await adminRepository.deleteAlert(alertId);
+    },
+
+    /**
      * Get valid dismissal reasons
      */
     getDismissalReasons(): string[] {
@@ -213,7 +220,7 @@ export const safetyService = {
         }
 
         // Previous warnings
-        if (alert.reported_user.previous_warnings > 0) {
+        if (alert.reported_user && alert.reported_user.previous_warnings > 0) {
             factors.push(`Previous warning on file for reported user (${alert.reported_user.previous_warnings} total)`);
         }
 

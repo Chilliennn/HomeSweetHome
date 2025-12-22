@@ -33,7 +33,7 @@ export const authService = {
 
     // Authenticate via repository (prototype mode - email only)
     const authResult = await authRepository.signInWithEmail(email);
-    
+
     // Fetch app user profile if auth successful
     let appUser: User | null = null;
     if (authResult.user?.id) {
@@ -87,7 +87,7 @@ export const authService = {
     }
 
     const appUser = await userRepository.getById(session.user.id);
-    
+
     return {
       user: session.user,
       session,
@@ -147,5 +147,19 @@ export const authService = {
   async getUserType(userId: string): Promise<UserType | null> {
     const user = await userRepository.getById(userId);
     return user?.user_type || null;
+  },
+
+  /**
+   * Check if user account is suspended (is_active = false)
+   * @returns true if user is suspended, false otherwise
+   */
+  async checkSuspensionStatus(userId: string): Promise<boolean> {
+    try {
+      const user = await userRepository.getById(userId);
+      return user?.is_active === false;
+    } catch (error) {
+      console.error('[authService] Error checking suspension status:', error);
+      return false;
+    }
   },
 };

@@ -53,18 +53,27 @@ export class SafetyViewModel {
             const status = this.filterStatus === 'all' ? undefined : this.filterStatus;
             const offset = (this.currentPage - 1) * this.itemsPerPage;
 
-            this.alerts = await safetyService.getAlerts(
+            const data = await safetyService.getAlerts(
                 severity,
                 status,
                 this.sortBy,
                 this.itemsPerPage,
                 offset
             );
+
+            runInAction(() => {
+                this.alerts = data;
+                this.errorMessage = null;
+            });
         } catch (error) {
-            this.errorMessage = error instanceof Error ? error.message : 'Failed to load safety alerts';
+            runInAction(() => {
+                this.errorMessage = error instanceof Error ? error.message : 'Failed to load safety alerts';
+            });
             console.error('Error loading safety alerts:', error);
         } finally {
-            this.isLoading = false;
+            runInAction(() => {
+                this.isLoading = false;
+            });
         }
     }
 
@@ -90,12 +99,20 @@ export class SafetyViewModel {
         this.errorMessage = null;
 
         try {
-            this.selectedAlert = await safetyService.getAlertById(alertId);
+            const alert = await safetyService.getAlertById(alertId);
+            runInAction(() => {
+                this.selectedAlert = alert;
+                this.errorMessage = null;
+            });
         } catch (error) {
-            this.errorMessage = error instanceof Error ? error.message : 'Failed to load alert details';
+            runInAction(() => {
+                this.errorMessage = error instanceof Error ? error.message : 'Failed to load alert details';
+            });
             console.error('Error selecting alert:', error);
         } finally {
-            this.isLoading = false;
+            runInAction(() => {
+                this.isLoading = false;
+            });
         }
     }
 
@@ -110,8 +127,10 @@ export class SafetyViewModel {
      * Issue warning to reported user
      */
     async issueWarning(warningType: string, notes: string): Promise<boolean> {
+        console.log('[SafetyViewModel] issueWarning called:', { warningType, notes, adminId: this.currentAdminId });
         if (!this.selectedAlert) {
             this.errorMessage = 'No alert selected';
+            console.error('[SafetyViewModel] issueWarning failed: No alert selected');
             return false;
         }
 
@@ -119,25 +138,30 @@ export class SafetyViewModel {
         this.errorMessage = null;
 
         try {
+            const alertId = this.selectedAlert.id;
+            console.log('[SafetyViewModel] Calling safetyService.issueWarning for alertId:', alertId);
             await safetyService.issueWarning(
-                this.selectedAlert.id,
+                alertId,
                 this.currentAdminId,
                 warningType,
                 notes
             );
 
-            // Update local state
-            this.selectedAlert.status = 'resolved';
-            this.selectedAlert.admin_action_taken = 'warning_issued';
+            // Refetch to ensure we have latest DB state (including updated counts)
+            await this.selectAlert(alertId);
             await this.loadStats();
 
             return true;
         } catch (error) {
-            this.errorMessage = error instanceof Error ? error.message : 'Failed to issue warning';
+            runInAction(() => {
+                this.errorMessage = error instanceof Error ? error.message : 'Failed to issue warning';
+            });
             console.error('Error issuing warning:', error);
             return false;
         } finally {
-            this.isProcessing = false;
+            runInAction(() => {
+                this.isProcessing = false;
+            });
         }
     }
 
@@ -145,8 +169,10 @@ export class SafetyViewModel {
      * Suspend reported user
      */
     async suspendUser(reason: string, duration: 'temporary' | 'permanent' = 'temporary'): Promise<boolean> {
+        console.log('[SafetyViewModel] suspendUser called:', { reason, duration, adminId: this.currentAdminId });
         if (!this.selectedAlert) {
             this.errorMessage = 'No alert selected';
+            console.error('[SafetyViewModel] suspendUser failed: No alert selected');
             return false;
         }
 
@@ -154,27 +180,37 @@ export class SafetyViewModel {
         this.errorMessage = null;
 
         try {
+            if (!this.selectedAlert.reported_user) {
+                this.errorMessage = 'No reported user found for this alert';
+                console.error('[SafetyViewModel] suspendUser failed: No reported user');
+                return false;
+            }
+
+            const alertId = this.selectedAlert.id;
+            console.log('[SafetyViewModel] Calling safetyService.suspendUser for alertId:', alertId);
             await safetyService.suspendUser(
-                this.selectedAlert.id,
+                alertId,
                 this.selectedAlert.reported_user.id,
                 this.currentAdminId,
                 reason,
                 duration
             );
 
-            // Update local state
-            this.selectedAlert.status = 'resolved';
-            this.selectedAlert.admin_action_taken = 'user_suspended';
-            this.selectedAlert.reported_user.account_status = 'suspended';
+            // Refetch to ensure we have latest DB state
+            await this.selectAlert(alertId);
             await this.loadStats();
 
             return true;
         } catch (error: any) {
-            this.errorMessage = error.message || (typeof error === 'string' ? error : 'Failed to suspend user');
+            runInAction(() => {
+                this.errorMessage = error.message || (typeof error === 'string' ? error : 'Failed to suspend user');
+            });
             console.error('Error suspending user:', error);
             return false;
         } finally {
-            this.isProcessing = false;
+            runInAction(() => {
+                this.isProcessing = false;
+            });
         }
     }
 
@@ -182,34 +218,43 @@ export class SafetyViewModel {
      * Dismiss report as false positive
      */
     async dismissReport(reason: string, explanation?: string): Promise<boolean> {
+        console.log('[SafetyViewModel] dismissReport called:', { reason, explanation, adminId: this.currentAdminId });
         if (!this.selectedAlert) {
             this.errorMessage = 'No alert selected';
+            console.error('[SafetyViewModel] dismissReport failed: No alert selected');
             return false;
         }
 
+        const alertId = this.selectedAlert.id;
         this.isProcessing = true;
         this.errorMessage = null;
 
         try {
+            console.log('[SafetyViewModel] Calling safetyService.dismissReport for alertId:', alertId);
             await safetyService.dismissReport(
-                this.selectedAlert.id,
+                alertId,
                 this.currentAdminId,
                 reason,
                 explanation
             );
 
-            // Update local state
-            this.selectedAlert.status = 'false_positive';
-            this.selectedAlert.admin_action_taken = 'dismissed';
+            runInAction(() => {
+                this.selectedAlert = null;
+            });
+            await this.loadAlerts(); // Refresh list
             await this.loadStats();
 
             return true;
         } catch (error) {
-            this.errorMessage = error instanceof Error ? error.message : 'Failed to dismiss report';
+            runInAction(() => {
+                this.errorMessage = error instanceof Error ? error.message : 'Failed to dismiss report';
+            });
             console.error('Error dismissing report:', error);
             return false;
         } finally {
-            this.isProcessing = false;
+            runInAction(() => {
+                this.isProcessing = false;
+            });
         }
     }
 
@@ -233,11 +278,49 @@ export class SafetyViewModel {
             );
             return true;
         } catch (error) {
-            this.errorMessage = error instanceof Error ? error.message : 'Failed to initiate contact';
+            runInAction(() => {
+                this.errorMessage = error instanceof Error ? error.message : 'Failed to initiate contact';
+            });
             console.error('Error initiating contact:', error);
             return false;
         } finally {
-            this.isProcessing = false;
+            runInAction(() => {
+                this.isProcessing = false;
+            });
+        }
+    }
+
+    /**
+     * Delete alert entirely
+     */
+    async deleteAlert(): Promise<boolean> {
+        if (!this.selectedAlert) {
+            this.errorMessage = 'No alert selected';
+            return false;
+        }
+
+        const alertId = this.selectedAlert.id;
+        this.isProcessing = true;
+        this.errorMessage = null;
+
+        try {
+            await safetyService.deleteAlert(alertId);
+            runInAction(() => {
+                this.selectedAlert = null;
+            });
+            await this.loadAlerts(); // Refresh list
+            await this.loadStats();
+            return true;
+        } catch (error) {
+            runInAction(() => {
+                this.errorMessage = error instanceof Error ? error.message : 'Failed to delete alert';
+            });
+            console.error('Error deleting alert:', error);
+            return false;
+        } finally {
+            runInAction(() => {
+                this.isProcessing = false;
+            });
         }
     }
 
@@ -246,24 +329,30 @@ export class SafetyViewModel {
     // ==================
 
     setFilterSeverity(severity: Severity | 'all'): void {
-        if (this.filterSeverity !== severity) {
-            this.filterSeverity = severity;
-            this.currentPage = 1;
-        }
+        runInAction(() => {
+            if (this.filterSeverity !== severity) {
+                this.filterSeverity = severity;
+                this.currentPage = 1;
+            }
+        });
     }
 
     setFilterStatus(status: IncidentStatus | 'all'): void {
-        if (this.filterStatus !== status) {
-            this.filterStatus = status;
-            this.currentPage = 1;
-        }
+        runInAction(() => {
+            if (this.filterStatus !== status) {
+                this.filterStatus = status;
+                this.currentPage = 1;
+            }
+        });
     }
 
     setSortBy(sortBy: 'newest' | 'oldest'): void {
-        if (this.sortBy !== sortBy) {
-            this.sortBy = sortBy;
-            this.currentPage = 1;
-        }
+        runInAction(() => {
+            if (this.sortBy !== sortBy) {
+                this.sortBy = sortBy;
+                this.currentPage = 1;
+            }
+        });
     }
 
     goToPage(page: number): void {

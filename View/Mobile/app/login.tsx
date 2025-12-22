@@ -55,6 +55,17 @@ export default function LoginScreen() {
         return;
       }
 
+      // ✅ Check if user is suspended (is_active = false)
+      if (result.appUser.is_active === false) {
+        Alert.alert(
+          'Account Suspended',
+          'Your account has been suspended due to a violation of safety policies. Please contact support for more information.',
+          [{ text: 'OK' }]
+        );
+        setLoading(false);
+        return;
+      }
+
       // ✅ MVVM: Use authViewModel method to get relationship
       const relationship = await authViewModel.getActiveRelationship(result.appUser.id);
       console.log('authViewModel.getActiveRelationship result:', relationship);

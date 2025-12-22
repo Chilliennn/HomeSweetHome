@@ -13,6 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system';
+import { observer } from 'mobx-react-lite';
 import {
   Button,
   Header,
@@ -21,6 +22,7 @@ import {
   IconCircle,
   ImageUploader,
 } from '../components/ui';
+import { authViewModel } from '../../../ViewModel/AuthViewModel';
 
 // ============================================================================
 // TYPES
@@ -147,11 +149,10 @@ const buildAvatarOptions = (userType: 'youth' | 'elderly'): AvatarOption[] => {
  * - Phone Number & Location (from old RealIdentityForm)
  * - Display Name & Avatar (from old DisplayIdentityForm)
  * 
- * Removed:
- * - Real Photo field (per requirements)
- * - Anonymous functionality (per requirements)
+ * MVVM: View uses observer to react to ViewModel state changes.
+ * Validation logic is in AuthViewModel, not here.
  */
-export const ProfileSetupForm: React.FC<ProfileSetupFormProps> = ({
+const ProfileSetupFormComponent: React.FC<ProfileSetupFormProps> = ({
   initialData,
   userType,
   onNext,
@@ -173,9 +174,8 @@ export const ProfileSetupForm: React.FC<ProfileSetupFormProps> = ({
   );
   const [isUploading, setIsUploading] = useState(false);
 
-  // Validation errors
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  
+  // NOTE: Errors are managed by ViewModel (authViewModel.profileSetupErrors) per MVVM rules
+
   // Location picker state
   const [showLocationPicker, setShowLocationPicker] = useState(false);
 
@@ -192,7 +192,7 @@ export const ProfileSetupForm: React.FC<ProfileSetupFormProps> = ({
   const handleSelectLocation = (locationLabel: string) => {
     setLocation(locationLabel);
     setShowLocationPicker(false);
-    setErrors((prev) => ({ ...prev, location: '' }));
+    authViewModel.clearProfileSetupError('location');
   };
 
   /**
@@ -201,7 +201,7 @@ export const ProfileSetupForm: React.FC<ProfileSetupFormProps> = ({
   const handleSelectAvatar = (id: string) => {
     setSelectedAvatarId(id);
     setProfilePhotoUri(null); // Clear profile photo when selecting preset avatar
-    setErrors((prev) => ({ ...prev, avatar: '' }));
+    authViewModel.clearProfileSetupError('avatar');
   };
 
   /**
@@ -213,7 +213,7 @@ export const ProfileSetupForm: React.FC<ProfileSetupFormProps> = ({
   const handlePickProfilePhoto = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      setErrors({ avatar: 'Permission to access gallery is required' });
+      authViewModel.profileSetupErrors = { avatar: 'Permission to access gallery is required' };
       return;
     }
 
@@ -229,84 +229,44 @@ export const ProfileSetupForm: React.FC<ProfileSetupFormProps> = ({
 
       // Validate file size (max 10MB for profile photos)
       if (asset.fileSize && asset.fileSize > 10 * 1024 * 1024) {
-        setErrors({ avatar: 'Photo size must be less than 10MB' });
+        authViewModel.profileSetupErrors = { avatar: 'Photo size must be less than 10MB' };
         return;
       }
 
       // Validate file format
       const uri = asset.uri.toLowerCase();
-      const isValidFormat = uri.endsWith('.jpg') || uri.endsWith('.jpeg') || 
-                           uri.endsWith('.png') || uri.endsWith('.webp');
+      const isValidFormat = uri.endsWith('.jpg') || uri.endsWith('.jpeg') ||
+        uri.endsWith('.png') || uri.endsWith('.webp');
       if (!isValidFormat && asset.mimeType) {
         const validMimes = ['image/jpeg', 'image/png', 'image/webp'];
         if (!validMimes.includes(asset.mimeType)) {
-          setErrors({ avatar: 'Please select a JPG, PNG, or WebP image' });
+          authViewModel.profileSetupErrors = { avatar: 'Please select a JPG, PNG, or WebP image' };
           return;
         }
       }
 
       setProfilePhotoUri(asset.uri);
       setSelectedAvatarId(null); // Clear preset avatar selection
-      setErrors((prev) => ({ ...prev, avatar: '' }));
+      authViewModel.clearProfileSetupError('avatar');
     }
   };
 
-  /**
-   * Validate all form fields
-   */
-  const validateForm = (): boolean => {
-    console.log('[ProfileSetupForm] validateForm START', {
-      phoneNumber,
-      location,
-      fullName,
-      selectedAvatarId,
-      profilePhotoUri: profilePhotoUri?.substring(0, 50),
-    });
-    
-    const newErrors: Record<string, string> = {};
-
-    // Validate phone number
-    if (!phoneNumber.trim()) {
-      newErrors.phone = 'Phone number is required';
-    } else if (!/^\+?[\d\s-]{10,}$/.test(phoneNumber)) {
-      newErrors.phone = 'Please enter a valid phone number';
-    }
-
-    // Validate location
-    if (!location.trim()) {
-      newErrors.location = 'Location is required';
-    } else if (!LOCATION_OPTIONS.some(opt => opt.label === location)) {
-      newErrors.location = 'Please select a valid location from the list';
-    }
-
-    // Validate full name
-    if (!fullName.trim()) {
-      newErrors.fullName = 'Full name is required';
-    } else if (fullName.length < 2 || fullName.length > 50) {
-      newErrors.fullName = 'Full name must be 2-50 characters';
-    }
-
-    // Avatar/photo is optional - user can choose preset avatar OR upload real photo OR neither
-    // If they choose neither, we'll show a default fallback
-
-    console.log('[ProfileSetupForm] validateForm RESULT', {
-      hasErrors: Object.keys(newErrors).length > 0,
-      errors: newErrors,
-    });
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
+  // Location options for validation
+  const locationLabels = LOCATION_OPTIONS.map(opt => opt.label);
 
   /**
    * Handle form submission
    */
   const handleNext = async () => {
     console.log('[ProfileSetupForm] handleNext called');
-    
-    const isValid = validateForm();
+
+    // Use ViewModel validation (MVVM pattern)
+    const isValid = authViewModel.validateProfileSetup(
+      { phoneNumber, location, fullName },
+      locationLabels
+    );
     console.log('[ProfileSetupForm] Form validation result:', isValid);
-    
+
     if (!isValid) {
       console.log('[ProfileSetupForm] Form validation failed, aborting');
       return;
@@ -314,7 +274,7 @@ export const ProfileSetupForm: React.FC<ProfileSetupFormProps> = ({
 
     setIsUploading(true);
     console.log('[ProfileSetupForm] Calling onNext callback...');
-    
+
     try {
       await onNext({
         phoneNumber,
@@ -340,20 +300,20 @@ export const ProfileSetupForm: React.FC<ProfileSetupFormProps> = ({
   // ============================================================================
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top','bottom']}>
+    <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
       <View style={styles.container}>
         {/* Header */}
-        <Header 
-          title={editMode ? 'Edit Profile' : 'Profile Setup'} 
-          onBack={onBack} 
+        <Header
+          title={editMode ? 'Edit Profile' : 'Profile Setup'}
+          onBack={onBack}
         />
         {/* Step Indicator - only show when not in edit mode */}
         {!editMode && (
-        <StepIndicator
+          <StepIndicator
             totalSteps={TOTAL_STEPS}
             currentStep={CURRENT_STEP}
             style={styles.stepIndicator}
-        />
+          />
         )}
         <ScrollView
           style={styles.scrollView}
@@ -376,7 +336,7 @@ export const ProfileSetupForm: React.FC<ProfileSetupFormProps> = ({
               Phone Number <Text style={styles.required}>*</Text>
             </Text>
             <TextInput
-              style={[styles.input, errors.phone && styles.inputError]}
+              style={[styles.input, authViewModel.profileSetupErrors.phone && styles.inputError]}
               placeholder="+60 12-345 6789"
               placeholderTextColor="#A0A0A0"
               value={phoneNumber}
@@ -384,7 +344,7 @@ export const ProfileSetupForm: React.FC<ProfileSetupFormProps> = ({
               keyboardType="phone-pad"
               editable={!isSubmitting}
             />
-            {errors.phone && <Text style={styles.errorText}>{errors.phone}</Text>}
+            {authViewModel.profileSetupErrors.phone && <Text style={styles.errorText}>{authViewModel.profileSetupErrors.phone}</Text>}
           </View>
 
           {/* Location Field - Dropdown Selector */}
@@ -393,7 +353,7 @@ export const ProfileSetupForm: React.FC<ProfileSetupFormProps> = ({
               Location <Text style={styles.required}>*</Text>
             </Text>
             <TouchableOpacity
-              style={[styles.input, styles.selectInput, errors.location && styles.inputError]}
+              style={[styles.input, styles.selectInput, authViewModel.profileSetupErrors.location && styles.inputError]}
               onPress={() => setShowLocationPicker(true)}
               disabled={isSubmitting}
             >
@@ -403,7 +363,7 @@ export const ProfileSetupForm: React.FC<ProfileSetupFormProps> = ({
               <Text style={styles.dropdownIcon}>▼</Text>
             </TouchableOpacity>
             <Text style={styles.hint}>Select from Malaysian states and federal territories</Text>
-            {errors.location && <Text style={styles.errorText}>{errors.location}</Text>}
+            {authViewModel.profileSetupErrors.location && <Text style={styles.errorText}>{authViewModel.profileSetupErrors.location}</Text>}
           </View>
 
           {/* Section 2: Display Identity */}
@@ -420,7 +380,7 @@ export const ProfileSetupForm: React.FC<ProfileSetupFormProps> = ({
               Full Name <Text style={styles.required}>*</Text>
             </Text>
             <TextInput
-              style={[styles.input, errors.fullName && styles.inputError]}
+              style={[styles.input, authViewModel.profileSetupErrors.fullName && styles.inputError]}
               placeholder="e.g. Ahmad Faiz bin Abdullah"
               placeholderTextColor="#A0A0A0"
               value={fullName}
@@ -429,8 +389,8 @@ export const ProfileSetupForm: React.FC<ProfileSetupFormProps> = ({
               editable={!isSubmitting}
             />
             <Text style={styles.hint}>Your full name (2-50 characters)</Text>
-            {errors.fullName && (
-              <Text style={styles.errorText}>{errors.fullName}</Text>
+            {authViewModel.profileSetupErrors.fullName && (
+              <Text style={styles.errorText}>{authViewModel.profileSetupErrors.fullName}</Text>
             )}
           </View>
 
@@ -473,7 +433,7 @@ export const ProfileSetupForm: React.FC<ProfileSetupFormProps> = ({
               previewSize={120}
               selectedBorderColor="#9DE2D0"
             />
-            {errors.avatar && <Text style={styles.errorText}>{errors.avatar}</Text>}
+            {authViewModel.profileSetupErrors.avatar && <Text style={styles.errorText}>{authViewModel.profileSetupErrors.avatar}</Text>}
           </View>
 
           {/* Next Button */}
@@ -702,4 +662,6 @@ const styles = StyleSheet.create({
   },
 });
 
+// Wrap with observer for MobX reactivity (MVVM pattern)
+export const ProfileSetupForm = observer(ProfileSetupFormComponent);
 export default ProfileSetupForm;

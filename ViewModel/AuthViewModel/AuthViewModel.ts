@@ -23,7 +23,7 @@ export type ProfileSetupStep =
   | 'camera'
   | 'verifying'
   | 'verified'
-  | 'profile-form'      
+  | 'profile-form'
   | 'profile-info'
   | 'complete';
 
@@ -103,6 +103,25 @@ export class AuthViewModel {
   /** Whether user has active relationship (for disabling tabs) */
   hasActiveRelationship = false;
 
+  // Profile Info Form validation errors (managed by ViewModel per MVVM rules)
+  profileInfoErrors: Record<string, string> = {};
+
+  // Profile Setup Form validation errors (managed by ViewModel per MVVM rules)
+  profileSetupErrors: Record<string, string> = {};
+
+  // Profile Info Form validation constants (exposed for View to display limits)
+  static readonly VALIDATION_RULES = {
+    interests: { minCount: 3, maxCount: 10 },
+    languages: { minCount: 1, maxCount: 10 },
+    selfIntroduction: { minLength: 50, maxLength: 500 },
+  };
+
+  // Profile Setup Form validation constants
+  static readonly PROFILE_SETUP_RULES = {
+    phoneNumber: { pattern: /^\+?[\d\s-]{10,}$/ },
+    fullName: { minLength: 2, maxLength: 50 },
+  };
+
   constructor() {
     makeAutoObservable(this, {}, { autoBind: true });
   }
@@ -136,7 +155,7 @@ export class AuthViewModel {
       'camera': 1,
       'verifying': 1,
       'verified': 1,
-      'profile-form': 2, 
+      'profile-form': 2,
       'profile-info': 3,
       'complete': 4,
     };
@@ -474,6 +493,69 @@ export class AuthViewModel {
   }
 
   /**
+   * Validate profile setup data (ViewModel-level validation for UI)
+   * Per MVVM rules: Basic validation in ViewModel
+   * 
+   * @param data - Profile setup data to validate
+   * @param locationOptions - Valid location options
+   * @returns true if valid, false if validation errors
+   */
+  validateProfileSetup(
+    data: { phoneNumber: string; location: string; fullName: string },
+    locationOptions: string[]
+  ): boolean {
+    const errors: Record<string, string> = {};
+    const rules = AuthViewModel.PROFILE_SETUP_RULES;
+
+    // Validate phone number
+    if (!data.phoneNumber.trim()) {
+      errors.phone = 'Phone number is required';
+    } else if (!rules.phoneNumber.pattern.test(data.phoneNumber)) {
+      errors.phone = 'Please enter a valid phone number';
+    }
+
+    // Validate location
+    if (!data.location.trim()) {
+      errors.location = 'Location is required';
+    } else if (!locationOptions.includes(data.location)) {
+      errors.location = 'Please select a valid location from the list';
+    }
+
+    // Validate full name
+    if (!data.fullName.trim()) {
+      errors.fullName = 'Full name is required';
+    } else if (data.fullName.length < rules.fullName.minLength || data.fullName.length > rules.fullName.maxLength) {
+      errors.fullName = `Full name must be ${rules.fullName.minLength}-${rules.fullName.maxLength} characters`;
+    }
+
+    runInAction(() => {
+      this.profileSetupErrors = errors;
+    });
+
+    return Object.keys(errors).length === 0;
+  }
+
+  /**
+   * Clear profile setup validation errors
+   */
+  clearProfileSetupErrors() {
+    runInAction(() => {
+      this.profileSetupErrors = {};
+    });
+  }
+
+  /**
+   * Clear a specific profile setup error field
+   */
+  clearProfileSetupError(field: string) {
+    runInAction(() => {
+      const newErrors = { ...this.profileSetupErrors };
+      delete newErrors[field];
+      this.profileSetupErrors = newErrors;
+    });
+  }
+
+  /**
    * Save combined profile setup (merged Step 1 + Step 2)
    * Handles: phone, location, displayName, avatar upload
    * 
@@ -498,7 +580,7 @@ export class AuthViewModel {
 
     try {
       const user = await profileCompletionService.saveProfileSetup(userId, data);
-      
+
       // Convert selectedAvatarId to index for storage in profileData
       let avatarIndex: number | null = null;
       if (data.selectedAvatarId) {
@@ -537,10 +619,89 @@ export class AuthViewModel {
   }
 
   /**
+   * Validate profile info data (ViewModel-level validation for UI)
+   * Per MVVM rules: Basic validation in ViewModel, business rules in Service
+   * UC103_11, UC103_12, UC103_13, UC103_15
+   * 
+   * @param data - Profile info data to validate
+   * @returns true if valid, false if validation errors
+   */
+  validateProfileInfo(data: ProfileInfoPayload): boolean {
+    console.log('[AuthViewModel] validateProfileInfo called with:', data);
+    const errors: Record<string, string> = {};
+    const rules = AuthViewModel.VALIDATION_RULES;
+
+    // Count valid custom entries
+    const validCustomInterestsCount = (data.customInterests || []).filter(i => i.trim()).length;
+    const validCustomLanguagesCount = (data.customLanguages || []).filter(l => l.trim()).length;
+
+    // Validate interests count (UC103_11)
+    const totalInterests = data.interests.length + validCustomInterestsCount;
+    console.log('[AuthViewModel] totalInterests:', totalInterests, 'min:', rules.interests.minCount);
+    if (totalInterests < rules.interests.minCount) {
+      errors.interests = `Please select at least ${rules.interests.minCount} interests`;
+    } else if (totalInterests > rules.interests.maxCount) {
+      errors.interests = `Maximum ${rules.interests.maxCount} interests allowed`;
+    }
+
+    // Validate self-introduction (UC103_12, UC103_13)
+    if (!data.selfIntroduction.trim()) {
+      errors.introduction = 'Self introduction is required';
+    } else if (data.selfIntroduction.length < rules.selfIntroduction.minLength) {
+      errors.introduction = `Minimum ${rules.selfIntroduction.minLength} characters required`;
+    } else if (data.selfIntroduction.length > rules.selfIntroduction.maxLength) {
+      errors.introduction = `Maximum ${rules.selfIntroduction.maxLength} characters allowed`;
+    }
+
+    // Validate languages count (UC103_15)
+    const totalLanguages = data.languages.length + validCustomLanguagesCount;
+    console.log('[AuthViewModel] totalLanguages:', totalLanguages);
+    if (totalLanguages < rules.languages.minCount) {
+      errors.languages = 'Please select at least one language';
+    }
+
+    console.log('[AuthViewModel] validation errors:', errors);
+    console.log('[AuthViewModel] this.profileInfoErrors BEFORE:', this.profileInfoErrors);
+
+    runInAction(() => {
+      this.profileInfoErrors = errors;
+    });
+
+    console.log('[AuthViewModel] this.profileInfoErrors AFTER:', this.profileInfoErrors);
+
+    return Object.keys(errors).length === 0;
+  }
+
+  /**
+   * Clear profile info validation errors
+   */
+  clearProfileInfoErrors() {
+    runInAction(() => {
+      this.profileInfoErrors = {};
+    });
+  }
+
+  /**
+   * Clear a specific profile info error field
+   */
+  clearProfileInfoError(field: string) {
+    runInAction(() => {
+      const newErrors = { ...this.profileInfoErrors };
+      delete newErrors[field];
+      this.profileInfoErrors = newErrors;
+    });
+  }
+
+  /**
    * Save profile information
    * UC103_11, UC103_12, UC103_13, UC103_14, UC103_15
    */
   async saveProfileInfo(userId: string, data: ProfileInfoPayload) {
+    // Validate before saving (ViewModel validation)
+    if (!this.validateProfileInfo(data)) {
+      return null; // Validation failed, errors are in profileInfoErrors
+    }
+
     this.isLoading = true;
     this.errorMessage = null;
 

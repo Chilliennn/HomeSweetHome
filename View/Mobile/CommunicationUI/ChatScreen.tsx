@@ -200,7 +200,7 @@ export const ChatScreen = observer(function ChatScreen() {
     : chat?.partnerUser;
 
   const messages = vm.currentChatMessages;
-  
+
   // ✅ Reverse messages for inverted FlatList (newest at index 0 = bottom of screen)
   const reversedMessages = [...messages].reverse();
 
@@ -472,13 +472,7 @@ export const ChatScreen = observer(function ChatScreen() {
       'Report Issue',
       'What would you like to report?',
       [
-        {
-          text: 'Inappropriate Content',
-          onPress: () => {
-            // TODO: Navigate to report screen
-            Alert.alert('Report', 'Report inappropriate content feature coming soon!');
-          }
-        },
+
         {
           text: 'Safety Concern',
           onPress: () => {

@@ -36,6 +36,7 @@ export const JourneyPauseScreen: React.FC<JourneyPauseScreenProps> = observer(
       const init = async () => {
         if (!userId) return;
         vm.userId = userId;
+        await vm.loadStageProgression(userId);
         await vm.loadCoolingPeriodInfo();
       };
 
@@ -77,7 +78,13 @@ export const JourneyPauseScreen: React.FC<JourneyPauseScreenProps> = observer(
     };
 
     const handleFamilyAdvisor = () => {
-      router.push("/chat");
+      router.push({
+        pathname: "/(main)/request-advisor" as any,
+        params: {
+          userId,
+          relationshipId: vm.relationshipId
+        }
+      });
     };
 
     const handleRefresh = async () => {
@@ -105,7 +112,7 @@ export const JourneyPauseScreen: React.FC<JourneyPauseScreenProps> = observer(
     const currentStageIndex = getCurrentStageIndex();
 
     return (
-      <SafeAreaView style={styles.safeArea} edges={["top",'bottom']}>
+      <SafeAreaView style={styles.safeArea} edges={["top", 'bottom']}>
         <View style={styles.container}>
           {/* Header */}
           <View style={styles.header}>
@@ -152,7 +159,7 @@ export const JourneyPauseScreen: React.FC<JourneyPauseScreenProps> = observer(
                     displayName={stage.displayName}
                     isCurrent={index === currentStageIndex}
                     isCompleted={index < currentStageIndex}
-                    onPress={() => {}}
+                    onPress={() => { }}
                   />
                   {index < stageOrder.length - 1 && (
                     <View style={styles.connector} />

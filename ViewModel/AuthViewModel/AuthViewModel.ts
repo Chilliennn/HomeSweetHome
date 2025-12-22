@@ -109,6 +109,15 @@ export class AuthViewModel {
   // Profile Setup Form validation errors (managed by ViewModel per MVVM rules)
   profileSetupErrors: Record<string, string> = {};
 
+  // ✅ Edit Profile Info Form state (MVVM: form state lives in ViewModel)
+  editProfileInfoForm = {
+    interests: [] as string[],
+    selfIntroduction: '',
+    languages: [] as string[],
+    isLoading: false,
+    isSaving: false,
+  };
+
   // Profile Info Form validation constants (exposed for View to display limits)
   static readonly VALIDATION_RULES = {
     interests: { minCount: 3, maxCount: 10 },
@@ -766,6 +775,110 @@ export class AuthViewModel {
     } finally {
       runInAction(() => {
         this.isLoading = false;
+      });
+    }
+  }
+
+  // =============================================================
+  // Edit Profile Info Form Methods (MVVM: Form state in ViewModel)
+  // =============================================================
+
+  /**
+   * Load existing profile info into edit form
+   * Called when user opens Edit Profile Info screen
+   */
+  async loadEditProfileInfoForm(userId: string) {
+    this.editProfileInfoForm.isLoading = true;
+    this.profileInfoErrors = {};
+
+    try {
+      await this.getCurrentUser(userId);
+      runInAction(() => {
+        const user = this.currentUser;
+        if (user?.profile_data) {
+          this.editProfileInfoForm.interests = user.profile_data.interests || [];
+          this.editProfileInfoForm.selfIntroduction = user.profile_data.self_introduction || '';
+          this.editProfileInfoForm.languages = user.languages || [];
+        }
+      });
+    } catch (error: any) {
+      runInAction(() => {
+        this.errorMessage = error?.message || 'Failed to load profile info';
+      });
+    } finally {
+      runInAction(() => {
+        this.editProfileInfoForm.isLoading = false;
+      });
+    }
+  }
+
+  /**
+   * Set a specific field in the edit profile info form
+   */
+  setEditProfileInfoField(field: 'selfIntroduction', value: string) {
+    this.editProfileInfoForm[field] = value;
+    // Clear related error when user types
+    if (this.profileInfoErrors.introduction) {
+      delete this.profileInfoErrors.introduction;
+    }
+  }
+
+  /**
+   * Toggle interest selection in edit form
+   */
+  toggleEditProfileInfoInterest(interestId: string) {
+    const current = this.editProfileInfoForm.interests;
+    if (current.includes(interestId)) {
+      this.editProfileInfoForm.interests = current.filter(id => id !== interestId);
+    } else if (current.length < AuthViewModel.VALIDATION_RULES.interests.maxCount) {
+      this.editProfileInfoForm.interests = [...current, interestId];
+    }
+    // Clear interests error
+    if (this.profileInfoErrors.interests) {
+      delete this.profileInfoErrors.interests;
+    }
+  }
+
+  /**
+   * Toggle language selection in edit form
+   */
+  toggleEditProfileInfoLanguage(languageId: string) {
+    const current = this.editProfileInfoForm.languages;
+    if (current.includes(languageId)) {
+      this.editProfileInfoForm.languages = current.filter(id => id !== languageId);
+    } else {
+      this.editProfileInfoForm.languages = [...current, languageId];
+    }
+    // Clear languages error
+    if (this.profileInfoErrors.languages) {
+      delete this.profileInfoErrors.languages;
+    }
+  }
+
+  /**
+   * Save edited profile info (calls existing saveProfileInfo with form data)
+   * Returns true on success, false on validation failure
+   */
+  async updateEditProfileInfo(userId: string): Promise<boolean> {
+    this.editProfileInfoForm.isSaving = true;
+    this.profileInfoErrors = {};
+
+    try {
+      const data = {
+        interests: this.editProfileInfoForm.interests,
+        selfIntroduction: this.editProfileInfoForm.selfIntroduction,
+        languages: this.editProfileInfoForm.languages,
+      };
+
+      // saveProfileInfo handles validation via validateProfileInfo
+      const result = await this.saveProfileInfo(userId, data);
+      return result !== null;
+    } catch (error: any) {
+      // Error already set by saveProfileInfo
+      return false;
+    } finally {
+      runInAction(() => {
+        this.editProfileInfoForm.isSaving = false;
       });
     }
   }

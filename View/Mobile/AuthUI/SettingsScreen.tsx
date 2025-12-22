@@ -134,6 +134,14 @@ const SettingsScreenComponent: React.FC = () => {
     });
   };
 
+  const handleEditProfileInfo = () => {
+    console.log('[SettingsScreen] handleEditProfileInfo - userId:', userId);
+    router.push({
+      pathname: '/(auth)/edit-profile-info' as any,
+      params: { userId, userName, userType },
+    });
+  };
+
   const handleAgeVerification = () => {
     Alert.alert('Age Verification', 'Your age is verified');
   };
@@ -252,6 +260,13 @@ const SettingsScreenComponent: React.FC = () => {
                 title="Edit Profile"
                 subtitle="Update your information"
                 onPress={handleEditProfile}
+              />
+              <SettingItem
+                icon={require('../assets/images/icon-message.png')}
+                iconBackgroundColor="#C8ADD6"
+                title="Edit Profile Info"
+                subtitle="Interests, bio & languages"
+                onPress={handleEditProfileInfo}
               />
               <SettingItem
                 icon={require('../assets/images/icon-smallcorrect.png')}

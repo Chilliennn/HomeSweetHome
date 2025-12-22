@@ -42,6 +42,8 @@ interface ProfileInfoFormProps {
   onBack: () => void;
   /** Loading state */
   isLoading?: boolean;
+  /** Edit mode - shows different title and button */
+  editMode?: boolean;
 }
 
 // ============================================================================
@@ -92,6 +94,7 @@ const ProfileInfoFormComponent: React.FC<ProfileInfoFormProps> = ({
   onSubmit,
   onBack,
   isLoading = false,
+  editMode = false,
 }) => {
   // Form state
   const [interests, setInterests] = useState<string[]>(
@@ -254,13 +257,15 @@ const ProfileInfoFormComponent: React.FC<ProfileInfoFormProps> = ({
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
       <View style={styles.container}>
         {/* Header */}
-        <Header title="Step 3 of 3" onBack={onBack} />
-        {/* Step Indicator */}
-        <StepIndicator
-          totalSteps={TOTAL_STEPS}
-          currentStep={CURRENT_STEP}
-          style={styles.stepIndicator}
-        />
+        <Header title={editMode ? "Edit Profile Info" : "Step 3 of 3"} onBack={onBack} />
+        {/* Step Indicator - only show in setup mode */}
+        {!editMode && (
+          <StepIndicator
+            totalSteps={TOTAL_STEPS}
+            currentStep={CURRENT_STEP}
+            style={styles.stepIndicator}
+          />
+        )}
         <ScrollView
           style={styles.scrollView}
           contentContainerStyle={styles.content}
@@ -503,7 +508,7 @@ const ProfileInfoFormComponent: React.FC<ProfileInfoFormProps> = ({
 
           {/* Submit Button */}
           <Button
-            title="Complete Profile ✓"
+            title={editMode ? "Save Changes" : "Complete Profile ✓"}
             onPress={handleSubmit}
             variant="primary"
             style={styles.submitButton}

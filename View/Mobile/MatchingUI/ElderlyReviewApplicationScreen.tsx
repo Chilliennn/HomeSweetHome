@@ -5,7 +5,7 @@
  * Elderly can accept or reject (with optional reason)
  */
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TextInput, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TextInput, Alert, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { observer } from 'mobx-react-lite';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -129,12 +129,19 @@ export const ElderlyReviewApplicationScreen = observer(function ElderlyReviewApp
                 {/* Youth Profile Card */}
                 <Card style={styles.profileCard}>
                     <View style={styles.profileHeader}>
-                        <IconCircle
-                            icon="🧑"
-                            size={80}
-                            backgroundColor="#B8D4E3"
-                            contentScale={0.6}
-                        />
+                        {youth?.profile_photo_url ? (
+                            <Image
+                                source={{ uri: youth.profile_photo_url }}
+                                style={styles.profilePhoto}
+                            />
+                        ) : (
+                            <IconCircle
+                                icon="🧑"
+                                size={80}
+                                backgroundColor="#B8D4E3"
+                                contentScale={0.6}
+                            />
+                        )}
                         <View style={styles.profileInfo}>
                             <Text style={styles.youthName}>{youth?.full_name || 'Youth'}</Text>
                             <Text style={styles.youthDetail}>
@@ -274,6 +281,12 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         marginBottom: 16,
+    },
+    profilePhoto: {
+        width: 80,
+        height: 80,
+        borderRadius: 40,
+        backgroundColor: '#E0E0E0',
     },
     profileInfo: {
         flex: 1,

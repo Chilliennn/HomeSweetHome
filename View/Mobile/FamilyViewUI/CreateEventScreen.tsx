@@ -75,10 +75,11 @@ export const CreateEventScreen = observer(() => {
       return;
     }
 
-    const timeString = eventTime.toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      hour12: false,
-    });
+    // Format time as HH:MM:SS for PostgreSQL time type
+    const hours = String(eventTime.getHours()).padStart(2, '0');
+    const minutes = String(eventTime.getMinutes()).padStart(2, '0');
+    const seconds = String(eventTime.getSeconds()).padStart(2, '0');
+    const timeString = `${hours}:${minutes}:${seconds}`;
 
     // ✅ MVVM: Use familyViewModel.currentUserId (synced from Layout)
     if (!userId) {

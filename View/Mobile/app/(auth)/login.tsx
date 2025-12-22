@@ -165,7 +165,6 @@ const LoginScreen = observer(function LoginScreen() {
         },
       });
     } catch (error: any) {
-      // Error is already set in ViewModel, show it in Alert
       const message =
         authViewModel.errorMessage ||
         "An error occurred during login. Please try again.";

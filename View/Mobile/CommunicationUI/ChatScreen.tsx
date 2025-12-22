@@ -81,6 +81,9 @@ export const ChatScreen = observer(function ChatScreen() {
       return;
     }
 
+    // Initialize keyword filter from database (for blocking harmful content)
+    vm.initializeKeywords();
+
     if (relationshipId) {
       // Load relationship chat
       vm.openRelationshipChat(relationshipId);
@@ -750,7 +753,7 @@ export const ChatScreen = observer(function ChatScreen() {
               {(() => {
                 // Check if partner has a real profile photo first
                 const hasRealPhoto = !!partnerUser?.profile_photo_url;
-                
+
                 if (hasRealPhoto && partnerUser.profile_photo_url) {
                   return (
                     <IconCircle
@@ -760,7 +763,7 @@ export const ChatScreen = observer(function ChatScreen() {
                     />
                   );
                 }
-                
+
                 // Fall back to avatar_meta preset
                 const partnerType = currentUserType === 'youth' ? 'elderly' : 'youth';
                 const avatarConfig = getAvatarDisplay(partnerUser?.profile_data, partnerType);
@@ -957,7 +960,7 @@ export const ChatScreen = observer(function ChatScreen() {
         onRequestClose={() => setShowMoreMenu(false)}
       >
         <View style={styles.moreMenuOverlay}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={StyleSheet.absoluteFill}
             activeOpacity={1}
             onPress={() => setShowMoreMenu(false)}
@@ -973,7 +976,7 @@ export const ChatScreen = observer(function ChatScreen() {
                 <Text style={styles.moreMenuText}>Request Family Advisor</Text>
               </TouchableOpacity>
             )}
-            
+
             {/* Report/Warning */}
             <TouchableOpacity
               style={[styles.moreMenuItem, styles.moreMenuItemLast]}

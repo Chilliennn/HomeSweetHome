@@ -53,8 +53,16 @@ export const ElderlyReviewApplicationScreen = observer(function ElderlyReviewApp
                     onPress: async () => {
                         const success = await vm.respondToApprovedApplication(applicationId, 'accept');
                         if (success) {
+                            // Get user ID from ViewModel or application
+                            const userId = vm.currentUserId || application?.elderly_id;
                             Alert.alert('Success', 'Application accepted! Relationship started.', [
-                                { text: 'OK', onPress: () => router.replace('/welcome-stage-1' as any) }
+                                {
+                                    text: 'OK',
+                                    onPress: () => router.replace({
+                                        pathname: '/(main)/bonding',
+                                        params: { userId }
+                                    } as any)
+                                }
                             ]);
                         } else {
                             Alert.alert('Error', vm.error || 'Failed to accept application');

@@ -29,7 +29,7 @@ import { useTabNavigation, getAvatarDisplay } from '../hooks';
 const SettingsScreenComponent: React.FC = () => {
   const router = useRouter();
   const params = useLocalSearchParams();
-  
+
   const userIdFromParams = params.userId as string | undefined;
   const userId = userIdFromParams || authViewModel.authState.currentUserId || undefined;
 
@@ -64,9 +64,9 @@ const SettingsScreenComponent: React.FC = () => {
   // Custom tab handler that ensures params are always passed
   const handleTabPress = (tabKey: string) => {
     if (tabKey === 'settings') return;
-    
+
     console.log('[SettingsScreen] Tab press:', tabKey, 'with params:', { userId, userName, userType });
-    
+
     const routeMap: Record<string, string> = {
       matching: '/(main)/matching',
       diary: '/(main)/diary',
@@ -82,23 +82,6 @@ const SettingsScreenComponent: React.FC = () => {
       });
     }
   };
-
-  // Load user profile data on mount
-  useEffect(() => {
-    const loadUserData = async () => {
-      if (userId) {
-        setIsLoading(true);
-        // Load profile data (realIdentity, displayIdentity, etc.)
-        await authViewModel.loadProfile(userId);
-        // Load full user object for profile_photo_url
-        await authViewModel.getCurrentUser(userId);
-        // Check active relationship status for tab disabling
-        await authViewModel.checkActiveRelationship(userId);
-        setIsLoading(false);
-      }
-    };
-    loadUserData();
-  }, [userId]);
 
   // Access observable properties from ViewModel
   const realIdentity = authViewModel.profileData.realIdentity;
@@ -221,7 +204,8 @@ const SettingsScreenComponent: React.FC = () => {
   };
 
   // ✅ Disable memory and diary tabs if no active relationship (not in bonding stage)
-  const disabledTabs = authViewModel.hasActiveRelationship ? [] : ['memory', 'diary'];
+  // Only check after loading complete to prevent incorrect initial state
+  const disabledTabs = isLoading ? [] : (authViewModel.hasActiveRelationship ? [] : ['memory', 'diary']);
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>

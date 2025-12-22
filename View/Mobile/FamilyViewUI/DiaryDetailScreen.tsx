@@ -31,7 +31,6 @@ const MOOD_OPTIONS: { value: MoodType; label: string; emoji: string }[] = [
  * UC-301: Edit/Delete existing diary
  * Shows full entry content, allows editing, deletion with confirmation
  * 
- * FR 3.3.1, 3.3.3, 3.3.7, 3.3.8
  */
 export const DiaryDetailScreen = observer(() => {
   const router = useRouter();

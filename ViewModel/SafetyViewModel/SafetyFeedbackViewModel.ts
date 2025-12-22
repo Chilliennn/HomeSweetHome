@@ -249,4 +249,52 @@ export class SafetyFeedbackViewModel {
     clearError = () => {
         this.submitError = null;
     };
+
+    // ==================== REPORT HISTORY ====================
+
+    // Observable state for report history
+    reportHistory: SafetyReport[] = [];
+    isLoadingHistory: boolean = false;
+    historyError: string | null = null;
+
+    /**
+     * UC401_13: Load user's report history
+     * Fetches all previously submitted reports for the current user
+     */
+    loadUserReports = async () => {
+        this.isLoadingHistory = true;
+        this.historyError = null;
+
+        try {
+            const reports = await this.service.getUserReports(this.userId);
+            runInAction(() => {
+                this.reportHistory = reports;
+                this.isLoadingHistory = false;
+            });
+        } catch (error: any) {
+            runInAction(() => {
+                this.historyError = error.message || 'Failed to load report history';
+                this.isLoadingHistory = false;
+            });
+        }
+    };
+
+    /**
+     * Get report count for display
+     */
+    get reportCount(): number {
+        return this.reportHistory.length;
+    }
+
+    /**
+     * Get reports grouped by status
+     */
+    get reportsByStatus() {
+        return {
+            pending: this.reportHistory.filter(r => r.status === 'Pending'),
+            inReview: this.reportHistory.filter(r => r.status === 'In Review'),
+            resolved: this.reportHistory.filter(r => r.status === 'Resolved'),
+        };
+    }
 }
+

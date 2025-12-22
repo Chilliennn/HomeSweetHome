@@ -33,7 +33,6 @@ const MOOD_OPTIONS: { value: MoodType; label: string; emoji: string }[] = [
  * Displays all diary entries, allows filtering by mood
  * Allows creating, editing, and deleting entries
  * 
- * FR 3.3.1 - 3.3.10
  */
 export const DiaryScreen = observer(() => {
   const router = useRouter();

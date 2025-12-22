@@ -10,6 +10,7 @@ import {
   Dimensions,
   TextInput,
 } from 'react-native';
+import { Video, ResizeMode } from 'expo-av';
 import { observer } from 'mobx-react-lite';
 import * as FileSystem from 'expo-file-system';
 import * as MediaLibrary from 'expo-media-library';
@@ -29,7 +30,6 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
  * - Date/metadata row
  * - Batch download and remove buttons
  * 
- * FR 3.1.3 - View memory timeline
  */
 export const MemoryDetailScreen = observer(() => {
   const router = useRouter();
@@ -123,11 +123,16 @@ export const MemoryDetailScreen = observer(() => {
   const handleDownloadAll = async () => {
     if (!selectedMemory) return;
 
-    // Request permission
-    const { status } = await MediaLibrary.requestPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('Permission Needed', 'Please grant permission to save files to your gallery.');
-      return;
+    // Request permission with error handling
+    try {
+      const { status } = await MediaLibrary.requestPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Needed', 'Please grant permission to save files to your gallery.');
+        return;
+      }
+    } catch (permError: any) {
+      // If permission request fails, continue anyway - user may have already granted it
+      console.log('[MemoryDetailScreen] Permission request error (continuing):', permError.message);
     }
 
     // Get downloadable media URLs from ViewModel
@@ -209,17 +214,27 @@ export const MemoryDetailScreen = observer(() => {
       )}
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Large Photo Display */}
+        {/* Large Photo/Video Display */}
         <View style={[styles.photoContainer, { height: screenHeight * 0.4 }]}>
           {currentMedia && (
-            <Image
-              source={{ uri: currentMedia.file_url }}
-              style={styles.largePhoto}
-              resizeMode="cover"
-            />
+            currentMedia.media_type === 'video' ? (
+              <Video
+                source={{ uri: currentMedia.file_url }}
+                style={styles.largePhoto}
+                resizeMode={ResizeMode.CONTAIN}
+                useNativeControls
+                isLooping={false}
+              />
+            ) : (
+              <Image
+                source={{ uri: currentMedia.file_url }}
+                style={styles.largePhoto}
+                resizeMode="cover"
+              />
+            )
           )}
 
-          {/* Navigation Arrows (on sides of large photo) */}
+          {/* Navigation Arrows (on sides of large photo/video) */}
           {media.length > 1 && (
             <>
               <TouchableOpacity
@@ -267,6 +282,11 @@ export const MemoryDetailScreen = observer(() => {
                     source={{ uri: item.file_url }}
                     style={styles.previewThumbImage}
                   />
+                  {item.media_type === 'video' && (
+                    <View style={styles.videoBadge}>
+                      <Text style={styles.videoBadgeIcon}>▶</Text>
+                    </View>
+                  )}
                 </TouchableOpacity>
               ))}
             </ScrollView>
@@ -485,6 +505,23 @@ const styles = StyleSheet.create({
   previewThumbImage: {
     width: '100%',
     height: '100%',
+  },
+  videoBadge: {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    transform: [{ translateX: -12 }, { translateY: -12 }],
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  videoBadgeIcon: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: 'bold',
   },
 
   // Metadata Row

@@ -10,7 +10,6 @@
  * Uses AssemblyAI free tier: 100 hours/month free
  * https://www.assemblyai.com/
  * 
- * FR 3.3.1, 3.3.2, 3.3.4, 3.3.5 (Diary voice input)
  */
 
 // ============================================================================

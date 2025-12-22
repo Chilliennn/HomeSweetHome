@@ -26,22 +26,19 @@ import { Header } from '@/components/ui/Header';
  * One card per memory showing thumbnail + media count
  * Allows upload, view details, and batch operations
  * 
- * FR 3.1.1 - 3.1.12
  */
 export const AlbumScreen = observer(() => {
   const router = useRouter();
   const params = useLocalSearchParams();
-  const { memories, isLoading, errorMessage, successMessage, canAccessFamilyAlbum } = familyViewModel;
-  const userId = (params.userId as string) || familyViewModel.currentUserId;
+  const { memories, isLoading, errorMessage, successMessage, canAccessFamilyAlbum, currentUserId } = familyViewModel;
+  const userId = (params.userId as string) || currentUserId;
 
+  // Re-initialize when userId changes (e.g., logout and login with different account)
   useEffect(() => {
-    // Initialize if needed (fallback if not initialized from login)
-    const initializeIfNeeded = async () => {
-      if (!familyViewModel.currentRelationship && userId) {
-        await familyViewModel.initialize(userId);
-      }
-    };
-    initializeIfNeeded();
+    console.log('[AlbumScreen] userId changed:', { userId, previousUserId: currentUserId });
+    if (userId) {
+      familyViewModel.initialize(userId);
+    }
   }, [userId]);
 
   // Reload memories when screen gains focus (e.g., after saving from chat)

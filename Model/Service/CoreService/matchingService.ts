@@ -66,7 +66,7 @@ export const matchingService = {
         // Detailed scoring breakdown for debugging
         const matchedInterests = youthInterests.filter(i => elderlyInterests.includes(i));
         const matchedLanguages = youthLanguages.filter(l => elderlyLanguages.includes(l));
-        
+
         console.log('🎯 Match Score:', {
             elderly: elderlyProfile.full_name,
             totalScore: score,

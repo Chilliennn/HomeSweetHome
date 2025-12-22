@@ -57,9 +57,9 @@ const ProfileSetupScreenComponent: React.FC = () => {
   useEffect(() => {
     if (initializedRef.current) return;
     initializedRef.current = true;
-    
+
     console.log('[ProfileSetupScreen] Initializing - userId:', userId, 'editMode:', editMode, 'userType:', userTypeFromDB);
-    
+
     // Initialize flow asynchronously to ensure profile loads first in editMode
     const initFlow = async () => {
       if (editMode) {
@@ -77,7 +77,7 @@ const ProfileSetupScreenComponent: React.FC = () => {
         }
       }
     };
-    
+
     initFlow();
   }, [userId, userTypeFromDB, editMode]);
 
@@ -197,26 +197,26 @@ const ProfileSetupScreenComponent: React.FC = () => {
    */
   const handleProfileSetupSubmit = async (data: ProfileSetupFormData) => {
     console.log('[ProfileSetupScreen] handleProfileSetupSubmit START', { userId, editMode, data: { ...data, profilePhotoUri: data.profilePhotoUri?.substring(0, 50) } });
-    
+
     if (!userId) {
       console.error('[ProfileSetupScreen] handleProfileSetupSubmit - No userId!');
       return;
     }
-    
+
     // Read profile photo file in View layer if provided
     let profilePhotoBase64: string | null = null;
     let profilePhotoExtension: string | null = null;
-    
+
     if (data.profilePhotoUri) {
       console.log('[ProfileSetupScreen] Reading profile photo file...');
       try {
         // Extract file extension from URI
         const uriParts = data.profilePhotoUri.split('.');
         profilePhotoExtension = uriParts[uriParts.length - 1].toLowerCase();
-        
+
         // Read file as base64 (View layer responsibility)
         profilePhotoBase64 = await FileSystem.readAsStringAsync(
-          data.profilePhotoUri, 
+          data.profilePhotoUri,
           { encoding: FileSystem.EncodingType.Base64 }
         );
         console.log('[ProfileSetupScreen] Photo file read successfully, size:', profilePhotoBase64.length);
@@ -226,7 +226,7 @@ const ProfileSetupScreenComponent: React.FC = () => {
         return;
       }
     }
-    
+
     console.log('[ProfileSetupScreen] Calling authViewModel.saveProfileSetup...');
     try {
       await authViewModel.saveProfileSetup(userId, {
@@ -243,7 +243,7 @@ const ProfileSetupScreenComponent: React.FC = () => {
       console.error('[ProfileSetupScreen] saveProfileSetup failed:', error);
       return; // Don't navigate if save failed
     }
-    
+
     if (editMode) {
       // In edit mode, go back to settings after saving
       console.log('[ProfileSetupScreen] Edit mode - navigating back to settings');
@@ -262,10 +262,10 @@ const ProfileSetupScreenComponent: React.FC = () => {
     if (!userId) return;
     await authViewModel.saveProfileInfo(userId, {
       interests: data.interests,
-      customInterest: data.customInterest,
+      customInterests: data.customInterests,
       selfIntroduction: data.selfIntroduction,
       languages: data.languages,
-      customLanguage: data.customLanguage,
+      customLanguages: data.customLanguages,
     });
     await authViewModel.markProfileComplete(userId);
   };
@@ -329,7 +329,7 @@ const ProfileSetupScreenComponent: React.FC = () => {
         }
 
         // Build initial data for ProfileSetupForm from existing profile data
-        const profileSetupInitial: ProfileSetupFormData | undefined = 
+        const profileSetupInitial: ProfileSetupFormData | undefined =
           (data.realIdentity || data.displayIdentity) ? {
             phoneNumber: data.realIdentity?.phoneNumber || '',
             location: data.realIdentity?.location || '',
@@ -337,9 +337,9 @@ const ProfileSetupScreenComponent: React.FC = () => {
             avatarType: data.displayIdentity?.avatarType || 'default',
             // Convert selectedAvatarIndex back to selectedAvatarId
             selectedAvatarId: data.displayIdentity?.selectedAvatarIndex !== null && data.displayIdentity?.selectedAvatarIndex !== undefined
-              ? (data.displayIdentity.selectedAvatarIndex < 2 
-                  ? `img-${data.displayIdentity.selectedAvatarIndex}` 
-                  : `emoji-${data.displayIdentity.selectedAvatarIndex - 2}`)
+              ? (data.displayIdentity.selectedAvatarIndex < 2
+                ? `img-${data.displayIdentity.selectedAvatarIndex}`
+                : `emoji-${data.displayIdentity.selectedAvatarIndex - 2}`)
               : null,
             profilePhotoUri: null, // Don't pre-load photo URI (will load from database if exists)
           } : undefined;
@@ -347,10 +347,10 @@ const ProfileSetupScreenComponent: React.FC = () => {
         const profileInfoInitial: ProfileInfoData | undefined = data.profileInfo
           ? {
             interests: data.profileInfo.interests,
-            customInterest: data.profileInfo.customInterest,
+            customInterests: data.profileInfo.customInterests,
             selfIntroduction: data.profileInfo.selfIntroduction,
             languages: data.profileInfo.languages,
-            customLanguage: data.profileInfo.customLanguage,
+            customLanguages: data.profileInfo.customLanguages,
           }
           : undefined;
 

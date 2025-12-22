@@ -274,7 +274,6 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
               ))}
             </View>
 
-            {/* AI Suggestions Section - Show after stage circles when journey is completed */}
             {isJourneyCompleted && (
               <>
                 <View style={styles.aiBanner}>
@@ -438,7 +437,6 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
               </View>
             ) : null}
 
-            {/* Current Stage Card - Hide if journey is completed */}
             {!isJourneyCompleted && !vm.showLockedStageDetail && (
               <View style={styles.currentStageCard}>
                 <Text style={styles.cardTitle}>
@@ -470,6 +468,35 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
                 ))}
               </View>
             )}
+
+                        {!vm.showLockedStageDetail &&
+              !vm.showStageCompleted &&
+              vm.stages.some((s) => s.is_current) && (
+                <>
+                  <TouchableOpacity
+                    style={[styles.actionButton, styles.primaryButton]}
+                    onPress={() => router.push("/(main)/stageRequirements")}
+                  >
+                    <Text style={styles.actionButtonText}>
+                      View All Requirements
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[styles.actionButton, styles.secondaryButton]}
+                    onPress={() => router.push("/(main)/availableFeatures")}
+                  >
+                    <Text
+                      style={[
+                        styles.actionButtonText,
+                        styles.secondaryButtonText,
+                      ]}
+                    >
+                      View Available Features
+                    </Text>
+                  </TouchableOpacity>
+                </>
+              )}
           </ScrollView>
 
           {/* Bottom Navigation */}

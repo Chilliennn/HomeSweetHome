@@ -79,6 +79,9 @@ export class StageViewModel {
   private notificationSubscription: any = null;
   currentUserId: any;
 
+  private lastStageCompletionTriggerAt: number | null = null;
+  private lastStageCompletionTriggerStage: RelationshipStage | null = null;
+
   constructor() {
     makeAutoObservable(this);
   }
@@ -143,14 +146,11 @@ export class StageViewModel {
         "[StageViewModel] Reloading progression and requirements after activity change..."
       );
 
-      // Refresh progression and requirements to get latest completion state
       await this.loadStageProgression(this.userId, true);
       await this.loadCurrentStageRequirements();
       await this.loadMilestoneInfo();
       this.checkMilestoneReached();
 
-      // If current stage is the final stage and all requirements are met,
-      // trigger journey-completed navigation and load completion info.
       const stageOrder: RelationshipStage[] = [
         "getting_to_know",
         "trial_period",
@@ -179,14 +179,59 @@ export class StageViewModel {
           console.log("[StageViewModel] All requirements completed?", allDone);
 
           if (allDone) {
+            const now = Date.now();
+            if (
+              this.lastStageCompletionTriggerStage === this.currentStage &&
+              this.lastStageCompletionTriggerAt &&
+              now - this.lastStageCompletionTriggerAt < 5000
+            ) {
+              console.log(
+                "[StageViewModel] Duplicate final-stage-complete event ignored for:",
+                this.currentStage
+              );
+              return;
+            }
+
+            const completedStage = this.currentStage as RelationshipStage;
+
             console.log(
-              "[StageViewModel] 🎉 All final stage requirements completed! Setting journey completed flag..."
+              "[StageViewModel] All requirements completed — completedStage:",
+              completedStage,
+              "currentStage:",
+              this.currentStage
             );
+
             runInAction(() => {
-              this.shouldNavigateToJourneyCompleted = true;
+              if (completedStage === "family_life") {
+                // If we are already about to navigate to a stage completed page,
+                // don't trigger journey completed yet. This prevents "jumping" pages.
+                if (!this.shouldNavigateToStageCompleted) {
+                  this.stageJustCompleted = completedStage;
+                  this.stageJustCompletedName =
+                    this.stages.find((s) => s.stage === completedStage)
+                      ?.display_name || "";
+                  this.shouldNavigateToJourneyCompleted = true;
+                  this.lastStageCompletionTriggerStage = completedStage;
+                  this.lastStageCompletionTriggerAt = now;
+                } else {
+                  console.log(
+                    "[StageViewModel] Suppressing journey-completed because stage-completed is pending"
+                  );
+                }
+              } else {
+                // For non-final stages, prioritize navigation if not already pending
+                if (!this.shouldNavigateToStageCompleted) {
+                  this.stageJustCompleted = completedStage;
+                  this.stageJustCompletedName =
+                    this.stages.find((s) => s.stage === completedStage)
+                      ?.display_name || "";
+                  this.shouldNavigateToStageCompleted = true;
+                  this.shouldNavigateToJourneyCompleted = false;
+                  this.lastStageCompletionTriggerStage = completedStage;
+                  this.lastStageCompletionTriggerAt = now;
+                }
+              }
             });
-            // Load completion info for the final stage
-            await this.loadStageCompletionInfo(this.currentStage || undefined);
           }
         }
       }
@@ -280,23 +325,32 @@ export class StageViewModel {
         );
 
         const completedStage = this.previousStage;
-        try {
-          runInAction(() => {
-            this.stageJustCompleted = completedStage;
-            this.stageJustCompletedName =
-              this.stages.find((s) => s.stage === completedStage)?.display_name || "";
-            this.shouldNavigateToStageCompleted = true;
-          });
-        } catch (err) {
-          console.error(
-            "[StageViewModel] Failed to load stage completion info on realtime transition:",
-            err
+        const now = Date.now();
+
+        if (
+          this.lastStageCompletionTriggerStage === completedStage &&
+          this.lastStageCompletionTriggerAt &&
+          now - this.lastStageCompletionTriggerAt < 5000
+        ) {
+          console.log(
+            "[Realtime] Duplicate stage-complete event ignored for:",
+            completedStage
           );
-          // Fallback: still trigger navigation so UI can attempt to load info
           runInAction(() => {
-            this.shouldNavigateToStageCompleted = true;
+            this.previousStage = newData.current_stage;
           });
+          return;
         }
+
+        runInAction(() => {
+          this.stageJustCompleted = completedStage;
+          this.stageJustCompletedName =
+            this.stages.find((s) => s.stage === completedStage)?.display_name ||
+            "";
+          this.shouldNavigateToStageCompleted = true;
+          this.lastStageCompletionTriggerStage = completedStage;
+          this.lastStageCompletionTriggerAt = now;
+        });
       } else if (prevIndex !== -1 && newIndex !== -1 && newIndex < prevIndex) {
         console.log(
           "[Realtime] Stage moved backward - skipping completion page"
@@ -359,6 +413,17 @@ export class StageViewModel {
   }
 
   consumeStageCompletionNavigation(): boolean {
+    if (
+      this.shouldNavigateToStageCompleted &&
+      this.stageJustCompleted === "family_life"
+    ) {
+      runInAction(() => {
+        this.shouldNavigateToStageCompleted = false;
+        this.shouldNavigateToJourneyCompleted = true;
+      });
+      return false;
+    }
+
     const pending = this.shouldNavigateToStageCompleted;
     if (pending) {
       runInAction(() => {
@@ -379,13 +444,17 @@ export class StageViewModel {
   }
 
   consumeJourneyCompletedNavigation(): boolean {
-    const pending = this.shouldNavigateToJourneyCompleted;
-    if (pending) {
+    const FINAL_STAGE: RelationshipStage = "family_life";
+    if (
+      this.shouldNavigateToJourneyCompleted &&
+      this.stageJustCompleted === FINAL_STAGE
+    ) {
       runInAction(() => {
         this.shouldNavigateToJourneyCompleted = false;
       });
+      return true;
     }
-    return pending;
+    return false;
   }
 
   dispose() {
@@ -407,7 +476,7 @@ export class StageViewModel {
       // Load supplementary streams
       await this.loadMilestoneInfo();
       await this.loadCoolingPeriodInfo();
-      await this.loadJourneyStats(); 
+      await this.loadJourneyStats();
       await this.loadAISuggestions();
 
       if (this.relationshipId) {
@@ -636,7 +705,6 @@ export class StageViewModel {
 
     this.isLoading = true;
     try {
-
       if (this.relationshipId) {
         const stats = await stageService.getJourneyStats(this.relationshipId); // Assuming stageService has this method
         runInAction(() => {
@@ -679,7 +747,7 @@ export class StageViewModel {
         this.showLockedStageDetail = false;
         this.selectedLockedStage = null;
       });
-     try {
+      try {
         await this.loadStageCompletionInfo(targetStage);
         runInAction(() => {
           this.showStageCompleted = true;
@@ -696,7 +764,7 @@ export class StageViewModel {
 
     runInAction(() => {
       this.selectedLockedStage = targetStage;
-      this.lockedStageDetails = null; 
+      this.lockedStageDetails = null;
       this.showLockedStageDetail = true;
       this.showStageCompleted = false;
     });
@@ -1127,10 +1195,6 @@ export class StageViewModel {
       .padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
   }
 
-  // ============================================================================
-  // STAGE COMPLETION METHODS
-  // ============================================================================
-
   /**
    * Load stage completion info for completed page
    */
@@ -1151,7 +1215,18 @@ export class StageViewModel {
           this.currentStage = info.currentStage;
           this.currentStageDisplayName = info.currentStageDisplayName;
           this.newlyUnlockedFeatures = info.newlyUnlockedFeatures;
-          this.completedStageOrder = info.stageOrder - 1;
+
+          // Derive completedStageOrder from the VM stages array (more reliable)
+          const derivedIndex = this.stages.findIndex(
+            (s) => s.stage === info.completedStage
+          );
+          if (derivedIndex >= 0) {
+            this.completedStageOrder = derivedIndex;
+          } else {
+            this.completedStageOrder =
+              typeof info.stageOrder === "number" ? info.stageOrder - 1 : 0;
+          }
+
           this.showLockedStageDetail = false;
           this.selectedLockedStage = null;
         }

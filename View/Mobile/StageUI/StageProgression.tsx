@@ -100,6 +100,7 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
 
     useEffect(() => {
       if (vm.consumeStageCompletionNavigation()) {
+        console.log("[StageProgression] Triggering stage-completed navigation");
         (async () => {
           try {
             const completedStage = vm.stageJustCompleted ?? undefined;
@@ -109,7 +110,10 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
               params: { userId, stage: completedStage },
             });
           } catch (err) {
-            console.error("[StageProgression] Failed navigating to stage-completed:", err);
+            console.error(
+              "[StageProgression] Failed navigating to stage-completed:",
+              err
+            );
           } finally {
             runInAction(() => {
               vm.shouldNavigateToStageCompleted = false;
@@ -121,10 +125,13 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
 
     useEffect(() => {
       if (vm.consumeJourneyCompletedNavigation()) {
+        console.log(
+          "[StageProgression] Triggering journey-completed navigation"
+        );
         (async () => {
           try {
             const completed = vm.stageJustCompleted ?? vm.currentStage;
-            const FINAL_STAGE = ("family_life" as any) as RelationshipStage;
+            const FINAL_STAGE = "family_life" as any as RelationshipStage;
             if (completed !== FINAL_STAGE) {
               console.log(
                 "[StageProgression] Suppressing journey-completed navigation; completed stage:",
@@ -133,9 +140,12 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
               return;
             }
             await vm.loadStageCompletionInfo(completed ?? undefined);
-            router.push({ pathname: "/(main)/journey-completed", params: { userId } });
+
           } catch (err) {
-            console.error("[StageProgression] Failed to navigate to journey-completed:", err);
+            console.error(
+              "[StageProgression] Failed to navigate to journey-completed:",
+              err
+            );
           } finally {
             runInAction(() => {
               vm.shouldNavigateToJourneyCompleted = false;

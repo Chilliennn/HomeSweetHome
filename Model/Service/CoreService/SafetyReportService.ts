@@ -11,8 +11,106 @@ export class SafetyReportService {
     }
 
     /**
-     * Analyze sentiment of description to determine severity level
+     * Platform-agnostic config getter
+     */
+    private getConfig(key: string): string | undefined {
+        return process.env[`EXPO_PUBLIC_${key}`] || process.env[key] || undefined;
+    }
+
+    /**
+     * Analyze sentiment using AI (Gemini) with fallback to keyword matching
      * UC401_9: AI sentiment analysis for auto-categorization
+     * 
+     * @param description - The safety report description to analyze
+     * @returns SeverityLevel determined by AI or keyword matching
+     */
+    async analyzeSentimentWithAI(description: string): Promise<SeverityLevel> {
+        try {
+            const apiKey = this.getConfig('GEMINI_API_KEY');
+            if (!apiKey) {
+                console.log('[SafetyReportService] No Gemini API key, using keyword analysis');
+                return this.analyzeSentimentKeyword(description);
+            }
+
+            const prompt = `You are a safety analysis AI for an intergenerational matching app (youth-elderly relationships).
+Analyze this safety report and determine its severity level.
+
+Report content: "${description}"
+
+Severity Levels:
+- Critical: Immediate danger, abuse, violence, threats, self-harm, financial exploitation, emergency situations
+- High: Serious issues like harassment, bullying, threats, unsafe situations, exploitation patterns
+- Medium: Moderate concerns like conflicts, arguments, disrespectful behavior, uncomfortable situations
+- Low: General feedback, minor issues, suggestions, non-urgent matters
+
+Return ONLY one of these exact words: Critical, High, Medium, or Low
+Nothing else, just the severity level word.`;
+
+            // Try multiple models in case some are not available
+            const models = [
+                'gemini-1.5-flash',
+                'gemini-1.5-flash-latest',
+                'gemini-1.5-pro',
+                'gemini-pro',
+                'gemini-1.0-pro'
+            ];
+
+            for (const model of models) {
+                try {
+                    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+                    console.log(`[SafetyReportService] Trying Gemini model: ${model}`);
+
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'x-goog-api-key': apiKey
+                        },
+                        body: JSON.stringify({
+                            contents: [{ parts: [{ text: prompt }] }],
+                            generationConfig: {
+                                temperature: 0.1,
+                                maxOutputTokens: 10,
+                            }
+                        })
+                    });
+
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        console.log(`[SafetyReportService] Model ${model} failed: ${response.status} - ${errorText}`);
+                        continue; // Try next model
+                    }
+
+                    const data = await response.json();
+                    const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
+                    console.log(`[SafetyReportService] AI response from ${model}: "${responseText}"`);
+
+                    // Validate and return the severity level
+                    if (['Critical', 'High', 'Medium', 'Low'].includes(responseText)) {
+                        console.log(`[SafetyReportService] AI determined severity: ${responseText}`);
+                        return responseText as SeverityLevel;
+                    }
+
+                    // Invalid response, try next model
+                    console.log(`[SafetyReportService] Invalid response "${responseText}", trying next model`);
+                } catch (modelError) {
+                    console.log(`[SafetyReportService] Error with model ${model}:`, modelError);
+                    continue;
+                }
+            }
+
+            // All models failed, use keyword fallback
+            console.log('[SafetyReportService] All Gemini models failed, using keyword analysis');
+            return this.analyzeSentimentKeyword(description);
+
+        } catch (error) {
+            console.error('[SafetyReportService] AI analysis error:', error);
+            return this.analyzeSentimentKeyword(description);
+        }
+    }
+
+    /**
+     * Keyword-based sentiment analysis (fallback when AI is unavailable)
      * 
      * Severity Levels:
      * - Critical: Immediate danger, abuse, or severe conflict
@@ -20,7 +118,7 @@ export class SafetyReportService {
      * - Medium: Moderate concerns requiring attention
      * - Low: General feedback, minor issues
      */
-    analyzeSentiment(description: string): SeverityLevel {
+    analyzeSentimentKeyword(description: string): SeverityLevel {
         const lowerDesc = description.toLowerCase();
 
         // Critical keywords: immediate danger, abuse, violence
@@ -78,23 +176,41 @@ export class SafetyReportService {
     }
 
     /**
+     * Legacy synchronous method - kept for backwards compatibility
+     * Now uses keyword-based analysis only
+     */
+    analyzeSentiment(description: string): SeverityLevel {
+        return this.analyzeSentimentKeyword(description);
+    }
+
+    /**
      * Submit a safety report
      * UC401_7 to UC401_12: Complete submission flow
      */
     async submitReport(submission: SafetyReportSubmission, userId: string): Promise<SafetyReport> {
+        console.log('[SafetyReportService] submitReport called:', { userId, reportType: submission.report_type });
         try {
-            // UC401_9: Analyze sentiment to determine severity
-            const severityLevel = this.analyzeSentiment(submission.description);
+            // UC401_9: Analyze sentiment using AI to determine severity
+            console.log('[SafetyReportService] Analyzing sentiment...');
+            const severityLevel = await this.analyzeSentimentWithAI(submission.description);
+            console.log('[SafetyReportService] Severity determined:', severityLevel);
 
             // UC401_10: Save report to database
+            console.log('[SafetyReportService] Saving report to database...');
             const report = await this.repository.submitReport(submission, userId, severityLevel);
+            console.log('[SafetyReportService] Report saved with ID:', report.id);
 
             // UC401_6: Upload evidence files if provided
             if (submission.evidence_files && submission.evidence_files.length > 0) {
+                console.log('[SafetyReportService] Uploading evidence files...');
                 const evidenceUrls = await this.repository.uploadEvidence(
                     submission.evidence_files,
                     report.id
                 );
+                console.log('[SafetyReportService] Evidence uploaded, URLs:', evidenceUrls);
+
+                // Save evidence URLs to the database
+                await this.repository.updateEvidenceUrls(report.id, evidenceUrls);
                 report.evidence_urls = evidenceUrls;
             }
 

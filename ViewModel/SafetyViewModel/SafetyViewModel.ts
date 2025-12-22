@@ -31,6 +31,11 @@ export class SafetyViewModel {
     isProcessing: boolean = false;
     currentAdminId: string = '';
 
+    // AI Analysis state
+    aiRiskFactors: string[] = [];
+    aiRecommendation: string = '';
+    isLoadingAI: boolean = false;
+
     // Options for forms
     dismissalReasons: string[] = [];
     warningTypes: string[] = [];
@@ -97,6 +102,9 @@ export class SafetyViewModel {
     async selectAlert(alertId: string): Promise<void> {
         this.isLoading = true;
         this.errorMessage = null;
+        // Clear previous AI results
+        this.aiRiskFactors = [];
+        this.aiRecommendation = '';
 
         try {
             const alert = await safetyService.getAlertById(alertId);
@@ -104,6 +112,11 @@ export class SafetyViewModel {
                 this.selectedAlert = alert;
                 this.errorMessage = null;
             });
+
+            // Load AI analysis in the background
+            if (alert) {
+                this.loadAIAnalysis(alert);
+            }
         } catch (error) {
             runInAction(() => {
                 this.errorMessage = error instanceof Error ? error.message : 'Failed to load alert details';
@@ -117,10 +130,45 @@ export class SafetyViewModel {
     }
 
     /**
+     * Load AI analysis for an alert (risk factors + recommendation)
+     */
+    async loadAIAnalysis(alert: SafetyAlertWithProfiles): Promise<void> {
+        this.isLoadingAI = true;
+        console.log('[SafetyViewModel] Loading AI analysis for alert:', alert.id);
+
+        try {
+            // Fetch both AI results in parallel
+            const [riskFactors, recommendation] = await Promise.all([
+                safetyService.analyzeRiskFactorsWithAI(alert),
+                safetyService.generateRecommendationWithAI(alert)
+            ]);
+
+            runInAction(() => {
+                this.aiRiskFactors = riskFactors;
+                this.aiRecommendation = recommendation;
+                console.log('[SafetyViewModel] AI analysis loaded:', { riskFactors, recommendation });
+            });
+        } catch (error) {
+            console.error('[SafetyViewModel] Error loading AI analysis:', error);
+            // Fallback to rule-based
+            runInAction(() => {
+                this.aiRiskFactors = safetyService.analyzeRiskFactors(alert);
+                this.aiRecommendation = safetyService.generateRecommendation(alert);
+            });
+        } finally {
+            runInAction(() => {
+                this.isLoadingAI = false;
+            });
+        }
+    }
+
+    /**
      * Clear selected alert and return to list
      */
     backToList(): void {
         this.selectedAlert = null;
+        this.aiRiskFactors = [];
+        this.aiRecommendation = '';
     }
 
     /**

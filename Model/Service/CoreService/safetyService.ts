@@ -209,37 +209,105 @@ export const safetyService = {
     },
 
     /**
-     * Analyze risk factors from alert
+     * Platform-agnostic config getter
      */
-    analyzeRiskFactors(alert: SafetyAlertWithProfiles): string[] {
+    getConfig(key: string): string | undefined {
+        return process.env[`EXPO_PUBLIC_${key}`] || process.env[`VITE_${key}`] || process.env[key] || undefined;
+    },
+
+    /**
+     * Analyze risk factors using AI (Gemini) with fallback to rule-based
+     */
+    async analyzeRiskFactorsWithAI(alert: SafetyAlertWithProfiles): Promise<string[]> {
+        console.log('[safetyService] analyzeRiskFactorsWithAI called for alert:', alert.id);
+        try {
+            const apiKey = this.getConfig('GEMINI_API_KEY');
+            console.log('[safetyService] Gemini API key found:', !!apiKey, apiKey ? `(starts with ${apiKey.substring(0, 10)}...)` : '');
+
+            if (!apiKey) {
+                console.log('[safetyService] No Gemini API key, using rule-based analysis');
+                return this.analyzeRiskFactorsRuleBased(alert);
+            }
+
+            const prompt = `You are a safety analyst for an intergenerational matching app (elderly-youth relationships).
+Analyze this safety report and identify key risk factors.
+
+Report Details:
+- Severity: ${alert.severity}
+- Incident Type: ${alert.incident_type}
+- Description: "${alert.description}"
+- Detected Keywords: ${alert.detected_keywords.join(', ') || 'none'}
+- Reporter Type: ${alert.reporter.user_type}, Age: ${alert.reporter.age || 'unknown'}
+- Reporter Previous Warnings: ${alert.reported_user?.previous_warnings || 0}
+- Waiting Time: ${alert.waiting_time_minutes} minutes
+
+List 2-4 specific risk factors for this case. Each should be a brief statement.
+Return ONLY a JSON array of strings, nothing else. Example: ["Factor 1", "Factor 2"]`;
+
+            const models = ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-pro'];
+
+            for (const model of models) {
+                try {
+                    console.log(`[safetyService] Trying Gemini model: ${model}`);
+                    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
+                        body: JSON.stringify({
+                            contents: [{ parts: [{ text: prompt }] }],
+                            generationConfig: { temperature: 0.3, maxOutputTokens: 200 }
+                        })
+                    });
+
+                    console.log(`[safetyService] Model ${model} response status:`, response.status);
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        console.log(`[safetyService] Model ${model} error:`, errorText);
+                        continue;
+                    }
+
+                    const data = await response.json();
+                    const text = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
+                    const match = text.match(/\[[\s\S]*\]/);
+                    if (match) {
+                        const factors = JSON.parse(match[0]);
+                        if (Array.isArray(factors)) {
+                            console.log('[safetyService] AI risk factors:', factors);
+                            return factors;
+                        }
+                    }
+                } catch (e) {
+                    continue;
+                }
+            }
+            return this.analyzeRiskFactorsRuleBased(alert);
+        } catch (error) {
+            console.error('[safetyService] AI risk analysis error:', error);
+            return this.analyzeRiskFactorsRuleBased(alert);
+        }
+    },
+
+    /**
+     * Rule-based risk factor analysis (fallback)
+     */
+    analyzeRiskFactorsRuleBased(alert: SafetyAlertWithProfiles): string[] {
         const factors: string[] = [];
 
-        // High-risk keywords
         if (alert.detected_keywords.length > 0) {
             factors.push(`High-risk keyword detected: "${alert.detected_keywords.join('", "')}"`);
         }
-
-        // Previous warnings
         if (alert.reported_user && alert.reported_user.previous_warnings > 0) {
             factors.push(`Previous warning on file for reported user (${alert.reported_user.previous_warnings} total)`);
         }
-
-        // Elderly reporter (vulnerable)
         if (alert.reporter.user_type === 'elderly' && alert.reporter.age >= 70) {
             factors.push(`Vulnerable elderly reporter (${alert.reporter.age} years old)`);
         }
-
-        // Critical or high severity
         if (alert.severity === 'critical' || alert.severity === 'high') {
             factors.push(`${alert.severity.toUpperCase()} severity - requires immediate attention`);
         }
-
-        // Financial exploitation pattern
         if (alert.incident_type === 'financial_request') {
             factors.push('Pattern matches known financial exploitation tactics');
         }
-
-        // Response time overdue
         if (this.isResponseUrgent(alert.severity, alert.waiting_time_minutes)) {
             factors.push('Response time SLA exceeded - escalation recommended');
         }
@@ -248,25 +316,88 @@ export const safetyService = {
     },
 
     /**
-     * Generate recommended action based on alert analysis
+     * Synchronous wrapper for risk factors (for backward compatibility)
      */
-    generateRecommendation(alert: SafetyAlertWithProfiles): string {
+    analyzeRiskFactors(alert: SafetyAlertWithProfiles): string[] {
+        return this.analyzeRiskFactorsRuleBased(alert);
+    },
+
+    /**
+     * Generate recommendation using AI (Gemini) with fallback to rule-based
+     */
+    async generateRecommendationWithAI(alert: SafetyAlertWithProfiles): Promise<string> {
+        try {
+            const apiKey = this.getConfig('GEMINI_API_KEY');
+            if (!apiKey) {
+                return this.generateRecommendationRuleBased(alert);
+            }
+
+            const prompt = `You are a safety advisor for an intergenerational matching app.
+Based on this safety report, provide a recommended action for the admin.
+
+Report: Severity ${alert.severity}, Type: ${alert.incident_type}
+Description: "${alert.description}"
+
+Provide ONE concise recommendation (1-2 sentences) for how the admin should handle this case.
+Return only the recommendation text, nothing else.`;
+
+            const models = ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-pro'];
+
+            for (const model of models) {
+                try {
+                    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
+                        body: JSON.stringify({
+                            contents: [{ parts: [{ text: prompt }] }],
+                            generationConfig: { temperature: 0.3, maxOutputTokens: 100 }
+                        })
+                    });
+
+                    if (!response.ok) continue;
+
+                    const data = await response.json();
+                    const text = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
+                    if (text.length > 10) {
+                        console.log('[safetyService] AI recommendation:', text);
+                        return text;
+                    }
+                } catch (e) {
+                    continue;
+                }
+            }
+            return this.generateRecommendationRuleBased(alert);
+        } catch (error) {
+            console.error('[safetyService] AI recommendation error:', error);
+            return this.generateRecommendationRuleBased(alert);
+        }
+    },
+
+    /**
+     * Rule-based recommendation (fallback)
+     */
+    generateRecommendationRuleBased(alert: SafetyAlertWithProfiles): string {
         if (alert.severity === 'critical') {
             if (alert.incident_type === 'financial_request') {
-                return 'Immediate suspension recommended. This pattern matches known financial exploitation tactics. Contact both parties separately to investigate further. Consider permanent ban if exploitation confirmed.';
+                return 'Immediate suspension recommended. This pattern matches known financial exploitation tactics. Contact both parties separately to investigate further.';
             }
             return 'Immediate review required. Take protective action for the reporter and investigate the reported user\'s account activity.';
         }
-
         if (alert.severity === 'high') {
             return 'Formal warning recommended. Review chat history and evidence. Consider temporary suspension if behavior continues.';
         }
-
         if (alert.severity === 'medium') {
             return 'Issue verbal caution and monitor situation. Review relationship progress and communication patterns.';
         }
-
         return 'Review report and take appropriate action based on evidence provided.';
+    },
+
+    /**
+     * Synchronous wrapper for recommendation (for backward compatibility)
+     */
+    generateRecommendation(alert: SafetyAlertWithProfiles): string {
+        return this.generateRecommendationRuleBased(alert);
     }
 };
 

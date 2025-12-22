@@ -127,14 +127,17 @@ function validateProfileInfo(data: ProfileInfoPayload): ValidationResult {
   const errors: string[] = [];
   const fieldErrors: Record<string, string> = {};
 
-  // UC103_11: Validate interests count
-  const interestError = validateArrayCount(
-    data.interests,
-    VALIDATION_RULES.interests.minCount,
-    VALIDATION_RULES.interests.maxCount,
-    'interests'
-  );
-  if (interestError) {
+  // Filter out empty custom interests
+  const validCustomInterests = (data.customInterests || []).filter(i => i.trim());
+
+  // UC103_11: Validate interests count (include custom interests in total)
+  const totalInterests = data.interests.length + validCustomInterests.length;
+  if (totalInterests < VALIDATION_RULES.interests.minCount) {
+    const interestError = `Please select at least ${VALIDATION_RULES.interests.minCount} interests`;
+    errors.push(interestError);
+    fieldErrors.interests = interestError;
+  } else if (totalInterests > VALIDATION_RULES.interests.maxCount) {
+    const interestError = `Please select at most ${VALIDATION_RULES.interests.maxCount} interests`;
     errors.push(interestError);
     fieldErrors.interests = interestError;
   }
@@ -151,14 +154,17 @@ function validateProfileInfo(data: ProfileInfoPayload): ValidationResult {
     fieldErrors.selfIntroduction = introError;
   }
 
-  // UC103_15: Validate languages
-  const langError = validateArrayCount(
-    data.languages,
-    VALIDATION_RULES.languages.minCount,
-    VALIDATION_RULES.languages.maxCount,
-    'languages'
-  );
-  if (langError) {
+  // Filter out empty custom languages
+  const validCustomLanguages = (data.customLanguages || []).filter(l => l.trim());
+
+  // UC103_15: Validate languages (include custom languages in total)
+  const totalLanguages = data.languages.length + validCustomLanguages.length;
+  if (totalLanguages < VALIDATION_RULES.languages.minCount) {
+    const langError = `Please select at least ${VALIDATION_RULES.languages.minCount} languages`;
+    errors.push(langError);
+    fieldErrors.languages = langError;
+  } else if (totalLanguages > VALIDATION_RULES.languages.maxCount) {
+    const langError = `Please select at most ${VALIDATION_RULES.languages.maxCount} languages`;
     errors.push(langError);
     fieldErrors.languages = langError;
   }
@@ -340,9 +346,17 @@ export const profileCompletionService = {
 
     const user = await userRepository.getById(userId);
 
+    // Merge custom interests into interests array if provided
+    const validCustomInterests = (data.customInterests || []).filter(i => i.trim()).map(i => i.trim());
+    const finalInterests = [...data.interests, ...validCustomInterests];
+
+    // Merge custom languages into languages array if provided
+    const validCustomLanguages = (data.customLanguages || []).filter(l => l.trim()).map(l => l.trim());
+    const finalLanguages = [...data.languages, ...validCustomLanguages];
+
     // interests and self_introduction go to profile_data (user-type specific presentation)
     const mergedProfile = mergeProfileData(user?.profile_data || null, {
-      interests: data.interests,
+      interests: finalInterests,
       self_introduction: data.selfIntroduction,
       profile_completion: {
         ...(user?.profile_data?.profile_completion || {}),
@@ -352,10 +366,11 @@ export const profileCompletionService = {
 
     // languages is a common field - store in users table directly
     return userRepository.updateUser(userId, {
-      languages: data.languages,
+      languages: finalLanguages,
       profile_data: mergedProfile,
     });
   },
+
 
   async markProfileComplete(userId: string): Promise<User> {
     const user = await userRepository.getById(userId);
@@ -397,8 +412,8 @@ export const profileCompletionService = {
    * @returns Public URL of the uploaded avatar
    */
   async uploadCustomAvatar(
-    userId: string, 
-    base64Data: string, 
+    userId: string,
+    base64Data: string,
     fileExtension: string
   ): Promise<string> {
     console.log('[profileCompletionService] uploadCustomAvatar START:', userId);
@@ -407,7 +422,7 @@ export const profileCompletionService = {
       // Normalize extension
       let extension = fileExtension.toLowerCase();
       if (extension === 'jpg') extension = 'jpeg';
-      
+
       // Validate extension
       if (!ALLOWED_AVATAR_FORMATS.includes(extension)) {
         throw new Error(`Invalid file format. Allowed: ${ALLOWED_AVATAR_FORMATS.join(', ')}`);
@@ -420,9 +435,9 @@ export const profileCompletionService = {
       }
 
       // Determine MIME type
-      const mimeType = extension === 'png' ? 'image/png' 
-        : extension === 'webp' ? 'image/webp' 
-        : 'image/jpeg';
+      const mimeType = extension === 'png' ? 'image/png'
+        : extension === 'webp' ? 'image/webp'
+          : 'image/jpeg';
 
       // Build file path: {userId}/avatar-{timestamp}.{ext}
       const timestamp = Date.now();
@@ -462,7 +477,7 @@ export const profileCompletionService = {
    * @returns Updated user
    */
   async saveProfileSetup(
-    userId: string, 
+    userId: string,
     data: {
       phoneNumber: string;
       location: string;
@@ -478,7 +493,7 @@ export const profileCompletionService = {
 
     // Validate required fields
     const errors: string[] = [];
-    
+
     if (!data.phoneNumber?.trim()) {
       errors.push('Phone number is required');
     } else if (!/^\+?[\d\s-]{10,}$/.test(data.phoneNumber)) {

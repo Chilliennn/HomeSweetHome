@@ -102,12 +102,20 @@ export const PreMatchDecisionScreen = observer(function PreMatchDecisionScreen()
             <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
                 {/* Partner Profile Section */}
                 <View style={styles.profileSection}>
-                    <IconCircle
-                        icon={partner.profile_data?.avatar_meta?.type === 'default' ? '👵' : '👤'}
-                        size={100}
-                        backgroundColor="#C8ADD6"
-                        contentScale={0.6}
-                    />
+                    {/* Real profile photo or default avatar */}
+                    {partner.profile_photo_url ? (
+                        <Image
+                            source={{ uri: partner.profile_photo_url }}
+                            style={styles.profilePhoto}
+                        />
+                    ) : (
+                        <IconCircle
+                            icon={partner.profile_data?.avatar_meta?.type === 'default' ? '👵' : '👤'}
+                            size={100}
+                            backgroundColor="#C8ADD6"
+                            contentScale={0.6}
+                        />
+                    )}
                     <Text style={styles.partnerName}>{partner.full_name || 'Partner'}</Text>
 
                     {/* Duration Badge */}
@@ -208,7 +216,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
     },
-    backIcon:{
+    backIcon: {
         fontSize: 20,
         color: '#000000',
     },
@@ -239,6 +247,12 @@ const styles = StyleSheet.create({
     profileSection: {
         alignItems: 'center',
         paddingVertical: 32,
+    },
+    profilePhoto: {
+        width: 100,
+        height: 100,
+        borderRadius: 50,
+        backgroundColor: '#E0E0E0',
     },
     partnerName: {
         fontSize: 24,

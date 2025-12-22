@@ -1,6 +1,7 @@
 import { messageRepository } from '../../Repository/UserRepository/messageRepository';
 import { matchingRepository } from '../../Repository/UserRepository/matchingRepository';
 import { userRepository } from '../../Repository/UserRepository/userRepository';
+import { notificationRepository } from '../../Repository/UserRepository/notificationRepository';
 import type { Message, MessageType, User } from '../../types';
 import type { Interest } from '../../Repository/UserRepository/matchingRepository';
 import type { RealtimeChannel } from '@supabase/supabase-js';
@@ -624,8 +625,21 @@ export const communicationService = {
       // Update application status to withdrawn
       await matchingRepository.updateApplicationStatus(applicationId, 'withdrawn');
 
-      // Notify partner (future: create notification)
-      console.log('[communicationService] Pre-match ended by user:', userId, 'for application:', applicationId);
+      // UC104_8: Notify partner that pre-match has ended
+      const partnerId = application.youth_id === userId ? application.elderly_id : application.youth_id;
+      const currentUser = await userRepository.getById(userId);
+      const currentUserName = currentUser?.full_name || 'Your partner';
+
+      await notificationRepository.createNotification({
+        user_id: partnerId,
+        type: 'prematch_ended',
+        title: 'Pre-Match Ended',
+        message: `${currentUserName} has decided to end the pre-match period. The chat is now closed.`,
+        reference_id: applicationId,
+        reference_table: 'applications',
+      });
+
+      console.log('[communicationService] Pre-match ended by user:', userId, 'for application:', applicationId, ', notified partner:', partnerId);
     } catch (error) {
       console.error('Error ending pre-match:', error);
       throw error;

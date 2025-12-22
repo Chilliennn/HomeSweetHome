@@ -375,10 +375,10 @@ export interface DisplayIdentityPayload {
 
 export interface ProfileInfoPayload {
   interests: string[];
-  customInterest?: string;
+  customInterests?: string[];
   selfIntroduction: string;
   languages: string[];
-  customLanguage?: string;
+  customLanguages?: string[];
 }
 
 export interface ProfileCompletionState {

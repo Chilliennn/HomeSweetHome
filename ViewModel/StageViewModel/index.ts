@@ -178,7 +178,6 @@ export class StageViewModel {
           const allDone = this.requirements.every((r) => !!r.is_completed);
           console.log("[StageViewModel] All requirements completed?", allDone);
 
-
           if (allDone) {
             console.log(
               "[StageViewModel] 🎉 All final stage requirements completed! Setting journey completed flag..."
@@ -236,21 +235,25 @@ export class StageViewModel {
    */
   private setupNotificationSubscription(userId: string) {
     if (this.notificationSubscription) {
-      console.log('[StageViewModel] Notification subscription already active');
+      console.log("[StageViewModel] Notification subscription already active");
       return;
     }
 
-    console.log('[StageViewModel] Setting up notification subscription for:', userId);
-    this.notificationSubscription = notificationService.subscribeToNotifications(
-      userId,
-      (notification) => {
-        console.log('[StageViewModel] New notification received:', notification.type);
+    console.log(
+      "[StageViewModel] Setting up notification subscription for:",
+      userId
+    );
+    this.notificationSubscription =
+      notificationService.subscribeToNotifications(userId, (notification) => {
+        console.log(
+          "[StageViewModel] New notification received:",
+          notification.type
+        );
         // Reload notification count when new notification arrives
         runInAction(() => {
           this.unreadNotificationCount += 1;
         });
-      }
-    );
+      });
   }
 
   /**
@@ -276,13 +279,25 @@ export class StageViewModel {
           `[Realtime] Stage completed: ${this.previousStage} → ${newData.current_stage}`
         );
 
-        // Show stage-completed modal for ALL stage transitions (including Stage 3 → Stage 4)
-        // Journey-completed will be triggered separately by handleRealtimeActivityChange when all Stage 4 activities are done
-        runInAction(() => {
-          this.shouldNavigateToStageCompleted = true;
-        });
-        // Load full stage completion info
-        this.loadStageCompletionInfo();
+        const completedStage = this.previousStage;
+        try {
+          // Load completion info for the completed stage first so vm.stageJustCompleted is accurate
+          await this.loadStageCompletionInfo(completedStage ?? undefined);
+
+          // Now signal the UI to navigate to the stage-completed screen.
+          runInAction(() => {
+            this.shouldNavigateToStageCompleted = true;
+          });
+        } catch (err) {
+          console.error(
+            "[StageViewModel] Failed to load stage completion info on realtime transition:",
+            err
+          );
+          // Fallback: still trigger navigation so UI can attempt to load info
+          runInAction(() => {
+            this.shouldNavigateToStageCompleted = true;
+          });
+        }
       } else if (prevIndex !== -1 && newIndex !== -1 && newIndex < prevIndex) {
         console.log(
           "[Realtime] Stage moved backward - skipping completion page"
@@ -393,9 +408,8 @@ export class StageViewModel {
       // Load supplementary streams
       await this.loadMilestoneInfo();
       await this.loadCoolingPeriodInfo();
-      await this.loadStageCompletionInfo();
-      await this.loadJourneyStats(); // Load journey stats on initialization
-      await this.loadAISuggestions(); // Load AI suggestions on initialization
+      await this.loadJourneyStats(); 
+      await this.loadAISuggestions();
 
       if (this.relationshipId) {
         this.setupRealtimeSubscription(this.relationshipId);
@@ -546,7 +560,10 @@ export class StageViewModel {
           });
         }
       } catch (verifyError) {
-        console.warn("[StageViewModel] AI verification error (non-fatal):", verifyError);
+        console.warn(
+          "[StageViewModel] AI verification error (non-fatal):",
+          verifyError
+        );
       }
 
       try {
@@ -885,7 +902,7 @@ export class StageViewModel {
     if (!this.relationshipId || !this.userId) return;
     this.isLoading = true;
     try {
-      // 1. Create calendar event 
+      // 1. Create calendar event
       // Use tomorrow's date to ensure it passes the "future date" validation in familyService
       const tomorrow = new Date(Date.now() + 86400000);
       const dateString = tomorrow.toISOString().split("T")[0];
@@ -1176,9 +1193,11 @@ export class StageViewModel {
     if (!this.stageJustCompletedName || !this.currentStageDisplayName) {
       return "Congratulations on your progress!";
     }
-    return `Congratulations! You've successfully completed "${this.stageJustCompletedName
-      }" and moved to Stage ${this.completedStageOrder + 1}: ${this.currentStageDisplayName
-      }.`;
+    return `Congratulations! You've successfully completed "${
+      this.stageJustCompletedName
+    }" and moved to Stage ${this.completedStageOrder + 1}: ${
+      this.currentStageDisplayName
+    }.`;
   }
 
   // ============================================================================

@@ -39,7 +39,7 @@ const mapUserToProfile = (user: User): ElderlyProfile => {
   // Priority: profile_photo_url (real photo) > preset avatar emoji
   const hasRealPhoto = !!user.profile_photo_url;
   const presetEmoji = user.profile_data?.avatar_meta?.type === "default" ? "👵" : undefined;
-  
+
   return {
     id: user.id,
     name: user.full_name || "Anonymous",  // FIXED: Only use full_name
@@ -54,7 +54,10 @@ const mapUserToProfile = (user: User): ElderlyProfile => {
       color: "#9DE2D0",
     })),
     aboutMe: user.profile_data?.self_introduction || "No bio available.",
-    languages: user.languages || [],
+    // Deduplicate languages (case-insensitive) to prevent showing both 'English' and 'english'
+    languages: [...new Map((user.languages || []).map(lang =>
+      [lang.toLowerCase(), lang.charAt(0).toUpperCase() + lang.slice(1).toLowerCase()]
+    )).values()],
   };
 };
 
@@ -99,7 +102,7 @@ export const MatchingScreenComponent = observer(
 
     useEffect(() => {
       console.log('[MatchingScreen] useEffect[relationship] triggered - userId:', userId, 'userType:', userType);
-      
+
       const checkRelationship = async () => {
         if (!userId) {
           console.log('[MatchingScreen] No userId, skipping relationship check');
@@ -114,7 +117,7 @@ export const MatchingScreenComponent = observer(
           console.log('[MatchingScreen] Checking youth relationship...');
           await youthMatchingViewModel.checkActiveRelationship(userId);
           console.log('[MatchingScreen] Youth hasActiveRelationship:', youthMatchingViewModel.hasActiveRelationship);
-          
+
           if (youthMatchingViewModel.hasActiveRelationship) {
             console.log('[MatchingScreen] Youth has relationship, redirecting to bonding');
             router.replace({
@@ -131,7 +134,7 @@ export const MatchingScreenComponent = observer(
           const elderVM = await import('@home-sweet-home/viewmodel').then(m => m.elderMatchingViewModel);
           await elderVM.checkActiveRelationship(userId);
           console.log('[MatchingScreen] Elderly hasActiveRelationship:', elderVM.hasActiveRelationship);
-          
+
           if (elderVM.hasActiveRelationship) {
             console.log('[MatchingScreen] Elderly has relationship, redirecting to bonding');
             router.replace({
@@ -146,11 +149,11 @@ export const MatchingScreenComponent = observer(
         } else {
           console.log('[MatchingScreen] Unknown userType:', userType);
         }
-        
+
         // Only set loading to false if we didn't redirect
         setIsCheckingRelationship(false);
       };
-      
+
       checkRelationship();
     }, [userId, userType]);
 
@@ -258,7 +261,7 @@ export const MatchingScreenComponent = observer(
 
     // Render based on current screen
     console.log('[MatchingScreen] Rendering - currentScreen:', currentScreen, 'userType:', userType, 'hasRelationship:', userType === 'youth' ? youthMatchingViewModel.hasActiveRelationship : 'elderly');
-    
+
     switch (currentScreen) {
       case "profile-detail":
         console.log('[MatchingScreen] Rendering profile-detail');

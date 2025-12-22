@@ -230,6 +230,16 @@ const LoginScreen = observer(function LoginScreen() {
                     <Text style={styles.buttonText}>Sign in</Text>
                   )}
                 </TouchableOpacity>
+
+                {/* Sign Up Link */}
+                <TouchableOpacity
+                  onPress={() => router.replace('/signup')}
+                  style={styles.signupLink}
+                >
+                  <Text style={styles.signupLinkText}>
+                    Don't have an account? <Text style={styles.signupLinkBold}>Sign up</Text>
+                  </Text>
+                </TouchableOpacity>
               </View>
             </ScrollView>
 
@@ -306,5 +316,17 @@ const styles = StyleSheet.create({
     color: "#999",
     fontSize: 12,
     paddingBottom: 20,
+  },
+  signupLink: {
+    alignItems: "center",
+    marginTop: 20,
+  },
+  signupLinkText: {
+    fontSize: 14,
+    color: "#666",
+  },
+  signupLinkBold: {
+    fontWeight: "600",
+    color: "#E89B8E",
   },
 });

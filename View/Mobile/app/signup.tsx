@@ -10,10 +10,12 @@ import {
     ScrollView,
     KeyboardAvoidingView,
     Platform,
+    StatusBar,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { authViewModel } from '@home-sweet-home/viewmodel';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function SignUpScreen() {
     const [email, setEmail] = useState('');
@@ -98,119 +100,126 @@ export default function SignUpScreen() {
     };
 
     return (
-        <KeyboardAvoidingView
-            style={styles.container}
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        >
-            <ScrollView
-                contentContainerStyle={styles.scrollContent}
-                showsVerticalScrollIndicator={false}
-                keyboardShouldPersistTaps="handled"
+        <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
+            <StatusBar barStyle="dark-content" backgroundColor="#FAF9F6" />
+            <KeyboardAvoidingView
+                style={styles.container}
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
             >
-                {/* Logo */}
-                <View style={styles.logoContainer}>
-                    <Image
-                        source={require('@/assets/images/logo.png')}
-                        style={styles.logo}
-                        contentFit="contain"
-                    />
-                </View>
-
-                {/* Form */}
-                <View style={styles.formContainer}>
-                    {/* Email */}
-                    <Text style={styles.label}>Email</Text>
-                    <TextInput
-                        style={styles.input}
-                        placeholder="Example@email.com"
-                        placeholderTextColor="#A0A0A0"
-                        value={email}
-                        onChangeText={setEmail}
-                        keyboardType="email-address"
-                        autoCapitalize="none"
-                        autoComplete="email"
-                        editable={!loading}
-                    />
-
-                    {/* Password */}
-                    <Text style={styles.label}>Password</Text>
-                    <TextInput
-                        style={styles.input}
-                        placeholder="Enter your password"
-                        placeholderTextColor="#A0A0A0"
-                        value={password}
-                        onChangeText={setPassword}
-                        secureTextEntry
-                        editable={!loading}
-                    />
-
-                    {/* Confirm Password */}
-                    <Text style={styles.label}>Confirm Password</Text>
-                    <TextInput
-                        style={styles.input}
-                        placeholder="Enter your confirm password"
-                        placeholderTextColor="#A0A0A0"
-                        value={confirmPassword}
-                        onChangeText={setConfirmPassword}
-                        secureTextEntry
-                        editable={!loading}
-                    />
-
-                    {/* Role Selection */}
-                    <Text style={styles.label}>What's your role</Text>
-                    <View style={styles.roleContainer}>
-                        <TouchableOpacity
-                            style={styles.roleOption}
-                            onPress={() => setUserType('youth')}
-                            disabled={loading}
-                        >
-                            <View style={[styles.radioCircle, userType === 'youth' && styles.radioSelected]}>
-                                {userType === 'youth' && <View style={styles.radioInner} />}
-                            </View>
-                            <Text style={styles.roleText}>Youth</Text>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity
-                            style={styles.roleOption}
-                            onPress={() => setUserType('elderly')}
-                            disabled={loading}
-                        >
-                            <View style={[styles.radioCircle, userType === 'elderly' && styles.radioSelected]}>
-                                {userType === 'elderly' && <View style={styles.radioInner} />}
-                            </View>
-                            <Text style={styles.roleText}>Elderly</Text>
-                        </TouchableOpacity>
+                <ScrollView
+                    contentContainerStyle={styles.scrollContent}
+                    showsVerticalScrollIndicator={false}
+                    keyboardShouldPersistTaps="handled"
+                >
+                    {/* Logo */}
+                    <View style={styles.logoContainer}>
+                        <Image
+                            source={require('@/assets/images/logo.png')}
+                            style={styles.logo}
+                            contentFit="contain"
+                        />
                     </View>
 
-                    {/* Sign Up Button */}
-                    <TouchableOpacity
-                        style={[styles.button, loading && styles.buttonDisabled]}
-                        onPress={handleSignUp}
-                        disabled={loading}
-                    >
-                        {loading ? (
-                            <ActivityIndicator color="#FFF" />
-                        ) : (
-                            <Text style={styles.buttonText}>Sign Up</Text>
-                        )}
-                    </TouchableOpacity>
+                    {/* Form */}
+                    <View style={styles.formContainer}>
+                        {/* Email */}
+                        <Text style={styles.label}>Email</Text>
+                        <TextInput
+                            style={styles.input}
+                            placeholder="Example@email.com"
+                            placeholderTextColor="#A0A0A0"
+                            value={email}
+                            onChangeText={setEmail}
+                            keyboardType="email-address"
+                            autoCapitalize="none"
+                            autoComplete="email"
+                            editable={!loading}
+                        />
 
-                    {/* Login Link */}
-                    <TouchableOpacity onPress={navigateToLogin} style={styles.loginLink}>
-                        <Text style={styles.loginLinkText}>
-                            Already have an account? <Text style={styles.loginLinkBold}>Sign in</Text>
-                        </Text>
-                    </TouchableOpacity>
-                </View>
-            </ScrollView>
+                        {/* Password */}
+                        <Text style={styles.label}>Password</Text>
+                        <TextInput
+                            style={styles.input}
+                            placeholder="Enter your password"
+                            placeholderTextColor="#A0A0A0"
+                            value={password}
+                            onChangeText={setPassword}
+                            secureTextEntry
+                            editable={!loading}
+                        />
 
-            {/* Footer */}
-            <Text style={styles.footer}>© 2025 HomeSweetHome All rights reserved.</Text>
-        </KeyboardAvoidingView>
+                        {/* Confirm Password */}
+                        <Text style={styles.label}>Confirm Password</Text>
+                        <TextInput
+                            style={styles.input}
+                            placeholder="Enter your confirm password"
+                            placeholderTextColor="#A0A0A0"
+                            value={confirmPassword}
+                            onChangeText={setConfirmPassword}
+                            secureTextEntry
+                            editable={!loading}
+                        />
+
+                        {/* Role Selection */}
+                        <Text style={styles.label}>What's your role</Text>
+                        <View style={styles.roleContainer}>
+                            <TouchableOpacity
+                                style={styles.roleOption}
+                                onPress={() => setUserType('youth')}
+                                disabled={loading}
+                            >
+                                <View style={[styles.radioCircle, userType === 'youth' && styles.radioSelected]}>
+                                    {userType === 'youth' && <View style={styles.radioInner} />}
+                                </View>
+                                <Text style={styles.roleText}>Youth</Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                                style={styles.roleOption}
+                                onPress={() => setUserType('elderly')}
+                                disabled={loading}
+                            >
+                                <View style={[styles.radioCircle, userType === 'elderly' && styles.radioSelected]}>
+                                    {userType === 'elderly' && <View style={styles.radioInner} />}
+                                </View>
+                                <Text style={styles.roleText}>Elderly</Text>
+                            </TouchableOpacity>
+                        </View>
+
+                        {/* Sign Up Button */}
+                        <TouchableOpacity
+                            style={[styles.button, loading && styles.buttonDisabled]}
+                            onPress={handleSignUp}
+                            disabled={loading}
+                        >
+                            {loading ? (
+                                <ActivityIndicator color="#FFF" />
+                            ) : (
+                                <Text style={styles.buttonText}>Sign Up</Text>
+                            )}
+                        </TouchableOpacity>
+
+                        {/* Login Link */}
+                        <TouchableOpacity onPress={navigateToLogin} style={styles.loginLink}>
+                            <Text style={styles.loginLinkText}>
+                                Already have an account? <Text style={styles.loginLinkBold}>Sign in</Text>
+                            </Text>
+                        </TouchableOpacity>
+
+                        {/* Footer - Inside form to avoid overlap */}
+                        <Text style={styles.footer}>© 2025 HomeSweetHome All rights reserved.</Text>
+                    </View>
+                </ScrollView>
+            </KeyboardAvoidingView>
+        </SafeAreaView>
     );
 }
 
 const styles = StyleSheet.create({
+    safeArea: {
+        flex: 1,
+        backgroundColor: '#FAF9F6',
+    },
     container: {
         flex: 1,
         backgroundColor: '#FAF9F6',
@@ -309,10 +318,10 @@ const styles = StyleSheet.create({
         color: '#E89B8E',
     },
     footer: {
-        position: 'absolute',
-        bottom: 40,
-        alignSelf: 'center',
+        textAlign: 'center',
         color: '#999',
         fontSize: 12,
+        marginTop: 30,
+        marginBottom: 20,
     },
 });

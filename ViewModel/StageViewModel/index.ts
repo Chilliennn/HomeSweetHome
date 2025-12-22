@@ -633,28 +633,10 @@ export class StageViewModel {
   }
 
   async loadJourneyStats() {
-    if (!this.userId) return; // Use userId as currentUser is not defined
+    if (!this.userId) return;
 
     this.isLoading = true;
     try {
-      // Assuming stageService has a method to get the current relationship by userId
-      // and then get journey stats for that relationship.
-      // The provided snippet uses `this.stageService.getCurrentRelationship(this.currentUser.id)`
-      // but `currentUser` is not defined and `stageService` is not `this.stageService`.
-      // I will adapt it to use the existing `stageService` import and `userId`.
-      // If `relationshipId` is already available, use that. Otherwise, fetch it.
-      let currentRelationshipId = this.relationshipId;
-      if (!currentRelationshipId) {
-        // This might be redundant if loadStageProgression is always called first
-        // and sets relationshipId. But for robustness, we can try to get it.
-        // However, stageService.getCurrentRelationship is not defined in the original code.
-        // I will assume `getJourneyStats` can take `userId` or `relationshipId` directly,
-        // or that `relationshipId` is guaranteed to be set by `loadStageProgression`.
-        // For now, I'll use `this.relationshipId` which should be set by `loadStageProgression`.
-        // If `getJourneyStats` requires `relationshipId`, and it's not set, this will fail.
-        // The original snippet implies fetching relationship first.
-        // Given the context, `this.relationshipId` should be available after `loadStageProgression`.
-      }
 
       if (this.relationshipId) {
         const stats = await stageService.getJourneyStats(this.relationshipId); // Assuming stageService has this method
@@ -694,19 +676,28 @@ export class StageViewModel {
       runInAction(() => {
         this.stageJustCompleted = targetStage;
         this.stageJustCompletedName = targetStageInfo.display_name;
-        this.showStageCompleted = true;
+        this.showStageCompleted = false;
         this.showLockedStageDetail = false;
         this.selectedLockedStage = null;
       });
-      void this.loadStageCompletionInfo(targetStage).catch((e) =>
-        console.error("loadStageCompletionInfo failed", e)
-      );
+     try {
+        await this.loadStageCompletionInfo(targetStage);
+        runInAction(() => {
+          this.showStageCompleted = true;
+        });
+      } catch (e) {
+        console.error("loadStageCompletionInfo failed", e);
+        runInAction(() => {
+          // keep showStageCompleted false on failure
+          this.showStageCompleted = false;
+        });
+      }
       return;
     }
 
     runInAction(() => {
       this.selectedLockedStage = targetStage;
-      this.lockedStageDetails = null; // show loading state
+      this.lockedStageDetails = null; 
       this.showLockedStageDetail = true;
       this.showStageCompleted = false;
     });
@@ -1162,10 +1153,8 @@ export class StageViewModel {
           this.currentStageDisplayName = info.currentStageDisplayName;
           this.newlyUnlockedFeatures = info.newlyUnlockedFeatures;
           this.completedStageOrder = info.stageOrder - 1;
-          this.showStageCompleted = true;
           this.showLockedStageDetail = false;
           this.selectedLockedStage = null;
-          this.showStageCompleted = true;
         }
         this.isLoading = false;
       });

@@ -110,16 +110,29 @@ export class YouthMatchingViewModel {
      */
     async checkActiveRelationship(userId: string): Promise<void> {
         try {
-            const { relationshipService } = await import('@home-sweet-home/model');
+            const { relationshipService, communicationService } = await import('@home-sweet-home/model');
             const relationship = await relationshipService.getActiveRelationship(userId);
+            
+            // Get active pre-match chats to determine journey step
+            const preMatchChats = await communicationService.getActivePreMatchChats(userId, 'youth');
+            
             runInAction(() => {
                 this.hasActiveRelationship = relationship !== null;
-                // Update journey step based on relationship status
-                // 1 = Browse, 2 = Pre-match, 3 = Review, 4 = Bonding
+                
+                // Update journey step based on status
+                // 1 = Browse, 2 = Pre-match, 3 = Apply (pending_review or approved), 4 = Bonding
                 if (relationship !== null) {
-                    this.currentJourneyStep = 4; // In bonding stage
+                    // In bonding stage - but this should redirect to bonding home, not show this page
+                    this.currentJourneyStep = 4;
+                } else if (preMatchChats.some(chat => chat.application.status === 'pending_review' || chat.application.status === 'approved')) {
+                    // Has submitted formal application
+                    this.currentJourneyStep = 3;
+                } else if (preMatchChats.length > 0) {
+                    // Has active pre-match chats
+                    this.currentJourneyStep = 2;
                 } else {
-                    this.currentJourneyStep = 1; // Still browsing
+                    // Just browsing
+                    this.currentJourneyStep = 1;
                 }
             });
         } catch (error) {

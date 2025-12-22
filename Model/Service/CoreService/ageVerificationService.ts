@@ -1,9 +1,9 @@
 import type { AgeVerificationPayload, AgeVerificationResult, UserType } from '../../types';
 
 const AGE_LIMITS: Record<UserType, { min: number; max: number }> = {
-  youth: { min: 18, max: 40 },
-  elderly: { min: 60, max: 120 },
-  admin: { min: 18, max: 120 },
+  youth: { min: 18, max: 45 },
+  elderly: { min: 60, max: 100 },
+  admin: { min: 18, max: 100 },
 };
 
 function validateAgeForUserType(age: number, userType: UserType): void {
@@ -18,16 +18,16 @@ function validateAgeForUserType(age: number, userType: UserType): void {
 
 /**
  * Generate random age based on user type
- * Youth: 18-40
- * Elderly: 41-100 (changed from 60+ per user request)
+ * Youth: 18-45
+ * Elderly: 60-100
  */
 function getRandomAge(userType: 'youth' | 'elderly' | 'admin'): number {
   if (userType === 'youth') {
-    // Random age between 18 and 40 (inclusive)
-    return Math.floor(Math.random() * (40 - 18 + 1)) + 18;
+    // Random age between 18 and 45 (inclusive)
+    return Math.floor(Math.random() * (45 - 18 + 1)) + 18;
   } else if (userType === 'elderly') {
-    // Random age between 41 and 100 (inclusive)
-    return Math.floor(Math.random() * (100 - 41 + 1)) + 41;
+    // Random age between 60 and 100 (inclusive)
+    return Math.floor(Math.random() * (100 - 60 + 1)) + 60;
   }
   // Admin: default to 30
   return 30;

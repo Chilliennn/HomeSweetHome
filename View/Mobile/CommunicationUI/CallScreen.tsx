@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, ActivityIndicator, Text, SafeAreaView, Alert, Linking, Platform } from 'react-native';
+import { View, StyleSheet, ActivityIndicator, Text, Alert, Linking, Platform } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 import { useRouter } from 'expo-router';
 import { observer } from 'mobx-react-lite';
@@ -258,7 +259,7 @@ export const CallScreen = observer(({ type, url }: CallScreenProps) => {
     ` : `true;`;
 
     return (
-        <SafeAreaView style={styles.container}>
+        <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
             <WebView
                 source={{ uri: roomUrl }}
                 style={styles.webview}

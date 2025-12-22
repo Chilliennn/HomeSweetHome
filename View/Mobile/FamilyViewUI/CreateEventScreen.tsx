@@ -32,14 +32,13 @@ const EVENT_TYPES: { value: EventType; label: string; emoji: string }[] = [
  * Allows setting event details, date, time, location
  * Validates future date
  * 
- * FR 3.2.1, 3.2.2, 3.2.7, 3.2.10, 3.2.13
  */
 export const CreateEventScreen = observer(() => {
   const router = useRouter();
   const params = useLocalSearchParams();
   const { currentRelationship, isLoading, errorMessage } = familyViewModel;
 
-  // ✅ MVVM: Get userId from route params or familyViewModel
+  // Get userId from route params or familyViewModel
   const userId = (params.userId as string) || familyViewModel.currentUserId;
 
   const [title, setTitle] = useState('');

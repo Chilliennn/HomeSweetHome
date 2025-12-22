@@ -36,7 +36,6 @@ const MOOD_OPTIONS: { value: MoodType; label: string; emoji: string }[] = [
  * Allows text or voice input, mood selection
  * Validates entry is not empty before saving
  * 
- * FR 3.3.1, 3.3.2, 3.3.3, 3.3.4, 3.3.5, 3.3.8, 3.3.9, 3.3.10
  */
 export const WriteDiaryScreen = observer(() => {
   const router = useRouter();

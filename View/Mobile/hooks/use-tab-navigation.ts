@@ -21,7 +21,7 @@ export const useTabNavigation = (currentTab: string) => {
     // Don't navigate if already on this tab
     if (tabKey === currentTab) return;
     
-    // Route mapping
+    // Route mapping - matching route handles both youth and elderly via userType param
     const routeMap: Record<string, string> = {
       matching: '/(main)/matching',
       diary: '/(main)/diary',

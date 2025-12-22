@@ -13,7 +13,8 @@ import { observer } from 'mobx-react-lite';
 import { elderMatchingViewModel } from '@home-sweet-home/viewmodel';
 import { IconCircle, Card, Button } from '@/components/ui';
 import { Colors } from '@/constants/theme';
-
+import { getAvatarDisplay } from '@/hooks';
+import { Ionicons } from '@expo/vector-icons';
 // ============================================================================
 // COMPONENT
 // ============================================================================
@@ -57,6 +58,16 @@ export const YouthProfileDetail = observer(function YouthProfileDetail() {
   const availability = 'Not specified'; // TODO: Add availability to UserProfileData type
   const accountCreated = youth.created_at ? new Date(youth.created_at).toLocaleDateString() : 'Unknown';
 
+  // Get avatar config - priority: profile_photo_url > preset avatar
+  const hasRealPhoto = !!youth.profile_photo_url;
+  const avatarConfig = hasRealPhoto
+    ? { 
+        icon: undefined, 
+        imageSource: { uri: youth.profile_photo_url! }, 
+        backgroundColor: '#9DE2D0' 
+      }
+    : getAvatarDisplay(youth.profile_data, 'youth');
+
   const handleAccept = async () => {
     await vm.respondToInterest(applicationId, youth.id, vm.incomingRequests[0]?.elderly_id || '', true);
     
@@ -95,12 +106,8 @@ export const YouthProfileDetail = observer(function YouthProfileDetail() {
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => router.back()}
-          activeOpacity={0.7}
-        >
-          <Text style={styles.backIcon}>←</Text>
+         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+              <Text style={styles.backIcon}>←</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Interest from Youth</Text>
         <View style={styles.placeholder} />
@@ -114,9 +121,11 @@ export const YouthProfileDetail = observer(function YouthProfileDetail() {
         {/* Profile Avatar & Name */}
         <View style={styles.profileSection}>
           <IconCircle
-            icon="👤"
+            icon={avatarConfig.icon}
+            imageSource={avatarConfig.imageSource}
             size={100}
-            backgroundColor={Colors.light.secondary}
+            backgroundColor={avatarConfig.backgroundColor}
+            contentScale={0.65}
           />
           <Text style={styles.name}>{youth.full_name}</Text>
           <Text style={styles.age}>{age} years old</Text>
@@ -164,7 +173,6 @@ export const YouthProfileDetail = observer(function YouthProfileDetail() {
             <View style={styles.tagsContainer}>
               {interests.map((interest, index) => (
                 <View key={index} style={styles.tag}>
-                  <Text style={styles.tagIcon}>🍳</Text>
                   <Text style={styles.tagText}>{interest}</Text>
                 </View>
               ))}
@@ -182,24 +190,6 @@ export const YouthProfileDetail = observer(function YouthProfileDetail() {
             <Text style={styles.motivationText}>
               {motivationLetter || 'No message provided'}
             </Text>
-          </View>
-        </Card>
-
-        {/* Additional Info Card */}
-        <Card style={styles.card}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionIcon}>📊</Text>
-            <Text style={styles.sectionTitle}>Additional Info</Text>
-          </View>
-
-          <View style={styles.infoRow}>
-            <Text style={styles.label}>Availability</Text>
-            <Text style={styles.value}>{availability}</Text>
-          </View>
-
-          <View style={styles.infoRow}>
-            <Text style={styles.label}>Account Created</Text>
-            <Text style={styles.value}>{accountCreated}</Text>
           </View>
         </Card>
 
@@ -246,12 +236,12 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: Colors.light.primary,
+    backgroundColor: '#9DE2D0',
     justifyContent: 'center',
     alignItems: 'center',
   },
   backIcon: {
-    fontSize: 24,
+    fontSize: 20,
     color: '#333',
   },
   headerTitle: {

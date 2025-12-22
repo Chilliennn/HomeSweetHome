@@ -9,11 +9,13 @@ import {
   Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { observer } from 'mobx-react-lite';
 import {
   Button,
   Header,
   StepIndicator,
 } from '../components/ui';
+import { authViewModel, AuthViewModel } from '../../../ViewModel/AuthViewModel';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const GRID_GAP = 12;
@@ -25,10 +27,10 @@ const ITEM_WIDTH = (SCREEN_WIDTH - GRID_PADDING * 2 - GRID_GAP) / 2;
 // ============================================================================
 export interface ProfileInfoData {
   interests: string[];
-  customInterest?: string;
+  customInterests?: string[];
   selfIntroduction: string;
   languages: string[];
-  customLanguage?: string;
+  customLanguages?: string[];
 }
 
 interface ProfileInfoFormProps {
@@ -46,7 +48,7 @@ interface ProfileInfoFormProps {
 // CONSTANTS
 // ============================================================================
 const TOTAL_STEPS = 3;
-const CURRENT_STEP = 3; 
+const CURRENT_STEP = 3;
 
 // Interests options - UC103_11
 const INTERESTS_OPTIONS = [
@@ -70,10 +72,10 @@ const LANGUAGE_OPTIONS = [
   { id: 'hokkien', label: 'Hokkien' },
 ];
 
-const MIN_INTERESTS = 3;
-const MAX_INTERESTS = 10;
-const MIN_INTRO_LENGTH = 50;
-const MAX_INTRO_LENGTH = 500;
+const MIN_INTERESTS = AuthViewModel.VALIDATION_RULES.interests.minCount;
+const MAX_INTERESTS = AuthViewModel.VALIDATION_RULES.interests.maxCount;
+const MIN_INTRO_LENGTH = AuthViewModel.VALIDATION_RULES.selfIntroduction.minLength;
+const MAX_INTRO_LENGTH = AuthViewModel.VALIDATION_RULES.selfIntroduction.maxLength;
 
 // ============================================================================
 // COMPONENT
@@ -81,8 +83,11 @@ const MAX_INTRO_LENGTH = 500;
 /**
  * Profile Info Form (UC103_11 to UC103_15)
  * Step 3 of 3: Collects interests, self-introduction, and language preferences
+ * 
+ * MVVM: View uses observer to react to ViewModel state changes.
+ * Validation logic is in AuthViewModel, not here.
  */
-export const ProfileInfoForm: React.FC<ProfileInfoFormProps> = ({
+const ProfileInfoFormComponent: React.FC<ProfileInfoFormProps> = ({
   initialData,
   onSubmit,
   onBack,
@@ -92,11 +97,11 @@ export const ProfileInfoForm: React.FC<ProfileInfoFormProps> = ({
   const [interests, setInterests] = useState<string[]>(
     initialData?.interests || []
   );
-  const [customInterest, setCustomInterest] = useState(
-    initialData?.customInterest || ''
+  const [customInterests, setCustomInterests] = useState<string[]>(
+    initialData?.customInterests || []
   );
   const [showCustomInterest, setShowCustomInterest] = useState(
-    !!initialData?.customInterest
+    (initialData?.customInterests?.length || 0) > 0
   );
   const [selfIntroduction, setSelfIntroduction] = useState(
     initialData?.selfIntroduction || ''
@@ -104,13 +109,13 @@ export const ProfileInfoForm: React.FC<ProfileInfoFormProps> = ({
   const [languages, setLanguages] = useState<string[]>(
     initialData?.languages || []
   );
-  const [customLanguage, setCustomLanguage] = useState(
-    initialData?.customLanguage || ''
+  const [customLanguages, setCustomLanguages] = useState<string[]>(
+    initialData?.customLanguages || []
   );
   const [showCustomLanguage, setShowCustomLanguage] = useState(
-    !!initialData?.customLanguage
+    (initialData?.customLanguages?.length || 0) > 0
   );
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  // NOTE: Errors are managed by ViewModel (authViewModel.profileInfoErrors) per MVVM rules
 
   // ============================================================================
   // HANDLERS
@@ -125,7 +130,7 @@ export const ProfileInfoForm: React.FC<ProfileInfoFormProps> = ({
       }
       return prev;
     });
-    setErrors((prev) => ({ ...prev, interests: '' }));
+    authViewModel.clearProfileInfoError('interests');
   };
 
   const toggleLanguage = (languageId: string) => {
@@ -135,79 +140,118 @@ export const ProfileInfoForm: React.FC<ProfileInfoFormProps> = ({
       }
       return [...prev, languageId];
     });
-    setErrors((prev) => ({ ...prev, languages: '' }));
+    authViewModel.clearProfileInfoError('languages');
   };
 
   const toggleCustomInterest = () => {
-    setShowCustomInterest((prev) => !prev);
     if (showCustomInterest) {
-      setCustomInterest('');
+      // Closing - clear all custom interests
+      setCustomInterests([]);
+      setShowCustomInterest(false);
+    } else {
+      // Opening - add one empty input
+      setCustomInterests(['']);
+      setShowCustomInterest(true);
     }
   };
 
   const toggleCustomLanguage = () => {
-    setShowCustomLanguage((prev) => !prev);
     if (showCustomLanguage) {
-      setCustomLanguage('');
+      // Closing - clear all custom languages
+      setCustomLanguages([]);
+      setShowCustomLanguage(false);
+    } else {
+      // Opening - add one empty input
+      setCustomLanguages(['']);
+      setShowCustomLanguage(true);
     }
   };
 
-  const validateForm = (): boolean => {
-    const newErrors: Record<string, string> = {};
-
-    // Count total interests including custom
-    const totalInterests = interests.length + (customInterest.trim() ? 1 : 0);
-
-    // Validate interests - UC103_11
-    if (totalInterests < MIN_INTERESTS) {
-      newErrors.interests = `Please select at least ${MIN_INTERESTS} interests`;
-    } else if (totalInterests > MAX_INTERESTS) {
-      newErrors.interests = `Maximum ${MAX_INTERESTS} interests allowed`;
+  // Add new custom interest input
+  const addCustomInterest = () => {
+    if (customInterests.length < 5) {
+      setCustomInterests([...customInterests, '']);
     }
-
-    // Validate self-introduction - UC103_12, UC103_13
-    if (!selfIntroduction.trim()) {
-      newErrors.introduction = 'Self introduction is required';
-    } else if (selfIntroduction.length < MIN_INTRO_LENGTH) {
-      newErrors.introduction = `Minimum ${MIN_INTRO_LENGTH} characters required`;
-    } else if (selfIntroduction.length > MAX_INTRO_LENGTH) {
-      newErrors.introduction = `Maximum ${MAX_INTRO_LENGTH} characters allowed`;
-    }
-
-    // Count total languages including custom
-    const totalLanguages = languages.length + (customLanguage.trim() ? 1 : 0);
-
-    // Validate languages - UC103_15
-    if (totalLanguages === 0) {
-      newErrors.languages = 'Please select at least one language';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
   };
+
+  // Update a specific custom interest
+  const updateCustomInterest = (index: number, value: string) => {
+    const updated = [...customInterests];
+    updated[index] = value;
+    setCustomInterests(updated);
+    authViewModel.clearProfileInfoError('interests');
+  };
+
+  // Remove a specific custom interest
+  const removeCustomInterest = (index: number) => {
+    const updated = customInterests.filter((_, i) => i !== index);
+    if (updated.length === 0) {
+      setShowCustomInterest(false);
+    }
+    setCustomInterests(updated);
+  };
+
+  // Add new custom language input
+  const addCustomLanguage = () => {
+    if (customLanguages.length < 3) {
+      setCustomLanguages([...customLanguages, '']);
+    }
+  };
+
+  // Update a specific custom language
+  const updateCustomLanguage = (index: number, value: string) => {
+    const updated = [...customLanguages];
+    updated[index] = value;
+    setCustomLanguages(updated);
+    authViewModel.clearProfileInfoError('languages');
+  };
+
+  // Remove a specific custom language
+  const removeCustomLanguage = (index: number) => {
+    const updated = customLanguages.filter((_, i) => i !== index);
+    if (updated.length === 0) {
+      setShowCustomLanguage(false);
+    }
+    setCustomLanguages(updated);
+  };
+
+  // Count valid custom entries (non-empty)
+  const validCustomInterestsCount = customInterests.filter(i => i.trim()).length;
+  const validCustomLanguagesCount = customLanguages.filter(l => l.trim()).length;
 
   const handleSubmit = () => {
-    if (validateForm()) {
-      onSubmit({
-        interests,
-        customInterest: customInterest.trim() || undefined,
-        selfIntroduction,
-        languages,
-        customLanguage: customLanguage.trim() || undefined,
-      });
+    // Filter out empty custom values before submitting
+    const validCustomInterests = customInterests.filter(i => i.trim());
+    const validCustomLanguages = customLanguages.filter(l => l.trim());
+
+    const data = {
+      interests,
+      customInterests: validCustomInterests.length > 0 ? validCustomInterests : undefined,
+      selfIntroduction,
+      languages,
+      customLanguages: validCustomLanguages.length > 0 ? validCustomLanguages : undefined,
+    };
+
+    // ViewModel validates and populates errors, View submits if valid
+    if (authViewModel.validateProfileInfo(data)) {
+      onSubmit(data);
     }
   };
 
   // Calculate selection counts
-  const totalInterests = interests.length + (customInterest.trim() ? 1 : 0);
-  const totalLanguages = languages.length + (customLanguage.trim() ? 1 : 0);
+  const totalInterests = interests.length + validCustomInterestsCount;
+  const totalLanguages = languages.length + validCustomLanguagesCount;
 
   // ============================================================================
   // RENDER
   // ============================================================================
 
+  // Access observable at render time to ensure MobX tracks it
+  const { interests: interestsError, introduction: introductionError, languages: languagesError } = authViewModel.profileInfoErrors;
+  console.log('[ProfileInfoForm] Render - errors:', { interestsError, introductionError, languagesError });
+
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top','bottom']}>
+    <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
       <View style={styles.container}>
         {/* Header */}
         <Header title="Step 3 of 3" onBack={onBack} />
@@ -229,7 +273,7 @@ export const ProfileInfoForm: React.FC<ProfileInfoFormProps> = ({
               Your Interests <Text style={styles.required}>*</Text>
               <Text style={styles.hint}> (Select {MIN_INTERESTS}-{MAX_INTERESTS})</Text>
             </Text>
-            
+
             {/* Interest Grid - 2 columns */}
             <View style={styles.gridContainer}>
               {INTERESTS_OPTIONS.map((interest) => {
@@ -288,22 +332,44 @@ export const ProfileInfoForm: React.FC<ProfileInfoFormProps> = ({
               </TouchableOpacity>
             </View>
 
-            {/* Custom Interest Input */}
+            {/* Custom Interest Inputs */}
             {showCustomInterest && (
-              <TextInput
-                style={styles.customInput}
-                placeholder="Enter your interest..."
-                placeholderTextColor="#A0A0A0"
-                value={customInterest}
-                onChangeText={setCustomInterest}
-                maxLength={30}
-                editable={!isLoading}
-              />
+              <View style={styles.customInputContainer}>
+                {customInterests.map((value, index) => (
+                  <View key={index} style={styles.customInputRow}>
+                    <TextInput
+                      style={styles.customInputField}
+                      placeholder={`Custom interest ${index + 1}...`}
+                      placeholderTextColor="#A0A0A0"
+                      value={value}
+                      onChangeText={(text) => updateCustomInterest(index, text)}
+                      maxLength={30}
+                      editable={!isLoading}
+                    />
+                    <TouchableOpacity
+                      style={styles.removeButton}
+                      onPress={() => removeCustomInterest(index)}
+                      disabled={isLoading}
+                    >
+                      <Text style={styles.removeButtonText}>✕</Text>
+                    </TouchableOpacity>
+                  </View>
+                ))}
+                {customInterests.length < 5 && (
+                  <TouchableOpacity
+                    style={styles.addButton}
+                    onPress={addCustomInterest}
+                    disabled={isLoading}
+                  >
+                    <Text style={styles.addButtonText}>+ Add another interest</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
             )}
 
             <Text style={styles.selectionCount}>{totalInterests} selected</Text>
-            {errors.interests && (
-              <Text style={styles.errorText}>{errors.interests}</Text>
+            {interestsError && (
+              <Text style={styles.errorText}>{interestsError}</Text>
             )}
           </View>
 
@@ -313,7 +379,7 @@ export const ProfileInfoForm: React.FC<ProfileInfoFormProps> = ({
               Self Introduction <Text style={styles.required}>*</Text>
             </Text>
             <TextInput
-              style={[styles.textArea, errors.introduction && styles.inputError]}
+              style={[styles.textArea, introductionError && styles.inputError]}
               placeholder="Please briefly describe your educational background, work experience, and hobbies"
               placeholderTextColor="#A0A0A0"
               value={selfIntroduction}
@@ -327,8 +393,8 @@ export const ProfileInfoForm: React.FC<ProfileInfoFormProps> = ({
             <Text style={styles.charCount}>
               {selfIntroduction.length} / {MAX_INTRO_LENGTH} characters (min: {MIN_INTRO_LENGTH})
             </Text>
-            {errors.introduction && (
-              <Text style={styles.errorText}>{errors.introduction}</Text>
+            {introductionError && (
+              <Text style={styles.errorText}>{introductionError}</Text>
             )}
           </View>
 
@@ -337,7 +403,7 @@ export const ProfileInfoForm: React.FC<ProfileInfoFormProps> = ({
             <Text style={styles.label}>
               Languages <Text style={styles.required}>*</Text>
             </Text>
-            
+
             {/* Language Grid - 2 columns */}
             <View style={styles.gridContainer}>
               {LANGUAGE_OPTIONS.map((language) => {
@@ -394,22 +460,44 @@ export const ProfileInfoForm: React.FC<ProfileInfoFormProps> = ({
               </TouchableOpacity>
             </View>
 
-            {/* Custom Language Input */}
+            {/* Custom Language Inputs */}
             {showCustomLanguage && (
-              <TextInput
-                style={styles.customInput}
-                placeholder="Enter your language..."
-                placeholderTextColor="#A0A0A0"
-                value={customLanguage}
-                onChangeText={setCustomLanguage}
-                maxLength={30}
-                editable={!isLoading}
-              />
+              <View style={styles.customInputContainer}>
+                {customLanguages.map((value, index) => (
+                  <View key={index} style={styles.customInputRow}>
+                    <TextInput
+                      style={styles.customInputField}
+                      placeholder={`Custom language ${index + 1}...`}
+                      placeholderTextColor="#A0A0A0"
+                      value={value}
+                      onChangeText={(text) => updateCustomLanguage(index, text)}
+                      maxLength={30}
+                      editable={!isLoading}
+                    />
+                    <TouchableOpacity
+                      style={styles.removeButton}
+                      onPress={() => removeCustomLanguage(index)}
+                      disabled={isLoading}
+                    >
+                      <Text style={styles.removeButtonText}>✕</Text>
+                    </TouchableOpacity>
+                  </View>
+                ))}
+                {customLanguages.length < 3 && (
+                  <TouchableOpacity
+                    style={styles.addButton}
+                    onPress={addCustomLanguage}
+                    disabled={isLoading}
+                  >
+                    <Text style={styles.addButtonText}>+ Add another language</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
             )}
 
             <Text style={styles.selectionCount}>{totalLanguages} selected</Text>
-            {errors.languages && (
-              <Text style={styles.errorText}>{errors.languages}</Text>
+            {languagesError && (
+              <Text style={styles.errorText}>{languagesError}</Text>
             )}
           </View>
 
@@ -466,7 +554,7 @@ const styles = StyleSheet.create({
     fontWeight: '400',
     color: '#666',
   },
-  
+
   // Grid Layout for Interests
   gridContainer: {
     flexDirection: 'row',
@@ -485,7 +573,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     position: 'relative',
   },
-  othersItem : {
+  othersItem: {
     width: '100%',
     textAlign: 'center',
     paddingVertical: 16,
@@ -504,7 +592,7 @@ const styles = StyleSheet.create({
     flex: 0.84,
     textAlign: 'center',
   },
-  othersLanguageItemText:{
+  othersLanguageItemText: {
     fontSize: 15,
     color: '#333',
     flex: 1,
@@ -544,7 +632,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
   },
-  
+
   // Language Items
   languageItem: {
     width: ITEM_WIDTH,
@@ -587,8 +675,8 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '700',
   },
-  
-  // Custom Input
+
+  // Custom Input - Multi-value support
   customInput: {
     marginTop: 12,
     backgroundColor: '#FFFFFF',
@@ -600,13 +688,61 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#9DE2D0',
   },
-  
+  customInputContainer: {
+    marginTop: 12,
+    gap: 8,
+  },
+  customInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  customInputField: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    fontSize: 15,
+    color: '#333',
+    borderWidth: 1,
+    borderColor: '#9DE2D0',
+  },
+  removeButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#FFE5E5',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  removeButtonText: {
+    fontSize: 16,
+    color: '#EB8F80',
+    fontWeight: '600',
+  },
+  addButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    backgroundColor: '#F0F0F0',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    borderStyle: 'dashed',
+    alignItems: 'center',
+  },
+  addButtonText: {
+    fontSize: 14,
+    color: '#666',
+    fontWeight: '500',
+  },
+
   selectionCount: {
     fontSize: 12,
     color: '#999',
     marginTop: 10,
   },
-  
+
   // Text Area
   textArea: {
     backgroundColor: '#FFFFFF',
@@ -638,4 +774,6 @@ const styles = StyleSheet.create({
   },
 });
 
+// Wrap with observer for MobX reactivity (MVVM pattern)
+export const ProfileInfoForm = observer(ProfileInfoFormComponent);
 export default ProfileInfoForm;

@@ -6,6 +6,8 @@ import { observer } from 'mobx-react-lite';
 import { elderMatchingViewModel, youthMatchingViewModel, matchingViewModel } from '@home-sweet-home/viewmodel';
 import { NotificationItem, LoadingSpinner } from '@/components/ui';
 import { Colors } from '@/constants/theme';
+import { Ionicons } from '@expo/vector-icons';
+import { getAvatarDisplay } from '@/hooks';
 
 // Helper for date formatting
 const formatDate = (dateString: string) => {
@@ -204,6 +206,16 @@ export const NotificationScreen = observer(() => {
         const youthInterests = item.youth?.profile_data?.interests || [];
         const motivation = item.motivation_letter || 'No message provided';
 
+        // Get avatar data - priority: profile_photo_url > preset avatar
+        const hasRealPhoto = !!item.youth?.profile_photo_url;
+        const avatarConfig = hasRealPhoto
+            ? { 
+                icon: undefined, 
+                imageSource: { uri: item.youth.profile_photo_url! } as { uri: string }, 
+                backgroundColor: '#9DE2D0' 
+              }
+            : getAvatarDisplay(item.youth?.profile_data, 'youth');
+
         return (
             <NotificationItem
                 type="interest_received"
@@ -218,6 +230,9 @@ export const NotificationScreen = observer(() => {
                     location: youthLocation,
                     interests: youthInterests,
                     motivation: motivation,
+                    avatarIcon: avatarConfig.icon,
+                    avatarImageSource: avatarConfig.imageSource as { uri: string } | undefined,
+                    avatarColor: avatarConfig.backgroundColor,
                 }}
                 actions={{
                     onAccept: () => handleAccept(item.id, item.youth_id),
@@ -293,10 +308,11 @@ export const NotificationScreen = observer(() => {
         return (
             <SafeAreaView style={styles.container}>
                 <View style={styles.header}>
-                    <TouchableOpacity onPress={() => router.back()}>
-                        <Text style={styles.backIcon}>←</Text>
+                     <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+                                <Text style={styles.backIcon}>←</Text>
                     </TouchableOpacity>
                     <Text style={styles.title}>Notifications</Text>
+                    <View style={styles.headerSpacer} />
                 </View>
                 <View style={styles.centerContent}>
                     <LoadingSpinner size="large" />
@@ -308,10 +324,11 @@ export const NotificationScreen = observer(() => {
     return (
         <SafeAreaView style={styles.container}>
             <View style={styles.header}>
-                <TouchableOpacity onPress={() => router.back()}>
+                <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
                     <Text style={styles.backIcon}>←</Text>
                 </TouchableOpacity>
                 <Text style={styles.title}>Notifications</Text>
+                <View style={styles.headerSpacer} />
             </View>
 
             <FlatList
@@ -369,19 +386,32 @@ const styles = StyleSheet.create({
     header: {
         flexDirection: 'row',
         alignItems: 'center',
+        justifyContent: 'space-between',
         padding: 20,
         borderBottomWidth: 1,
         borderBottomColor: '#E0E0E0'
     },
+    backButton: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: '#9DE2D0',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
     backIcon: {
-        fontSize: 24,
+        fontSize: 20,
         color: '#333',
-        marginRight: 16
+    },
+    headerSpacer: {
+        width: 40,
     },
     title: {
+        flex: 1,
         fontSize: 20,
         fontWeight: '700',
-        color: '#333'
+        color: '#333',
+        textAlign: 'center',
     },
     centerContent: {
         flex: 1,

@@ -28,12 +28,13 @@ import { useTabNavigation, getAvatarDisplay } from '../hooks';
  */
 const SettingsScreenComponent: React.FC = () => {
   const router = useRouter();
-  const { handleTabPress, userId: userIdFromParams, userName, userType } = useTabNavigation('settings');
+  const params = useLocalSearchParams();
 
-  // ✅ Fallback: Get userId from authViewModel if not in params
+  const userIdFromParams = params.userId as string | undefined;
   const userId = userIdFromParams || authViewModel.authState.currentUserId || undefined;
 
-  // ✅ Add loading state
+  console.log('[SettingsScreen] Init - userId:', userId, 'params:', params);
+
   const [isLoading, setIsLoading] = React.useState(true);
 
   // Load user profile data on mount
@@ -43,7 +44,7 @@ const SettingsScreenComponent: React.FC = () => {
         setIsLoading(true);
         // Load profile data (realIdentity, displayIdentity, etc.)
         await authViewModel.loadProfile(userId);
-        // Load full user object for profile_photo_url
+        // Load full user object for profile_photo_url and user_type
         await authViewModel.getCurrentUser(userId);
         // Check active relationship status for tab disabling
         await authViewModel.checkActiveRelationship(userId);
@@ -52,6 +53,35 @@ const SettingsScreenComponent: React.FC = () => {
     };
     loadUserData();
   }, [userId]);
+
+  // ✅ Get userType from authViewModel AFTER data is loaded (use authViewModel.userType or currentUser.user_type)
+  const userType = authViewModel.currentUser?.user_type || authViewModel.userType || (params.userType as 'youth' | 'elderly') || undefined;
+  const userName = (params.userName as string) || authViewModel.currentUser?.full_name || undefined;
+
+  console.log('[SettingsScreen] Current state - userId:', userId, 'userName:', userName, 'userType:', userType);
+  console.log('[SettingsScreen] AuthViewModel state - currentUser.user_type:', authViewModel.currentUser?.user_type, 'authViewModel.userType:', authViewModel.userType);
+
+  // Custom tab handler that ensures params are always passed
+  const handleTabPress = (tabKey: string) => {
+    if (tabKey === 'settings') return;
+
+    console.log('[SettingsScreen] Tab press:', tabKey, 'with params:', { userId, userName, userType });
+
+    const routeMap: Record<string, string> = {
+      matching: '/(main)/matching',
+      diary: '/(main)/diary',
+      memory: '/(main)/album',
+      chat: '/(main)/chat',
+      settings: '/(main)/settings',
+    };
+
+    if (routeMap[tabKey]) {
+      router.push({
+        pathname: routeMap[tabKey] as any,
+        params: { userId, userName, userType },
+      });
+    }
+  };
 
   // Access observable properties from ViewModel
   const realIdentity = authViewModel.profileData.realIdentity;
@@ -174,19 +204,14 @@ const SettingsScreenComponent: React.FC = () => {
   };
 
   // ✅ Disable memory and diary tabs if no active relationship (not in bonding stage)
-  const disabledTabs = authViewModel.hasActiveRelationship ? [] : ['memory', 'diary'];
+  // Only check after loading complete to prevent incorrect initial state
+  const disabledTabs = isLoading ? [] : (authViewModel.hasActiveRelationship ? [] : ['memory', 'diary']);
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       {/* Header */}
       <View style={styles.header}>
-        <NotificationBell
-          count={0}
-          onPress={handleNotificationBellPress}
-          size={48}
-        />
         <Text style={styles.headerTitle}>Settings</Text>
-        <View style={styles.headerRight} />
       </View>
 
       {isLoading ? (
@@ -376,13 +401,10 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
+    justifyContent: 'center',
+    paddingHorizontal: 18,
     paddingTop: 12,
     paddingBottom: 12,
-  },
-  headerRight: {
-    width: 48,
   },
   headerTitle: {
     fontSize: 20,

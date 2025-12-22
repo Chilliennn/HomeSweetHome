@@ -79,7 +79,7 @@ export const PreMatchChatList = observer(function PreMatchChatList() {
 
   // Handler: End pre-match - navigate to end confirmation
   const handleEnd = (applicationId: string) => {
-    router.push({ pathname: '/end-pre-match', params: { applicationId } } as any);
+    router.push({ pathname: '/end-pre-match', params: { applicationId, userId: currentUserId, userType: currentUserType } } as any);
   };
 
   // Handler: Notification press
@@ -377,12 +377,12 @@ export const PreMatchChatList = observer(function PreMatchChatList() {
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       {/* Header */}
       <View style={styles.header}>
-        <View style={styles.headerSpacer} />
-        <Text style={styles.headerTitle}>Pre-Match Chats</Text>
-        <NotificationBell
+         <NotificationBell
           count={vm.unreadNotificationCount}
           onPress={handleNotificationPress}
         />
+        <Text style={styles.headerTitle}>Pre-Match Chats</Text>
+        <View style={styles.headerSpacer} />
       </View>
 
       <View style={styles.headerDivider} />
@@ -444,7 +444,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   headerSpacer: {
-    width: 48,
+    width: 30,
   },
   headerDivider: {
     height: 1,

@@ -17,7 +17,7 @@ export const LockedStageDetailScreen = observer(() => {
   const stageNumber = vm.stages.find(s => s.stage === vm.selectedLockedStage)?.order || 0;
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
+    <SafeAreaView style={styles.safeArea} edges={['top','bottom']}>
       <View style={styles.container}>
         {/* Header */}
         <View style={styles.header}>

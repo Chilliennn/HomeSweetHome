@@ -14,13 +14,13 @@ import {
     View,
     Text,
     StyleSheet,
-    SafeAreaView,
     TouchableOpacity,
     Alert,
     ActivityIndicator,
     ScrollView,
     Image,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { observer } from 'mobx-react-lite';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { communicationViewModel } from '@home-sweet-home/viewmodel';
@@ -63,7 +63,7 @@ export const PreMatchDecisionScreen = observer(function PreMatchDecisionScreen()
 
     // Handle Decline button - navigate to end confirmation
     const handleDecline = () => {
-        router.push({ pathname: '/end-pre-match', params: { applicationId } } as any);
+        router.push({ pathname: '/end-pre-match', params: { applicationId, userId: params.userId, userName: params.userName, userType: params.userType } } as any);
     };
 
     // Handle back
@@ -89,11 +89,11 @@ export const PreMatchDecisionScreen = observer(function PreMatchDecisionScreen()
     const daysRemaining = Math.max(0, 14 - status.daysPassed);
 
     return (
-        <SafeAreaView style={styles.container}>
+        <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
             {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-                    <Ionicons name="arrow-back" size={24} color={Colors.light.text} />
+                    <Text style={styles.backIcon}>←</Text>
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>Pre-Match Decision</Text>
                 <View style={styles.headerSpacer} />
@@ -102,12 +102,20 @@ export const PreMatchDecisionScreen = observer(function PreMatchDecisionScreen()
             <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
                 {/* Partner Profile Section */}
                 <View style={styles.profileSection}>
-                    <IconCircle
-                        icon={partner.profile_data?.avatar_meta?.type === 'default' ? '👵' : '👤'}
-                        size={100}
-                        backgroundColor="#C8ADD6"
-                        contentScale={0.6}
-                    />
+                    {/* Real profile photo or default avatar */}
+                    {partner.profile_photo_url ? (
+                        <Image
+                            source={{ uri: partner.profile_photo_url }}
+                            style={styles.profilePhoto}
+                        />
+                    ) : (
+                        <IconCircle
+                            icon={partner.profile_data?.avatar_meta?.type === 'default' ? '👵' : '👤'}
+                            size={100}
+                            backgroundColor="#C8ADD6"
+                            contentScale={0.6}
+                        />
+                    )}
                     <Text style={styles.partnerName}>{partner.full_name || 'Partner'}</Text>
 
                     {/* Duration Badge */}
@@ -201,7 +209,16 @@ const styles = StyleSheet.create({
         borderBottomColor: '#E0E0E0',
     },
     backButton: {
-        padding: 8,
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: '#9DE2D0',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    backIcon: {
+        fontSize: 20,
+        color: '#000000',
     },
     headerTitle: {
         flex: 1,
@@ -230,6 +247,12 @@ const styles = StyleSheet.create({
     profileSection: {
         alignItems: 'center',
         paddingVertical: 32,
+    },
+    profilePhoto: {
+        width: 100,
+        height: 100,
+        borderRadius: 50,
+        backgroundColor: '#E0E0E0',
     },
     partnerName: {
         fontSize: 24,

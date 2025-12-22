@@ -237,6 +237,38 @@ export class AuthViewModel {
   }
 
   /**
+   * Sign up new user with email, password, and user type
+   * Creates both Supabase auth account AND app user profile
+   */
+  async signUpWithProfile(email: string, password: string, userType: 'youth' | 'elderly') {
+    this.isLoading = true;
+    this.errorMessage = null;
+
+    try {
+      const result = await authService.signUpWithProfile(email, password, userType);
+      runInAction(() => {
+        this.authState = {
+          isAuthenticated: true,
+          currentUserId: result.appUser?.id || result.user?.id || null,
+          currentUserEmail: result.appUser?.email || result.user?.email || null,
+        };
+        this.userType = userType;
+        this.currentUser = result.appUser;
+      });
+      return result;
+    } catch (error: any) {
+      runInAction(() => {
+        this.errorMessage = this.mapAuthError(error);
+      });
+      throw error;
+    } finally {
+      runInAction(() => {
+        this.isLoading = false;
+      });
+    }
+  }
+
+  /**
    * Sign out current user
    */
   async signOut() {

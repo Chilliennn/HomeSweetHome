@@ -71,6 +71,62 @@ export const authService = {
   },
 
   /**
+   * Sign up new user with profile creation
+   * Creates both Supabase auth account AND app user profile
+   */
+  async signUpWithProfile(
+    email: string,
+    password: string,
+    userType: 'youth' | 'elderly'
+  ): Promise<SignUpResult> {
+    // Validate inputs
+    if (!email || !email.trim()) {
+      throw new Error('Email is required');
+    }
+    if (!password) {
+      throw new Error('Password is required');
+    }
+    if (password.length < 6) {
+      throw new Error('Password must be at least 6 characters');
+    }
+    if (!userType || !['youth', 'elderly'].includes(userType)) {
+      throw new Error('User type must be either youth or elderly');
+    }
+
+    // Create auth account via repository
+    const authResult = await authRepository.signUp(email, password);
+
+    if (!authResult.user?.id) {
+      throw new Error('Failed to create auth account');
+    }
+
+    // Create user profile in users table
+    const appUser = await userRepository.create({
+      email: email.trim(),
+      user_type: userType,
+      // Nullable fields - will be filled during profile setup
+      full_name: null as unknown as string,
+      date_of_birth: null as unknown as string,
+      phone: null as unknown as string,
+      gender: null as unknown as 'male' | 'female',
+      location: null as unknown as string,
+      languages: [],
+      profile_photo_url: null as unknown as string,
+      is_active: true,
+      verification_status: 'pending' as const,
+      profile_data: {
+        profile_completed: false,
+      },
+      updated_at: new Date().toISOString(),
+    });
+
+    return {
+      ...authResult,
+      appUser,
+    };
+  },
+
+  /**
    * Sign out current user
    */
   async signOut(): Promise<void> {

@@ -145,6 +145,16 @@ export default function LoginScreen() {
             <Text style={styles.buttonText}>Sign in</Text>
           )}
         </TouchableOpacity>
+
+        {/* Sign Up Link */}
+        <TouchableOpacity
+          onPress={() => router.replace('/signup')}
+          style={styles.signupLink}
+        >
+          <Text style={styles.signupLinkText}>
+            Don't have an account? <Text style={styles.signupLinkBold}>Sign up</Text>
+          </Text>
+        </TouchableOpacity>
       </View>
 
       <Text style={styles.footer}>© 2025 HomeSweetHome All rights reserved.</Text>
@@ -199,6 +209,18 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontSize: 18,
     fontWeight: '600',
+  },
+  signupLink: {
+    alignItems: 'center',
+    marginTop: 20,
+  },
+  signupLinkText: {
+    fontSize: 14,
+    color: '#666',
+  },
+  signupLinkBold: {
+    fontWeight: '600',
+    color: '#E89B8E',
   },
   footer: {
     position: 'absolute',

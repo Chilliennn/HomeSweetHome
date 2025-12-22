@@ -204,7 +204,8 @@ const SettingsScreenComponent: React.FC = () => {
   };
 
   // ✅ Disable memory and diary tabs if no active relationship (not in bonding stage)
-  const disabledTabs = authViewModel.hasActiveRelationship ? [] : ['memory', 'diary'];
+  // Only check after loading complete to prevent incorrect initial state
+  const disabledTabs = isLoading ? [] : (authViewModel.hasActiveRelationship ? [] : ['memory', 'diary']);
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>

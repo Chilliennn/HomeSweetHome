@@ -60,6 +60,15 @@ export const CreateEventScreen = observer(() => {
   const handleTimeChange = (event: any, selectedTime: any) => {
     setShowTimePicker(false);
     if (selectedTime) {
+      // Check if selected time is in the past (if date is today)
+      const today = new Date();
+      const isToday = eventDate.toDateString() === today.toDateString();
+      
+      if (isToday && selectedTime < today) {
+        Alert.alert('Error', 'Cannot select a past time');
+        return;
+      }
+      
       setEventTime(selectedTime);
     }
   };
@@ -72,6 +81,18 @@ export const CreateEventScreen = observer(() => {
 
     if (!currentRelationship) {
       Alert.alert('Error', 'No active relationship');
+      return;
+    }
+
+    // Validate that the combined date and time is not in the past
+    const now = new Date();
+    const eventDateTime = new Date(eventDate);
+    eventDateTime.setHours(eventTime.getHours());
+    eventDateTime.setMinutes(eventTime.getMinutes());
+    eventDateTime.setSeconds(eventTime.getSeconds());
+
+    if (eventDateTime < now) {
+      Alert.alert('Error', 'Event date and time cannot be in the past');
       return;
     }
 

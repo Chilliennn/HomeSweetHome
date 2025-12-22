@@ -981,7 +981,6 @@ export class StageViewModel {
             this.checkMilestoneReached();
           }),
           this.loadCoolingPeriodInfo(),
-          this.loadStageCompletionInfo(),
           this.loadUnreadNotifications(),
         ]);
       } catch (e) {

@@ -19,6 +19,8 @@ import { NotificationBell } from "../components/ui/NotificationBell";
 import { LoadingSpinner } from "../components/ui/LoadingSpinner";
 import { BottomTabBar, DEFAULT_TABS } from "../components/ui/BottomTabBar";
 import { RelationshipStage } from "@home-sweet-home/model/types";
+import { runInAction } from "mobx";
+
 interface StageProgressionScreenProps {
   userId: string;
   initialOpenStage?: string;
@@ -190,9 +192,22 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
     };
 
     const handleRefresh = async () => {
-      await vm.refresh();
-      if (vm.showStageCompleted) vm.closeStageCompleted();
-      if (vm.showLockedStageDetail) vm.closeLockedStageDetail();
+      try {
+        await vm.refresh();
+      } catch (e) {
+        console.error("[StageProgression] refresh error:", e);
+      } finally {
+        runInAction(() => {
+          vm.showStageCompleted = false;
+          vm.showLockedStageDetail = false;
+          vm.shouldNavigateToStageCompleted = false;
+          vm.shouldNavigateToJourneyCompleted = false;
+          vm.shouldNavigateToMilestone = false;
+          vm.shouldNavigateToJourneyPause = false;
+        });
+        if (vm.showStageCompleted) vm.closeStageCompleted();
+        if (vm.showLockedStageDetail) vm.closeLockedStageDetail();
+      }
     };
 
     const handleTabPress = (key: string) => {
@@ -1024,7 +1039,4 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
 });
-function runInAction(arg0: () => void) {
-  throw new Error("Function not implemented.");
-}
 

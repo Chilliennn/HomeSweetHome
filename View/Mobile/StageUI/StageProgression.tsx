@@ -19,6 +19,8 @@ import { NotificationBell } from "../components/ui/NotificationBell";
 import { LoadingSpinner } from "../components/ui/LoadingSpinner";
 import { BottomTabBar, DEFAULT_TABS } from "../components/ui/BottomTabBar";
 import { RelationshipStage } from "@home-sweet-home/model/types";
+import { runInAction } from "mobx";
+
 interface StageProgressionScreenProps {
   userId: string;
   initialOpenStage?: string;
@@ -40,6 +42,22 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
 
           if (vm.showStageCompleted) vm.closeStageCompleted();
           if (vm.showLockedStageDetail) vm.closeLockedStageDetail();
+
+          try {
+            runInAction(() => {
+              vm.showStageCompleted = false;
+              vm.showLockedStageDetail = false;
+              vm.shouldNavigateToStageCompleted = false;
+              vm.shouldNavigateToJourneyCompleted = false;
+              vm.shouldNavigateToMilestone = false;
+              vm.shouldNavigateToJourneyPause = false;
+            });
+          } catch (e) {
+            console.warn(
+              "[StageProgression] Failed to reset VM navigation flags",
+              e
+            );
+          }
 
           setTimeout(() => {
             if (!mounted) return;
@@ -68,75 +86,70 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
       );
     }, [initialOpenStage, vm]);
 
-    // Watch for auto-navigation to Stage Completed page
-    useEffect(() => {
-      if (vm.consumeStageCompletionNavigation()) {
-        (async () => {
-          console.log(
-            "[StageProgression] Stage completion detected, loading info ->",
-            {
-              stageJustCompleted: vm.stageJustCompleted,
-              stageJustCompletedName: vm.stageJustCompletedName,
-              userId,
-            }
-          );
-
-          try {
-            // Ensure VM has the latest completion info
-            await vm.loadStageCompletionInfo(
-              vm.stageJustCompleted ?? undefined
-            );
-
-            // If the just completed stage is the final stage (family_life),
-            // navigate to the Journey Completed screen instead.
-            if (vm.stageJustCompleted === ("family_life" as any)) {
-              console.log(
-                "[StageProgression] Navigating to journey-completed page"
-              );
-              router.push({
-                pathname: "/(main)/journey-completed",
-                params: { userId },
-              });
-            } else {
-              router.push({
-                pathname: "/(main)/stage-completed",
-                params: { userId, stage: vm.stageJustCompleted ?? "" },
-              });
-            }
-          } catch (err) {
-            console.error("Failed to handle stage completion navigation:", err);
-          }
-        })();
-      }
-    }, [vm, vm.shouldNavigateToStageCompleted, router, userId]);
-
-    // Watch for auto-navigation to Milestone page
     useEffect(() => {
       if (vm.consumeMilestoneNavigation()) {
         router.push({ pathname: "/(main)/milestone", params: { userId } });
       }
     }, [vm.shouldNavigateToMilestone, router, userId, vm]);
 
-    // Watch for auto-navigation to Journey Pause page
     useEffect(() => {
       if (vm.consumeJourneyPauseNavigation()) {
         router.push({ pathname: "/journey-pause", params: { userId } });
       }
     }, [vm.shouldNavigateToJourneyPause, router, userId, vm]);
 
-    // Watch for auto-navigation to Journey Completed page (final stage fully completed)
     useEffect(() => {
-      if (vm.consumeJourneyCompletedNavigation()) {
+      if (vm.consumeStageCompletionNavigation()) {
+        console.log("[StageProgression] Triggering stage-completed navigation");
         (async () => {
           try {
-            // Ensure completion info loaded
-            await vm.loadStageCompletionInfo(vm.currentStage ?? undefined);
+            const completedStage = vm.stageJustCompleted ?? undefined;
+            await vm.loadStageCompletionInfo(completedStage);
             router.push({
-              pathname: "/(main)/journey-completed",
-              params: { userId },
+              pathname: "/(main)/stage-completed",
+              params: { userId, stage: completedStage },
             });
           } catch (err) {
-            console.error("Failed to navigate to journey-completed:", err);
+            console.error(
+              "[StageProgression] Failed navigating to stage-completed:",
+              err
+            );
+          } finally {
+            runInAction(() => {
+              vm.shouldNavigateToStageCompleted = false;
+            });
+          }
+        })();
+      }
+    }, [vm.shouldNavigateToStageCompleted, router, userId, vm]);
+
+    useEffect(() => {
+      if (vm.consumeJourneyCompletedNavigation()) {
+        console.log(
+          "[StageProgression] Triggering journey-completed navigation"
+        );
+        (async () => {
+          try {
+            const completed = vm.stageJustCompleted ?? vm.currentStage;
+            const FINAL_STAGE = "family_life" as any as RelationshipStage;
+            if (completed !== FINAL_STAGE) {
+              console.log(
+                "[StageProgression] Suppressing journey-completed navigation; completed stage:",
+                completed
+              );
+              return;
+            }
+            await vm.loadStageCompletionInfo(completed ?? undefined);
+
+          } catch (err) {
+            console.error(
+              "[StageProgression] Failed to navigate to journey-completed:",
+              err
+            );
+          } finally {
+            runInAction(() => {
+              vm.shouldNavigateToJourneyCompleted = false;
+            });
           }
         })();
       }
@@ -144,14 +157,11 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
 
     const handleStagePress = async (targetStage: RelationshipStage) => {
       try {
-        // Close any open modals before navigating
         if (vm.showStageCompleted) vm.closeStageCompleted();
         if (vm.showLockedStageDetail) vm.closeLockedStageDetail();
 
-        // If clicking current stage, just close modals to show current stage card
         const currentStageInfo = vm.stages.find((s) => s.is_current);
         if (currentStageInfo?.stage === targetStage) {
-          // Modals already closed above, current stage card will show
           return;
         }
 
@@ -175,9 +185,22 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
     };
 
     const handleRefresh = async () => {
-      await vm.refresh();
-      if (vm.showStageCompleted) vm.closeStageCompleted();
-      if (vm.showLockedStageDetail) vm.closeLockedStageDetail();
+      try {
+        await vm.refresh();
+      } catch (e) {
+        console.error("[StageProgression] refresh error:", e);
+      } finally {
+        runInAction(() => {
+          vm.showStageCompleted = false;
+          vm.showLockedStageDetail = false;
+          vm.shouldNavigateToStageCompleted = false;
+          vm.shouldNavigateToJourneyCompleted = false;
+          vm.shouldNavigateToMilestone = false;
+          vm.shouldNavigateToJourneyPause = false;
+        });
+        if (vm.showStageCompleted) vm.closeStageCompleted();
+        if (vm.showLockedStageDetail) vm.closeLockedStageDetail();
+      }
     };
 
     const handleTabPress = (key: string) => {
@@ -207,8 +230,6 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
       return <LoadingSpinner />;
     }
 
-    // Navigation Guard: If we are about to navigate to a completion/milestone/pause screen,
-    // don't render the rest of the UI to avoid flickering the "next" stage state.
     if (
       vm.shouldNavigateToStageCompleted ||
       vm.shouldNavigateToJourneyCompleted ||
@@ -223,7 +244,7 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
     )?.is_completed;
 
     return (
-      <SafeAreaView style={styles.safeArea} edges={["top",'bottom']}>
+      <SafeAreaView style={styles.safeArea} edges={["top", "bottom"]}>
         <View style={styles.container}>
           {/* Header */}
           <View style={styles.header}>
@@ -437,39 +458,41 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
               </View>
             ) : null}
 
-            {!isJourneyCompleted && !vm.showLockedStageDetail && (
-              <View style={styles.currentStageCard}>
-                <Text style={styles.cardTitle}>
-                  Current Stage:{" "}
-                  {collapseSpaces(
-                    vm.stages.find((s) => s.is_current)?.display_name
-                  )}
-                </Text>
-
-                <View style={styles.progressBar}>
-                  <View
-                    style={[
-                      styles.progressFill,
-                      { width: `${progressWidthPct}%` },
-                    ]}
-                  />
-                </View>
-
-                <Text style={styles.progressText}>
-                  {vm.daysTogether} days together • {vm.progressPercentage}%
-                  complete
-                </Text>
-
-                <Text style={styles.goalsTitle}>Stage Goals:</Text>
-                {vm.requirements.slice(0, 3).map((req) => (
-                  <Text key={req.id} style={styles.goalItem}>
-                    • {req.title}
+            {!isJourneyCompleted &&
+              !vm.showLockedStageDetail &&
+              !vm.showStageCompleted && (
+                <View style={styles.currentStageCard}>
+                  <Text style={styles.cardTitle}>
+                    Current Stage:{" "}
+                    {collapseSpaces(
+                      vm.stages.find((s) => s.is_current)?.display_name
+                    )}
                   </Text>
-                ))}
-              </View>
-            )}
 
-                        {!vm.showLockedStageDetail &&
+                  <View style={styles.progressBar}>
+                    <View
+                      style={[
+                        styles.progressFill,
+                        { width: `${progressWidthPct}%` },
+                      ]}
+                    />
+                  </View>
+
+                  <Text style={styles.progressText}>
+                    {vm.daysTogether} days together • {vm.progressPercentage}%
+                    complete
+                  </Text>
+
+                  <Text style={styles.goalsTitle}>Stage Goals:</Text>
+                  {vm.requirements.slice(0, 3).map((req) => (
+                    <Text key={req.id} style={styles.goalItem}>
+                      • {req.title}
+                    </Text>
+                  ))}
+                </View>
+              )}
+
+            {!vm.showLockedStageDetail &&
               !vm.showStageCompleted &&
               vm.stages.some((s) => s.is_current) && (
                 <>
@@ -550,8 +573,6 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
 
                   <TouchableOpacity
                     onPress={async () => {
-                      // submitWithdrawal now sets the navigation flag automatically
-                      // The useEffect above will handle the actual navigation
                       await vm.submitWithdrawal();
                     }}
                     style={styles.modalWithdrawButton}

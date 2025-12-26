@@ -55,13 +55,11 @@ export const BrowseElderly: React.FC<BrowseElderlyProps> = observer(({
   notificationCount: propNotificationCount,
 }) => {
   const vm = youthMatchingViewModel;
-  // ✅ MVVM: Get userId from ViewModel (synced by Layout from authViewModel)
   const currentUserId = vm.currentUserId;
 
   // Filter modal state
   const [showFilterModal, setShowFilterModal] = useState(false);
 
-  // ✅ Disable memory and diary tabs if no active relationship (not in bonding stage)
   const disabledTabs = vm.hasActiveRelationship ? [] : ['memory', 'diary'];
 
   // Use activeTab from prop or default to 'matching'
@@ -108,12 +106,8 @@ export const BrowseElderly: React.FC<BrowseElderlyProps> = observer(({
 
   const notificationCount = propNotificationCount ?? vm.unreadNotificationCount;
 
-  // FIXED: Helper to map User -> Display Data with proper avatar handling
   const mapUserToProfile = (user: User) => {
-    // Priority: profile_photo_url (real photo) > preset avatar from avatar_meta
     const hasRealPhoto = !!user.profile_photo_url;
-    // Use user's actual user_type to get correct emoji/image arrays
-    // Filter out 'admin' type and cast to 'youth' | 'elderly'
     const userTypeForAvatar: 'youth' | 'elderly' = 
       user.user_type === 'youth' || user.user_type === 'elderly' 
         ? user.user_type 

@@ -41,10 +41,8 @@ const INTEREST_OPTIONS = [
     'walking',
 ];
 
-// ⚠️ IMPORTANT: Must match ProfileInfoForm's LANGUAGE_OPTIONS ids (lowercase)
 const LANGUAGE_OPTIONS = ['malay', 'english', 'mandarin', 'tamil', 'cantonese', 'hokkien'];
 
-// Malaysia Location Options - Must match ProfileSetupForm for consistent filtering
 const LOCATION_OPTIONS = [
     // States (13)
     'Johor',

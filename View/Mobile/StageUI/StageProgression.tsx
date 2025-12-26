@@ -94,7 +94,7 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
                 "[StageProgression] Navigating to journey-completed page"
               );
               router.push({
-                pathname: "/(main)/journey-completed",
+                pathname: "/(main)/journey-completed" as any,
                 params: { userId },
               });
             } else {
@@ -132,7 +132,7 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
             // Ensure completion info loaded
             await vm.loadStageCompletionInfo(vm.currentStage ?? undefined);
             router.push({
-              pathname: "/(main)/journey-completed",
+              pathname: "/(main)/journey-completed" as any,
               params: { userId },
             });
           } catch (err) {

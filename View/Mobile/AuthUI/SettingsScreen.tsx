@@ -10,22 +10,7 @@ import { BottomTabBar, DEFAULT_TABS, NotificationBell, IconCircle } from '../com
 import { useTabNavigation, getAvatarDisplay } from '../hooks';
 
 
-/**
- * Settings Screen
- * 
- * MVVM Architecture:
- * - This View only handles UI rendering and user interactions
- * - All business logic is delegated to SettingsViewModel (MobX observable)
- * - Follows the design from the mockup with proper color scheme
- * 
- * Sections:
- * - User Profile Header
- * - Account Settings
- * - Privacy & Safety
- * - Notifications
- * - Support & Help
- * - Log Out Button
- */
+
 const SettingsScreenComponent: React.FC = () => {
   const router = useRouter();
   const params = useLocalSearchParams();
@@ -54,7 +39,7 @@ const SettingsScreenComponent: React.FC = () => {
     loadUserData();
   }, [userId]);
 
-  // ✅ Get userType from authViewModel AFTER data is loaded (use authViewModel.userType or currentUser.user_type)
+
   const userType = authViewModel.currentUser?.user_type || authViewModel.userType || (params.userType as 'youth' | 'elderly') || undefined;
   const userName = (params.userName as string) || authViewModel.currentUser?.full_name || undefined;
 
@@ -91,13 +76,10 @@ const SettingsScreenComponent: React.FC = () => {
   // ============================================================================
   // RENDER DATA
   // ============================================================================
-  // ✅ MVVM: Get display data from authViewModel.currentUser (single source of truth)
   const displayName = userName || authViewModel.currentUser?.full_name || 'User';
 
-  // ✅ Get location from database user record
   const location = authViewModel.currentUser?.location || 'Unknown';
 
-  // ✅ Get verified age from profile_data
   const age = authViewModel.currentUser?.profile_data?.verified_age || 18;
 
   // Get avatar config from user's profile data
@@ -211,8 +193,6 @@ const SettingsScreenComponent: React.FC = () => {
     });
   };
 
-  // ✅ Disable memory and diary tabs if no active relationship (not in bonding stage)
-  // Only check after loading complete to prevent incorrect initial state
   const disabledTabs = isLoading ? [] : (authViewModel.hasActiveRelationship ? [] : ['memory', 'diary']);
 
   return (

@@ -82,13 +82,6 @@ const MAX_INTRO_LENGTH = AuthViewModel.VALIDATION_RULES.selfIntroduction.maxLeng
 // ============================================================================
 // COMPONENT
 // ============================================================================
-/**
- * Profile Info Form (UC103_11 to UC103_15)
- * Step 3 of 3: Collects interests, self-introduction, and language preferences
- * 
- * MVVM: View uses observer to react to ViewModel state changes.
- * Validation logic is in AuthViewModel, not here.
- */
 const ProfileInfoFormComponent: React.FC<ProfileInfoFormProps> = ({
   initialData,
   onSubmit,

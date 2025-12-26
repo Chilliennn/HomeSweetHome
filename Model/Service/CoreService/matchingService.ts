@@ -298,9 +298,7 @@ export const matchingService = {
         return matchingRepository.subscribeToApplicationUpdates(youthId, callback);
     },
 
-    /**
-     * ✅ Unsubscribe from realtime channel
-     */
+
     unsubscribe(channel: RealtimeChannel): void {
         matchingRepository.unsubscribe(channel);
     },

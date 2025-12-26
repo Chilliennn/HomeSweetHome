@@ -1,12 +1,4 @@
-/**
- * Sign Up Screen
- * 
- * Route: /signup
- * 
- * MVVM Architecture:
- * - This View only handles UI rendering and user interactions
- * - All business logic is delegated to AuthViewModel (MobX observable)
- */
+
 import { useState } from 'react';
 import {
     View,

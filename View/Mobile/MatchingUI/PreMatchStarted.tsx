@@ -25,22 +25,6 @@ const ALLOWED_ACTIONS = [
 // ============================================================================
 // COMPONENT
 // ============================================================================
-/**
- * PreMatchStarted - UC101_5: Confirmation screen when elderly accepts interest
- * 
- * Features:
- * - Chat icon
- * - "Pre-Match Started!" title
- * - Pre-match period info card (7-14 days)
- * - What You Can Do checklist
- * - Privacy notice
- * - Start Chatting button
- * 
- * Architecture:
- * - Full component with logic and UI
- * - Uses youthMatchingViewModel for match data
- * - Handles navigation to chat
- */
 export const PreMatchStarted = observer(function PreMatchStarted() {
   const router = useRouter();
   const params = useLocalSearchParams();

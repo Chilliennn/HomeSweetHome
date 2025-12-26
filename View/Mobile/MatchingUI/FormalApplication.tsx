@@ -1,13 +1,3 @@
-/**
- * FormalApplication - Form screen for submitting formal adoption application
- * 
- * Shows after pre-match period is completed (7+ days).
- * Collects motivation letter, availability, commitment level, and offerings.
- * 
- * UC101_12: Youth submits formal adoption application
- * 
- * MVVM: View layer - collects form data and calls ViewModel
- */
 import React, { useState, useEffect } from 'react';
 import {
   View,

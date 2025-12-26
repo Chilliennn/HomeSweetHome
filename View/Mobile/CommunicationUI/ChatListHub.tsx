@@ -5,17 +5,6 @@ import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { communicationViewModel } from '@home-sweet-home/viewmodel';
 import { PreMatchChatList } from './PreMatchChatList';
 
-/**
- * ChatListHub - Smart router for chat lists
- * 
- * Routes to appropriate chat list based on user's relationship stage:
- * - Pre-match stage: Show PreMatchChatList (from applications table)
- * - Relationship stage: Show RelationshipChatList (from relationships table)
- * 
- * This is the default entry point when user clicks chat icon in bottom nav bar
- * 
- * Navigation bar → /(main)/chat (no params) → ChatListHub → correct chat list
- */
 export const ChatListHub = observer(function ChatListHub() {
   const router = useRouter();
   const params = useLocalSearchParams();
@@ -31,8 +20,6 @@ export const ChatListHub = observer(function ChatListHub() {
 
   console.log('[ChatListHub] Render - isLoadingFresh:', isLoadingFresh, 'hasCheckedExpired:', hasCheckedExpired.current);
 
-  // ✅ Use useFocusEffect to reload data EVERY TIME screen gains focus
-  // This ensures fresh data after navigating back from other screens
   useFocusEffect(
     useCallback(() => {
       console.log('[ChatListHub] useFocusEffect - screen focused, loading fresh data...');
@@ -53,7 +40,7 @@ export const ChatListHub = observer(function ChatListHub() {
         await vm.loadActiveChats();
         await vm.checkActiveRelationship();
         console.log('[ChatListHub] loadData COMPLETE - hasActiveRelationship:', vm.hasActiveRelationship);
-        
+
         // Check if should redirect to relationship chat IMMEDIATELY after loading
         if (vm.hasActiveRelationship && vm.currentRelationship && !hasRedirectedToRelationship.current) {
           hasRedirectedToRelationship.current = true;
@@ -61,7 +48,7 @@ export const ChatListHub = observer(function ChatListHub() {
           router.replace(`/(main)/chat?relationshipId=${vm.currentRelationship.id}`);
           return; // Don't set isLoadingFresh to false, keep showing loading until redirect
         }
-        
+
         console.log('[ChatListHub] No relationship, setting isLoadingFresh=false');
         setIsLoadingFresh(false);
       };
@@ -74,8 +61,6 @@ export const ChatListHub = observer(function ChatListHub() {
     }, [currentUserId, currentUserType])
   );
 
-  // ✅ Handle relationship redirect in separate effect
-  // Only redirect ONCE to prevent infinite loop
   useEffect(() => {
     console.log('[ChatListHub] useEffect[relationship] - hasActiveRelationship:', vm.hasActiveRelationship, 'isLoadingFresh:', isLoadingFresh, 'hasRedirected:', hasRedirectedToRelationship.current);
     if (vm.hasActiveRelationship && vm.currentRelationship && !isLoadingFresh && !hasRedirectedToRelationship.current) {
@@ -85,9 +70,6 @@ export const ChatListHub = observer(function ChatListHub() {
     }
   }, [vm.hasActiveRelationship, vm.currentRelationship, isLoadingFresh]);
 
-  // ✅ UC104_7: Check for expired pre-matches (14+ days) and force redirect
-  // Only for YOUTH users - elderly should wait for youth's decision
-  // Only check ONCE after fresh data is loaded
   useEffect(() => {
     console.log('[ChatListHub] useEffect[expired] - isLoadingFresh:', isLoadingFresh, 'hasCheckedExpired:', hasCheckedExpired.current, 'userType:', currentUserType);
     // Only redirect youth users to expired decision screen
@@ -111,8 +93,6 @@ export const ChatListHub = observer(function ChatListHub() {
     }
   }, [isLoadingFresh, vm.hasActiveRelationship, currentUserType]);
 
-  // ✅ Show loading while fetching fresh data
-  // After loading, redirect logic will run if needed before rendering PreMatchChatList
   if (isLoadingFresh) {
     return (
       <View style={styles.loadingContainer}>

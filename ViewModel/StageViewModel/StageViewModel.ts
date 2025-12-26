@@ -17,6 +17,7 @@ export class StageViewModel {
   // Observable state
   userId: string = "";
   relationshipId: string = "";
+  userRole: 'youth' | 'elderly' | null = null;
   stages: StageInfo[] = [];
   currentStage: RelationshipStage | null = null;
   metrics: any = null;
@@ -538,6 +539,10 @@ export class StageViewModel {
         this.currentStage = data.currentStage;
         this.relationshipId = data.relationshipId;
         this.metrics = data.metrics;
+        // Determine user role from relationship data
+        if (data.youthId && data.elderlyId && this.userId) {
+          this.userRole = data.youthId === this.userId ? 'youth' : 'elderly';
+        }
         // Track previous stage for transition detection
         if (!this.previousStage) {
           this.previousStage = data.currentStage;

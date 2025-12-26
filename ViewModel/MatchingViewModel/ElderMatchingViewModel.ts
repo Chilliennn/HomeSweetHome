@@ -12,17 +12,9 @@ export class ElderMatchingViewModel {
     successMessage: string | null = null;
     private subscription: RealtimeChannel | null = null;
     private notificationSubscription: RealtimeChannel | null = null;
-
-    // ✅ Current user ID synced from AuthViewModel via Layout
     currentUserId: string | null = null;
-
-    // ✅ Unread notification count for bell icon
     unreadNotificationCount: number = 0;
-
-    // ✅ Whether user has active relationship (for disabling tabs)
     hasActiveRelationship: boolean = false;
-
-    // ✅ Current journey step for UI display (always 1 for elderly during matching phase)
     currentJourneyStep: number = 1;
 
     constructor() {
@@ -55,13 +47,13 @@ export class ElderMatchingViewModel {
         try {
             const { communicationService } = await import('@home-sweet-home/model');
             const relationship = await relationshipService.getActiveRelationship(userId);
-            
+
             // Get active pre-match chats to determine journey step
             const preMatchChats = await communicationService.getActivePreMatchChats(userId, 'elderly');
-            
+
             runInAction(() => {
                 this.hasActiveRelationship = relationship !== null;
-                
+
                 // Update journey step based on status
                 // 1 = Wait, 2 = Pre-match, 3 = Review (approved by admin), 4 = Bonding
                 if (relationship !== null) {
@@ -94,10 +86,8 @@ export class ElderMatchingViewModel {
     async loadRequests(elderlyId: string) {
         console.log('🔵 [ElderVM] Loading requests for:', elderlyId);
 
-        // ✅ Save elderly ID for later use
         this.currentUserId = elderlyId;
 
-        // ✅ Check active relationship status for tab disabling
         await this.checkActiveRelationship(elderlyId);
 
         const data = await matchingService.getIncomingInterests(elderlyId);
@@ -134,7 +124,6 @@ export class ElderMatchingViewModel {
                 elderlyId,
                 (notification) => {
                     console.log('🔔 [ElderVM] New notification:', notification.type);
-                    // ✅ Increment unread count immediately
                     runInAction(() => {
                         this.unreadNotificationCount += 1;
                     });
@@ -144,7 +133,6 @@ export class ElderMatchingViewModel {
             );
         }
 
-        // ✅ Load initial unread count
         await this.loadUnreadNotificationCount(elderlyId);
     }
 
@@ -292,7 +280,6 @@ export class ElderMatchingViewModel {
         this.error = null;
 
         try {
-            // ✅ Use cached ID, fallback to supabase.auth.getUser
             let elderlyId = this.currentUserId;
             if (!elderlyId) {
                 const { data: { user } } = await supabase.auth.getUser();
@@ -335,7 +322,6 @@ export class ElderMatchingViewModel {
     async loadPendingElderlyReview(elderlyId: string) {
         console.log('[ElderVM] Loading pending elderly review for:', elderlyId);
 
-        // ✅ Save elderly ID for later use
         this.currentUserId = elderlyId;
 
         try {
@@ -365,7 +351,6 @@ export class ElderMatchingViewModel {
         this.successMessage = null;
 
         try {
-            // ✅ Use cached ID, fallback to supabase.auth.getUser
             let elderlyId = this.currentUserId;
             if (!elderlyId) {
                 const { data: { user } } = await supabase.auth.getUser();

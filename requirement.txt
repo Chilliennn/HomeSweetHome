@@ -4,15 +4,5 @@ Setup Step:
 3. use cmd cd to our project dir and type:
 *pnpm install*
 4. go to ur vscode open our project,  create a file call .env inside View\mobile and type:
-EXPO_PUBLIC_SUPABASE_URL=https://qwhipcwfwlcugixnqzno.supabase.co
-EXPO_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_a03Cm-55WENKIr15GCUYOQ_SqM68x1Z
-EXPO_PUBLIC_GEMINI_API_KEY=AIzaSyBBZPSUWLEUJrKmwzoLDFyn043x3XDPfwY
-EXPO_PUBLIC_GEMINI_MODEL=gemini-pro
-EXPO_PUBLIC_GEMINI_API_VERSION=v1beta
-EXPO_PUBLIC_GEMINI_FALLBACK_MODEL=gemini-pro
-EXPO_PUBLIC_HUGGING_FACE_API_KEY=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
-EXPO_PUBLIC_ASSEMBLYAI_API_KEY=b9a91b9e1c5342cf9b4eab081becd5ba
 5. create another .env file inside View\web-admin and type:
-VITE_SUPABASE_URL=https://qwhipcwfwlcugixnqzno.supabase.co
-VITE_SUPABASE_ANON_KEY=sb_publishable_a03Cm-55WENKIr15GCUYOQ_SqM68x1Z
 6. type pnpm dev:web  / pnpm dev:mobile to test run the web/app

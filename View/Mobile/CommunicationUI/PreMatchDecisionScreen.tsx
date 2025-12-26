@@ -1,14 +1,4 @@
-/**
- * PreMatchDecisionScreen - View Details screen (104_1)
- * 
- * Shows after 7+ days when user clicks "View Details"
- * Allows user to:
- * - View partner profile and pre-match stats
- * - Submit formal application (Adopt)
- * - Decline and end pre-match
- * 
- * MVVM: View layer - UI only, logic in CommunicationViewModel
- */
+
 import React, { useEffect, useState } from 'react';
 import {
     View,

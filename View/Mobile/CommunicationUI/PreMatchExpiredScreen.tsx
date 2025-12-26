@@ -1,11 +1,4 @@
-/**
- * PreMatchExpiredScreen - Forced decision page (104_2)
- * 
- * Shown when pre-match period reaches 14 days
- * Forces user to make a decision: Apply or End
- * 
- * MVVM: View layer - UI only, logic in CommunicationViewModel
- */
+
 import React, { useState, useEffect, useRef } from 'react';
 import {
     View,

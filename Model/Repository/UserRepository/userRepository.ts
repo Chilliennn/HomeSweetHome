@@ -232,7 +232,7 @@ export const userRepository = {
     const { data, error } = await supabase
       .from("relationships")
       .select(
-        "id, current_stage, stage_start_date, stage_metrics, feature_flags, status"
+        "id, current_stage, stage_start_date, stage_metrics, feature_flags, status, youth_id, elderly_id"
       )
       .or(`youth_id.eq.${userId},elderly_id.eq.${userId}`)
       .in("status", ["active", "paused"])

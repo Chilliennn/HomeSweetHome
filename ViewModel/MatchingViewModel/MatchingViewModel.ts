@@ -1,14 +1,7 @@
 import { makeAutoObservable, runInAction } from 'mobx';
 import { matchingService } from '../../Model/Service/CoreService/matchingService';
 
-/**
- * MatchingViewModel - Manages matching flow state
- * 
- * MVVM Architecture:
- * - Manages UI state for elderly browsing and adoption process
- * - Tracks journey walkthrough completion (persisted to database via MatchingService)
- * - Handles pre-match and application states
- */
+
 export class MatchingViewModel {
   // =============================================================
   // Observable State

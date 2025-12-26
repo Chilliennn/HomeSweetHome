@@ -15,19 +15,10 @@ export class YouthMatchingViewModel {
     successMessage: string | null = null;
     private subscription: RealtimeChannel | null = null;
     private notificationSubscription: RealtimeChannel | null = null;
-
-    // ✅ Current user ID synced from AuthViewModel via Layout
     currentUserId: string | null = null;
-
-    // ✅ Unread notification count for bell icon
     unreadNotificationCount: number = 0;
-
-    // ✅ Current journey step for UI display (1 = Browse, updates based on relationship status)
     currentJourneyStep: number = 1;
-
-    // ✅ Whether user has active relationship (for disabling tabs)
     hasActiveRelationship: boolean = false;
-
     // Filter and pagination state
     filters: ElderlyFilters = {};
     hasMoreProfiles: boolean = false;
@@ -64,7 +55,7 @@ export class YouthMatchingViewModel {
                 runInAction(() => {
                     this.currentYouthProfile = profile;
                 });
-                
+
                 if (profile) {
                     console.log('🔄 [YouthVM] Reloading profiles with user data for accurate scoring...');
                     await this.loadProfiles();
@@ -110,13 +101,13 @@ export class YouthMatchingViewModel {
         try {
             const { relationshipService, communicationService } = await import('@home-sweet-home/model');
             const relationship = await relationshipService.getActiveRelationship(userId);
-            
+
             // Get active pre-match chats to determine journey step
             const preMatchChats = await communicationService.getActivePreMatchChats(userId, 'youth');
-            
+
             runInAction(() => {
                 this.hasActiveRelationship = relationship !== null;
-                
+
                 // Update journey step based on status
                 // 1 = Browse, 2 = Pre-match, 3 = Apply (pending_review or approved), 4 = Bonding
                 if (relationship !== null) {
@@ -152,7 +143,7 @@ export class YouthMatchingViewModel {
             storedProfile: !!this.currentYouthProfile,
             currentUserId: this.currentUserId
         });
-        
+
         this.isLoading = true;
         this.error = null;
         this.currentDisplayCount = 10; // Reset display count
@@ -176,7 +167,7 @@ export class YouthMatchingViewModel {
                 profileName: profileToUse?.full_name,
                 interests: profileToUse?.profile_data?.interests
             });
-            
+
             const result = await matchingService.getAvailableElderlyProfiles(
                 filtersWithoutPagination,
                 profileToUse
@@ -188,7 +179,7 @@ export class YouthMatchingViewModel {
                 // Store all profiles (already sorted by match score)
                 this.allProfiles = result.profiles;
                 this.totalProfileCount = result.totalCount;
-                
+
                 // Display first batch
                 this.profiles = this.allProfiles.slice(0, this.currentDisplayCount);
                 this.hasMoreProfiles = this.allProfiles.length > this.currentDisplayCount;
@@ -211,15 +202,15 @@ export class YouthMatchingViewModel {
         if (this.isLoading || !this.hasMoreProfiles) return;
 
         console.log('🟦 [YouthVM] Loading more profiles from cache...');
-        
+
         runInAction(() => {
             // Increase display count
             this.currentDisplayCount += this.DISPLAY_INCREMENT;
-            
+
             // Update displayed profiles
             this.profiles = this.allProfiles.slice(0, this.currentDisplayCount);
             this.hasMoreProfiles = this.allProfiles.length > this.currentDisplayCount;
-            
+
             console.log('✅ [YouthVM] Now displaying:', this.profiles.length, 'of', this.allProfiles.length);
         });
     }
@@ -301,7 +292,6 @@ export class YouthMatchingViewModel {
                     youthId,
                     (notification) => {
                         console.log('🔔 [YouthVM] New notification:', notification.type);
-                        // ✅ Increment unread count immediately
                         runInAction(() => {
                             this.unreadNotificationCount += 1;
                         });
@@ -311,7 +301,6 @@ export class YouthMatchingViewModel {
                 );
             }
 
-            // ✅ Load initial unread count
             await this.loadUnreadNotificationCount(youthId);
         } catch (e: any) {
             console.error('❌ [YouthVM] Failed to load notifications', e);
@@ -403,15 +392,11 @@ export class YouthMatchingViewModel {
         return undefined;
     }
 
-    /** Temporarily loaded application (for ApplicationStatusScreen when not in activeMatches) */
+
     loadedApplication: { application: Interest; partnerUser: User } | null = null;
     isLoadingApplication: boolean = false;
 
-    /**
-     * ✅ Load application by ID from server (async - safe method)
-     * Used by ApplicationStatusScreen when data is not in cache
-     * This ensures data is always available even if user navigates directly to the page
-     */
+
     async loadApplicationById(applicationId: string): Promise<{ application: Interest; partnerUser: User } | null> {
         // First check cache
         const cached = this.getApplicationById(applicationId);

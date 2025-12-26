@@ -27,21 +27,6 @@ import { getAvatarDisplay } from '@/hooks';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system';
 
-/**
- * ChatScreen - UC104: Pre-match and relationship chat interface
- * 
- * Features (104_3 design):
- * - Video call and voice call buttons in header (stage-locked)
- * - Warning/report button in header
- * - Image and voice message buttons in input area (stage-locked photo sharing)
- * - Stage-based feature unlocks for relationship chats
- * 
- * Architecture:
- * - Observer component (reactive to ViewModel state)
- * - Uses reusable UI components from components/ui
- * - Follows MVVM pattern
- * - Supports both pre-match (applicationId) and relationship (relationshipId) contexts
- */
 export const ChatScreen = observer(function ChatScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
@@ -201,7 +186,6 @@ export const ChatScreen = observer(function ChatScreen() {
 
   const messages = vm.currentChatMessages;
 
-  // ✅ Reverse messages for inverted FlatList (newest at index 0 = bottom of screen)
   const reversedMessages = [...messages].reverse();
 
   // Calculate day label or stage info
@@ -223,7 +207,6 @@ export const ChatScreen = observer(function ChatScreen() {
     headerInfo = `Day ${daysPassed} of 14`;
   }
 
-  // ✅ Real stage-based feature unlocking
   const getFeatureUnlocks = (stage: string | null): Record<string, boolean> => {
     if (!stage) {
       // Pre-match: only text and voice messages, no calls or photo sharing

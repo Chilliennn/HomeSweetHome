@@ -74,10 +74,10 @@ export const NotificationScreen = observer(() => {
                 youthVM.loadNotifications(currentUserId);
             }
 
-            // ✅ Load general notifications via ViewModel
+            //  Load general notifications via ViewModel
             loadGeneralNotifications();
             
-            // ✅ Mark all as read when entering page
+            //  Mark all as read when entering page
             markAllAsRead();
         }
         return () => {
@@ -89,7 +89,7 @@ export const NotificationScreen = observer(() => {
         };
     }, [isElderly, currentUserId]);
 
-    // ✅ Load general notifications via ViewModel (MVVM compliant)
+    //  Load general notifications via ViewModel (MVVM compliant)
     const loadGeneralNotifications = async () => {
         setIsLoadingGeneral(true);
         try {
@@ -103,7 +103,7 @@ export const NotificationScreen = observer(() => {
         }
     };
 
-    // ✅ Mark all notifications as read via ViewModel (MVVM compliant)
+    // Mark all notifications as read via ViewModel (MVVM compliant)
     const markAllAsRead = async () => {
         try {
             const vm = isElderly ? matchVM : youthVM;
@@ -119,25 +119,25 @@ export const NotificationScreen = observer(() => {
         if (!currentUserId) return;
 
         const vm = isElderly ? matchVM : youthVM;
-        // ✅ Subscribe via ViewModel (MVVM compliant)
+        // Subscribe via ViewModel 
         const subscription = vm.subscribeToGeneralNotifications((notification) => {
             console.log('[NotificationScreen] New notification received:', notification);
             loadGeneralNotifications();
         });
 
         return () => {
-            // ✅ Unsubscribe via ViewModel
+            // Unsubscribe via ViewModel
             vm.unsubscribeFromNotifications(subscription);
         };
     }, [currentUserId, isElderly]);
 
-    // Mark notification as read when tapped (deprecated - auto mark all on page load)
+    // Mark notification as read when tapped 
     const handleNotificationPress = async (notificationId: string) => {
         // No action needed - all marked as read on page load
         console.log('[NotificationScreen] Notification tapped:', notificationId);
     };
 
-    // Accept interest (elderly action)
+    // Accept interest
     const handleAccept = async (reqId: string, youthId: string) => {
         if (!currentUserId) return;
         await matchVM.respondToInterest(reqId, youthId, currentUserId, true);
@@ -149,7 +149,7 @@ export const NotificationScreen = observer(() => {
         else if (matchVM.error) Alert.alert("Error", matchVM.error);
     };
 
-    // View youth profile (elderly action)
+    // View youth profile 
     const handleViewProfile = (applicationId: string) => {
         router.push(`/(main)/youth-profile?applicationId=${applicationId}`);
     };
@@ -159,7 +159,7 @@ export const NotificationScreen = observer(() => {
         router.push(`/(main)/pre-match-started?matchId=${matchId}`);
     };
 
-    // Delete interest request (elderly action)
+    // Delete interest request 
     const handleDeleteRequest = async (requestId: string) => {
         Alert.alert(
             'Delete Request',
@@ -181,7 +181,7 @@ export const NotificationScreen = observer(() => {
         );
     };
 
-    // ✅ Delete general notification via ViewModel (MVVM compliant)
+    // Delete general notification via ViewModel (MVVM compliant)
     const handleDeleteNotification = async (notificationId: string) => {
         try {
             const vm = isElderly ? matchVM : youthVM;

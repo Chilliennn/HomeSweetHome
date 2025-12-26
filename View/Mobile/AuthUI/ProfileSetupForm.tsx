@@ -143,15 +143,6 @@ const buildAvatarOptions = (userType: 'youth' | 'elderly'): AvatarOption[] => {
 // ============================================================================
 // COMPONENT
 // ============================================================================
-/**
- * Profile Setup Form - Merged Step 1 & 2
- * Collects:
- * - Phone Number & Location (from old RealIdentityForm)
- * - Display Name & Avatar (from old DisplayIdentityForm)
- * 
- * MVVM: View uses observer to react to ViewModel state changes.
- * Validation logic is in AuthViewModel, not here.
- */
 const ProfileSetupFormComponent: React.FC<ProfileSetupFormProps> = ({
   initialData,
   userType,

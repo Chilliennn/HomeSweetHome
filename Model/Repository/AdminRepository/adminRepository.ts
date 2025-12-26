@@ -341,7 +341,7 @@ export const adminRepository = {
 		if (error) throw error;
 	},
 
-	async rejectApplication(applicationId: string, _adminId: string, reason: string, notes: string, youthId?: string): Promise<void> {
+	async rejectApplication(applicationId: string, _adminId: string, reason: string, notes: string, youthId?: string, elderlyId?: string): Promise<void> {
 		// Only update status - store reason in ngo_notes
 		const combinedNotes = `Rejection Reason: ${reason}${notes ? '\nNotes: ' + notes : ''}`;
 		const { error } = await supabase
@@ -361,7 +361,22 @@ export const adminRepository = {
 					is_read: false,
 				});
 			} catch (notifError) {
-				console.error('Failed to send notification:', notifError);
+				console.error('Failed to send notification to youth:', notifError);
+			}
+		}
+
+		// Send notification to elderly if elderlyId provided
+		if (elderlyId) {
+			try {
+				await supabase.from('notifications').insert({
+					user_id: elderlyId,
+					type: 'application_update',
+					title: 'Application Update',
+					message: `An adoption application from a youth has been reviewed and not approved. The pre-match has ended.`,
+					is_read: false,
+				});
+			} catch (notifError) {
+				console.error('Failed to send notification to elderly:', notifError);
 			}
 		}
 	},

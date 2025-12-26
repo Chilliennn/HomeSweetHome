@@ -1,38 +1,19 @@
 import { makeAutoObservable, runInAction } from 'mobx';
 import { communicationService, type PreMatchChat } from '../../Model/Service/CoreService/communicationService';
 import { familyService } from '../../Model/Service/CoreService/familyService';
+import { matchingService } from '../../Model/Service/CoreService/matchingService';
 import { notificationService } from '../../Model/Service/CoreService/notificationService';
 import { relationshipService } from '../../Model/Service/CoreService/relationshipService';
 import { voiceUploadService, type ChatContext } from '../../Model/Service/CoreService/voiceUploadHelper';
 import { voiceTranscriptionService, type TranscriptionResult } from '../../Model/Service/CoreService/voiceTranscriptionService';
 import { uploadChatImage, uploadChatVideo } from '../../Model/Service/CoreService/mediaUploadHelper';
 import * as contentFilterService from '../../Model/Service/CoreService/ContentFilterService';
-import type { Message, Relationship } from '../../Model/types';
+import type { Message, Relationship, User } from '../../Model/types';
 import type { RealtimeChannel } from '@home-sweet-home/model';
 
-// Type for channel subscription (works even if @supabase/supabase-js types aren't available)
 type ChannelType = RealtimeChannel | any;
 
-/**
- * CommunicationViewModel - Manages chat and messaging state
- * 
- * MVVM Architecture:
- * - Manages UI state for chat conversations
- * - Coordinates with communicationService for business logic
- * - Handles real-time message subscriptions
- * - No direct Repository calls
- * 
- * Features:
- * - UC101_6: Pre-match chat with text and voice messages
- * - Real-time message updates
- * - Unread message counts
- * - Active chat list
- */
 export class CommunicationViewModel {
-  // =============================================================
-  // Observable State
-  // =============================================================
-
   /** List of active pre-match chats */
   activePreMatchChats: PreMatchChat[] = [];
 
@@ -54,13 +35,13 @@ export class CommunicationViewModel {
   /** Current relationship (if in relationship stage) */
   currentRelationship: Relationship | null = null;
 
-  /** ✅ Partner user info for relationship context (loaded when checking relationship) */
-  relationshipPartnerUser: import('../../Model/types').User | null = null;
+  /** Partner user info for relationship context (loaded when checking relationship) */
+  relationshipPartnerUser: User | null = null;
 
   /** Total unread message count across all chats */
   unreadCount = 0;
 
-  /** ✅ Unread notification count for bell icon (realtime updated) */
+  /** Unread notification count for bell icon (realtime updated) */
   unreadNotificationCount = 0;
 
   /** Loading state */
@@ -99,11 +80,6 @@ export class CommunicationViewModel {
   // =============================================================
   // Chat List Actions
   // =============================================================
-
-  /**
-   * Load all active pre-match chats for a user
-   * UC101_6: Display list of active conversations
-   */
   async loadActiveChats(): Promise<void> {
     this.isLoading = true;
     this.errorMessage = null;
@@ -115,19 +91,19 @@ export class CommunicationViewModel {
         this.activePreMatchChats = chats;
         this.unreadCount = chats.reduce((sum, chat) => sum + chat.unreadCount, 0);
         this.isLoading = false;
-        this.hasLoadedOnce = true; // ✅ Mark as loaded
+        this.hasLoadedOnce = true; // Mark as loaded
       });
 
-      // ✅ Setup notification subscription for realtime count updates
+      // Setup notification subscription for realtime count updates
       this.setupNotificationSubscription();
 
-      // ✅ Load initial notification count
+      // Load initial notification count
       await this.loadUnreadNotificationCount();
     } catch (error) {
       runInAction(() => {
         this.errorMessage = error instanceof Error ? error.message : 'Failed to load chats';
         this.isLoading = false;
-        this.hasLoadedOnce = true; // ✅ Even on error, prevent infinite loading
+        this.hasLoadedOnce = true; // Even on error, prevent infinite loading
       });
     }
   }
@@ -140,7 +116,7 @@ export class CommunicationViewModel {
   }
 
   // =============================================================
-  // ✅ Notification Count Methods
+  // Notification Count Methods
   // =============================================================
 
   /**
@@ -208,7 +184,7 @@ export class CommunicationViewModel {
         this.currentUser
       );
 
-      // ✅ Load partner user info if relationship exists
+      // Load partner user info if relationship exists
       let partnerUser = null;
       if (relationship && this.currentUser) {
         partnerUser = await relationshipService.getPartnerUser(this.currentUser, relationship);
@@ -235,7 +211,6 @@ export class CommunicationViewModel {
 
   /**
    * Open a specific chat and load messages
-   * UC101_6: Enter chat screen
    */
   async openChat(applicationId: string): Promise<void> {
     // Unsubscribe from previous chat if any
@@ -316,7 +291,7 @@ export class CommunicationViewModel {
       // Load messages
       const messages = await communicationService.getRelationshipMessages(relationshipId);
 
-      // ✅ Load partner user info for display in ChatScreen
+      // Load partner user info for display in ChatScreen
       let partnerUser = null;
       if (relationship && this.currentUser) {
         partnerUser = await relationshipService.getPartnerUser(this.currentUser, relationship);
@@ -346,7 +321,6 @@ export class CommunicationViewModel {
 
   /**
    * Send a text message
-   * UC101_6: Send text message in pre-match or relationship chat
    */
   async sendTextMessage(
     senderId: string,
@@ -382,8 +356,6 @@ export class CommunicationViewModel {
         });
         throw new Error('Invalid chat context');
       }
-
-      // ✅ Always use Service layer (MVVM compliance)
       const message = await communicationService.sendTextMessage(
         senderId,
         receiverId,
@@ -391,8 +363,6 @@ export class CommunicationViewModel {
         content
       );
 
-      // Message will be added via real-time subscription
-      // But add it immediately for optimistic UI update
       runInAction(() => {
         const exists = this.currentChatMessages.some(m => m.id === message.id);
         if (!exists) {
@@ -412,10 +382,6 @@ export class CommunicationViewModel {
 
   /**
    * Send a voice message
-   * UC101_6: Send voice message (max 2 min)
-   * 
-   * Simplified API: VM derives sender, receiver, and context internally
-   * ChatScreen only needs to provide the recorded audio URL and duration
    */
   async sendVoiceMessage(
     mediaUrl: string,
@@ -441,7 +407,7 @@ export class CommunicationViewModel {
         receiverId = this.currentChat?.partnerUser?.id || '';
       } else if (this.currentChatContext === 'relationship' && this.currentRelationshipId) {
         context = { relationshipId: this.currentRelationshipId };
-        // Get receiver from relationship (the other person)
+        // Get receiver from relationship 
         const rel = this.currentRelationship;
         receiverId = rel?.youth_id === this.currentUser ? rel?.elderly_id : rel?.youth_id || '';
       } else {
@@ -452,7 +418,6 @@ export class CommunicationViewModel {
         throw new Error('Could not determine receiver');
       }
 
-      // ✅ Always use Service layer (MVVM compliance)
       const message = await communicationService.sendVoiceMessage(
         this.currentUser,
         receiverId,
@@ -634,7 +599,7 @@ export class CommunicationViewModel {
             console.log('[CommunicationViewModel] Adding message to UI');
             this.currentChatMessages.push(newMessage);
 
-            // Check if this is an incoming call invite (not from self)
+            // Check if this is an incoming call invite 
             if (newMessage.sender_id !== this.currentUser && newMessage.content) {
               const isCallInvite = newMessage.content.includes('📞 Incoming') &&
                 newMessage.content.includes('Tap to join:');
@@ -696,10 +661,6 @@ export class CommunicationViewModel {
 
   /**
    * Get current journey step based on user's application status
-   * Step 1: Browse/Wait (no pre-matches)
-   * Step 2: Pre-Match (has active pre-match with status pre_chat_active)
-   * Step 3: Application/Review (has pending_review application)
-   * Note: Step 4 not needed - both_accepted goes directly to bonding stage
    */
   get currentJourneyStep(): number {
     // Check for pending_review applications (Step 3)
@@ -738,7 +699,6 @@ export class CommunicationViewModel {
 
   /**
    * Get pre-match status for an application
-   * UC104: Check days passed, can apply (>=7), is expired (>=14)
    */
   getPreMatchStatus(applicationId: string): { daysPassed: number; canApply: boolean; isExpired: boolean } | null {
     const chat = this.getChatByApplicationId(applicationId);
@@ -749,7 +709,6 @@ export class CommunicationViewModel {
 
   /**
    * Get first expired pre-match chat (for force redirect to decision)
-   * UC104_7: After 14 days, force user to decide
    */
   getFirstExpiredChat(): typeof this.activePreMatchChats[0] | null {
     for (const chat of this.activePreMatchChats) {
@@ -763,7 +722,6 @@ export class CommunicationViewModel {
 
   /**
    * End pre-match communication
-   * UC104_7: Mark pre-match as ended when user decides to end
    */
   async endPreMatch(applicationId: string): Promise<boolean> {
     if (!this.currentUser) {
@@ -795,7 +753,6 @@ export class CommunicationViewModel {
 
   /**
    * Submit formal application decision
-   * UC101_12-15: Submit formal application or decline after 7 days
    */
   async submitDecision(applicationId: string, decision: 'apply' | 'decline'): Promise<boolean> {
     if (!this.currentUser || !this.currentUserType) {
@@ -830,7 +787,7 @@ export class CommunicationViewModel {
   }
 
   // =============================================================
-  // Call Actions (Daily.co)
+  // Call Actions
   // =============================================================
 
   /**
@@ -876,8 +833,6 @@ export class CommunicationViewModel {
 
       runInAction(() => {
         this.isLoading = false;
-        // Optimization: Optimistically add the invite message to the list
-        // (Though initiateCall does send it, we might want instant feedback)
       });
 
       return roomUrl;
@@ -891,8 +846,7 @@ export class CommunicationViewModel {
   }
 
   /**
-   * Save chat media to family album (memories)
-   * Only available in relationship context (not pre-match)
+   * Save chat media to family album
    * 
    * @param mediaUrl - Existing chat media URL
    * @param mediaType - 'image' or 'video'
@@ -903,7 +857,7 @@ export class CommunicationViewModel {
     mediaType: 'image' | 'video',
     caption?: string
   ): Promise<boolean> {
-    // Check if in relationship context (not pre-match)
+    // Check if in relationship context 
     if (!this.currentRelationshipId) {
       runInAction(() => {
         this.errorMessage = 'Save to Memories is only available after formal adoption.';
@@ -941,7 +895,7 @@ export class CommunicationViewModel {
   }
 
   // =============================================================
-  // Rejection Confirmation (Youth confirms elderly rejection)
+  // Rejection Confirmation 
   // =============================================================
 
   /**
@@ -956,9 +910,6 @@ export class CommunicationViewModel {
 
     this.isLoading = true;
     try {
-      // Import matchingService dynamically to avoid circular dependency
-      const { matchingService } = await import('../../Model/Service/CoreService/matchingService');
-
       await matchingService.confirmAndDeleteRejectedApplication(applicationId, this.currentUser);
 
       // Remove from active chats
@@ -980,12 +931,11 @@ export class CommunicationViewModel {
   }
 
   // =============================================================
-  // Voice Message Methods (for View layer hooks)
+  // Voice Message Methods 
   // =============================================================
 
   /**
    * Upload voice message to storage
-   * Called by View layer hooks after reading file to base64
    * 
    * @param base64Data - Base64-encoded audio data
    * @param context - Chat context (preMatch or relationship)
@@ -1012,7 +962,6 @@ export class CommunicationViewModel {
 
   /**
    * Transcribe audio to text
-   * Called by View layer hooks after reading file to base64
    * 
    * @param base64Audio - Base64-encoded audio data
    * @returns Transcription result with text
@@ -1023,7 +972,6 @@ export class CommunicationViewModel {
 
   /**
    * Filter message content for inappropriate words
-   * UC403: Content moderation - View layer wrapper
    * 
    * @param message - Message content to check
    * @returns Filter result with isBlocked flag
@@ -1042,7 +990,6 @@ export class CommunicationViewModel {
 
   /**
    * Get blocked message alert text
-   * UC403: User-friendly error message for blocked content
    * 
    * @returns Alert message text
    */
@@ -1052,12 +999,11 @@ export class CommunicationViewModel {
 
   /**
    * Upload chat image to storage
-   * Called by View layer after reading file to base64
    * 
    * @param base64Data - Base64-encoded image data
    * @param context - Chat context (preMatch or relationship)
    * @param senderId - Current user ID
-   * @param fileExtension - File extension (default: 'jpg')
+   * @param fileExtension - File extension 
    * @returns Public URL of uploaded file
    */
   async uploadChatImage(
@@ -1071,12 +1017,11 @@ export class CommunicationViewModel {
 
   /**
    * Upload chat video to storage
-   * Called by View layer after reading file to base64
    * 
    * @param base64Data - Base64-encoded video data
    * @param context - Chat context (preMatch or relationship)
    * @param senderId - Current user ID
-   * @param fileExtension - File extension (default: 'mp4')
+   * @param fileExtension - File extension 
    * @returns Public URL of uploaded file
    */
   async uploadChatVideo(

@@ -65,8 +65,6 @@ export class YouthMatchingViewModel {
                     this.currentYouthProfile = profile;
                 });
                 
-                // ✅ Always reload profiles after fetching user data for accurate match scoring
-                // This ensures correct scores even if profiles loaded before user data was ready
                 if (profile) {
                     console.log('🔄 [YouthVM] Reloading profiles with user data for accurate scoring...');
                     await this.loadProfiles();
@@ -166,10 +164,9 @@ export class YouthMatchingViewModel {
         }
 
         try {
-            // ✅ Fetch ALL available elderly (no limit) for accurate sorting
+            // Fetch ALL available elderly for accurate sorting
             const filtersWithoutPagination: ElderlyFilters = {
                 ...this.filters,
-                // No offset/limit - fetch all for sorting
             };
 
             // Always pass youth profile for match scoring

@@ -121,19 +121,6 @@ const CAPABILITY_PRESETS: Record<string, CommunicationCapabilities> = {
 // ============================================================================
 // SERVICE
 // ============================================================================
-/**
- * communicationService - Handles chat and messaging business logic
- * 
- * MVVM Architecture:
- * - Service layer: Business rules and workflows
- * - Coordinates multiple repositories
- * - No direct View/ViewModel references
- * 
- * Business Rules:
- * - UC101_6: Pre-match chat limited to text and voice messages (max 2 min)
- * - Message length: max 1000 characters
- * - Both parties must have active pre-match (status: 'pre_chat_active')
- */
 export const communicationService = {
   /**
    * Get communication capabilities for current stage
@@ -161,12 +148,6 @@ export const communicationService = {
 
   /**
    * Get all active pre-match chats for a user
-   * UC101_6: Display list of active pre-match conversations
-   * 
-   * Business Rule: Users can chat during all pre-match phases:
-   * - pending_review: After youth sends application
-   * - approved: After NGO approves, before elderly decision
-   * - pre_chat_active: After elderly accepts interest
    */
   async getActivePreMatchChats(userId: string, userType: 'youth' | 'elderly'): Promise<PreMatchChat[]> {
     try {
@@ -177,8 +158,6 @@ export const communicationService = {
 
       console.log('[communicationService] getActivePreMatchChats - Raw applications:', applications.map(a => ({ id: a.id, status: a.status })));
 
-      // ✅ Filter for chat-accessible statuses (include pending, approved, and active)
-      // Exclude only 'rejected', 'withdrawn', and 'both_accepted' (which becomes relationship)
       const chatAccessibleStatuses = ['pending_review', 'approved', 'pre_chat_active'];
       const activeChats = applications.filter(app =>
         chatAccessibleStatuses.includes(app.status)
@@ -234,7 +213,6 @@ export const communicationService = {
 
   /**
    * Get chat info for a specific application
-   * UC101_6: Load chat details
    */
   async getChatInfo(applicationId: string, userId: string): Promise<PreMatchChat> {
     try {
@@ -290,7 +268,6 @@ export const communicationService = {
 
   /**
    * Get messages for a specific pre-match chat
-   * UC101_6: Load chat history
    */
   async getPreMatchMessages(applicationId: string): Promise<Message[]> {
     try {
@@ -523,7 +500,6 @@ export const communicationService = {
 
   /**
    * Subscribe to real-time messages for a chat
-   * UC101_6: Real-time message updates
    */
   subscribeToMessages(context: { type: 'preMatch'; applicationId: string } | { type: 'relationship'; relationshipId: string }, callback: (message: Message) => void): RealtimeChannel {
     return messageRepository.subscribeToMessages(context, callback);

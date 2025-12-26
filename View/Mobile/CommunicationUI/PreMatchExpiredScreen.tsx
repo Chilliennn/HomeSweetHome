@@ -14,6 +14,7 @@ import {
     Alert,
     ActivityIndicator,
     Image,
+    TouchableOpacity,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { observer } from 'mobx-react-lite';
@@ -81,9 +82,33 @@ export const PreMatchExpiredScreen = observer(function PreMatchExpiredScreen() {
             </SafeAreaView>
         );
     }
+    // Handle back navigation
+    const handleBack = () => {
+        if (router.canGoBack()) {
+            router.back();
+        } else {
+            router.replace('/(main)/chat' as any);
+        }
+    };
+
+    // Check if youth has another pending application (pending_review or approved)
+    // If so, they can go back since they can't apply here anyway
+    const hasPendingApplication = vm.activePreMatchChats.some(
+        chat => chat.application.id !== applicationId &&
+            (chat.application.status === 'pending_review' || chat.application.status === 'approved')
+    );
 
     return (
         <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+            {/* Header with Back Button - only show if user has pending application elsewhere */}
+            {hasPendingApplication && (
+                <View style={styles.header}>
+                    <TouchableOpacity onPress={handleBack} style={styles.backButton}>
+                        <Text style={styles.backButtonText}>← Back</Text>
+                    </TouchableOpacity>
+                </View>
+            )}
+
             <View style={styles.content}>
                 {/* Clock Icon */}
                 <View style={styles.iconContainer}>
@@ -164,10 +189,23 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: '#FFFDF5',
     },
+    header: {
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+    },
+    backButton: {
+        paddingVertical: 8,
+        paddingHorizontal: 4,
+    },
+    backButtonText: {
+        fontSize: 16,
+        color: '#666',
+        fontWeight: '500',
+    },
     content: {
         flex: 1,
         paddingHorizontal: 24,
-        paddingTop: 60,
+        paddingTop: 20,
         alignItems: 'center',
     },
     loadingContainer: {

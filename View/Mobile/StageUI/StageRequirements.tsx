@@ -28,11 +28,36 @@ export const StageRequirementsScreen = observer(() => {
       requirement.current_value !== undefined &&
       requirement.required_value !== undefined
     ) {
-      return `${requirement.current_value} more ${
-        requirement.current_value === 1 ? "day" : "days"
-      } needed`;
+      return `${requirement.current_value} more ${requirement.current_value === 1 ? "day" : "days"
+        } needed`;
     }
     return "Not started";
+  };
+
+  /**
+   * Get signing status for manual activities
+   * Returns status text based on who has signed
+   */
+  const getSigningStatus = (requirement: any) => {
+    if (requirement.completion_mode !== "manual" || requirement.is_completed) {
+      return null;
+    }
+
+    const userRole = vm.userRole;
+    const currentUserSigned =
+      userRole === "youth" ? requirement.youth_signed : requirement.elderly_signed;
+    const partnerSigned =
+      userRole === "youth" ? requirement.elderly_signed : requirement.youth_signed;
+
+    if (currentUserSigned && partnerSigned) {
+      // Both signed - should be completed, but just in case
+      return null;
+    } else if (currentUserSigned && !partnerSigned) {
+      return { text: "✓ You signed - waiting for partner", type: "waiting" };
+    } else if (!currentUserSigned && partnerSigned) {
+      return { text: "Partner signed - your turn!", type: "action" };
+    }
+    return null;
   };
 
   const formatDate = (iso?: string | null) => {
@@ -96,32 +121,78 @@ export const StageRequirementsScreen = observer(() => {
               </Text>
             </View>
 
-            {vm.requirements.map((requirement) => (
-              <View key={requirement.id} style={styles.requirementItem}>
-                <Text style={styles.requirementIcon}>
-                  {getRequirementIcon(requirement.is_completed)}
-                </Text>
-                <View style={styles.requirementContent}>
-                  <View style={styles.requirementTitleRow}>
-                    <Text style={styles.requirementTitle}>
-                      {requirement.title}
+            {vm.requirements.map((requirement) => {
+              const signingStatus = getSigningStatus(requirement);
+              const userRole = vm.userRole;
+              const currentUserSigned =
+                userRole === "youth" ? requirement.youth_signed : requirement.elderly_signed;
+
+              return (
+                <View key={requirement.id} style={styles.requirementItem}>
+                  <View style={styles.iconContainer}>
+                    <Text style={styles.requirementIcon}>
+                      {getRequirementIcon(requirement.is_completed)}
                     </Text>
+                    {/* Show wave icon for manual tasks even when completed */}
                     {requirement.completion_mode === "manual" && (
-                      <TouchableOpacity
-                        style={styles.manualBadge}
-                        onPress={() => vm.openManualSignOff(requirement)}
-                        disabled={requirement.is_completed}
-                      >
-                        <Text style={styles.manualBadgeText}>👋 Manual</Text>
-                      </TouchableOpacity>
+                      <Text style={styles.miniWaveIcon}>👋</Text>
                     )}
                   </View>
-                  <Text style={styles.requirementStatus}>
-                    {getRequirementStatus(requirement)}
-                  </Text>
+                  <View style={styles.requirementContent}>
+                    <View style={styles.requirementTitleRow}>
+                      <Text style={styles.requirementTitle}>
+                        {requirement.title}
+                      </Text>
+                      {requirement.completion_mode === "manual" &&
+                        !requirement.is_completed && (
+                          <TouchableOpacity
+                            style={[
+                              styles.manualBadge,
+                              currentUserSigned && styles.manualBadgeSigned,
+                            ]}
+                            onPress={() => vm.openManualSignOff(requirement)}
+                            disabled={currentUserSigned}
+                          >
+                            <Text
+                              style={[
+                                styles.manualBadgeText,
+                                currentUserSigned && styles.manualBadgeTextSigned,
+                              ]}
+                            >
+                              {currentUserSigned ? "✓ Signed" : "Sign"}
+                            </Text>
+                          </TouchableOpacity>
+                        )}
+                    </View>
+                    <Text style={styles.requirementStatus}>
+                      {getRequirementStatus(requirement)}
+                    </Text>
+                    {/* Signing status indicator */}
+                    {signingStatus && (
+                      <View
+                        style={[
+                          styles.signingStatusContainer,
+                          signingStatus.type === "action"
+                            ? styles.signingStatusAction
+                            : styles.signingStatusWaiting,
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.signingStatusText,
+                            signingStatus.type === "action"
+                              ? styles.signingStatusTextAction
+                              : styles.signingStatusTextWaiting,
+                          ]}
+                        >
+                          {signingStatus.text}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
                 </View>
-              </View>
-            ))}
+              );
+            })}
           </View>
         </ScrollView>
 
@@ -265,9 +336,18 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
     marginBottom: 20,
   },
+  iconContainer: {
+    position: "relative",
+    marginRight: 12,
+  },
   requirementIcon: {
     fontSize: 24,
-    marginRight: 12,
+  },
+  miniWaveIcon: {
+    position: "absolute",
+    bottom: -4,
+    right: -4,
+    fontSize: 14,
   },
   requirementContent: {
     flex: 1,
@@ -416,5 +496,37 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
     color: "#333",
+  },
+  // Signed badge state
+  manualBadgeSigned: {
+    backgroundColor: "#D4E5AE",
+    borderColor: "#9DE2D0",
+  },
+  manualBadgeTextSigned: {
+    color: "#2E7D32",
+  },
+  // Signing status indicators
+  signingStatusContainer: {
+    marginTop: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+    alignSelf: "flex-start",
+  },
+  signingStatusWaiting: {
+    backgroundColor: "#F0F0F0",
+  },
+  signingStatusAction: {
+    backgroundColor: "#FADE9F",
+  },
+  signingStatusText: {
+    fontSize: 12,
+    fontWeight: "500",
+  },
+  signingStatusTextWaiting: {
+    color: "#666",
+  },
+  signingStatusTextAction: {
+    color: "#5D4037",
   },
 });

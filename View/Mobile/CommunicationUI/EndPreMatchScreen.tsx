@@ -1,12 +1,4 @@
-/**
- * EndPreMatchScreen - End confirmation flow (104_3, 104_4)
- * 
- * Two-step flow:
- * - Step 1 (104_3): Confirmation with warning icon
- * - Step 2 (104_4): Success with bye-bye icon
- * 
- * MVVM: View layer - UI only, logic in CommunicationViewModel
- */
+
 import React, { useState } from 'react';
 import {
     View,

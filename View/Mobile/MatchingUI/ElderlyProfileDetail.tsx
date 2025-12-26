@@ -79,27 +79,6 @@ const DISABLED_TABS = ['journey', 'gallery'];
 // ============================================================================
 // COMPONENT
 // ============================================================================
-/**
- * ElderlyProfileDetail - Detailed view of an elderly profile
- * 
- * Features:
- * - Back navigation
- * - Avatar with online status
- * - Basic info (name, age, location)
- * - Interest chips
- * - Detailed info card (About Me, Languages, Communication Style, Availability)
- * - Express Interest button
- * - Bottom tab navigation
- * 
- * Usage:
- * ```tsx
- * <ElderlyProfileDetail
- *   profile={elderlyProfile}
- *   onBack={() => navigation.goBack()}
- *   onExpressInterest={() => handleExpressInterest()}
- * />
- * ```
- */
 export const ElderlyProfileDetail: React.FC<ElderlyProfileDetailProps> = ({
   profile = MOCK_PROFILE,
   onBack,

@@ -1,16 +1,4 @@
-/**
- * Edit Profile Info Screen
- * 
- * Route: /(auth)/edit-profile-info
- * 
- * This screen allows users to edit their interests, self-introduction, and languages
- * AFTER the initial profile setup. It reuses ProfileInfoForm component.
- * 
- * MVVM Architecture:
- * - Reuses ProfileInfoForm component (same as profile-setup flow)
- * - Loads existing data from authViewModel
- * - Saves via authViewModel.saveProfileInfo()
- */
+
 import React, { useEffect, useRef, useState } from 'react';
 import { View, StyleSheet, Alert } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';

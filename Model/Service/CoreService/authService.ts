@@ -3,14 +3,7 @@ import type { AuthResult } from '../../Repository/UserRepository';
 import { userRepository } from '../../Repository/UserRepository';
 import type { User, UserType } from '../../types';
 
-/**
- * AuthService - Business logic layer for authentication
- * 
- * Single Responsibility: Handles authentication business logic
- * - Coordinates auth operations with user profile operations
- * - Validates authentication requirements
- * - No direct database access - uses Repository layer
- */
+
 
 export interface SignInResult extends AuthResult {
   appUser: User | null;

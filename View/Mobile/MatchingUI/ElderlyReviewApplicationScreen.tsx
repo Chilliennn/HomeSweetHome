@@ -1,9 +1,4 @@
-/**
- * ElderlyReviewApplicationScreen - Elderly reviews admin-approved application
- * 
- * Shows youth profile and motivation letter
- * Elderly can accept or reject (with optional reason)
- */
+
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TextInput, Alert, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';

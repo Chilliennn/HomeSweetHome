@@ -1,13 +1,3 @@
-/**
- * MatchApproved - Screen shown when elderly approves the formal application (102_3)
- * 
- * Displays elderly info and asks youth to confirm the match.
- * Lists what happens after confirmation.
- * 
- * UC102_3: Youth sees approval notification and confirms match
- * 
- * MVVM: View layer - displays data and calls ViewModel actions
- */
 import React, { useState, useEffect } from 'react';
 import {
   View,

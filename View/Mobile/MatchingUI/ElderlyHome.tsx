@@ -62,11 +62,9 @@ export const ElderlyHome: React.FC<ElderlyHomeProps> = observer(({
   const { handleTabPress: hookHandleTabPress } = useTabNavigation(activeTab);
   const handleTabPress = onTabPress || hookHandleTabPress;
 
-  // ✅ MVVM: Get user ID from ViewModel (synced by Layout from authViewModel)
   const currentElderlyId = vm.currentUserId;
   const displayName = propDisplayName || 'Elderly User';
 
-  // ✅ Default avatar for elderly (since we don't have profile data in this ViewModel)
   // If custom avatar is needed, it should be passed as prop from parent
   const avatarConfig = avatarSource ? {
     icon: undefined,
@@ -96,16 +94,15 @@ export const ElderlyHome: React.FC<ElderlyHomeProps> = observer(({
     router.push('/(main)/notification');
   };
 
-  // ✅ Use incomingRequests for "New Interest" alert (only youth interests)
+  // Use incomingRequests for "New Interest" alert (only youth interests)
   const pendingInterestCount = vm.incomingRequests.length;
-  // ✅ Use unreadNotificationCount for bell icon (all notifications)
+  // Use unreadNotificationCount for bell icon (all notifications)
   const notificationBellCount = vm.unreadNotificationCount;
   
-  // ✅ Disable memory and diary tabs if no active relationship (not in bonding stage)
+  // Disable memory and diary tabs if no active relationship (not in bonding stage)
   const disabledTabs = vm.hasActiveRelationship ? [] : ['memory', 'diary'];
   
   console.log('🔵 [ElderlyHome] Rendering - pendingInterests:', pendingInterestCount, 'totalNotifications:', notificationBellCount);
-  // How it works items
   const howItWorksItems = [
     'Youth browse profiles and express interest in connecting',
     "You'll receive notifications when someone is interested",

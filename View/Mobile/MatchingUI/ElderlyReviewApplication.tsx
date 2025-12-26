@@ -1,12 +1,4 @@
-/**
- * ElderlyReviewApplication - Elderly reviews youth formal application (102_1)
- * 
- * Shows youth profile, motivation letter, and approve/reject buttons.
- * 
- * UC102_1: Elderly reviews and decides on formal application
- * 
- * MVVM: View layer - displays data and calls ViewModel actions
- */
+
 import React, { useState, useEffect } from 'react';
 import {
     View,

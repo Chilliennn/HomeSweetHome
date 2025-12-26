@@ -18,26 +18,7 @@ import type { ProfileInfoData } from './ProfileInfoForm';
 // ============================================================================
 // SCREEN COMPONENT
 // ============================================================================
-/**
- * Profile Setup Screen (UC-103: Complete Profile)
- * Route: /(auth)/profile-setup
- * 
- * This screen manages the profile setup flow for FIRST-TIME users:
- * 1. ProfileWelcome - Introduction and requirements (M1: Welcome message)
- * 2. AgeVerification - MyDigital ID verification (UC103_2, UC103_3, UC103_4)
- * 3. VerifyingLoader - Show loading while verifying
- * 4. VerifiedSuccess - Show success and continue to profile setup
- * 
- * After this flow, user proceeds to:
- * - Real Identity Section (Step 1 of 3)
- * - Display Identity Section (Step 2 of 3)  
- * - Profile Information Section (Step 3 of 3)
- * 
- * MVVM Architecture Notes:
- * - This View only handles UI rendering and user interactions
- * - All business logic is delegated to AuthViewModel (MobX observable)
- * - State like verifiedAge and userType come from ViewModel
- */
+
 const ProfileSetupScreenComponent: React.FC = () => {
   const router = useRouter();
   const params = useLocalSearchParams();
@@ -50,7 +31,6 @@ const ProfileSetupScreenComponent: React.FC = () => {
   const userTypeFromDB = params.userType as 'youth' | 'elderly' | undefined;
   const editMode = params.editMode === 'true'; // Settings navigation passes this
 
-  // ✅ Fallback: Get userId from authViewModel if not in params (edit mode scenario)
   const userId = userIdFromParams || authViewModel.authState.currentUserId || undefined;
 
   // One-time init: set default userType and hydrate profile state if available

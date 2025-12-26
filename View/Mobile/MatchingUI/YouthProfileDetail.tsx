@@ -18,17 +18,6 @@ import { Ionicons } from '@expo/vector-icons';
 // ============================================================================
 // COMPONENT
 // ============================================================================
-/**
- * YouthProfileDetail - UC102_5: Full youth profile view for elderly users
- * 
- * Displays complete youth information when elderly clicks "View Profile" 
- * from notification. Includes Accept/Decline actions.
- * 
- * Architecture:
- * - Full component with logic and UI
- * - Uses elderMatchingViewModel for data and actions
- * - Handles Accept/Decline with Alerts
- */
 export const YouthProfileDetail = observer(function YouthProfileDetail() {
   const router = useRouter();
   const params = useLocalSearchParams();

@@ -1,11 +1,3 @@
-/**
- * ApplicationStatusScreen - Shows status of submitted formal application
- * 
- * Displays timeline of application progress for youth after they submit
- * a formal application.
- * 
- * UC101_12: Youth tracks application status
- */
 import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -22,19 +14,16 @@ export const ApplicationStatusScreen = observer(function ApplicationStatusScreen
 
     const vm = youthMatchingViewModel;
 
-    // ✅ Safely load application data on mount
     useEffect(() => {
         if (applicationId) {
             vm.loadApplicationById(applicationId);
         }
     }, [applicationId]);
 
-    // Get application and partner data from MatchingViewModel (sync from cache)
     const data = vm.getApplicationById(applicationId);
     const application = data?.application;
     const partner = data?.partnerUser;
 
-    // Calculate days since application submitted
     const getSubmittedDaysAgo = () => {
         if (!application?.reviewed_at) return 'Recently';
         const submittedDate = new Date(application.reviewed_at);
@@ -45,8 +34,6 @@ export const ApplicationStatusScreen = observer(function ApplicationStatusScreen
         return `${daysSince} days ago`;
     };
 
-    // Determine step statuses based on application.status
-    // Status flow: pending_review -> (admin reviews) -> both_accepted/rejected
     const getStepStatuses = () => {
         const status = application?.status;
 
@@ -54,7 +41,6 @@ export const ApplicationStatusScreen = observer(function ApplicationStatusScreen
         const step1Status: 'completed' | 'current' | 'pending' = 'completed';
 
         // Step 2: Admin Review - current if pending_review, completed if admin reviewed
-        // For now, we assume pending_review means admin is reviewing
         let step2Status: 'completed' | 'current' | 'pending' = 'pending';
 
         // Step 3: Elderly Review - pending by default
@@ -129,7 +115,6 @@ export const ApplicationStatusScreen = observer(function ApplicationStatusScreen
         router.push('/(main)/chat' as any);
     };
 
-    // ✅ Show loading state while fetching data
     if (vm.isLoadingApplication) {
         return (
             <SafeAreaView style={styles.container}>

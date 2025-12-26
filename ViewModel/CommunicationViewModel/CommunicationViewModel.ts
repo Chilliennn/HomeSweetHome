@@ -70,7 +70,6 @@ export class CommunicationViewModel {
   /** Real-time subscription channel */
   private messageSubscription: ChannelType | null = null;
 
-  /** ✅ Notification subscription */
   private notificationSubscription: ChannelType | null = null;
 
   constructor() {

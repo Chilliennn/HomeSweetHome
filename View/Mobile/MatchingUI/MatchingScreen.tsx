@@ -36,18 +36,17 @@ interface ElderlyProfile {
 }
 
 const mapUserToProfile = (user: User): ElderlyProfile => {
-  // Priority: profile_photo_url (real photo) > preset avatar emoji
   const hasRealPhoto = !!user.profile_photo_url;
   const presetEmoji = user.profile_data?.avatar_meta?.type === "default" ? "👵" : undefined;
 
   return {
     id: user.id,
-    name: user.full_name || "Anonymous",  // FIXED: Only use full_name
+    name: user.full_name || "Anonymous",  
     age: user.profile_data?.verified_age || 60,
     location: user.location || "Unknown",
     profilePhotoUrl: hasRealPhoto ? user.profile_photo_url! : undefined,
     avatarEmoji: hasRealPhoto ? undefined : presetEmoji,
-    avatarColor: "#C8ADD6", // Default
+    avatarColor: "#C8ADD6", 
     isOnline: false,
     interests: (user.profile_data?.interests || []).map((i) => ({
       label: i,
@@ -64,21 +63,6 @@ const mapUserToProfile = (user: User): ElderlyProfile => {
 // ============================================================================
 // COMPONENT
 // ============================================================================
-/**
- * Matching Screen - Main matching interface logic component
- *
- * Displays matching features for users with complete profiles.
- * Shows Journey Walkthrough for first-time users after profile completion.
- * Users can browse elderly/youth profiles and submit applications.
- *
- * Architecture:
- * - Logic component (connects View to ViewModel)
- * - Handles screen navigation state
- * - Delegates presentation to child components
- *
- * Updated: Prop drilling for notifications is removed; child components use ViewModels directly.
- * Mocks removed in favor of VM data.
- */
 export const MatchingScreenComponent = observer(
   function MatchingScreenComponent() {
     const router = useRouter();
@@ -164,7 +148,7 @@ export const MatchingScreenComponent = observer(
         return; // Wait until loading completes
       }
 
-      // Show walkthrough if coming from profile completion (first time)
+      // Show walkthrough if coming from profile completion 
       if (isFirstTime === "true") {
         matchingViewModel.checkWalkthroughStatus(true);
       }
@@ -227,7 +211,6 @@ export const MatchingScreenComponent = observer(
     };
 
     const handleFilterPress = () => {
-      // Future: open filter modal
     };
 
     // Show walkthrough if needed

@@ -2,17 +2,7 @@ import { supabase } from '../../Service/APIService/supabase';
 import type { Message, MessageType } from '../../types';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 
-// ============================================================================
-// MESSAGE REPOSITORY
-// ============================================================================
-/**
- * messageRepository - Handles all message data access
- * 
- * MVVM Architecture:
- * - Repository layer: Only data access (CRUD, Supabase queries)
- * - No business logic (validation, limits, rules)
- * - Works with both pre-match (application_id) and relationship (relationship_id) messages
- */
+
 export const messageRepository = {
   /**
    * Get messages for a pre-match conversation (by application_id)

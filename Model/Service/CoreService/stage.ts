@@ -22,6 +22,8 @@ export class StageService {
     currentStage: RelationshipStage;
     relationshipId: string;
     metrics: any;
+    youthId: string;
+    elderlyId: string;
   }> {
     const relationship = await userRepository.getRelationshipStage(userId);
 
@@ -68,6 +70,8 @@ export class StageService {
       currentStage: relationship.current_stage,
       relationshipId: relationship.id,
       metrics: relationship.stage_metrics,
+      youthId: relationship.youth_id,
+      elderlyId: relationship.elderly_id,
     };
   }
 
@@ -300,7 +304,7 @@ export class StageService {
 
     return (
       messages[currentStage]?.[
-        targetStage as keyof (typeof messages)[typeof currentStage]
+      targetStage as keyof (typeof messages)[typeof currentStage]
       ] || "This stage is locked."
     );
   }

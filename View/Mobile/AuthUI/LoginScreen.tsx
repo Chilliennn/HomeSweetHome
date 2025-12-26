@@ -1,18 +1,4 @@
-/**
- * Login Screen
- * 
- * Route: /(auth)/login and /login
- * 
- * MVVM Architecture:
- * - View: This component handles only UI rendering
- * - ViewModel: authViewModel handles authentication state and logic
- * - Uses observer() for automatic re-renders when ViewModel state changes
- *
- * After login:
- * 1. Check Relationship -> Bonding
- * 2. Check Profile -> Profile Setup
- * 3. Default -> Matching (Browse/ElderlyHome)
- */
+
 import React from "react";
 import {
     View,

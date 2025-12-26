@@ -29,22 +29,12 @@ export interface Relationship {
     certificate_url: string | null;
     created_at: string;
     ended_at: string | null;
-    // Additional fields for admin monitoring
-    last_message_at?: string;
-    risk_level?: 'healthy' | 'caution' | 'critical';
     // Populated relations
     youth?: User;
     elderly?: User;
 }
 
-/**
- * relationshipRepository - Handles relationship data access
- * 
- * MVVM Architecture:
- * - Repository layer: Data access only, no business logic
- * - Returns raw data from relationships table
- * - Used by Services for business operations
- */
+
 export const relationshipRepository = {
     /**
      * Get all relationships (for admin monitoring)
@@ -99,22 +89,6 @@ export const relationshipRepository = {
             .single();
 
         if (error) throw error;
-        return data as Relationship;
-    },
-
-    /**
-     * Get all relationships (for admin dashboard)
-     */
-    async getAllRelationships(): Promise<Relationship[]> {
-        const { data, error } = await supabase
-            .from('relationships')
-            .select('*, youth:youth_id(*), elderly:elderly_id(*)')
-            .order('created_at', { ascending: false });
-
-        if (error) {
-            console.error('[relationshipRepository] Error fetching all relationships:', error);
-            throw error;
-        }
-        return (data as Relationship[]) || [];
+        return data as Relationship | null;
     },
 };

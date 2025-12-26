@@ -9,19 +9,6 @@ import { Card, IconCircle, NotificationBell, ProgressBar, Button } from '@/compo
 import { BottomTabBar, DEFAULT_TABS } from '@/components/ui/BottomTabBar';
 import { Colors } from '@/constants/theme';
 
-/**
- * PreMatchChatList - UC101_6: Pre-match chat list screen
- * 
- * Combined component with logic and UI (follows qualityAttribute.txt)
- * - Loads chat data from CommunicationViewModel
- * - Displays chat cards using reusable components from components/ui
- * - Handles navigation to individual chats
- * 
- * Architecture:
- * - Observer component (reactive to ViewModel state)
- * - Uses Card, IconCircle, ProgressBar, Button from components/ui
- * - Self-contained logic (no unnecessary separation)
- */
 export const PreMatchChatList = observer(function PreMatchChatList() {
   const router = useRouter();
   const vm = communicationViewModel;

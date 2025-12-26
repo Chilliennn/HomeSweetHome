@@ -24,23 +24,6 @@ interface InterestSentProps {
 // ============================================================================
 // COMPONENT
 // ============================================================================
-/**
- * InterestSent - Confirmation screen shown after expressing interest
- * 
- * Features:
- * - Success icon (heart icon)
- * - Confirmation message with elderly name
- * - "What's Next?" info card explaining next steps
- * - "Browse More Profiles" button
- * 
- * Usage:
- * ```tsx
- * <InterestSent
- *   elderlyName="Ah Ma Mei"
- *   onBrowseMore={() => navigateToBrowse()}
- * />
- * ```
- */
 export const InterestSent: React.FC<InterestSentProps> = ({
   elderlyName,
   onBrowseMore,

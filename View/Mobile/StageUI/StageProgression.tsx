@@ -19,8 +19,6 @@ import { NotificationBell } from "../components/ui/NotificationBell";
 import { LoadingSpinner } from "../components/ui/LoadingSpinner";
 import { BottomTabBar, DEFAULT_TABS } from "../components/ui/BottomTabBar";
 import { RelationshipStage } from "@home-sweet-home/model/types";
-import { runInAction } from "mobx";
-
 interface StageProgressionScreenProps {
   userId: string;
   initialOpenStage?: string;
@@ -42,22 +40,6 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
 
           if (vm.showStageCompleted) vm.closeStageCompleted();
           if (vm.showLockedStageDetail) vm.closeLockedStageDetail();
-
-          try {
-            runInAction(() => {
-              vm.showStageCompleted = false;
-              vm.showLockedStageDetail = false;
-              vm.shouldNavigateToStageCompleted = false;
-              vm.shouldNavigateToJourneyCompleted = false;
-              vm.shouldNavigateToMilestone = false;
-              vm.shouldNavigateToJourneyPause = false;
-            });
-          } catch (e) {
-            console.warn(
-              "[StageProgression] Failed to reset VM navigation flags",
-              e
-            );
-          }
 
           setTimeout(() => {
             if (!mounted) return;
@@ -86,70 +68,75 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
       );
     }, [initialOpenStage, vm]);
 
+    // Watch for auto-navigation to Stage Completed page
+    useEffect(() => {
+      if (vm.consumeStageCompletionNavigation()) {
+        (async () => {
+          console.log(
+            "[StageProgression] Stage completion detected, loading info ->",
+            {
+              stageJustCompleted: vm.stageJustCompleted,
+              stageJustCompletedName: vm.stageJustCompletedName,
+              userId,
+            }
+          );
+
+          try {
+            // Ensure VM has the latest completion info
+            await vm.loadStageCompletionInfo(
+              vm.stageJustCompleted ?? undefined
+            );
+
+            // If the just completed stage is the final stage (family_life),
+            // navigate to the Journey Completed screen instead.
+            if (vm.stageJustCompleted === ("family_life" as any)) {
+              console.log(
+                "[StageProgression] Navigating to journey-completed page"
+              );
+              router.push({
+                pathname: "/(main)/journey-completed",
+                params: { userId },
+              });
+            } else {
+              router.push({
+                pathname: "/(main)/stage-completed",
+                params: { userId, stage: vm.stageJustCompleted ?? "" },
+              });
+            }
+          } catch (err) {
+            console.error("Failed to handle stage completion navigation:", err);
+          }
+        })();
+      }
+    }, [vm, vm.shouldNavigateToStageCompleted, router, userId]);
+
+    // Watch for auto-navigation to Milestone page
     useEffect(() => {
       if (vm.consumeMilestoneNavigation()) {
         router.push({ pathname: "/(main)/milestone", params: { userId } });
       }
     }, [vm.shouldNavigateToMilestone, router, userId, vm]);
 
+    // Watch for auto-navigation to Journey Pause page
     useEffect(() => {
       if (vm.consumeJourneyPauseNavigation()) {
         router.push({ pathname: "/journey-pause", params: { userId } });
       }
     }, [vm.shouldNavigateToJourneyPause, router, userId, vm]);
 
-    useEffect(() => {
-      if (vm.consumeStageCompletionNavigation()) {
-        console.log("[StageProgression] Triggering stage-completed navigation");
-        (async () => {
-          try {
-            const completedStage = vm.stageJustCompleted ?? undefined;
-            await vm.loadStageCompletionInfo(completedStage);
-            router.push({
-              pathname: "/(main)/stage-completed",
-              params: { userId, stage: completedStage },
-            });
-          } catch (err) {
-            console.error(
-              "[StageProgression] Failed navigating to stage-completed:",
-              err
-            );
-          } finally {
-            runInAction(() => {
-              vm.shouldNavigateToStageCompleted = false;
-            });
-          }
-        })();
-      }
-    }, [vm.shouldNavigateToStageCompleted, router, userId, vm]);
-
+    // Watch for auto-navigation to Journey Completed page (final stage fully completed)
     useEffect(() => {
       if (vm.consumeJourneyCompletedNavigation()) {
-        console.log(
-          "[StageProgression] Triggering journey-completed navigation"
-        );
         (async () => {
           try {
-            const completed = vm.stageJustCompleted ?? vm.currentStage;
-            const FINAL_STAGE = "family_life" as any as RelationshipStage;
-            if (completed !== FINAL_STAGE) {
-              console.log(
-                "[StageProgression] Suppressing journey-completed navigation; completed stage:",
-                completed
-              );
-              return;
-            }
-            await vm.loadStageCompletionInfo(completed ?? undefined);
-
-          } catch (err) {
-            console.error(
-              "[StageProgression] Failed to navigate to journey-completed:",
-              err
-            );
-          } finally {
-            runInAction(() => {
-              vm.shouldNavigateToJourneyCompleted = false;
+            // Ensure completion info loaded
+            await vm.loadStageCompletionInfo(vm.currentStage ?? undefined);
+            router.push({
+              pathname: "/(main)/journey-completed",
+              params: { userId },
             });
+          } catch (err) {
+            console.error("Failed to navigate to journey-completed:", err);
           }
         })();
       }
@@ -157,11 +144,14 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
 
     const handleStagePress = async (targetStage: RelationshipStage) => {
       try {
+        // Close any open modals before navigating
         if (vm.showStageCompleted) vm.closeStageCompleted();
         if (vm.showLockedStageDetail) vm.closeLockedStageDetail();
 
+        // If clicking current stage, just close modals to show current stage card
         const currentStageInfo = vm.stages.find((s) => s.is_current);
         if (currentStageInfo?.stage === targetStage) {
+          // Modals already closed above, current stage card will show
           return;
         }
 
@@ -185,22 +175,9 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
     };
 
     const handleRefresh = async () => {
-      try {
-        await vm.refresh();
-      } catch (e) {
-        console.error("[StageProgression] refresh error:", e);
-      } finally {
-        runInAction(() => {
-          vm.showStageCompleted = false;
-          vm.showLockedStageDetail = false;
-          vm.shouldNavigateToStageCompleted = false;
-          vm.shouldNavigateToJourneyCompleted = false;
-          vm.shouldNavigateToMilestone = false;
-          vm.shouldNavigateToJourneyPause = false;
-        });
-        if (vm.showStageCompleted) vm.closeStageCompleted();
-        if (vm.showLockedStageDetail) vm.closeLockedStageDetail();
-      }
+      await vm.refresh();
+      if (vm.showStageCompleted) vm.closeStageCompleted();
+      if (vm.showLockedStageDetail) vm.closeLockedStageDetail();
     };
 
     const handleTabPress = (key: string) => {
@@ -230,6 +207,8 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
       return <LoadingSpinner />;
     }
 
+    // Navigation Guard: If we are about to navigate to a completion/milestone/pause screen,
+    // don't render the rest of the UI to avoid flickering the "next" stage state.
     if (
       vm.shouldNavigateToStageCompleted ||
       vm.shouldNavigateToJourneyCompleted ||
@@ -244,7 +223,7 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
     )?.is_completed;
 
     return (
-      <SafeAreaView style={styles.safeArea} edges={["top", "bottom"]}>
+      <SafeAreaView style={styles.safeArea} edges={["top", 'bottom']}>
         <View style={styles.container}>
           {/* Header */}
           <View style={styles.header}>
@@ -294,56 +273,6 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
                 </React.Fragment>
               ))}
             </View>
-
-            {isJourneyCompleted && (
-              <>
-                <View style={styles.aiBanner}>
-                  <Text style={{ fontSize: 20 }}>🤖</Text>
-                  <Text style={styles.aiBannerText}>
-                    Based on your diaries and interests!
-                  </Text>
-                </View>
-
-                {vm.aiSuggestions.map((suggestion, index) => (
-                  <View
-                    key={suggestion.id}
-                    style={[
-                      styles.aiCard,
-                      {
-                        backgroundColor:
-                          index % 2 === 0 ? "#9DE2D0" : "#D4E5AE",
-                      },
-                    ]}
-                  >
-                    <View style={styles.aiBadge}>
-                      <Text style={styles.aiBadgeText}>✨ AI Recommended</Text>
-                    </View>
-                    <Text style={styles.aiCardTitle}>
-                      {suggestion.activity_title}
-                    </Text>
-                    <Text style={styles.aiCardDescription}>
-                      {suggestion.activity_description}
-                    </Text>
-                    <TouchableOpacity
-                      style={styles.useIdeaButton}
-                      onPress={() => vm.useAISuggestion(suggestion)}
-                    >
-                      <Text style={styles.useIdeaText}>Use This Idea</Text>
-                    </TouchableOpacity>
-                  </View>
-                ))}
-
-                <TouchableOpacity
-                  style={styles.generateButton}
-                  onPress={() => vm.generateNewIdeas()}
-                  disabled={vm.isLoading}
-                >
-                  <Text style={styles.generateButtonText}>
-                    {vm.isLoading ? "Generating..." : "Generate New Activities"}
-                  </Text>
-                </TouchableOpacity>
-              </>
-            )}
 
             {/* Error Display */}
             {vm.error && (
@@ -430,12 +359,6 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
                     const completedName = collapseSpaces(
                       completedStage?.display_name || ""
                     );
-
-                    
-                    if (!nextStage || completedOrder >= vm.stages.length - 1) {
-                      return `Congratulations! You've successfully completed "${completedName}"! Your journey together is complete! 🎉`;
-                    }
-
                     const nextNumber = completedOrder + 2;
                     const nextName = collapseSpaces(
                       nextStage?.display_name || ""
@@ -464,9 +387,9 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
               </View>
             ) : null}
 
-            {!isJourneyCompleted &&
-              !vm.showLockedStageDetail &&
-              !vm.showStageCompleted && (
+            {/* Current Stage Card - Hide if journey is completed */}
+            {!isJourneyCompleted && !vm.showLockedStageDetail && (
+              <>
                 <View style={styles.currentStageCard}>
                   <Text style={styles.cardTitle}>
                     Current Stage:{" "}
@@ -496,36 +419,81 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
                     </Text>
                   ))}
                 </View>
-              )}
 
-            {!vm.showLockedStageDetail &&
-              !vm.showStageCompleted &&
-              vm.stages.some((s) => s.is_current) && (
-                <>
+                {/* Navigation Buttons - Outside the card */}
+                <View style={styles.actionButtonsContainer}>
                   <TouchableOpacity
-                    style={[styles.actionButton, styles.primaryButton]}
+                    style={styles.viewRequirementsButton}
                     onPress={() => router.push("/(main)/stageRequirements")}
                   >
-                    <Text style={styles.actionButtonText}>
+                    <Text style={styles.viewRequirementsText}>
                       View All Requirements
                     </Text>
                   </TouchableOpacity>
 
                   <TouchableOpacity
-                    style={[styles.actionButton, styles.secondaryButton]}
+                    style={styles.viewFeaturesButton}
                     onPress={() => router.push("/(main)/availableFeatures")}
                   >
-                    <Text
-                      style={[
-                        styles.actionButtonText,
-                        styles.secondaryButtonText,
-                      ]}
-                    >
+                    <Text style={styles.viewFeaturesText}>
                       View Available Features
                     </Text>
                   </TouchableOpacity>
-                </>
-              )}
+                </View>
+              </>
+            )}
+
+
+            {/* AI Suggestions Section - Only show when journey is completed */}
+            {isJourneyCompleted && (
+              <>
+                <View style={styles.aiBanner}>
+                  <Text style={{ fontSize: 20 }}>🤖</Text>
+                  <Text style={styles.aiBannerText}>
+                    Based on your diaries and interests!
+                  </Text>
+                </View>
+
+                {vm.aiSuggestions.map((suggestion, index) => (
+                  <View
+                    key={suggestion.id}
+                    style={[
+                      styles.aiCard,
+                      {
+                        backgroundColor:
+                          index % 2 === 0 ? "#9DE2D0" : "#D4E5AE",
+                      },
+                    ]}
+                  >
+                    <View style={styles.aiBadge}>
+                      <Text style={styles.aiBadgeText}>✨ AI Recommended</Text>
+                    </View>
+                    <Text style={styles.aiCardTitle}>
+                      {suggestion.activity_title}
+                    </Text>
+                    <Text style={styles.aiCardDescription}>
+                      {suggestion.activity_description}
+                    </Text>
+                    <TouchableOpacity
+                      style={styles.useIdeaButton}
+                      onPress={() => vm.useAISuggestion(suggestion)}
+                    >
+                      <Text style={styles.useIdeaText}>Use This Idea</Text>
+                    </TouchableOpacity>
+                  </View>
+                ))}
+
+                <TouchableOpacity
+                  style={styles.generateButton}
+                  onPress={() => vm.generateNewIdeas()}
+                  disabled={vm.isLoading}
+                >
+                  <Text style={styles.generateButtonText}>
+                    {vm.isLoading ? "Generating..." : "Generate New Activities"}
+                  </Text>
+                </TouchableOpacity>
+              </>
+            )}
           </ScrollView>
 
           {/* Bottom Navigation */}
@@ -579,6 +547,8 @@ export const StageProgressionScreen: React.FC<StageProgressionScreenProps> =
 
                   <TouchableOpacity
                     onPress={async () => {
+                      // submitWithdrawal now sets the navigation flag automatically
+                      // The useEffect above will handle the actual navigation
                       await vm.submitWithdrawal();
                     }}
                     style={styles.modalWithdrawButton}
@@ -713,6 +683,11 @@ const styles = StyleSheet.create({
     color: "#666",
     marginBottom: 6,
     lineHeight: 20,
+  },
+  // Navigation buttons container
+  actionButtonsContainer: {
+    marginTop: 16,
+    gap: 10,
   },
   primaryButton: {
     backgroundColor: "#EB8F80",

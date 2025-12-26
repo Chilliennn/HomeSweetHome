@@ -135,9 +135,9 @@ export const applicationService = {
       throw new Error('Detailed explanation required for "Other" reason');
     }
 
-    // Get the application to find youthId for notification
+    // Get the application to find youthId and elderlyId for notifications
     const application = await this.getApplicationById(applicationId);
-    await adminRepository.rejectApplication(applicationId, adminId, rejectionReason, notes, application.youth.id);
+    await adminRepository.rejectApplication(applicationId, adminId, rejectionReason, notes, application.youth.id, application.elderly.id);
   },
 
   /**

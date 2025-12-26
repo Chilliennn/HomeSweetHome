@@ -16,9 +16,8 @@ const PRE_MATCH_LIMITS = {
 // Match scoring weights
 const MATCH_SCORE_WEIGHTS = {
     SAME_INTEREST: 10,      // +10 per shared interest
-    SAME_LANGUAGE: 15,      // +15 per shared language
-    SAME_LOCATION: 20,      // +20 for same location
-    AGE_PREFERENCE: 10,     // +10 if within preferred age range
+    SAME_LANGUAGE: 10,      // +10 per shared language
+    SAME_LOCATION: 20,      // +20 for same location (state)
 };
 
 // ============================================================================
